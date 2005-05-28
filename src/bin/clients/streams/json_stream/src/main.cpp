@@ -112,11 +112,14 @@ main(int argc, char *argv[])
       batch.set_make_undirected(true);
       batch.set_type(MIXED);
       batch.set_keep_alive(true);
+      sleep(2);
     }
   }
 
-  if(batch.insertions_size() + batch.deletions_size())
+  if(batch.insertions_size() + batch.deletions_size()) {
     send_message(sock_handle, batch);
+    sleep(1);
+  }
 
   return 0;
 }
