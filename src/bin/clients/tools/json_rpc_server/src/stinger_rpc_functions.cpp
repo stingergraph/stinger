@@ -141,9 +141,9 @@ JSON_RPC_get_graph_stats::operator()(rapidjson::Value * params, rapidjson::Value
     return json_rpc_error(-32603, result, allocator);
   }
 
-  int64_t num_vertices = stinger_num_active_vertices (S);
+  int64_t num_vertices = stinger_mapping_nv(S);
   nv.SetInt64(num_vertices);
-  int64_t num_edges = stinger_total_edges (S);
+  int64_t num_edges = stinger_edges_up_to(S, num_vertices);
   ne.SetInt64(num_edges);
 
   result.AddMember("vertices", nv, allocator);
@@ -195,7 +195,7 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
   LOG_D ("BFS: Max Active");
 
   /* breadth-first search */
-  int64_t nv = stinger_max_active_vertex (S);
+  int64_t nv = STINGER_MAX_LVERTICES;
 
   int64_t * found   = (int64_t *) xmalloc (nv * sizeof(int64_t));
   for (int64_t i = 0; i < nv; i++) {
@@ -460,7 +460,7 @@ JSON_RPC_get_data_array_range::operator()(rapidjson::Value * params, rapidjson::
 	result,
 	allocator,
 	alg_state->data_description.c_str(),
-	STINGER_MAX_LVERTICES,
+	stinger_mapping_nv(server_state->get_stinger()),
 	(uint8_t *) alg_state->data,
 	strings,
 	data_array_name,
@@ -511,7 +511,7 @@ JSON_RPC_get_data_array_sorted_range::operator()(rapidjson::Value * params, rapi
 	result,
 	allocator,
 	alg_state->data_description.c_str(),
-	STINGER_MAX_LVERTICES,
+	stinger_mapping_nv(server_state->get_stinger()),
 	(uint8_t *) alg_state->data,
 	strings,
 	data_array_name,
@@ -553,7 +553,7 @@ JSON_RPC_get_data_array_set::operator()(rapidjson::Value * params, rapidjson::Va
 	result,
 	allocator,
 	alg_state->data_description.c_str(),
-	STINGER_MAX_LVERTICES,
+	stinger_mapping_nv(server_state->get_stinger()),
 	(uint8_t *) alg_state->data,
 	strings,
 	data_array_name,
@@ -595,7 +595,7 @@ JSON_RPC_get_data_array::operator()(rapidjson::Value * params, rapidjson::Value 
       return json_rpc_error(-32003, result, allocator);
     }
     if (nsamples) {
-      stride = (STINGER_MAX_LVERTICES + nsamples - 1) / nsamples;
+      stride = (stinger_mapping_nv(server_state->get_stinger()) + nsamples - 1) / nsamples;
     }
     return array_to_json_monolithic (
 	RANGE,
@@ -603,14 +603,14 @@ JSON_RPC_get_data_array::operator()(rapidjson::Value * params, rapidjson::Value 
 	result,
 	allocator,
 	alg_state->data_description.c_str(),
-	STINGER_MAX_LVERTICES,
+	stinger_mapping_nv(server_state->get_stinger()),
 	(uint8_t *) alg_state->data,
 	strings,
 	data_array_name,
 	stride,
 	logscale,
 	0,
-	STINGER_MAX_LVERTICES
+	stinger_mapping_nv(server_state->get_stinger())
     );
   } else {
     return json_rpc_error(-32602, result, allocator);
