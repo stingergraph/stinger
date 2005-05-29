@@ -731,5 +731,6 @@ start_alg_handling(void *)
     pthread_t new_thread;
     pthread_create(&new_thread, NULL, &new_connection_handler, (void *)accepted_sock);
     server_state.push_thread(new_thread);
+//    close(accepted_sock->handle);
   }
 }

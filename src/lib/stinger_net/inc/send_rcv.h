@@ -34,7 +34,7 @@ send_message(int socket, T & message) {
   int32_t nl_message_length = htonl(message_length);
   int sent_bytes = write(socket, &nl_message_length, sizeof(nl_message_length));
 
-  if(sent_bytes) {
+  if(sent_bytes > 0) {
     sent_bytes += write(socket, buffer, message_length);
   }
 
