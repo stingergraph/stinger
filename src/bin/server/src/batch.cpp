@@ -16,6 +16,84 @@ using namespace gt::stinger;
 
 #include "server.h"
 
+template<int64_t type>
+inline void
+handle_names_types_and_vweight(EdgeInsertion & in, stinger_t * S, std::string & src, std::string & dest, int64_t & u, int64_t & v)
+{
+  if(type == STRINGS_ONLY) {
+    src_string (in, src);
+    dest_string (in, dest);
+    stinger_mapping_create(S, src.c_str(), src.length(), &u);
+    stinger_mapping_create(S, dest.c_str(), dest.length(), &v);
+    in.set_source(u);
+    in.set_destination(v);
+  }
+
+  if(type == MIXED) {
+    if (in.has_source()) {
+      u = in.source();
+      char * name = NULL;
+      uint64_t name_len = 0;
+      if(-1 != stinger_mapping_physid_direct(S, u, &name, &name_len))
+	in.set_source_str(name, name_len);
+      else
+	in.set_source_str("");
+
+    } else {
+      src_string (in, src);
+      if(src.length())
+      stinger_mapping_create (S, src.c_str(), src.length(), &u);
+      if(u != -1) in.set_source(u);
+    }
+
+    if (in.has_destination()) {
+      v = in.destination();
+      char * name = NULL;
+      uint64_t name_len = 0;
+      if(-1 != stinger_mapping_physid_direct(S, v, &name, &name_len))
+	in.set_destination_str(name, name_len);
+      else
+	in.set_destination_str("");
+    } else {
+      dest_string (in, dest);
+      if(dest.length())
+      stinger_mapping_create(S, dest.c_str(), dest.length(), &v);
+      if(v != -1) in.set_destination(v);
+    }
+  }
+
+  if(in.has_source_type()) {
+    int64_t vtype = 0;
+    if(-1 != stinger_vtype_names_create_type(S, in.source_type().c_str(), &vtype)) {
+      stinger_vtype_set(S, in.source(), vtype);
+    } else {
+      LOG_E_A("Error creating vertex type %s", in.source_type().c_str());
+    }
+  }
+  if(in.has_destination_type()) {
+    int64_t vtype = 0;
+    if(-1 != stinger_vtype_names_create_type(S, in.destination_type().c_str(), &vtype)) {
+      stinger_vtype_set(S, in.destination(), vtype);
+    } else {
+      LOG_E_A("Error creating vertex type %s", in.destination_type().c_str());
+    }
+  }
+  if(in.has_type_str()) {
+    int64_t etype = 0;
+    if(-1 == stinger_etype_names_create_type(S, in.type_str().c_str(), &etype)) {
+      LOG_E_A("Error creating edge type %s", in.type_str().c_str());
+      etype = 0;
+    }
+    in.set_type(etype);
+  }
+  if(in.has_source_weight()) {
+    stinger_vweight_increment_atomic(S, in.source(), in.source_weight());
+  }
+  if(in.has_destination_weight()) {
+    stinger_vweight_increment_atomic(S, in.destination(), in.destination_weight());
+  }
+}
+
 /**
  * @brief Inserts and removes the edges contained in a batch.
  *
@@ -46,7 +124,9 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	  OMP("omp for")
 	    for (size_t i = 0; i < batch.insertions_size(); i++) {
 	      EdgeInsertion & in = *batch.mutable_insertions(i);
+	      int64_t u, v;
 	      TS(in);
+	      handle_names_types_and_vweight<NUMBERS_ONLY>(in, S, src, dest, u, v);
 	      in.set_result(stinger_incr_edge_pair(S, in.type(), in.source(), in.destination(), in.weight(), in.time()));
 	      if(in.result() == -1) {
 		LOG_E_A("Error inserting edge <%ld, %ld>", in.source(), in.destination());
@@ -93,7 +173,9 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	  OMP("omp for")
 	    for (size_t i = 0; i < batch.insertions_size(); i++) {
 	      EdgeInsertion & in = *batch.mutable_insertions(i);
+	      int64_t u, v;
 	      TS(in);
+	      handle_names_types_and_vweight<NUMBERS_ONLY>(in, S, src, dest, u, v);
 	      in.set_result(stinger_incr_edge_pair(S, in.type(), in.source(), in.destination(), in.weight(), in.time()));
 	      if(in.result() == -1) {
 		LOG_E_A("Error inserting edge <%ld, %ld>", in.source(), in.destination());
@@ -118,10 +200,7 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	    int64_t u, v;
 
 	    TS(in);
-	    src_string (in, src);
-	    dest_string (in, dest);
-	    stinger_mapping_create(S, src.c_str(), src.length(), &u);
-	    stinger_mapping_create(S, dest.c_str(), dest.length(), &v);
+	    handle_names_types_and_vweight<STRINGS_ONLY>(in, S, src, dest, u, v);
 
 	    if(u != -1 && v != -1) {
 	      in.set_result(stinger_incr_edge_pair(S, in.type(), u, v, in.weight(), in.time()));
@@ -160,37 +239,7 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	    EdgeInsertion & in = *batch.mutable_insertions(i);
 	    int64_t u = -1, v = -1;
 	    TS(in);
-	    if (in.has_source()) {
-	      u = in.source();
-	      char * name = NULL;
-	      uint64_t name_len = 0;
-	      if(-1 != stinger_mapping_physid_direct(S, u, &name, &name_len))
-		in.set_source_str(name, name_len);
-	      else
-		in.set_source_str("");
-
-	    } else {
-	      src_string (in, src);
-	      if(src.length())
-	      stinger_mapping_create (S, src.c_str(), src.length(), &u);
-	      if(u != -1) in.set_source(u);
-	    }
-
-	    if (in.has_destination()) {
-	      v = in.destination();
-	      char * name = NULL;
-	      uint64_t name_len = 0;
-	      if(-1 != stinger_mapping_physid_direct(S, v, &name, &name_len))
-		in.set_destination_str(name, name_len);
-	      else
-		in.set_destination_str("");
-	    } else {
-	      dest_string (in, dest);
-	      if(dest.length())
-	      stinger_mapping_create(S, dest.c_str(), dest.length(), &v);
-	      if(v != -1) in.set_destination(v);
-	    }
-
+	    handle_names_types_and_vweight<MIXED>(in, S, src, dest, u, v);
 	    if(u != -1 && v != -1) {
 	      in.set_result(stinger_incr_edge_pair(S, in.type(), u, v, in.weight(), in.time()));
 	      if(in.result() == -1) {
