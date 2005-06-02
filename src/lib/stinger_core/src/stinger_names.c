@@ -141,7 +141,7 @@ stinger_names_free(stinger_names_t ** sn) {
 * @return The type on success or -1 on failure.
 */
 int
-stinger_names_create_type(stinger_names_t * sn, char * name, int64_t * out) {
+stinger_names_create_type(stinger_names_t * sn, const char * name, int64_t * out) {
   MAP_SN(sn)
   int64_t length = strlen(name); length = length > NAME_STR_MAX ? NAME_STR_MAX : length;
   int64_t index = xor_hash(name, length) % (sn->max_types * 2);
@@ -194,7 +194,7 @@ stinger_names_create_type(stinger_names_t * sn, char * name, int64_t * out) {
 * @return The type on success or -1 if the type does not exist.
 */
 int64_t
-stinger_names_lookup_type(stinger_names_t * sn, char * name) {
+stinger_names_lookup_type(stinger_names_t * sn, const char * name) {
   MAP_SN(sn)
   int64_t length = strlen(name); length = length > NAME_STR_MAX ? NAME_STR_MAX : length;
   int64_t index = xor_hash(name, length) % (sn->max_types * 2);

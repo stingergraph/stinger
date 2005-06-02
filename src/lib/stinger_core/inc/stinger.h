@@ -198,10 +198,10 @@ stinger_mapping_nv(const stinger_t * S);
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 int
-stinger_vtype_names_create_type(stinger_t * S, char * name, int64_t * out);
+stinger_vtype_names_create_type(const stinger_t * S, const char * name, int64_t * out);
 
 int64_t
-stinger_vtype_names_lookup_type(const stinger_t * S, char * name);
+stinger_vtype_names_lookup_type(const stinger_t * S, const char * name);
 
 char *
 stinger_vtype_names_lookup_name(const stinger_t * S, int64_t type);
@@ -211,10 +211,10 @@ stinger_vtype_names_lookup_name(const stinger_t * S, int64_t type);
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 int
-stinger_etype_names_create_type(stinger_t * S, char * name, int64_t * out);
+stinger_etype_names_create_type(stinger_t * S, const char * name, int64_t * out);
 
 int64_t
-stinger_etype_names_lookup_type(const stinger_t * S, char * name);
+stinger_etype_names_lookup_type(const stinger_t * S, const char * name);
 
 char *
 stinger_etype_names_lookup_name(const stinger_t * S, int64_t type);

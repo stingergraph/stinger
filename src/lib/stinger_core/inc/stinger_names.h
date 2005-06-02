@@ -33,10 +33,10 @@ stinger_names_t *
 stinger_names_free(stinger_names_t ** sn);
 
 int
-stinger_names_create_type(stinger_names_t * sn, char * name, int64_t * out);
+stinger_names_create_type(stinger_names_t * sn, const char * name, int64_t * out);
 
 int64_t
-stinger_names_lookup_type(stinger_names_t * sn, char * name);
+stinger_names_lookup_type(stinger_names_t * sn, const char * name);
 
 char *
 stinger_names_lookup_name(stinger_names_t * sn, int64_t type);

@@ -168,12 +168,12 @@ stinger_mapping_nv(const stinger_t * S) {
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 int
-stinger_vtype_names_create_type(stinger_t * S, char * name, int64_t * out) {
+stinger_vtype_names_create_type(const stinger_t * S, const char * name, int64_t * out) {
   return stinger_names_create_type(stinger_vtype_names_get(S), name, out);
 }
 
 int64_t
-stinger_vtype_names_lookup_type(const stinger_t * S, char * name) {
+stinger_vtype_names_lookup_type(const stinger_t * S, const char * name) {
   return stinger_names_lookup_type(stinger_vtype_names_get(S), name);
 }
 
@@ -187,12 +187,12 @@ stinger_vtype_names_lookup_name(const stinger_t * S, int64_t type) {
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 int
-stinger_etype_names_create_type(stinger_t * S, char * name, int64_t * out) {
+stinger_etype_names_create_type(stinger_t * S, const char * name, int64_t * out) {
   return stinger_names_create_type(stinger_etype_names_get(S), name, out);
 }
 
 int64_t
-stinger_etype_names_lookup_type(const stinger_t * S, char * name) {
+stinger_etype_names_lookup_type(const stinger_t * S, const char * name) {
   return stinger_names_lookup_type(stinger_etype_names_get(S), name);
 }
 
@@ -647,10 +647,13 @@ struct stinger *stinger_new (void)
 
   MAP_STING(G);
 
+  int64_t zero = 0;
   stinger_vertices_init(vertices, STINGER_MAX_LVERTICES);
   stinger_physmap_init(physmap, STINGER_MAX_LVERTICES);
   stinger_names_init(etype_names, STINGER_NUMETYPES);
+  stinger_names_create_type(etype_names, "None", &zero);
   stinger_names_init(vtype_names, STINGER_NUMVTYPES);
+  stinger_names_create_type(vtype_names, "None", &zero);
 
   ebpool->ebpool_tail = 1;
   ebpool->is_shared = 0;
