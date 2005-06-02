@@ -11,8 +11,12 @@ message EdgeInsertion {
   optional string type_str = 8 [default = ""];
   optional int64 source = 1 [default = 0];
   optional string source_str = 2 [default = ""];
+  optional string source_type = 10 [default = ""];
+  optional int64 source_weight = 12 [default = 0];
   optional int64 destination =3 [default = 1];
   optional string destination_str = 4 [default = ""];
+  optional string destination_type = 11 [default = ""];
+  optional int64 destination_weight = 13 [default = 0];
   optional int64 weight = 5 [default = 1];
   optional int64 time = 6 [default = 1];
   optional int64 result = 9;
