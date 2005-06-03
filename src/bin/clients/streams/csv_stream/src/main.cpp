@@ -17,6 +17,9 @@ using namespace gt::stinger;
 #define V_A(X,...) fprintf(stdout, "%s %s %d:\n\t" #X "\n", __FILE__, __func__, __LINE__, __VA_ARGS__);
 #define V(X) V_A(X,NULL)
 
+#define LOG_AT_I 1
+#include "stinger_core/stinger_error.h"
+
 
 int
 main(int argc, char *argv[])
@@ -105,7 +108,9 @@ main(int argc, char *argv[])
     if (count > 1)
       edge_finder.apply(batch, fields, (int64_t *)lengths, count);
     timesince += toc();
-    if(batch.insertions_size() + batch.deletions_size() >= batch_size || (timeout > 0 && timesince >= timeout)) {
+    int64_t total_actions = batch.insertions_size() + batch.deletions_size();
+    if(total_actions >= batch_size || (timeout > 0 && timesince >= timeout)) {
+      LOG_I_A("Sending a batch of %ld actions", total_actions);
       send_message(sock_handle, batch);
       timesince = 0;
       batch.Clear();
@@ -115,7 +120,9 @@ main(int argc, char *argv[])
     }
   }
 
-  if(batch.insertions_size() + batch.deletions_size()) {
+  int64_t total_actions = batch.insertions_size() + batch.deletions_size();
+  if(total_actions) {
+    LOG_I_A("Sending a batch of %ld actions", total_actions);
     send_message(sock_handle, batch);
   }
 
