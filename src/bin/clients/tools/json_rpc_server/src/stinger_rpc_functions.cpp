@@ -7,7 +7,7 @@
 #include <set>
 #include <vector>
 
-//#define LOG_AT_W  /* warning only */
+#define LOG_AT_W  /* warning only */
 
 extern "C" {
 #include "stinger_core/xmalloc.h"
@@ -232,7 +232,7 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
   rapidjson::Value val(rapidjson::kArrayType);
   rapidjson::Value src, dst;
   rapidjson::Value a_str(rapidjson::kArrayType);
-  rapidjson::Value src_str, dst_str, etype, vtype;
+  rapidjson::Value src_str, dst_str, etype, vtype, vtx_name;
 
   /* vertex has no edges -- this is easy */
   if (stinger_outdegree (S, source) == 0 || stinger_outdegree (S, target) == 0) {
@@ -250,7 +250,7 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
   found[source] = 1;
 
   if(get_vtypes) {
-    char intstr[20];
+    char intstr[21];
     sprintf(intstr, "%ld", (long)target);
     vtype.SetInt64(stinger_vtype_get(S, target));
     vtypes.AddMember(intstr, vtype, allocator);
@@ -260,7 +260,8 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
       stinger_mapping_physid_direct(S, target, &name, &len);
       char * vtype_name = stinger_vtype_names_lookup_name(S,stinger_vtype_get(S, target));
       vtype.SetString(vtype_name, strlen(vtype_name), allocator);
-      vtypes_str.AddMember(name, vtype, allocator);
+      vtx_name.SetString(name, len, allocator);
+      vtypes_str.AddMember(vtx_name, vtype, allocator);
     }
   }
 
@@ -268,7 +269,9 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
   std::set<int64_t> frontier;
 
   frontier.insert(source);
+  LOG_D_A("pushing onto levels, size %ld", levels.size());
   levels.push_back(frontier);
+  LOG_D_A("-------      levels, size %ld", levels.size());
 
   std::set<int64_t>::iterator it;
 
@@ -288,7 +291,9 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
 
     }
 
+    LOG_D_A("pushing onto levels, size %ld", levels.size());
     levels.push_back(frontier);
+    LOG_D_A("-------      levels, size %ld", levels.size());
   }
 
   if (!found[target]) {
@@ -300,7 +305,9 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
   std::queue<int64_t> * Qnext = new std::queue<int64_t>();
   std::queue<int64_t> * tempQ;
 
+  LOG_D_A("popping off of levels, size %ld", levels.size());
   levels.pop_back();  /* this was the level that contained the target */
+  LOG_D_A("-------        levels, size %ld", levels.size());
   std::set<int64_t>& cur = levels.back();
 
   STINGER_FORALL_EDGES_OF_VTX_BEGIN (S, target) {
@@ -317,7 +324,7 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
 	val.PushBack(etype, allocator);
       }
       if(get_vtypes) {
-	char intstr[20];
+	char intstr[21];
 	sprintf(intstr, "%ld", (long)STINGER_EDGE_DEST);
 	vtype.SetInt64(stinger_vtype_get(S, STINGER_EDGE_DEST));
 	vtypes.AddMember(intstr, vtype, allocator);
@@ -327,7 +334,8 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
 	  stinger_mapping_physid_direct(S, STINGER_EDGE_DEST, &name, &len);
 	  char * vtype_name = stinger_vtype_names_lookup_name(S,stinger_vtype_get(S, STINGER_EDGE_DEST));
 	  vtype.SetString(vtype_name, strlen(vtype_name), allocator);
-	  vtypes_str.AddMember(name, vtype, allocator);
+	  vtx_name.SetString(name, len, allocator);
+	  vtypes_str.AddMember(vtx_name, vtype, allocator);
 	}
       }
       a.PushBack(val, allocator);
@@ -357,7 +365,9 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
     }
   } STINGER_FORALL_EDGES_OF_VTX_END();
 
+  LOG_D_A("popping off of levels, size %ld", levels.size());
   levels.pop_back();
+  LOG_D_A("-------        levels, size %ld", levels.size());
 
   while (!levels.empty()) {
     std::set<int64_t>& cur = levels.back();
@@ -380,7 +390,7 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
 	    val.PushBack(etype, allocator);
 	  }
 	  if(get_vtypes) {
-	    char intstr[20];
+	    char intstr[21];
 	    sprintf(intstr, "%ld", (long)STINGER_EDGE_DEST);
 	    vtype.SetInt64(stinger_vtype_get(S, STINGER_EDGE_DEST));
 	    vtypes.AddMember(intstr, vtype, allocator);
@@ -390,7 +400,8 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
 	      stinger_mapping_physid_direct(S, STINGER_EDGE_DEST, &name, &len);
 	      char * vtype_name = stinger_vtype_names_lookup_name(S,stinger_vtype_get(S, STINGER_EDGE_DEST));
 	      vtype.SetString(vtype_name, strlen(vtype_name), allocator);
-	      vtypes_str.AddMember(name, vtype, allocator);
+	      vtx_name.SetString(name, len, allocator);
+	      vtypes_str.AddMember(vtx_name, vtype, allocator);
 	    }
 	  }
 	  a.PushBack(val, allocator);
@@ -421,7 +432,9 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
       } STINGER_FORALL_EDGES_OF_VTX_END();
     }
 
+    LOG_D_A("popping off of levels, size %ld", levels.size());
     levels.pop_back();
+    LOG_D_A("-------        levels, size %ld", levels.size());
 
     tempQ = Q;
     Q = Qnext;
