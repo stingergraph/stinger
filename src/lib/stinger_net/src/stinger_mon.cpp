@@ -12,10 +12,19 @@
 
 using namespace gt::stinger;
 
+static uint64_t singleton_lock = 0;
+static StingerMon * state = NULL;
+
 StingerMon &
 StingerMon::get_mon() {
-  static StingerMon state;
-  return state;
+  if(!state) {
+    readfe(&singleton_lock);
+      if(!state) {
+	state = new StingerMon();
+      }
+    writeef(&singleton_lock, 1);
+  }
+  return *state;
 }
 
 StingerMon::StingerMon() : stinger(NULL), 
