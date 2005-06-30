@@ -39,6 +39,11 @@ namespace gt {
 	std::vector<std::vector<StingerAlgState *> > alg_tree;
 	std::map<std::string, StingerAlgState *> alg_map;        
 
+	bool write_alg_data;
+	int64_t history_cap;
+	bool write_names;
+	std::string out_dir;
+
 	int64_t mon_lock;
 	std::vector<StingerMonState *> monitors;                     
 	std::map<std::string, StingerMonState *> monitor_map;        
@@ -53,6 +58,7 @@ namespace gt {
 	std::map<std::string, StingerStreamState *> stream_map;
 
 	int64_t batch_lock;
+	int64_t batch_count;
 	std::queue<StingerBatch *> batches;
 
 	int64_t alg_timeouts[ALG_STATE_MAX];
@@ -191,6 +197,21 @@ namespace gt {
 
 	int64_t
 	mon_timeout(int64_t which);
+
+	bool
+	set_write_alg_data(bool write);
+
+	int64_t
+	set_history_cap(int64_t hist);
+
+	const char *
+	set_out_dir(const char * out);
+
+	bool
+	set_write_names(bool write);
+
+	void
+	write_data();
     };
 
   } /* gt */

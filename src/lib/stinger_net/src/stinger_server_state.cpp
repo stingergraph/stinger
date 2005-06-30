@@ -5,6 +5,7 @@ extern "C" {
   #include "stinger_core/x86_full_empty.h"
 }
 
+#include <unistd.h>
 #include <algorithm>
 
 using namespace gt::stinger;
@@ -21,8 +22,9 @@ struct delete_functor
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
  * PRIVATE METHODS
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
-StingerServerState::StingerServerState() : port(10101), convert_num_to_string(1), 
-				    alg_lock(1), stream_lock(1), batch_lock(1), dep_lock(1), mon_lock(1)
+StingerServerState::StingerServerState() : port(10101), convert_num_to_string(1), batch_count(0),
+				    alg_lock(1), stream_lock(1), batch_lock(1), dep_lock(1), mon_lock(1),
+				    write_alg_data(false), write_names(false), history_cap(0), out_dir("./")
 {
   LOG_D("Initializing server state.");
 
@@ -168,6 +170,8 @@ StingerServerState::dequeue_batch()
       usleep(100);
     }
   }
+
+  batch_count++;
 
   return rtn;
 }
@@ -462,4 +466,133 @@ StingerServerState::mon_timeout(int64_t which)
     return mon_timeouts[which];
   else
     return 0;
+}
+
+bool
+StingerServerState::set_write_alg_data(bool write)
+{
+  return write_alg_data = write;
+}
+
+int64_t
+StingerServerState::set_history_cap(int64_t hist)
+{
+  return history_cap = hist;
+}
+
+const char *
+StingerServerState::set_out_dir(const char * out)
+{
+  out_dir = out;
+  return out;
+}
+
+bool
+StingerServerState::set_write_names(bool write)
+{
+  return write_names = write;
+}
+
+/* write out the current algorithm states and names as needed 
+ * alg state data format (binary):
+ *  64-bit integer: name_length
+ *  string: name
+ *  64-bit integer: description_length
+ *  string: description (see stinger_alg.h for explanation)
+ *  64-bit integer: maximum number of vertices
+ *  64-bit integer: number of vertices in file
+ *  for each field in the description
+ *    [ array of number of vertices elements of the given field type ]
+ */
+void
+StingerServerState::write_data()
+{
+  char name_buf[1024];
+  if(write_names) {
+    /* write current vertex names to file */
+    snprintf(name_buf, 1024, "%s/vertex_names.%d.vtx", out_dir.c_str(), batch_count);
+
+    FILE * fp = fopen(name_buf, "w");
+    stinger_names_save(stinger_physmap_get(stinger), fp);
+    fflush(fp);
+    fclose(fp);
+
+    /* remove previous vertex names */
+    snprintf(name_buf, 1024, "%s/vertex_names.%d.vtx", out_dir.c_str(), batch_count-1);
+    if(access(name_buf, F_OK) != -1) {
+      unlink(name_buf);
+    }
+  }
+
+  /* write out each algorithm's data */
+  if(write_alg_data) {
+    for(int64_t i = 0; i < get_num_algs(); i++) {
+      StingerAlgState * alg = get_alg(i);
+
+      if(alg->state >= ALG_STATE_DONE) /* skip invalid, completed, etc. */
+	continue;
+
+      snprintf(name_buf, 1024, "%s/%s.%d.rslt", out_dir.c_str(), alg->name.c_str(), batch_count);
+
+      int64_t nv_max = STINGER_MAX_LVERTICES;
+      int64_t nv = stinger_mapping_nv(stinger);
+      int64_t size = 0;
+
+      FILE * fp = fopen(name_buf, "w");
+      
+      size = alg->name.length();
+      fwrite(&size, sizeof(int64_t), 1, fp);
+      fwrite(alg->name.c_str(), size, sizeof(char), fp);
+      size = alg->data_description.length();
+      fwrite(&size, sizeof(int64_t), 1, fp);
+      fwrite(alg->data_description.c_str(), size, sizeof(char), fp);
+      fwrite(&nv_max, sizeof(int64_t), 1, fp);
+      fwrite(&nv, sizeof(int64_t), 1, fp);
+
+      const char * field = alg->data_description.c_str();
+      uint8_t * data = (uint8_t *)alg->data;
+      bool done = false;
+      while(!done) {
+	switch(*field) {
+
+	  case 'f': {
+	    fwrite(data, sizeof(float), nv, fp);
+	    data += (sizeof(float) * nv_max);
+	  } break;
+	  case 'd': {
+	    fwrite(data, sizeof(double), nv, fp);
+	    data += (sizeof(double) * nv_max);
+	  } break;
+	  case 'i': {
+	    fwrite(data, sizeof(int32_t), nv, fp);
+	    data += (sizeof(int32_t) * nv_max);
+	  } break;
+	  case 'l': {
+	    fwrite(data, sizeof(int64_t), nv, fp);
+	    data += (sizeof(int64_t) * nv_max);
+	  } break;
+	  case 'b': {
+	    fwrite(data, sizeof(uint8_t), nv, fp);
+	    data += (sizeof(uint8_t) * nv_max);
+	  } break;
+
+	  default: {
+	    done = true;
+	  } break;
+	}
+	field++;
+      }
+
+      fflush(fp);
+      fclose(fp);
+
+      /* if there is a cap on history, erase (current - history) if it exists */
+      if(history_cap) {
+	snprintf(name_buf, 1024, "%s/%s.%d.rslt", out_dir.c_str(), alg->name.c_str(), batch_count - history_cap);
+	if(access(name_buf, F_OK) != -1) {
+	  unlink(name_buf);
+	}
+      }
+    }
+  }
 }

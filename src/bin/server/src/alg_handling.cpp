@@ -678,6 +678,8 @@ process_loop_handler(void * data)
       }
     }
 
+    server_state.write_data();
+
     delete batch;
   }
 }
