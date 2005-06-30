@@ -1,3 +1,5 @@
+#include <alloca.h>
+
 #include "core_util.h"
 #include "stinger_defs.h"
 

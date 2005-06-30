@@ -2539,17 +2539,7 @@ contract_self_el (int64_t NE, intvtx_t * restrict el /* 3 x oldNE */,
     OMP("omp for reduction(+:w_in) schedule(static)")
       for (int64_t k = 0; k < NE; ++k)
         w_in += Wel(el, k);
-    OMP("omp barrier");
-#if 0
-    w_out = all_calc_weight_base_flat (nv, NE, el, d);
-    if (global_gwgt >= 0 && w_in != global_gwgt) {
-      fprintf (stderr, "%d/%d: %ld != %ld   %ld\n", omp_get_thread_num ()+1, omp_get_num_threads (),
-               w_in, global_gwgt, w_out);
-    }
-    OMP("omp barrier");
-    OMP("omp master") assert (global_gwgt < 0 || w_in == global_gwgt);
-    assert (w_out == w_in);
-#endif
+    OMP("omp barrier")
 #endif
 
 #if !defined(NDEBUG)

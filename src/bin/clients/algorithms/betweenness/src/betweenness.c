@@ -100,8 +100,10 @@ sample_search(stinger_t * S, int64_t nv, int64_t nsamples, double * bc, int64_t 
     double * partials = (double *)xcalloc(nv, sizeof(double));
 
     if(nv * 2 < nsamples) {
+      int64_t min = nv < nsamples ? nv : nsamples;
+
       OMP("omp for")
-      for(int64_t s = 0; s < nv && s < nsamples; s++) {
+      for(int64_t s = 0; s < min; s++) {
 	single_bc_search(S, nv, s, partials, found_count);
       }
     } else {
