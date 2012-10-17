@@ -3,7 +3,7 @@
 
 namespace Stinger {
   namespace Memory {
-    class Allocator {
+    class ParallelAllocator {
       uint8_t * pool = NULL;
       Allocator(size_t space, size_t min) {
 	pool = malloc(space);
