@@ -1,0 +1,3 @@
+def build(ctx):
+  print ctx.top_dir
+  print ctx.out_dir
