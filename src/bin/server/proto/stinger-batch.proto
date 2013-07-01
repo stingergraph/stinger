@@ -1,0 +1,44 @@
+package gt.stinger;
+
+/* Note: while source numbers and strings are
+   listed as optional, one or the other but not both 
+   would be required.  The same is true of destination
+   strings and numbers.
+ */
+
+message EdgeInsertion {
+  optional int64 type = 7 [default = 0];
+  optional string type_str = 8 [default = ""];
+  optional int64 source = 1 [default = 0];
+  optional string source_str = 2 [default = ""];
+  optional int64 destination =3 [default = 1];
+  optional string destination_str = 4 [default = ""];
+  optional int64 weight = 5 [default = 1];
+  optional int64 time = 6 [default = 1];
+}
+
+message EdgeDeletion {
+  optional int64 type = 5 [default = 0];
+  optional string type_str = 6 [default = ""];
+  optional int64 source = 1 [default = 0];
+  optional string source_str = 2 [default = ""];
+  optional int64 destination =3 [default = 1];
+  optional string destination_str = 4 [default = ""];
+}
+
+enum BatchType {
+  NUMBERS_ONLY = 0;
+  STRINGS_ONLY = 1;
+  MIXED	       = 2;
+}
+
+message StingerBatch {
+  optional int64 version = 1 [default = 1];
+  optional bool keep_alive = 7 [default = false];
+
+  repeated EdgeInsertion insertions = 3;
+  repeated EdgeDeletion deletions = 4;
+
+  optional bool make_undirected = 5 [default = true];
+  optional BatchType type = 6 [default = NUMBERS_ONLY];
+}
