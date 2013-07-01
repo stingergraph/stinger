@@ -1,7 +1,7 @@
 STINGER
 =======
 
-Learn more at [stingergraph.com | http://stingergraph.com]
+Learn more at [stingergraph.com](http://stingergraph.com).
 
 Directory Structure
 ===================
@@ -41,7 +41,7 @@ Directory Structure
 Building
 ========
 
-STINGER is built using [CMake | http://www.cmake.org].  From the root of STINGER, first create a build directory:
+STINGER is built using [CMake](http://www.cmake.org).  From the root of STINGER, first create a build directory:
 
     mkdir build && cd build
 
