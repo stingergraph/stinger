@@ -15,7 +15,7 @@ egonet_to_json(stinger_t * S, int64_t vtx) {
   char edge_str[1UL<<20UL];
   int edge_added = 0;
 
-  stinger_vertex_to_json_with_type_strings(stinger_vertices_get(S), stinger_vtype_names_get(S), stinger_physmap_get(S), vtx, vtx_file, 2);
+  //stinger_vertex_to_json_with_type_strings(stinger_vertices_get(S), stinger_vtype_names_get(S), stinger_physmap_get(S), vtx, vtx_file, 2);
   fflush(vtx_file);
   string_append_cstr(&vertices, vtx_str);
   fseek(vtx_file, 0, SEEK_SET);
@@ -30,7 +30,7 @@ egonet_to_json(stinger_t * S, int64_t vtx) {
       source = which++;
       int_hm_seq_insert(neighbors, STINGER_EDGE_DEST, source);
       fprintf(vtx_file, ",\n");
-      stinger_vertex_to_json_with_type_strings(stinger_vertices_get(S), stinger_vtype_names_get(S), stinger_physmap_get(S), STINGER_EDGE_DEST, vtx_file, 2);
+      //stinger_vertex_to_json_with_type_strings(stinger_vertices_get(S), stinger_vtype_names_get(S), stinger_physmap_get(S), STINGER_EDGE_DEST, vtx_file, 2);
       fputc('\0',vtx_file);
       fflush(vtx_file);
       string_append_cstr(&vertices, vtx_str);
@@ -120,7 +120,7 @@ group_to_json(stinger_t * S, int64_t * group, int64_t groupsize) {
       } else {
 	first_vtx = 0;
       }
-      stinger_vertex_to_json_with_type_strings(stinger_vertices_get(S), stinger_vtype_names_get(S), stinger_physmap_get(S), group[v], vtx_file, 2);
+      //stinger_vertex_to_json_with_type_strings(stinger_vertices_get(S), stinger_vtype_names_get(S), stinger_physmap_get(S), group[v], vtx_file, 2);
       fputc('\0',vtx_file);
       fflush(vtx_file);
       string_append_cstr(&vertices, vtx_str);
@@ -133,7 +133,7 @@ group_to_json(stinger_t * S, int64_t * group, int64_t groupsize) {
 	source = which++;
 	int_hm_seq_insert(neighbors, STINGER_EDGE_DEST, source);
 	fprintf(vtx_file, ",\n");
-	stinger_vertex_to_json_with_type_strings(stinger_vertices_get(S), stinger_vtype_names_get(S), stinger_physmap_get(S), STINGER_EDGE_DEST, vtx_file, 2);
+	//stinger_vertex_to_json_with_type_strings(stinger_vertices_get(S), stinger_vtype_names_get(S), stinger_physmap_get(S), STINGER_EDGE_DEST, vtx_file, 2);
 	fputc('\0',vtx_file);
 	fflush(vtx_file);
 	string_append_cstr(&vertices, vtx_str);
