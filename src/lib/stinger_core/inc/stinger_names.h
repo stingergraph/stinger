@@ -18,6 +18,12 @@ typedef struct stinger_names {
 stinger_names_t * 
 stinger_names_new(int64_t max_types);
 
+void
+stinger_names_init(stinger_names_t * sn, int64_t max_types);
+
+size_t
+stinger_names_size(int64_t max_types);
+
 stinger_names_t *
 stinger_names_free(stinger_names_t ** sn);
 

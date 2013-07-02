@@ -87,6 +87,34 @@ stinger_names_new(int64_t max_types) {
   return sn;
 }
 
+void
+stinger_names_init(stinger_names_t * sn, int64_t max_types) {
+//  stinger_names_t * sn = xcalloc(sizeof(stinger_names_t) + 
+//		(max_types * (NAME_STR_MAX+1) * sizeof(char)) +  /* strings */
+//		(max_types * sizeof(int64_t) * 3) + /* from_name + to_name */
+//		(max_types * sizeof(int64_t) * 2), sizeof(uint8_t)); /* to_int */
+//
+  sn->to_name_start = max_types * (NAME_STR_MAX+1) * sizeof(char);
+  sn->from_name_start = sn->to_name_start + max_types * sizeof(int64_t);
+  sn->to_int_start = sn->from_name_start + max_types * sizeof(int64_t) * 2;
+
+  sn->next_string = 1;
+  sn->next_type = 0;
+  sn->max_types = max_types;
+  sn->max_names = max_types * (NAME_STR_MAX+1) - 1;
+
+  return;
+}
+
+size_t
+stinger_names_size(int64_t max_types) {
+  size_t rtn = sizeof(stinger_names_t) + 
+		(max_types * (NAME_STR_MAX+1) * sizeof(char)) +  /* strings */
+		(max_types * sizeof(int64_t) * 3) + /* from_name + to_name */
+		(max_types * sizeof(int64_t) * 2); /* to_int */
+  return rtn;
+}
+
 /**
 * @brief Free the stinger_names_t and set the pointer to NULL.
 *

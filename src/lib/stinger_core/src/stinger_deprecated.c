@@ -3,6 +3,7 @@
 #include "stinger_atomics.h"
 #include "stinger.h"
 
+
 MTA ("mta parallel off") MTA ("mta expect parallel context")
 /** @brief DEPRECATED Remove and insert edges incident on a common source vertex.
  *
@@ -41,6 +42,8 @@ stinger_remove_and_insert_edges (struct stinger *G,
     Second:
     - Insert into saved locations.
   */
+
+  MAP_STING(G);
 
   int64_t nrem = 0;
   struct curs curs;
@@ -106,10 +109,10 @@ stinger_remove_and_insert_edges (struct stinger *G,
     return nrem;
   }
 
-  curs = etype_begin (G, G->vertices,from,type);
+  curs = etype_begin (G, from,type);
   prev_loc = curs.loc;
 
-  struct stinger_eb * ebpool_priv = G->ebpool->ebpool;
+  struct stinger_eb * ebpool_priv = ebpool->ebpool;
 
   for (tmp = ebpool_priv + curs.eb; tmp != ebpool_priv; tmp = ebpool_priv + tmp->next) {
     if(tmp->etype == type) {

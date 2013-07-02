@@ -19,6 +19,21 @@ stinger_vertices_new(int64_t max_vertices)
 }
 
 inline void
+stinger_vertices_init(stinger_vertices_t * S, int64_t max_vertices)
+{
+  //stinger_vertices_t * rtn = calloc(1, sizeof(stinger_vertices_t) + max_vertices * sizeof(stinger_vertex_t));
+  S->max_vertices = max_vertices;
+  return;
+}
+
+inline size_t 
+stinger_vertices_size(int64_t max_vertices)
+{
+  size_t rtn = sizeof(stinger_vertices_t) + max_vertices * sizeof(stinger_vertex_t);
+  return rtn;
+}
+
+inline void
 stinger_vertices_free(stinger_vertices_t ** vertices)
 {
   if(*vertices)

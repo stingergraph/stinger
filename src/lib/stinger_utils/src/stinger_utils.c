@@ -766,11 +766,12 @@ void
 stinger_sort_edge_list (const struct stinger *S, const int64_t srcvtx,
                         const int64_t type)
 {
-  struct stinger_eb * ebpool_priv = S->ebpool->ebpool;
+  MAP_STING(S);
+  struct stinger_eb * ebpool_priv = ebpool->ebpool;
 
   int64_t sorted = 0;
   struct stinger_eb *cur_eb;
-  struct stinger_eb *start = ebpool_priv + stinger_vertex_edges_get(S->vertices, srcvtx);
+  struct stinger_eb *start = ebpool_priv + stinger_vertex_edges_get(vertices, srcvtx);
   while (start != ebpool_priv && start->etype != type) {
     start = ebpool_priv + start->next;
   }

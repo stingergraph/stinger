@@ -145,6 +145,12 @@ stinger_vertices_t *
 stinger_vertices_new(int64_t max_vertices);
 
 void
+stinger_vertices_init(stinger_vertices_t * S, int64_t max_vertices);
+
+size_t
+stinger_vertices_size(int64_t max_vertices);
+
+void
 stinger_vertices_free(stinger_vertices_t ** vertices);
 
 stinger_vertex_t *

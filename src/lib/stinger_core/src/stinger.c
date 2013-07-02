@@ -11,22 +11,26 @@
 #include "xmalloc.h"
 #include "x86_full_empty.h"
 
+
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
  * ACCESS INTERNAL "CLASSES"
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 inline stinger_vertices_t *
 stinger_vertices_get(const stinger_t * S) {
-  return S->vertices;
+  MAP_STING(S);
+  return vertices;
 }
 
 inline stinger_names_t *
 stinger_vtype_names_get(const stinger_t * S) {
-  return S->etype_names;
+  MAP_STING(S);
+  return etype_names;
 }
 
 inline stinger_names_t *
 stinger_etype_names_get(const stinger_t * S) {
-  return S->vtype_names;
+  MAP_STING(S);
+  return vtype_names;
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
@@ -80,40 +84,47 @@ stinger_outdegree_increment_atomic(const stinger_t * S, vindex_t v, vdegree_t d)
 
 vtype_t
 stinger_vtype_get(const stinger_t * S, vindex_t v) {
-  return stinger_vertex_type_get(S->vertices, v);
+  MAP_STING(S);
+  return stinger_vertex_type_get(vertices, v);
 }
 
 vtype_t
 stinger_vtype_set(const stinger_t * S, vindex_t v, vtype_t type) {
-  return stinger_vertex_type_set(S->vertices, v, type);
+  MAP_STING(S);
+  return stinger_vertex_type_set(vertices, v, type);
 }
 
 /* WEIGHT */
 
 vweight_t
 stinger_vweight_get(const stinger_t * S, vindex_t v) {
-  return stinger_vertex_weight_get(S->vertices, v);
+  MAP_STING(S);
+  return stinger_vertex_weight_get(vertices, v);
 }
 
 vweight_t
 stinger_vweight_set(const stinger_t * S, vindex_t v, vweight_t weight) {
-  return stinger_vertex_weight_set(S->vertices, v, weight);
+  MAP_STING(S);
+  return stinger_vertex_weight_set(vertices, v, weight);
 }
 
 vweight_t
 stinger_vweight_increment(const stinger_t * S, vindex_t v, vweight_t weight) {
-  return stinger_vertex_weight_increment(S->vertices, v, weight);
+  MAP_STING(S);
+  return stinger_vertex_weight_increment(vertices, v, weight);
 }
 
 vweight_t
 stinger_vweight_increment_atomic(const stinger_t * S, vindex_t v, vweight_t weight) {
-  return stinger_vertex_weight_increment_atomic(S->vertices, v, weight);
+  MAP_STING(S);
+  return stinger_vertex_weight_increment_atomic(vertices, v, weight);
 }
 
 /* ADJACENCY */
 adjacency_t
 stinger_adjacency_get(const stinger_t * S, vindex_t v) {
-  return stinger_vertex_edges_get(S->vertices, v);
+  MAP_STING(S);
+  return stinger_vertex_edges_get(vertices, v);
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
@@ -187,9 +198,10 @@ MTA ("mta expect parallel context") MTA ("mta inline")
 static void
 get_from_ebpool (const struct stinger * S, eb_index_t *out, size_t k)
 {
+  MAP_STING(S);
   eb_index_t ebt0;
   {
-    ebt0 = stinger_int64_fetch_add (&S->ebpool->ebpool_tail, k);
+    ebt0 = stinger_int64_fetch_add (&(ebpool->ebpool_tail), k);
     if (ebt0 + k >= EBPOOL_SIZE) {
       fprintf (stderr, "XXX: eb pool exhausted\n");
       abort ();
@@ -261,10 +273,11 @@ stinger_num_active_vertices(const struct stinger * S) {
 
 
 const struct stinger_eb *
-stinger_next_eb (const struct stinger *G /*UNUSED*/,
+stinger_next_eb (const struct stinger *G,
                  const struct stinger_eb *eb_)
 {
-  return G->ebpool->ebpool + readff((uint64_t *)&eb_->next);
+  MAP_STING(G);
+  return ebpool->ebpool + readff((uint64_t *)&eb_->next);
 }
 
 int64_t
@@ -336,7 +349,8 @@ stinger_total_edges (const struct stinger * S)
 size_t
 stinger_graph_size (const struct stinger *S)
 {
-  int64_t num_edgeblocks = S->ETA->high;
+  MAP_STING(S);
+  int64_t num_edgeblocks = ETA->high;
   int64_t size_edgeblock = sizeof(struct stinger_eb);
 
   int64_t vertices_size = stinger_vertices_size_bytes(stinger_vertices_get(S));
@@ -391,13 +405,14 @@ stinger_consistency_check (struct stinger *S, uint64_t NV)
     return returnCode;
   }
 
-  struct stinger_eb * ebpool_priv = S->ebpool->ebpool;
+  MAP_STING(S);
+  struct stinger_eb * ebpool_priv = ebpool->ebpool;
   // check blocks
   OMP("omp parallel for reduction(|:returnCode)")
   MTA("mta assert nodep")
   for (uint64_t i = 0; i < NV; i++) {
     uint64_t curOutDegree = 0;
-    const struct stinger_eb *curBlock = ebpool_priv + stinger_vertex_edges_get(S->vertices, i);
+    const struct stinger_eb *curBlock = ebpool_priv + stinger_vertex_edges_get(vertices, i);
     while (curBlock != ebpool_priv) {
       if (curBlock->vertexID != i)
         returnCode |= 0x00000002;
@@ -508,10 +523,11 @@ stinger_fragmentation (struct stinger *S, uint64_t NV, struct stinger_fragmentat
   uint64_t numBlocks = 0;
   uint64_t numEdges = 0;
 
-  struct stinger_eb * ebpool_priv = S->ebpool->ebpool;
+  MAP_STING(S);
+  struct stinger_eb * ebpool_priv = ebpool->ebpool;
   OMP ("omp parallel for reduction(+:numSpaces, numBlocks, numEdges)")
   for (uint64_t i = 0; i < NV; i++) {
-    const struct stinger_eb *curBlock = ebpool_priv + stinger_vertex_edges_get(S->vertices, i);
+    const struct stinger_eb *curBlock = ebpool_priv + stinger_vertex_edges_get(vertices, i);
 
     while (curBlock != ebpool_priv) {
       uint64_t found = 0;
@@ -529,7 +545,7 @@ stinger_fragmentation (struct stinger *S, uint64_t NV, struct stinger_fragmentat
     }
   }
 
-  int64_t totalEdgeBlocks = S->ETA->high;
+  int64_t totalEdgeBlocks = ETA->high;
 
   stats->num_empty_edges = numSpaces;
   stats->num_fragmented_blocks = numBlocks;
@@ -564,28 +580,54 @@ void stinger_init (void)
 MTA ("mta inline")
 struct stinger *stinger_new (void)
 {
-  struct stinger *G = xcalloc (1, sizeof (*G));
   size_t i;
+  size_t sz = 0;
 
-  G->vertices = stinger_vertices_new(STINGER_MAX_LVERTICES);
-  G->etype_names = stinger_names_new(STINGER_NUMETYPES);
-  G->vtype_names = stinger_names_new(STINGER_NUMVTYPES);
+  size_t vertices_start = 0;
+  sz += stinger_vertices_size(STINGER_MAX_LVERTICES);
 
-  G->ETA = xmalloc (STINGER_NUMETYPES * sizeof(struct stinger_etype_array));
-  G->ebpool = xmalloc(sizeof(struct stinger_ebpool));
-  G->ebpool->ebpool_tail = 1;
-  G->ebpool->is_shared = 0;
+  size_t ebpool_start = sz;
+  sz += sizeof(struct stinger_ebpool);
+
+  size_t etype_names_start = sz;
+  sz += stinger_names_size(STINGER_NUMETYPES);
+
+  size_t vtype_names_start = sz;
+  sz += stinger_names_size(STINGER_NUMVTYPES);
+
+  size_t ETA_start = sz;
+  sz += STINGER_NUMETYPES * sizeof(struct stinger_etype_array);
+
+  size_t length = sz;
+  fprintf(stderr, "\n\tstinger_new sz = %ld\n", sz);
+
+  struct stinger *G = xmalloc (sizeof(struct stinger) + sz);
+  xzero(G, sizeof(struct stinger*) + sz);
+  G->vertices_start = vertices_start;
+  G->etype_names_start = etype_names_start;
+  G->vtype_names_start = vtype_names_start;
+  G->ETA_start = ETA_start;
+  G->ebpool_start = ebpool_start;
+
+  MAP_STING(G);
+
+  stinger_vertices_init(vertices, STINGER_MAX_LVERTICES);
+  stinger_names_init(etype_names, STINGER_NUMETYPES);
+  stinger_names_init(vtype_names, STINGER_NUMVTYPES);
+
+  ebpool->ebpool_tail = 1;
+  ebpool->is_shared = 0;
 
 #if STINGER_NUMETYPES == 1
-  G->ETA[0].length = EBPOOL_SIZE;
-  G->ETA[0].high = 0;
+  ETA[0].length = EBPOOL_SIZE;
+  ETA[0].high = 0;
 #else
   OMP ("omp parallel for")
   MTA ("mta assert parallel")
   MTASTREAMS ()
   for (i = 0; i < STINGER_NUMETYPES; ++i) {
-    G->ETA[i].length = EBPOOL_SIZE;
-    G->ETA[i].high = 0;
+    ETA[i].length = EBPOOL_SIZE;
+    ETA[i].high = 0;
   }
 #endif
 
@@ -608,9 +650,6 @@ stinger_free (struct stinger *S)
   if (!S)
     return S;
 
-  free (S->ETA);
-  stinger_vertices_free	(&(S->vertices));
-  free (S->ebpool);
   free (S);
   return NULL;
 }
@@ -636,11 +675,12 @@ stinger_free_all (struct stinger *S)
 MTA ("mta expect parallel context")
 static eb_index_t new_eb (struct stinger * S, int64_t etype, int64_t from)
 {
+  MAP_STING(S);
   size_t k;
   eb_index_t out = 0;
   get_from_ebpool (S, &out, 1);
-  struct stinger_eb * block = S->ebpool->ebpool + out;
-  assert (block != S->ebpool->ebpool);
+  struct stinger_eb * block = ebpool->ebpool + out;
+  assert (block != ebpool->ebpool);
   xzero (block, sizeof (*block));
   block->etype = etype;
   block->vertexID = from;
@@ -658,12 +698,14 @@ new_ebs (struct stinger * S, eb_index_t *out, size_t neb, int64_t etype,
     return;
   get_from_ebpool (S, out, neb);
 
+  MAP_STING(S);
+
   OMP ("omp parallel for")
     //MTA("mta assert nodep")
     MTASTREAMS ()MTA ("mta block schedule")
     //MTA("mta parallel single processor")
     for (size_t i = 0; i < neb; ++i) {
-      struct stinger_eb * block = S->ebpool->ebpool + out[i];
+      struct stinger_eb * block = ebpool->ebpool + out[i];
       xzero (block, sizeof (*block));
       block->etype = etype;
       block->vertexID = from;
@@ -684,11 +726,13 @@ new_blk_ebs (eb_index_t *out, const struct stinger *restrict G,
   neb = blkoff[nvtx];
   get_from_ebpool (G,out, neb);
 
+  MAP_STING(G);
+
   OMP ("omp parallel for")
     MTA ("mta assert nodep")
     MTASTREAMS ()MTA ("mta block schedule")
     for (size_t k = 0; k < neb; ++k) {
-      struct stinger_eb * block = G->ebpool->ebpool + out[k];
+      struct stinger_eb * block = ebpool->ebpool + out[k];
       xzero (block, sizeof (*block));
       block->etype = etype;
       block->smallStamp = INT64_MAX;
@@ -703,11 +747,11 @@ new_blk_ebs (eb_index_t *out, const struct stinger *restrict G,
       const size_t blkend = blkoff[v + 1];
       MTA ("mta assert nodep")
         for (size_t k = blkoff[v]; k < blkend; ++k)
-          G->ebpool->ebpool[out[k]].vertexID = from;
+          ebpool->ebpool[out[k]].vertexID = from;
       if (blkend)
         MTA ("mta assert nodep")
           for (size_t k = blkoff[v]; k < blkend - 1; ++k)
-            G->ebpool->ebpool[out[k]].next = out[k + 1];
+            ebpool->ebpool[out[k]].next = out[k + 1];
     }
 }
 
@@ -725,14 +769,15 @@ push_ebs (struct stinger *G, size_t neb,
   if (!neb)
     return;
 
-  etype = G->ebpool->ebpool[eb[0]].etype;
+  MAP_STING(G);
+  etype = ebpool->ebpool[eb[0]].etype;
   assert (etype >= 0);
   assert (etype < STINGER_NUMETYPES);
 
-  place = stinger_int64_fetch_add (&(G->ETA[etype].high), neb);
+  place = stinger_int64_fetch_add (&(ETA[etype].high), neb);
 
   eb_index_t *blocks;
-  blocks = G->ETA[etype].blocks;
+  blocks = ETA[etype].blocks;
 
   MTA ("mta assert nodep")
   for (int64_t k = 0; k < neb; ++k)
@@ -741,15 +786,16 @@ push_ebs (struct stinger *G, size_t neb,
 
 MTA ("mta inline")
 struct curs
-etype_begin (stinger_t * S, stinger_vertices_t *vertices, int64_t v, int etype)
+etype_begin (stinger_t * S, int64_t v, int etype)
 {
+  MAP_STING(S);
   struct curs out;
   assert (vertices);
   out.eb = stinger_vertex_edges_get(vertices,v);
   out.loc = stinger_vertex_edges_pointer_get(vertices,v);
-  while (out.eb && S->ebpool->ebpool[out.eb].etype != etype) {
-    out.loc = &(S->ebpool->ebpool[out.eb].next);
-    out.eb = readff((uint64_t *)&(S->ebpool->ebpool[out.eb].next));
+  while (out.eb && ebpool->ebpool[out.eb].etype != etype) {
+    out.loc = &(ebpool->ebpool[out.eb].next);
+    out.eb = readff((uint64_t *)&(ebpool->ebpool[out.eb].next));
   }
   return out;
 }
@@ -831,12 +877,13 @@ stinger_insert_edge (struct stinger *G,
 
   /* Do *NOT* call this concurrently with different edge types. */
   STINGERASSERTS ();
+  MAP_STING(G);
 
   struct curs curs;
   struct stinger_eb *tmp;
-  struct stinger_eb *ebpool_priv = G->ebpool->ebpool;
+  struct stinger_eb *ebpool_priv = ebpool->ebpool;
 
-  curs = etype_begin (G, G->vertices, from, type);
+  curs = etype_begin (G, from, type);
   /*
   Possibilities:
   1: Edge already exists and only needs updated.
@@ -924,12 +971,13 @@ stinger_insert_edge (struct stinger *G,
  */
 int64_t
 stinger_typed_outdegree (const struct stinger * S, int64_t i, int64_t type) {
+  MAP_STING(S);
   int64_t out = 0;
   struct curs curs;
   struct stinger_eb *tmp;
-  struct stinger_eb *ebpool_priv = S->ebpool->ebpool;
+  struct stinger_eb *ebpool_priv = ebpool->ebpool;
 
-  curs = etype_begin (S, S->vertices, i, type);
+  curs = etype_begin (S, i, type);
 
   for (tmp = ebpool_priv + curs.eb; tmp != ebpool_priv; tmp = ebpool_priv + readff((uint64_t *)&tmp->next)) {
     if(type == tmp->etype) {
@@ -963,12 +1011,13 @@ stinger_incr_edge (struct stinger *G,
 
   /* Do *NOT* call this concurrently with different edge types. */
   STINGERASSERTS ();
+  MAP_STING(G);
 
   struct curs curs;
   struct stinger_eb *tmp;
-  struct stinger_eb *ebpool_priv = G->ebpool->ebpool;
+  struct stinger_eb *ebpool_priv = ebpool->ebpool;
 
-  curs = etype_begin (G, G->vertices, from, type);
+  curs = etype_begin (G, from, type);
   /*
   Possibilities:
   1: Edge already exists and only needs updated.
@@ -1131,12 +1180,13 @@ stinger_remove_edge (struct stinger *G,
 
   /* Do *NOT* call this concurrently with different edge types. */
   STINGERASSERTS ();
+  MAP_STING(G);
 
   struct curs curs;
   struct stinger_eb *tmp;
-  struct stinger_eb *ebpool_priv = G->ebpool->ebpool;
+  struct stinger_eb *ebpool_priv = ebpool->ebpool;
 
-  curs = etype_begin (G, G->vertices, from, type);
+  curs = etype_begin (G, from, type);
 
   for (tmp = ebpool_priv + curs.eb; tmp != ebpool_priv; tmp = ebpool_priv + readff((uint64_t *)&tmp->next)) {
     if(type == tmp->etype) {
@@ -1226,14 +1276,13 @@ stinger_set_initial_edges (struct stinger *G,
   const int64_t *restrict weight = weight_in;
   const int64_t *restrict ts = ts_in;
   const int64_t *restrict first_ts = first_ts_in;
-  stinger_vertices_t * restrict vertices;
 
   size_t nblk_total = 0;
   size_t *restrict blkoff;
   eb_index_t *restrict block;
 
   assert (G);
-  vertices = G->vertices;
+  MAP_STING(G);
 
   blkoff = xcalloc (nv + 1, sizeof (*blkoff));
   OMP ("omp parallel for")
@@ -1295,7 +1344,7 @@ stinger_set_initial_edges (struct stinger *G,
           if (voff + n_to_copy >= nextoff)
             n_to_copy = nextoff - voff;
 
-          eb = G->ebpool->ebpool + block[kblk];
+          eb = ebpool->ebpool + block[kblk];
           edge = &eb->edges[0];
 
           /* XXX: remove the next two asserts once the outer is unlocked. */
@@ -1345,7 +1394,7 @@ stinger_set_initial_edges (struct stinger *G,
          v.  Insert into the graph.  */
 
       if (blkoff[v] != blkoff[v + 1]) {
-	G->ebpool->ebpool[block[blkoff[v+1]-1]].next = stinger_vertex_edges_get(vertices, from);
+	ebpool->ebpool[block[blkoff[v+1]-1]].next = stinger_vertex_edges_get(vertices, from);
         stinger_vertex_edges_set(vertices, from, block[blkoff[v]]);
       } 
     }
@@ -1827,11 +1876,12 @@ stinger_sort_actions (int64_t nactions, int64_t * actions,
 void
 stinger_remove_all_edges_of_type (struct stinger *G, int64_t type)
 {
+  MAP_STING(G);
   /* TODO fix bugs here */
   MTA("mta assert parallel")
   OMP("omp parallel for")
-  for (uint64_t p = 0; p < G->ETA[type].high; p++) {
-    struct stinger_eb *current_eb = G->ebpool->ebpool + G->ETA[type].blocks[p];
+  for (uint64_t p = 0; p < ETA[type].high; p++) {
+    struct stinger_eb *current_eb = ebpool->ebpool + ETA[type].blocks[p];
     int64_t thisVertex = current_eb->vertexID;
     int64_t high = current_eb->high;
     struct stinger_edge * edges = current_eb->edges;
@@ -1880,14 +1930,15 @@ stinger_save_to_file (struct stinger * S, uint64_t maxVtx, const char * stingerf
 {
 #define tdeg(X,Y) offsets[((X) * (maxVtx+2)) + (Y+2)]
 
+  MAP_STING(S);
   uint64_t * restrict offsets = xcalloc((maxVtx+2) * STINGER_NUMETYPES, sizeof(uint64_t));
 
   for(int64_t type = 0; type < STINGER_NUMETYPES; type++) {
-    struct stinger_eb * local_ebpool = S->ebpool->ebpool;
+    struct stinger_eb * local_ebpool = ebpool->ebpool;
     OMP("omp parallel for")
     MTA("mta assert parallel")
-    for(uint64_t block = 0; block < S->ETA[type].high; block++) {
-      struct stinger_eb * cureb = local_ebpool + S->ETA[type].blocks[block];
+    for(uint64_t block = 0; block < ETA[type].high; block++) {
+      struct stinger_eb * cureb = local_ebpool + ETA[type].blocks[block];
       int64_t num = cureb->numEdges;
       if (num) {
 	stinger_int64_fetch_add(&tdeg(type,cureb->vertexID), num);
@@ -1915,11 +1966,11 @@ stinger_save_to_file (struct stinger * S, uint64_t maxVtx, const char * stingerf
 #define tdeg(X,Y) offsets[((X) * (maxVtx+2)) + (Y+1)]
 
   for(int64_t type = 0; type < STINGER_NUMETYPES; type++) {
-    struct stinger_eb * local_ebpool = S->ebpool->ebpool;
+    struct stinger_eb * local_ebpool = ebpool->ebpool;
     OMP("omp parallel for")
     MTA("mta assert parallel")
-    for(uint64_t block = 0; block < S->ETA[type].high; block++) {
-      struct stinger_eb * cureb = local_ebpool + S->ETA[type].blocks[block];
+    for(uint64_t block = 0; block < ETA[type].high; block++) {
+      struct stinger_eb * cureb = local_ebpool + ETA[type].blocks[block];
       int64_t num = cureb->numEdges;
       if (num) {
 	int64_t my_off = stinger_int64_fetch_add(&tdeg(type,cureb->vertexID),num) + type_offsets[type];

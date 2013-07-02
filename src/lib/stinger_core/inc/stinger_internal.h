@@ -3,15 +3,24 @@
 
 #define EBPOOL_SIZE (STINGER_MAX_LVERTICES*4)
 
+#define MAP_STING(X) \
+  stinger_vertices_t * vertices = (stinger_vertices_t *)((X)->storage); \
+  stinger_names_t * etype_names = (stinger_names_t *)((X)->storage + (X)->etype_names_start); \
+  stinger_names_t * vtype_names = (stinger_names_t *)((X)->storage + (X)->vtype_names_start); \
+  struct stinger_etype_array * ETA = (struct stinger_etype_array *)((X)->storage + (X)->ETA_start); \
+  struct stinger_ebpool * ebpool = (struct stinger_ebpool *)((X)->storage + (X)->ebpool_start);
+	  
+
 
 #define STINGER_FORALL_EB_BEGIN(STINGER_,STINGER_SRCVTX_,STINGER_EBNM_)	\
   do {									\
-    const struct stinger_eb * ebpool_priv = STINGER_->ebpool->ebpool;                    \
+    MAP_STING(STINGER_); \
+    const struct stinger_eb * ebpool_priv = ebpool->ebpool;                    \
     const struct stinger * stinger__ = (STINGER_);			\
     const int64_t stinger_srcvtx__ = (STINGER_SRCVTX_);			\
     if (stinger_srcvtx__ >= 0) {					\
       const struct stinger_eb * restrict stinger_eb__;			\
-      stinger_eb__ = ebpool_priv + stinger_vertex_edges_get(stinger__->vertices, stinger_srcvtx__);	\
+      stinger_eb__ = ebpool_priv + stinger_vertex_edges_get(vertices, stinger_srcvtx__);	\
       while (stinger_eb__ != ebpool_priv) {						\
 	const struct stinger_eb * restrict STINGER_EBNM_ = stinger_eb__; \
 	do {								\
@@ -25,12 +34,13 @@
 
 #define STINGER_FORALL_EB_MODIFY_BEGIN(STINGER_,STINGER_SRCVTX_,STINGER_EBNM_) \
   do {									\
-    const struct stinger_eb * ebpool_priv = STINGER_->ebpool->ebpool;                    \
+    MAP_STINGER(STINGER_); \
+    const struct stinger_eb * ebpool_priv = ebpool->ebpool;                    \
     struct stinger * stinger__ = (STINGER_);				\
     int64_t stinger_srcvtx__ = (STINGER_SRCVTX_);			\
     if (stinger_srcvtx__ >= 0) {					\
       struct stinger_eb * stinger_eb__;					\
-      stinger_eb__ = ebpool_priv + stinger_vertex_edges_get(stinger__->vertices, stinger_srcvtx__);\
+      stinger_eb__ = ebpool_priv + stinger_vertex_edges_get(vertices, stinger_srcvtx__);\
       while (stinger_eb__ != ebpool_priv) {						\
 	struct stinger_eb * STINGER_EBNM_ = stinger_eb__;		\
 	do {								\
@@ -92,11 +102,13 @@ struct stinger_ebpool {
 */
 struct stinger
 {
-  stinger_vertices_t  *	vertices; /**< Logical vertex array */
-  stinger_names_t * etype_names;
-  stinger_names_t * vtype_names;
-  struct stinger_etype_array *ETA;  /**< One edge type array for each edge type, specified at compile time */
-  struct stinger_ebpool * ebpool;
+  uint64_t vertices_start;
+  uint64_t etype_names_start;
+  uint64_t vtype_names_start;
+  uint64_t ETA_start;
+  uint64_t ebpool_start;
+  size_t length;
+  uint8_t storage[0];
 };
 
 struct stinger_fragmentation_t {
@@ -171,7 +183,7 @@ int64_t stinger_eb_first_ts (const struct stinger_eb *, int);
 
 int64_t stinger_count_outdeg (struct stinger *G, int64_t v);
 
-struct curs etype_begin (stinger_t * S, stinger_vertices_t *vertices, int64_t v, int etype);
+struct curs etype_begin (stinger_t * S, int64_t v, int etype);
 
 void update_edge_data (struct stinger * S, struct stinger_eb *eb,
                   uint64_t index, int64_t neighbor, int64_t weight, int64_t ts);
