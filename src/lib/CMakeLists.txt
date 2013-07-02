@@ -40,7 +40,7 @@ FOREACH(subdir ${subs})
       IF(EXISTS ${CMAKE_CURRENT_LIST_DIR}/${subdir}/proto)
 	IF(IS_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/${subdir}/proto)
 	  FILE(GLOB protos ABSOLUTE ${CMAKE_CURRENT_LIST_DIR}/${subdir}/proto/*.proto)
-	  PROTOBUF_GENERATE_CPP(protosrc protohead ${protos})
+	  CUST_PROTOBUF_GENERATE_CPP(protosrc protohead ${protos})
 	  SET(realprotosrc)
 	  FOREACH(protoout ${protosrc})
 	    GET_FILENAME_COMPONENT(protofile ${protoout} NAME)
@@ -57,7 +57,7 @@ FOREACH(subdir ${subs})
       INCLUDE_DIRECTORIES(${subdir}/inc)
 
       # Build the shared library
-      ADD_LIBRARY(${subdir} SHARED ${srcs} ${realprotosrc})
+      ADD_LIBRARY(${subdir} SHARED ${srcs} ${realprotosrc} ${protohead})
       TARGET_LINK_LIBRARIES(${subdir} ${dep_${subdir}})
       ADD_CUSTOM_COMMAND(TARGET ${subdir}
 	POST_BUILD
@@ -66,7 +66,7 @@ FOREACH(subdir ${subs})
 	)
 
       # Buiold the static library
-      ADD_LIBRARY(${subdir}_static STATIC ${srcs} ${realprotosrc})
+      ADD_LIBRARY(${subdir}_static STATIC ${srcs} ${realprotosrc} ${protohead})
       TARGET_LINK_LIBRARIES(${subdir}_static ${dep_${subdir}})
       ADD_CUSTOM_COMMAND(TARGET ${subdir}_static
 	POST_BUILD
