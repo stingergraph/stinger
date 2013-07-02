@@ -44,6 +44,7 @@ Building
 STINGER is built using [CMake](http://www.cmake.org).  From the root of STINGER, first create a build directory:
 
     mkdir build && cd build
+    . ../SOURCME.sh
 
 Then call CMake from that build directory to automatically configure the build and to create a Makefile:
 
