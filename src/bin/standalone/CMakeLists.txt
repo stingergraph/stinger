@@ -1,8 +1,13 @@
 
 ###############################################
 # Add library dependencies here as dep_<folder>
-SET(libdep_default string int_hm_seq stinger_core stinger_utils rt)
-SET(libdep_protobuf_test ${CMAKE_BINARY_DIR}/lib/libprotobuf.so)
+SET(libdep_default string int_hm_seq stinger_core stinger_utils)
+
+IF(APPLE)
+  SET(libdep_protobuf_test ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib)
+ELSE()
+  SET(libdep_protobuf_test ${CMAKE_BINARY_DIR}/lib/libprotobuf.so)
+ENDIF()
 
 SET(tgtdep_default string int_hm_seq stinger_core stinger_utils rt)
 SET(tgtdep_protobuf_test protobuf)

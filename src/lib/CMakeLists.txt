@@ -2,7 +2,8 @@ include(ExternalProject)
 
 ###############################################
 # Add library dependencies here as dep_<folder>
-SET(dep_stinger_utils stinger_core int_hm_seq string)
+SET(dep_stinger_utils stinger_core int_hm_seq string fmemopen)
+SET(dep_kv_store string)
 
 ################################################
 # make sure full-empty emulation isn't optimized

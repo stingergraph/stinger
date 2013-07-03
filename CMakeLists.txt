@@ -10,6 +10,16 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 
 LINK_LIBRARIES(m)
 
+IF(APPLE)
+  # Apple doesn't support librt, using CoreServices instead
+  LINK_LIBRARIES(/System/Library/Frameworks/CoreServices.framework/Versions/A/CoreServices)
+ELSEIF(WIN32)
+  # Not sure what to do here as far as librt...?
+  LINK_LIBRARIES(rt)
+ELSE()
+  LINK_LIBRARIES(rt)
+ENDIF()
+
 # Custom protobuf to use STINGER distributed version
 function(CUST_PROTOBUF_GENERATE_CPP SRCS HDRS)
   if(NOT ARGN)
@@ -41,7 +51,7 @@ function(CUST_PROTOBUF_GENERATE_CPP SRCS HDRS)
   set(${HDRS} ${${HDRS}} PARENT_SCOPE)
 endfunction()
 
-LIST(APPEND CMAKE_C_FLAGS "-std=c99 -lrt")
+LIST(APPEND CMAKE_C_FLAGS "-std=c99")
 
 INCLUDE_DIRECTORIES("${CMAKE_BINARY_DIR}/include")
 
