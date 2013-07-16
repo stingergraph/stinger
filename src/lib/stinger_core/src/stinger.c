@@ -599,10 +599,11 @@ struct stinger *stinger_new (void)
   sz += STINGER_NUMETYPES * sizeof(struct stinger_etype_array);
 
   size_t length = sz;
-  fprintf(stderr, "\n\tstinger_new sz = %ld\n", sz);
 
   struct stinger *G = xmalloc (sizeof(struct stinger) + sz);
+
   xzero(G, sizeof(struct stinger*) + sz);
+  G->length = length;
   G->vertices_start = vertices_start;
   G->etype_names_start = etype_names_start;
   G->vtype_names_start = vtype_names_start;
