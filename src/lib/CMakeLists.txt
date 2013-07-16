@@ -54,27 +54,37 @@ FOREACH(subdir ${subs})
       ENDIF()
 
       # Glob the c++ source
-      FILE(GLOB srcs RELATIVE ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_CURRENT_LIST_DIR}/${subdir}/src/*)
-      INCLUDE_DIRECTORIES(${subdir}/inc)
+      IF (EXISTS ${CMAKE_CURRENT_LIST_DIR}/${subdir}/src)
+	FILE(GLOB srcs RELATIVE ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_CURRENT_LIST_DIR}/${subdir}/src/*)
+	INCLUDE_DIRECTORIES(${subdir}/inc)
 
-      # Build the shared library
-      ADD_LIBRARY(${subdir} SHARED ${srcs} ${realprotosrc} ${protohead})
-      TARGET_LINK_LIBRARIES(${subdir} ${dep_${subdir}})
-      ADD_CUSTOM_COMMAND(TARGET ${subdir}
-	POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E remove_directory "${CMAKE_BINARY_DIR}/include/${subdir}"
-	COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_LIST_DIR}/${subdir}/inc" "${CMAKE_BINARY_DIR}/include/${subdir}"
-	)
+	# Build the shared library
+	ADD_LIBRARY(${subdir} SHARED ${srcs} ${realprotosrc} ${protohead})
+	TARGET_LINK_LIBRARIES(${subdir} ${dep_${subdir}})
+	ADD_CUSTOM_COMMAND(TARGET ${subdir}
+	  POST_BUILD
+	  COMMAND ${CMAKE_COMMAND} -E remove_directory "${CMAKE_BINARY_DIR}/include/${subdir}"
+	  COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_LIST_DIR}/${subdir}/inc" "${CMAKE_BINARY_DIR}/include/${subdir}"
+	  )
 
-      # Buiold the static library
-      ADD_LIBRARY(${subdir}_static STATIC ${srcs} ${realprotosrc} ${protohead})
-      TARGET_LINK_LIBRARIES(${subdir}_static ${dep_${subdir}})
-      ADD_CUSTOM_COMMAND(TARGET ${subdir}_static
-	POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E remove_directory "${CMAKE_BINARY_DIR}/include/${subdir}"
-	COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_LIST_DIR}/${subdir}/inc" "${CMAKE_BINARY_DIR}/include/${subdir}"
-	)
-      SET_TARGET_PROPERTIES(${subdir}_static PROPERTIES OUTPUT_NAME "${subdir}")
+	# Build the static library
+	ADD_LIBRARY(${subdir}_static STATIC ${srcs} ${realprotosrc} ${protohead})
+	TARGET_LINK_LIBRARIES(${subdir}_static ${dep_${subdir}})
+	ADD_CUSTOM_COMMAND(TARGET ${subdir}_static
+	  POST_BUILD
+	  COMMAND ${CMAKE_COMMAND} -E remove_directory "${CMAKE_BINARY_DIR}/include/${subdir}"
+	  COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_LIST_DIR}/${subdir}/inc" "${CMAKE_BINARY_DIR}/include/${subdir}"
+	  )
+	SET_TARGET_PROPERTIES(${subdir}_static PROPERTIES OUTPUT_NAME "${subdir}")
+      ELSE()
+	IF (EXISTS ${CMAKE_CURRENT_LIST_DIR}/${subdir}/include)
+	MESSAGE("  here we are  ")
+	  ADD_CUSTOM_TARGET(${subdir} 
+	    ${CMAKE_COMMAND} -E remove_directory "${CMAKE_BINARY_DIR}/include/${subdir}"
+	    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_LIST_DIR}/${subdir}/include" "${CMAKE_BINARY_DIR}/include/${subdir}"
+	    )
+	ENDIF()
+      ENDIF()
 
     ENDIF()
   ENDIF()
