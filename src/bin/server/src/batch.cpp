@@ -5,6 +5,7 @@
 
 extern "C" {
   #include "stinger_core/stinger.h"
+  #include "stinger_core/stinger_atomics.h"
   #include "stinger_core/xmalloc.h"
 }
 
@@ -16,7 +17,7 @@ extern "C" {
 #define ACCUM_INCR do {							\
   int64_t where;							\
   stinger_incr_edge_pair(S, in.type(), u, v, in.weight(), in.time());	\
-  where = int64_fetch_add (&nincr, 1);					\
+  where = stinger_int64_fetch_add (&nincr, 1);				\
   incr[3*where+0] = u;							\
   incr[3*where+1] = v;							\
   incr[3*where+2] = in.weight();					\
@@ -25,7 +26,7 @@ extern "C" {
 #define ACCUM_REM do {					\
   int64_t where;					\
   stinger_remove_edge_pair(S, del.type(), u, v);	\
-  where = int64_fetch_add (&nrem, 1);			\
+  where = stinger_int64_fetch_add (&nrem, 1);		\
   rem[2*where+0] = u;					\
   rem[2*where+1] = v;					\
  } while (0)

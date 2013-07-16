@@ -5,6 +5,7 @@
 
 extern "C" {
   #include "stinger_core/stinger.h"
+  #include "stinger_core/stinger_atomics.h"
   #include "stinger_core/xmalloc.h"
 }
 
@@ -76,9 +77,9 @@ components_batch(struct stinger * S, int64_t nv, int64_t * component_map) {
 	  const int64_t c = component_map[k];
 	  assert (c < n_components);
 	  assert (c >= 0);
-	  int64_t subcnt = int64_fetch_add (&mark[c], 1);
+	  int64_t subcnt = stinger_int64_fetch_add (&mark[c], 1);
 	  if (-1 == subcnt) { /* First to claim. */
-	    int64_t where = int64_fetch_add (&nvlist, 1);
+	    int64_t where = stinger_int64_fetch_add (&nvlist, 1);
 	    assert (where < n_components);
 	    assert (where >= 0);
 	    vlist[where] = c;

@@ -3,13 +3,16 @@
 #include <limits>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/wait.h>
 #include <netinet/in.h>
 #include <unistd.h>
 
 extern "C" {
-  #include "stinger_core/stinger.h"
-  #include "stinger_utils/timer.h"
-  #include "stinger_core/xmalloc.h"
+#include "stinger_core/stinger.h"
+#include "stinger_core/stinger_shared.h"
+#include "stinger_utils/stinger_utils.h"
+#include "stinger_utils/timer.h"
+#include "stinger_core/xmalloc.h"
 }
 
 #include "proto/stinger-batch.pb.h"
@@ -18,137 +21,104 @@ extern "C" {
 
 using namespace gt::stinger;
 
-int
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
-  struct stinger * S = stinger_new();
-
-  /* register edge and vertex types */
-  int64_t vtype_twitter_handle;
-  stinger_vtype_names_create_type(S, "TwitterHandle", &vtype_twitter_handle);
-
-  int64_t etype_mention;
-  stinger_vtype_names_create_type(S, "Mention", &etype_mention);
-
-  /* global options */
+  /* default global options */
   int port = 10101;
   uint64_t buffer_size = 1ULL << 28ULL;
+  char * graph_name = (char *) xmalloc (128*sizeof(char));
+  sprintf(graph_name, "/default");
+  char * input_file = (char *) xmalloc (1024*sizeof(char));
+  input_file[0] = '\0';
 
+  /* parse command line configuration */
   int opt = 0;
-  while(-1 != (opt = getopt(argc, argv, "p:b:"))) {
+  while(-1 != (opt = getopt(argc, argv, "p:b:n:i:"))) {
     switch(opt) {
       case 'p': {
-	port = atoi(optarg);
-      } break;
+		  port = atoi(optarg);
+		} break;
 
       case 'b': {
-	buffer_size = atol(optarg);
-      } break;
+		  buffer_size = atol(optarg);
+		} break;
+
+      case 'n': {
+		  strcpy (graph_name, optarg);
+		} break;
+
+      case 'i': {
+		  strcpy (input_file, optarg);
+		} break;
 
       case '?':
       case 'h': {
-	printf("Usage:    %s [-p port] [-b buffer_size]\n", argv[0]);
-	printf("Defaults: port: %d buffer_size: %lu\n", port, (unsigned long) buffer_size);
-	exit(0);
-      } break;
+		  printf("Usage:    %s [-p port] [-b buffer_size]\n", argv[0]);
+		  printf("Defaults: port: %d buffer_size: %lu\n", port, (unsigned long) buffer_size);
+		  exit(0);
+		} break;
 
     }
   }
 
-  int sock_handle;
-  struct sockaddr_in sock_addr = { AF_INET, (in_port_t)port, 0};
+  /* print configuration to the terminal */
+  printf("\tName: %s\n", graph_name);
 
-  if(-1 == (sock_handle = socket(AF_INET, SOCK_STREAM, 0))) {
-    perror("Socket create failed.\n");
-    exit(-1);
+  /* allocate the graph */
+  struct stinger * S = stinger_shared_new(&graph_name);
+  //struct stinger * S = stinger_new ();
+  size_t graph_sz = S->length + sizeof(struct stinger);
+
+  int64_t nv, ne;
+  int64_t *off, *ind, *weight, *graphmem;
+  /* load edges from disk (if applicable) */
+  if (input_file[0] != '\0')
+  {
+    snarf_graph (input_file, &nv, &ne, (int64_t**)&off,
+	(int64_t**)&ind, (int64_t**)&weight, (int64_t**)&graphmem);
+    stinger_set_initial_edges (S, nv, 0, off, ind, weight, NULL, NULL, 0);
+    free(graphmem);
   }
 
-  if(-1 == bind(sock_handle, (const sockaddr *)&sock_addr, sizeof(sock_addr))) {
-    perror("Socket bind failed.\n");
-    exit(-1);
-  }
 
-  if(-1 == listen(sock_handle, 1)) {
-    perror("Socket listen failed.\n");
-    exit(-1);
-  }
+  printf("Graph created. Running stats...");
+  tic();
+  printf("\n\tVertices: %ld\n\tEdges: %ld\n",
+      stinger_num_active_vertices(S), stinger_total_edges(S));
 
-  const char * buffer = (char *)malloc(buffer_size);
-  if(!buffer) {
-    perror("Buffer alloc failed.\n");
-    exit(-1);
-  }
+  /* consistency check */
+  printf("\tConsistency %ld\n", stinger_consistency_check(S, STINGER_MAX_LVERTICES));
+  printf("\tDone. %lf seconds\n", toc());
 
-  V_A("STINGER server listening for input on port %d, web server on port 8088.",
-      (int)port);
+  /* we need a socket that can reply with the shmem name & size of the graph */
+  //start_tcp_batch_server (S, port, buffer_size);
 
-  while(1) {
-    int accept_handle = accept(sock_handle, NULL, NULL);
-    int nfail = 0;
+#if 1
+  pid_t pid;
+  pid = fork ();
 
-    V("Ready to accept messages.");
-    while(1) {
-
-      StingerBatch batch;
-      if(recv_message(accept_handle, batch)) {
-	nfail = 0;
-
-	V_A("Received message of size %ld", (long)batch.ByteSize());
-
-	if (0 == batch.insertions_size () && 0 == batch.deletions_size ()) {
-	  V("Empty batch.");
-	  if (!batch.keep_alive ())
-	    break;
-	  else
-	    continue;
-	}
-
-	double processing_time_start;
-	//batch.PrintDebugString();
-
-//	processing_time_start = timer ();
-
-	//process_batch(S, batch, &cstate);
-	process_batch(S, batch, NULL);
-
-//	components_batch(S, STINGER_MAX_LVERTICES, components);
-
-//	cstate_update (&cstate, S);
-
-//	processing_time = timer () - processing_time_start;
-//	spdup = (max_batch_ts - min_batch_ts) / processing_time;
-
-	{
-	  char mints[100], maxts[100];
-
-	  ts_to_str (min_batch_ts, mints, sizeof (mints)-1);
-	  ts_to_str (max_batch_ts, maxts, sizeof (maxts)-1);
-	  V_A("Time stamp range: %s ... %s", mints, maxts);
-	}
-
-	V_A("Number of non-singleton components %ld/%ld, max size %ld",
-	    (long)n_nonsingleton_components, (long)n_components,
-	    (long)max_compsize);
-
-/*	V_A("Number of non-singleton communities %ld/%ld, max size %ld, modularity %g",
-	    (long)cstate.n_nonsingletons, (long)cstate.cg.nv,
-	    (long)cstate.max_csize,
-	    cstate.modularity);*/
-
-	V_A("Total time: %ld, processing time: %g, speedup %g",
-	    (long)(max_batch_ts-min_batch_ts), processing_time, spdup);
-
-	if(!batch.keep_alive())
-	  break;
-
-      } else {
-	++nfail;
-	V("ERROR Parsing failed.\n");
-	if (nfail > 2) break;
-      }
+  /* child will handle name and size requests */
+  if (pid == 0) 
+    start_UDP_graph_name_server (graph_name, graph_sz, port);
+  else
+  {
+    for (int i = 0; i < 5; i++)
+    {
+      printf("hey\n");
+      sleep(10);
     }
-    if (nfail > 2) break;
   }
+
+  int status;
+  kill(pid, SIGTERM);
+  waitpid(pid, &status, 0);
+
+  /* and we need a listener that can receive new edges */
+
+  stinger_shared_free(S, graph_name, graph_sz);
+  free(graph_name);
+  free(input_file);
 
   return 0;
+#endif
 }

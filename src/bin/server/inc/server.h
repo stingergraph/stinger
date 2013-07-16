@@ -1,8 +1,11 @@
 #ifndef _SERVER_H
 #define _SERVER_H
 
+#include "stinger_core/stinger.h"
 #include "proto/stinger-batch.pb.h"
 #include "send_rcv.h"
+
+using namespace gt::stinger;
 
 static inline char
 ascii_tolower (char x)
@@ -29,6 +32,9 @@ dest_string (const T& in, std::string& out)
 
 static bool dropped_vertices = false;
 
+void thisWorks(int port);
+void start_tcp_batch_server (struct stinger * S, int port, uint64_t buffer_size);
+void start_UDP_graph_name_server (char * graph_name, size_t graph_sz, int port);
 //struct community_state cstate;
 static int64_t n_components, n_nonsingleton_components, max_compsize;
 static int64_t min_batch_ts, max_batch_ts;
@@ -36,27 +42,6 @@ static double processing_time, spdup;
 static int64_t * comp_vlist;
 static int64_t * comp_mark;
 
-MTA("mta inline")
-MTA("mta expect parallel")
-static inline int64_t
-int64_fetch_add (int64_t * p, int64_t incr)
-{
-#if defined(__MTA__)
-  return int_fetch_add (p, incr);
-#elif defined(_OPENMP)
-#if defined(__GNUC__)
-  return __sync_fetch_and_add (p, incr);
-#elif defined(__INTEL_COMPILER)
-  return __sync_fetch_and_add (p, incr);
-#else
-#error "Atomics not defined..."
-#endif
-#else
-  int64_t out = *p;
-  *p += incr;
-  return out;
-#endif
-}
 
 int
 process_batch(stinger_t * S, StingerBatch & batch,
