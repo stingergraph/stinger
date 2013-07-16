@@ -2,7 +2,19 @@ include(ExternalProject)
 
 ###############################################
 # Add library dependencies here as dep_<folder>
-SET(dep_stinger_server stinger_core stinger_util)
+SET(libdep_default stinger_core stinger_utils)
+
+IF(APPLE)
+  SET(libdep_twitter_json ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib)
+  SET(libdep_random_edge_generator ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib)
+ELSE()
+  SET(libdep_twitter_json ${CMAKE_BINARY_DIR}/lib/libprotobuf.so)
+  SET(libdep_random_edge_generator ${CMAKE_BINARY_DIR}/lib/libprotobuf.so)
+ENDIF()
+
+SET(tgtdep_default stinger_core stinger_utils rt)
+SET(tgtdep_twitter_json protobuf rapidjson)
+SET(tgtdep_random_edge_generator protobuf)
 
 #################################################################
 # Iterate over each library and build appropriately based on type
@@ -23,6 +35,38 @@ FOREACH(subdir ${subs})
       )
     ELSE()
       MESSAGE("BIN: DEFAULT SUBDIR FOUND ${subdir} TODO")
+
+      SET(realprotosrc)
+      SET(protohead)
+
+      IF(EXISTS ${CMAKE_CURRENT_LIST_DIR}/${subdir}/proto)
+	IF(IS_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/${subdir}/proto)
+	  FILE(GLOB protos ABSOLUTE ${CMAKE_CURRENT_LIST_DIR}/${subdir}/proto/*.proto)
+	  CUST_PROTOBUF_GENERATE_CPP(protosrc protohead ${protos})
+	  SET(realprotosrc)
+	  FOREACH(protoout ${protosrc})
+	    GET_FILENAME_COMPONENT(protofile ${protoout} NAME)
+	    LIST(APPEND realprotosrc ${CMAKE_CURRENT_BINARY_DIR}/${subdir}/proto/${protofile})
+	  ENDFOREACH()
+	  SET_SOURCE_FILES_PROPERTIES(${realprotosrc} PROPERTIES GENERATED TRUE)
+	  INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR})
+	  INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}/${subdir})
+	ENDIF()
+      ENDIF()
+
+      # Glob the c++ source
+      FILE(GLOB srcs RELATIVE ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_CURRENT_LIST_DIR}/${subdir}/src/*)
+      INCLUDE_DIRECTORIES(${subdir}/inc)
+      ADD_EXECUTABLE(${subdir} ${srcs} ${realprotosrc} ${protohead})
+
+      ADD_DEPENDENCIES(${subdir} ${tgtdep_default})
+      TARGET_LINK_LIBRARIES(${subdir} ${libdep_default})
+
+      FOREACH(dep_target ${tgtdep_${subdir}})
+	ADD_DEPENDENCIES(${subdir} ${dep_target})
+      ENDFOREACH()
+      TARGET_LINK_LIBRARIES(${subdir} ${libdep_${subdir}})
+
     ENDIF()
   ENDIF()
 ENDFOREACH()
