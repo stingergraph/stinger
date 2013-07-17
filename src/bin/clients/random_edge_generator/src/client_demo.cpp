@@ -16,6 +16,7 @@ extern "C" {
 #include <unistd.h>
 #include <string>
 #include <netdb.h>
+#include <time.h>
 
 using namespace gt::stinger;
 
@@ -32,11 +33,12 @@ main(int argc, char *argv[])
   int port = 10101;
   int batch_size = 100000;
   int num_batches = -1;
+  int nv = 1024;
   uint64_t buffer_size = 1ULL << 28ULL;
   struct hostent * server = NULL;
 
   int opt = 0;
-  while(-1 != (opt = getopt(argc, argv, "p:b:a:x:y:"))) {
+  while(-1 != (opt = getopt(argc, argv, "p:b:a:x:y:n:"))) {
     switch(opt) {
       case 'p': {
 	port = atoi(optarg);
@@ -62,21 +64,14 @@ main(int argc, char *argv[])
 	}
       } break;
 
+      case 'n': {
+	nv = atol(optarg);
+      } break;
+
       case '?':
       case 'h': {
-	printf("Usage:    %s [-p src_port] [-d dst_port] [-a server_addr] [-b buffer_size] [-s for strings] [-x batch_size] [-y num_batches] [-i in_seconds] [-o out_seconds] [-j] [<input file>]\n", argv[0]);
-	printf("Defaults: port: %d server: localhost buffer_size: %lu\n", port, (unsigned long) buffer_size);
-	printf("\nCSV file format is is_delete,source,dest,weight,time where weight and time are\n"
-		 "optional 64-bit integers and source and dest are either strings or\n"
-		 "64-bit integers depending on options flags. is_delete should be 0 for edge\n"
-		 "insertions and 1 for edge deletions.\n"
-		 "\n"
-		 "-j turns on JSON parsing mode, which expects a JSON twitter file rather than CSV\n"
-		 "   this file will be turned into a graph of mentions\n"
-		 "-i controls how many seconds of the input file will be read into one batch\n"
-		 "-o controls how often batches will be sent in seconds\n"
-		 "   using both -i and -o allows you to control the playback rate of the file (with -i 1 -o 1\n"
-		 "   being read one second of Twitter data and send it once per second)\n");
+	printf("Usage:    %s [-p port] [-a server_addr] [-b buffer_size] [-n num_vertices] [-x batch_size] [-y num_batches]\n", argv[0]);
+	printf("Defaults:\n\tport: %d\n\tserver: localhost\n\tbuffer_size: %lu\n\tnum_vertices: %d\n", port, (unsigned long) buffer_size, nv);
 	exit(0);
       } break;
     }
@@ -84,6 +79,7 @@ main(int argc, char *argv[])
 
   V_A("Running with: port: %d buffer_size: %lu\n", port, (unsigned long) buffer_size);
 
+  /* connect to localhost if server is unspecified */
   if(NULL == server) {
     server = gethostbyname("localhost");
     if(NULL == server) {
@@ -92,6 +88,7 @@ main(int argc, char *argv[])
     }
   }
 
+  /* start the connection */
   int sock_handle, n;
   struct sockaddr_in serv_addr;
 
@@ -116,15 +113,15 @@ main(int argc, char *argv[])
     exit(-1);
   }
 
-
+  /* actually generate and send the batches */
   char * buf = NULL, ** fields = NULL;
   uint64_t bufSize = 0, * lengths = NULL, fieldsSize = 0, count = 0;
   int64_t line = 0;
   int batch_num = 0;
 
-  while(1) {
-    V("Parsing messages.");
+  srand (time(NULL));
 
+  while(1) {
     StingerBatch batch;
     batch.set_make_undirected(true);
     batch.set_type(NUMBERS_ONLY);
@@ -135,8 +132,8 @@ main(int argc, char *argv[])
 
       /* is insert? */
       EdgeInsertion * insertion = batch.add_insertions();
-      insertion->set_source(1);
-      insertion->set_destination(10);
+      insertion->set_source( rand() % nv );
+      insertion->set_destination( rand() % nv );
       insertion->set_weight(1);
       insertion->set_time(line);
     }
