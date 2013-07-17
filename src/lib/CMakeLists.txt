@@ -2,7 +2,7 @@ include(ExternalProject)
 
 ###############################################
 # Add library dependencies here as dep_<folder>
-SET(dep_stinger_utils stinger_core int_hm_seq string fmemopen)
+SET(dep_stinger_utils stinger_core int_hm_seq string fmemopen compat)
 SET(dep_kv_store string)
 
 ################################################
