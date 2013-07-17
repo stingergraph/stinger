@@ -45,8 +45,18 @@ int main(int argc, char *argv[])
   n=sendto(sock,buffer,
       strlen(buffer),0,(const struct sockaddr *)&server,length);
   if (n < 0) error("Sendto");
+
+  struct timeval tv;
+  tv.tv_sec = 5;
+  tv.tv_usec = 0;
+  if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
+    perror("Error\n");
+  }
+
   n = recvfrom(sock,buffer,256,0,(struct sockaddr *)&from, &length);
-  if (n < 0) error("recvfrom");
+  if (n < 0) {
+    error("Connection timed out.");
+  }
   write(1,"Got an ack: ",12);
   write(1,buffer,n);
   close(sock);

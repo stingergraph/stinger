@@ -21,14 +21,14 @@ get_shared_map_info (char * hostname, int port, char ** name, size_t name_len, s
 
   sock = socket(AF_INET, SOCK_DGRAM, 0);
   if (sock < 0) {
-    error("Failed to create socket.\n");
+    perror("Failed to create socket");
     exit(-1);
   }
 
   server.sin_family = AF_INET;
   hp = gethostbyname(hostname);
   if (hp == 0) {
-    error("Failed to find hostname %s\n", hostname);
+    error("Failed to find hostname %s", hostname);
     exit(-1);
   }
 
@@ -36,20 +36,30 @@ get_shared_map_info (char * hostname, int port, char ** name, size_t name_len, s
   server.sin_port = htons(port);
   length = sizeof(struct sockaddr_in);
 
+  /* Set 5 second timeout on UDP socket */
+
+  struct timeval tv;
+  tv.tv_sec = 5;
+  tv.tv_usec = 0;
+  if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
+    perror("Error");
+    exit(-1);
+  }
+
   bzero(buffer, 256);
 
   /* Send "NAME" to server */
   sprintf(buffer, "NAME");
   n = sendto(sock, buffer, strlen(buffer), 0, (const struct sockaddr *) &server, length);
   if (n < 0) {
-    perror("Unable to send.\n");
+    perror("Unable to send");
     exit(-1);
   }
 
   /* Receive back the string containing the name of the shared map */
   n = recvfrom (sock, buffer, 256, 0, (struct sockaddr *) &from, &length);
   if (n < 0) {
-    perror("Unable to receive.\n");
+    perror("Unable to receive");
     exit(-1);
   }
   char * found = strchr(buffer, ':');
@@ -59,14 +69,14 @@ get_shared_map_info (char * hostname, int port, char ** name, size_t name_len, s
   sprintf(buffer, "SIZE");
   n = sendto(sock, buffer, strlen(buffer), 0, (const struct sockaddr *) &server, length);
   if (n < 0) {
-    perror("Unable to send.\n");
+    perror("Unable to send");
     exit(-1);
   }
 
   /* Receive the size of the map */
   n = recvfrom (sock, buffer, 256, 0, (struct sockaddr *) &from, &length);
   if (n < 0) {
-    perror("Unable to receive.\n");
+    perror("Unable to receive");
     exit(-1);
   }
   found = strchr(buffer, ':');
