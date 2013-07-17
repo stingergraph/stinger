@@ -14,6 +14,7 @@ extern "C" {
 #include "stinger_utils/stinger_utils.h"
 #include "stinger_utils/timer.h"
 #include "stinger_utils/dimacs_support.h"
+#include "stinger_utils/csv.h"
 }
 
 #include "proto/stinger-batch.pb.h"
@@ -92,6 +93,7 @@ int main(int argc, char *argv[])
 		} break;  /* STINGER binary */
 
       case 'c': {
+		  load_csv_graph (S, input_file, 1);
 		} break;  /* CSV */
 
       case 'd': {

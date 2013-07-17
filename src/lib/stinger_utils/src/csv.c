@@ -276,3 +276,100 @@ csvIfIDExistsdouble(FILE * fp, char delim, struct stinger * S, uint64_t nv, doub
     }
   }
 }
+
+
+#define E_A(X,...) fprintf(stderr, "%s %s %d:\n\t" #X "\n", __FILE__, __func__, __LINE__, __VA_ARGS__);
+#define E(X) E_A(X,NULL)
+#define V_A(X,...) fprintf(stdout, "%s %s %d:\n\t" #X "\n", __FILE__, __func__, __LINE__, __VA_ARGS__);
+#define V(X) V_A(X,NULL)
+
+enum csv_fields {
+  FIELD_SOURCE,
+  FIELD_DEST,
+  FIELD_WEIGHT,
+  FIELD_TIME,
+  FIELD_TYPE
+};
+
+int
+load_csv_graph (struct stinger * S, char * filename, int use_strings)
+{
+  FILE * fp = fopen (filename, "r");
+  if (!fp)
+  {
+    char errmsg[257];
+    snprintf (errmsg, 256, "Opening \"%s\" failed", filename);
+    errmsg[256] = '\0';
+    perror (errmsg);
+    exit (-1);
+  }
+
+  char * buf = NULL;
+  char ** fields = NULL;
+  uint64_t bufSize = 0;
+  uint64_t * lengths = NULL;
+  uint64_t fieldsSize = 0;
+  uint64_t count = 0;
+  int64_t line = 0;
+
+  while (!feof(fp))
+  {
+    int64_t src = 0;
+    int64_t dst = 0;
+    int64_t wgt = 0;
+    int64_t time = 0;
+    int64_t type = 0;
+
+    line++;
+    readCSVLineDynamic(',', fp, &buf, &bufSize, &fields, &lengths, &fieldsSize, &count);
+
+    if (count <= 1)
+      continue;
+    if (count < 3) {
+      E_A("ERROR: too few elemnts on line %ld", (long) line);
+      continue;
+    }
+
+    if (use_strings)
+    {
+      /* values are strings */
+      printf("%ld %s\n%ld %s\n", lengths[FIELD_SOURCE], fields[FIELD_SOURCE], lengths[FIELD_DEST], fields[FIELD_DEST]);
+      stinger_mapping_create (S, fields[FIELD_SOURCE], lengths[FIELD_SOURCE], &src);
+      stinger_mapping_create (S, fields[FIELD_DEST], lengths[FIELD_DEST], &dst);
+      if (count > 2)
+	wgt = atol(fields[FIELD_WEIGHT]);
+      if (count > 3)
+	time = atol(fields[FIELD_TIME]);
+      if (count > 4)
+      {
+	type = stinger_etype_names_lookup_type (S, fields[FIELD_TYPE]);
+	if (type == -1) {
+	  stinger_etype_names_create_type (S, fields[FIELD_TYPE], &type);
+	}
+	if (type == -1) {
+	  perror ("Failed to create new edge type");
+	  exit(-1);
+	}
+      }
+
+    } else {
+      /* values are integers */
+      src = atol(fields[FIELD_SOURCE]);
+      dst = atol(fields[FIELD_DEST]);
+      if (count > 2)
+	wgt = atol(fields[FIELD_WEIGHT]);
+      if (count > 3)
+	time = atol(fields[FIELD_TIME]);
+      if (count > 4)
+	type = atol(fields[FIELD_TYPE]);
+    }
+
+    printf("Inserting type=%ld %ld %ld %ld %ld\n", type, src, dst, wgt, time);
+    stinger_insert_edge (S, type, src, dst, wgt, time);
+
+  }
+
+  fclose (fp);
+
+  return 0;
+}

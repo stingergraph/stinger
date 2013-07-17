@@ -109,7 +109,7 @@ load_dimacs_graph (struct stinger * S, char * filename)
 
   /* get the file size on disk */
   luc_stat(filename, &filesize);
-  printf("Filesize: %ld\n", (int64_t)filesize);
+  //printf("Filesize: %ld\n", (int64_t)filesize);
 
   /* allocate enough memory to store the entire file */
   char * filemem = (char *) xmmap (NULL, (filesize + 5) * sizeof (char),
@@ -129,7 +129,7 @@ load_dimacs_graph (struct stinger * S, char * filename)
 
   /* the first real line must be a header that states the number of vertices and edges */
   sscanf(ptr, "%s %*s %ld %ld\n", buffer, &NV, &NE);
-  printf("NV: %ld, NE: %ld\n", NV, NE);
+  //printf("NV: %ld, NE: %ld\n", NV, NE);
   ptr = strchr(ptr, '\n');
 
   /* skip any intermediate comments */
@@ -186,7 +186,7 @@ load_dimacs_graph (struct stinger * S, char * filename)
   }
 #endif
 
-  printf("edges ingested: %ld\n", edgecount);
+  //printf("edges ingested: %ld\n", edgecount);
 
   /* done with the file */
   munmap (filemem, (filesize + 5) * sizeof (char));
