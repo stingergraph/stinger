@@ -91,34 +91,43 @@ int main(int argc, char *argv[])
   printf("\tDone. %lf seconds\n", toc());
 
   /* we need a socket that can reply with the shmem name & size of the graph */
-  //start_tcp_batch_server (S, port, buffer_size);
 
-#if 1
-  pid_t pid;
-  pid = fork ();
+  pid_t name_pid, batch_pid;
 
   /* child will handle name and size requests */
-  if (pid == 0) 
-    start_UDP_graph_name_server (graph_name, graph_sz, port);
-  else
+  name_pid = fork ();
+  if (name_pid == 0)
   {
-    for (int i = 0; i < 5; i++)
-    {
-      printf("hey\n");
-      sleep(10);
-    }
+    start_udp_graph_name_server (graph_name, graph_sz, port);
+    exit (0);
   }
 
-  int status;
-  kill(pid, SIGTERM);
-  waitpid(pid, &status, 0);
-
   /* and we need a listener that can receive new edges */
+  batch_pid = fork ();
+  if (batch_pid == 0)
+  {
+    start_tcp_batch_server (S, port, buffer_size);
+    exit (0);
+  }
 
+  printf("Press <return> to shut down the server...\n");
+  getchar();
+
+  printf("Shutting down the name server..."); fflush(stdout);
+  int status;
+  kill(name_pid, SIGTERM);
+  waitpid(name_pid, &status, 0);
+  printf(" done.\n"); fflush(stdout);
+
+  printf("Shutting down the batch server..."); fflush(stdout);
+  kill(batch_pid, SIGTERM);
+  waitpid(batch_pid, &status, 0);
+  printf(" done.\n"); fflush(stdout);
+
+  /* clean up */
   stinger_shared_free(S, graph_name, graph_sz);
   free(graph_name);
   free(input_file);
 
   return 0;
-#endif
 }

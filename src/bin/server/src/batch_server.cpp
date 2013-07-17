@@ -14,6 +14,8 @@
 void
 dostuff(struct stinger * S, int sock, uint64_t buffer_size)
 {
+  pid_t parent;
+
   const char * buffer = (char *) malloc (buffer_size);
   if (!buffer) {
     perror("Buffer alloc failed.\n");
@@ -49,6 +51,10 @@ dostuff(struct stinger * S, int sock, uint64_t buffer_size)
       V("ERROR Parsing failed.\n");
       if (nfail > 2) break;
     }
+
+    /* poll to see if parent has died */
+    if (getppid() == 1)
+      break;
   }
 }
 

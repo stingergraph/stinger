@@ -34,7 +34,7 @@ static bool dropped_vertices = false;
 
 void thisWorks(int port);
 void start_tcp_batch_server (struct stinger * S, int port, uint64_t buffer_size);
-void start_UDP_graph_name_server (char * graph_name, size_t graph_sz, int port);
+void start_udp_graph_name_server (char * graph_name, size_t graph_sz, int port);
 //struct community_state cstate;
 static int64_t n_components, n_nonsingleton_components, max_compsize;
 static int64_t min_batch_ts, max_batch_ts;
