@@ -602,7 +602,7 @@ struct stinger *stinger_new (void)
 
   struct stinger *G = xmalloc (sizeof(struct stinger) + sz);
 
-  xzero(G, sizeof(struct stinger*) + sz);
+  xzero(G, sizeof(struct stinger) + sz);
   G->length = length;
   G->vertices_start = vertices_start;
   G->etype_names_start = etype_names_start;

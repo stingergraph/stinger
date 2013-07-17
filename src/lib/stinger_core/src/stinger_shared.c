@@ -126,7 +126,13 @@ stinger_shared_new (char ** out)
   struct stinger *G = shmmap (*out, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR,
     PROT_READ | PROT_WRITE, sizeof(struct stinger) + sz, MAP_SHARED);
 
-  xzero(G, sizeof(struct stinger*) + sz);
+  if (!G) {
+    perror("Failed to mmap STINGER graph.\n");
+    exit(-1);
+  }
+
+  /* initialize the new data structure */
+  xzero(G, sizeof(struct stinger) + sz);
   G->length = length;
   G->vertices_start = vertices_start;
   G->etype_names_start = etype_names_start;
