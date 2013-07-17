@@ -10,9 +10,10 @@
 extern "C" {
 #include "stinger_core/stinger.h"
 #include "stinger_core/stinger_shared.h"
+#include "stinger_core/xmalloc.h"
 #include "stinger_utils/stinger_utils.h"
 #include "stinger_utils/timer.h"
-#include "stinger_core/xmalloc.h"
+#include "stinger_utils/dimacs_support.h"
 }
 
 #include "proto/stinger-batch.pb.h"
@@ -30,10 +31,12 @@ int main(int argc, char *argv[])
   sprintf(graph_name, "/default");
   char * input_file = (char *) xmalloc (1024*sizeof(char));
   input_file[0] = '\0';
+  char * file_type = (char *) xmalloc (128*sizeof(char));
+  file_type[0] = '\0';
 
   /* parse command line configuration */
   int opt = 0;
-  while(-1 != (opt = getopt(argc, argv, "p:b:n:i:"))) {
+  while(-1 != (opt = getopt(argc, argv, "p:b:n:i:t:h?"))) {
     switch(opt) {
       case 'p': {
 		  port = atoi(optarg);
@@ -50,11 +53,15 @@ int main(int argc, char *argv[])
       case 'i': {
 		  strcpy (input_file, optarg);
 		} break;
+      
+      case 't': {
+		  strcpy (file_type, optarg);
+		} break;
 
       case '?':
       case 'h': {
-		  printf("Usage:    %s [-p port] [-b buffer_size]\n", argv[0]);
-		  printf("Defaults: port: %d buffer_size: %lu\n", port, (unsigned long) buffer_size);
+		  printf("Usage:    %s [-p port] [-b buffer_size] [-n graph_name] [-i input_file_path [-t file_type]]\n", argv[0]);
+		  printf("Defaults:\n\tport: %d\n\tbuffer_size: %lu\n\tgraph_name: %s\n", port, (unsigned long) buffer_size, graph_name);
 		  exit(0);
 		} break;
 
@@ -69,15 +76,45 @@ int main(int argc, char *argv[])
   //struct stinger * S = stinger_new ();
   size_t graph_sz = S->length + sizeof(struct stinger);
 
-  int64_t nv, ne;
-  int64_t *off, *ind, *weight, *graphmem;
+
   /* load edges from disk (if applicable) */
   if (input_file[0] != '\0')
   {
-    snarf_graph (input_file, &nv, &ne, (int64_t**)&off,
-	(int64_t**)&ind, (int64_t**)&weight, (int64_t**)&graphmem);
-    stinger_set_initial_edges (S, nv, 0, off, ind, weight, NULL, NULL, 0);
-    free(graphmem);
+    switch (file_type[0])
+    {
+      case 'b': {
+		  int64_t nv, ne;
+		  int64_t *off, *ind, *weight, *graphmem;
+		  snarf_graph (input_file, &nv, &ne, (int64_t**)&off,
+		      (int64_t**)&ind, (int64_t**)&weight, (int64_t**)&graphmem);
+		  stinger_set_initial_edges (S, nv, 0, off, ind, weight, NULL, NULL, 0);
+		  free(graphmem);
+		} break;  /* STINGER binary */
+
+      case 'c': {
+		} break;  /* CSV */
+
+      case 'd': {
+		  load_dimacs_graph (S, input_file);
+		} break;  /* DIMACS */
+
+      case 'e': {
+		} break;  /* Edge list */
+
+      case 'g': {
+		} break;  /* GML / GraphML / GEXF -- you pick */
+
+      case 'j': {
+		} break;  /* JSON */
+
+      case 'x': {
+		} break;  /* XML */
+
+      default:	{
+		  printf("Unsupported file type.\n");
+		  exit(0);
+		} break;
+    }
   }
 
 
@@ -91,7 +128,6 @@ int main(int argc, char *argv[])
   printf("\tDone. %lf seconds\n", toc());
 
   /* we need a socket that can reply with the shmem name & size of the graph */
-
   pid_t name_pid, batch_pid;
 
   /* child will handle name and size requests */
