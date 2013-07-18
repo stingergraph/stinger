@@ -1,7 +1,64 @@
 #include "json_support.h"
 
-#include "fmemopen.h"
-#include "int-hm-seq.h"
+#include "fmemopen/fmemopen.h"
+#include "int_hm_seq/int-hm-seq.h"
+
+#define VTX(v) stinger_vertices_vertex_get(vertices, v)
+
+void
+stinger_physmap_id_to_json(const stinger_physmap_t * p, vindex_t v, FILE * out, int64_t indent_level) {
+  JSON_INIT(out, indent_level);
+  JSON_OBJECT_START_UNLABELED();
+  JSON_STRING(id, stinger_names_lookup_name(p, v));
+  JSON_OBJECT_END();
+  JSON_END();
+}
+
+
+inline void
+stinger_vertex_to_json(const stinger_vertices_t * vertices, stinger_physmap_t * phys, vindex_t v, FILE * out, int64_t indent_level) {
+  const stinger_vertex_t * vout = VTX(v);
+
+  JSON_INIT(out, indent_level);
+  JSON_OBJECT_START_UNLABELED();
+  JSON_INT64(vid, v);
+  JSON_VTYPE(vtype, vout->type);
+  JSON_VWEIGHT(vweight, vout->weight);
+  JSON_INT64(inDegree, vout->inDegree);
+  JSON_INT64(outDegree, vout->outDegree);
+  JSON_SUBOBJECT(physID);
+  stinger_physmap_id_to_json(phys, v, out, indent_level+1);
+#if defined(STINGER_VERTEX_KEY_VALUE_STORE)
+  /* TODO attributes */
+#endif
+  JSON_OBJECT_END();
+  JSON_END();
+}
+
+inline void
+stinger_vertex_to_json_with_type_strings(const stinger_vertices_t * vertices, const stinger_names_t * tn, stinger_physmap_t * phys, vindex_t v, FILE * out, int64_t indent_level) {
+  const stinger_vertex_t * vout = VTX(v);
+
+  JSON_INIT(out, indent_level);
+  JSON_OBJECT_START_UNLABELED();
+  JSON_INT64(vid, v);
+  char * vtype = stinger_names_lookup_name(tn,vout->type);
+  if(vtype) {
+    JSON_STRING(vtype, vtype);
+  } else {
+    JSON_INT64(vtype, vout->type);
+  }
+  JSON_VWEIGHT(vweight, vout->weight);
+  JSON_INT64(inDegree, vout->inDegree);
+  JSON_INT64(outDegree, vout->outDegree);
+  JSON_SUBOBJECT(physID);
+  stinger_physmap_id_to_json(phys, v, out, indent_level+1);
+#if defined(STINGER_VERTEX_KEY_VALUE_STORE)
+  /* TODO attributes */
+#endif
+  JSON_OBJECT_END();
+  JSON_END();
+}
 
 /* produces the egoent of the stinger vertex ID given in JSON form */
 string_t *
@@ -15,7 +72,7 @@ egonet_to_json(stinger_t * S, int64_t vtx) {
   char edge_str[1UL<<20UL];
   int edge_added = 0;
 
-  //stinger_vertex_to_json_with_type_strings(stinger_vertices_get(S), stinger_vtype_names_get(S), stinger_physmap_get(S), vtx, vtx_file, 2);
+  stinger_vertex_to_json_with_type_strings(stinger_vertices_get(S), stinger_vtype_names_get(S), stinger_physmap_get(S), vtx, vtx_file, 2);
   fflush(vtx_file);
   string_append_cstr(&vertices, vtx_str);
   fseek(vtx_file, 0, SEEK_SET);
@@ -30,7 +87,7 @@ egonet_to_json(stinger_t * S, int64_t vtx) {
       source = which++;
       int_hm_seq_insert(neighbors, STINGER_EDGE_DEST, source);
       fprintf(vtx_file, ",\n");
-      //stinger_vertex_to_json_with_type_strings(stinger_vertices_get(S), stinger_vtype_names_get(S), stinger_physmap_get(S), STINGER_EDGE_DEST, vtx_file, 2);
+      stinger_vertex_to_json_with_type_strings(stinger_vertices_get(S), stinger_vtype_names_get(S), stinger_physmap_get(S), STINGER_EDGE_DEST, vtx_file, 2);
       fputc('\0',vtx_file);
       fflush(vtx_file);
       string_append_cstr(&vertices, vtx_str);
@@ -42,18 +99,18 @@ egonet_to_json(stinger_t * S, int64_t vtx) {
       edge_added = 1;
       if(etype) {
 	sprintf(edge_str, "{ \"type\" : \"%s\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
-	  etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, 0, source);
+	    etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, 0, source);
       } else {
 	sprintf(edge_str, "{ \"type\" : \"%ld\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
-	  STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, 0, source);
+	    STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, 0, source);
       }
     } else {
       if(etype) {
 	sprintf(edge_str, ",\n{ \"type\" : \"%s\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
-	  etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, 0, source);
+	    etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, 0, source);
       } else {
 	sprintf(edge_str, ",\n{ \"type\" : \"%ld\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
-	  STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, 0, source);
+	    STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, 0, source);
       }
     }
 
@@ -67,10 +124,10 @@ egonet_to_json(stinger_t * S, int64_t vtx) {
 	char * etype = stinger_etype_names_lookup_name(S, STINGER_EDGE_TYPE);
 	if(etype) {
 	  sprintf(edge_str, ",\n{ \"type\" : \"%s\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
-	    etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, source, target);
+	      etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, source, target);
 	} else {
 	  sprintf(edge_str, ",\n{ \"type\" : \"%ld\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
-	    STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, source, target);
+	      STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, source, target);
 	}
 	string_append_cstr(&edges, edge_str);
       }
@@ -94,7 +151,7 @@ egonet_to_json(stinger_t * S, int64_t vtx) {
 }
 
 /* produces the union of the egonets of the stinger vertex IDs in
-the group array in JSON form */
+   the group array in JSON form */
 string_t *
 group_to_json(stinger_t * S, int64_t * group, int64_t groupsize) {
   string_t vertices, edges;
@@ -120,7 +177,7 @@ group_to_json(stinger_t * S, int64_t * group, int64_t groupsize) {
       } else {
 	first_vtx = 0;
       }
-      //stinger_vertex_to_json_with_type_strings(stinger_vertices_get(S), stinger_vtype_names_get(S), stinger_physmap_get(S), group[v], vtx_file, 2);
+      stinger_vertex_to_json_with_type_strings(stinger_vertices_get(S), stinger_vtype_names_get(S), stinger_physmap_get(S), group[v], vtx_file, 2);
       fputc('\0',vtx_file);
       fflush(vtx_file);
       string_append_cstr(&vertices, vtx_str);
@@ -133,7 +190,7 @@ group_to_json(stinger_t * S, int64_t * group, int64_t groupsize) {
 	source = which++;
 	int_hm_seq_insert(neighbors, STINGER_EDGE_DEST, source);
 	fprintf(vtx_file, ",\n");
-	//stinger_vertex_to_json_with_type_strings(stinger_vertices_get(S), stinger_vtype_names_get(S), stinger_physmap_get(S), STINGER_EDGE_DEST, vtx_file, 2);
+	stinger_vertex_to_json_with_type_strings(stinger_vertices_get(S), stinger_vtype_names_get(S), stinger_physmap_get(S), STINGER_EDGE_DEST, vtx_file, 2);
 	fputc('\0',vtx_file);
 	fflush(vtx_file);
 	string_append_cstr(&vertices, vtx_str);
@@ -153,18 +210,18 @@ group_to_json(stinger_t * S, int64_t * group, int64_t groupsize) {
 	    edge_added = 1;
 	    if(etype) {
 	      sprintf(edge_str, "{ \"type\" : \"%s\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
-		etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, cur_val, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
+		  etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, cur_val, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
 	    } else {
 	      sprintf(edge_str, "{ \"type\" : \"%ld\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
-		STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, cur_val, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
+		  STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, cur_val, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
 	    }
 	  } else {
 	    if(etype) {
 	      sprintf(edge_str, ",\n{ \"type\" : \"%s\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
-		etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, cur_val, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
+		  etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, cur_val, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
 	    } else {
 	      sprintf(edge_str, ",\n{ \"type\" : \"%ld\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
-		STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, cur_val, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
+		  STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, cur_val, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
 	    }
 	  }
 	  string_append_cstr(&edges, edge_str);
@@ -193,5 +250,4 @@ group_to_json(stinger_t * S, int64_t * group, int64_t groupsize) {
   return group_str;
 }
 
-#define VTX(v) stinger_vertices_vertex_get(vertices, v)
 

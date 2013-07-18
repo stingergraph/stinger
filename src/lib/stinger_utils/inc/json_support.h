@@ -2,7 +2,7 @@
 #define  JSON_SUPPORT_H
 
 #include "stinger.h"
-#include "astring.h"
+#include "string/astring.h"
 
 #define JSON_TAB "  "
 
@@ -17,6 +17,15 @@
 #define JSON_SUBOBJECT(NAME)	      JSON_PRINT_INDENT();  fprintf(json_out, "%s\"%s\" : ", not_first++ ? ",\n" : "\n", #NAME);
 #define JSON_OBJECT_END()	      json_indent--; JSON_PRINT_INDENT();  fprintf(json_out, "\n}\n");
 #define JSON_END() }
+
+void
+stinger_physmap_id_to_json(const stinger_physmap_t * p, vindex_t v, FILE * out, int64_t indent_level);
+
+void
+stinger_vertex_to_json(const stinger_vertices_t * vertices, stinger_physmap_t * phys, vindex_t v, FILE * out, int64_t indent_level);
+
+void
+stinger_vertex_to_json_with_type_strings(const stinger_vertices_t * vertices, const stinger_names_t * tn, stinger_physmap_t * phys, vindex_t v, FILE * out, int64_t indent_level);
 
 string_t *
 egonet_to_json(stinger_t * S, int64_t vtx);

@@ -292,7 +292,7 @@ enum csv_fields {
 };
 
 int
-load_csv_graph (struct stinger * S, char * filename, int use_strings)
+load_csv_graph (struct stinger * S, char * filename, int use_numerics)
 {
   FILE * fp = fopen (filename, "r");
   if (!fp)
@@ -330,10 +330,9 @@ load_csv_graph (struct stinger * S, char * filename, int use_strings)
       continue;
     }
 
-    if (use_strings)
+    if (!use_numerics)
     {
       /* values are strings */
-      printf("%ld %s\n%ld %s\n", lengths[FIELD_SOURCE], fields[FIELD_SOURCE], lengths[FIELD_DEST], fields[FIELD_DEST]);
       stinger_mapping_create (S, fields[FIELD_SOURCE], lengths[FIELD_SOURCE], &src);
       stinger_mapping_create (S, fields[FIELD_DEST], lengths[FIELD_DEST], &dst);
       if (count > 2)
@@ -364,7 +363,7 @@ load_csv_graph (struct stinger * S, char * filename, int use_strings)
 	type = atol(fields[FIELD_TYPE]);
     }
 
-    printf("Inserting type=%ld %ld %ld %ld %ld\n", type, src, dst, wgt, time);
+    //printf("Inserting type=%ld %ld %ld %ld %ld\n", type, src, dst, wgt, time);
     stinger_insert_edge (S, type, src, dst, wgt, time);
 
   }
