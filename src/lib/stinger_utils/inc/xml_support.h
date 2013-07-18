@@ -17,4 +17,7 @@
 #define XML_TAG_CLOSE(X)	      xml_indent--; XML_PRINT_INDENT();  fprintf(xml_out, "</%s>\n", #X);
 #define XML_END() }
 
+void
+stinger_vertex_to_xml(const stinger_vertices_t * vertices, vindex_t v, FILE * out, int64_t indent_level);
+
 #endif  /*XML_SUPPORT_H*/
