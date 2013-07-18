@@ -5,6 +5,7 @@
 
 #include "stinger_vertex.h"
 #include "stinger_names.h"
+#include "stinger_physmap.h"
 #include "stinger_defs.h"
 
 /* User-accessible data structures */
@@ -102,6 +103,9 @@ int stinger_edge_touch (struct stinger *, int64_t /* vtx 1 */ ,
 stinger_vertices_t *
 stinger_vertices_get(const stinger_t * S);
 
+stinger_physmap_t *
+stinger_physmap_get(const stinger_t * S);
+
 stinger_names_t *
 stinger_vtype_names_get(const stinger_t * S);
 
@@ -168,7 +172,7 @@ stinger_adjacency_get(const stinger_t * S, vindex_t v);
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
  * PHYSICAL MAPPING
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
-#if !defined(STINGER_FORCE_OLD_MAP)
+
 int
 stinger_mapping_create(const stinger_t * S, const char * byte_string, uint64_t length, int64_t * vtx_out);
 
@@ -183,7 +187,6 @@ stinger_mapping_physid_direct(const stinger_t * S, vindex_t vertexID, char ** ou
 
 vindex_t
 stinger_mapping_nv(const stinger_t * S);
-#endif
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
  * VTYPE NAMES

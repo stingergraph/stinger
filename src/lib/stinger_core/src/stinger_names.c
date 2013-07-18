@@ -230,6 +230,11 @@ stinger_names_lookup_name(stinger_names_t * sn, int64_t type) {
   }
 }
 
+int64_t
+stinger_names_count(stinger_names_t * sn) {
+  return sn->next_type;
+}
+
 void
 stinger_names_print(stinger_names_t * sn) {
   MAP_SN(sn)

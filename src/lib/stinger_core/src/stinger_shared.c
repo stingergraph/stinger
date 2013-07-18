@@ -109,6 +109,9 @@ stinger_shared_new (char ** out)
   size_t vertices_start = 0;
   sz += stinger_vertices_size(STINGER_MAX_LVERTICES);
 
+  size_t physmap_start = sz;
+  sz += stinger_physmap_size(STINGER_MAX_LVERTICES); 
+
   size_t ebpool_start = sz;
   sz += sizeof(struct stinger_ebpool);
 
@@ -135,6 +138,7 @@ stinger_shared_new (char ** out)
   xzero(G, sizeof(struct stinger) + sz);
   G->length = length;
   G->vertices_start = vertices_start;
+  G->physmap_start = physmap_start;
   G->etype_names_start = etype_names_start;
   G->vtype_names_start = vtype_names_start;
   G->ETA_start = ETA_start;
@@ -143,6 +147,7 @@ stinger_shared_new (char ** out)
   MAP_STING(G);
 
   stinger_vertices_init(vertices, STINGER_MAX_LVERTICES);
+  stinger_physmap_init(physmap, STINGER_MAX_LVERTICES);
   stinger_names_init(etype_names, STINGER_NUMETYPES);
   stinger_names_init(vtype_names, STINGER_NUMVTYPES);
 

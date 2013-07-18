@@ -5,6 +5,7 @@
 
 #define MAP_STING(X) \
   stinger_vertices_t * vertices = (stinger_vertices_t *)((X)->storage); \
+  stinger_physmap_t * physmap = (stinger_physmap_t *)((X)->storage + (X)->physmap_start); \
   stinger_names_t * etype_names = (stinger_names_t *)((X)->storage + (X)->etype_names_start); \
   stinger_names_t * vtype_names = (stinger_names_t *)((X)->storage + (X)->vtype_names_start); \
   struct stinger_etype_array * ETA = (struct stinger_etype_array *)((X)->storage + (X)->ETA_start); \
@@ -103,6 +104,7 @@ struct stinger_ebpool {
 struct stinger
 {
   uint64_t vertices_start;
+  uint64_t physmap_start;
   uint64_t etype_names_start;
   uint64_t vtype_names_start;
   uint64_t ETA_start;

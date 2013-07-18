@@ -21,6 +21,12 @@ stinger_vertices_get(const stinger_t * S) {
   return vertices;
 }
 
+inline stinger_physmap_t *
+stinger_physmap_get(const stinger_t * S) {
+  MAP_STING(S);
+  return physmap;
+}
+
 inline stinger_names_t *
 stinger_vtype_names_get(const stinger_t * S) {
   MAP_STING(S);
@@ -130,24 +136,25 @@ stinger_adjacency_get(const stinger_t * S, vindex_t v) {
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
  * EXTERNAL INTERFACE FOR PHYSMAP
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
 int
 stinger_mapping_create(const stinger_t * S, const char * byte_string, uint64_t length, int64_t * vtx_out) {
-  return 0;//stinger_physmap_mapping_create(stinger_physmap_get(S), stinger_vertices_get(S), byte_string, length, vtx_out);
+  stinger_physmap_mapping_create(stinger_physmap_get(S), stinger_vertices_get(S), byte_string, length, vtx_out);
 }
 
 vindex_t
 stinger_mapping_lookup(const stinger_t * S, const char * byte_string, uint64_t length) {
-  return 0;//stinger_physmap_vtx_lookup(stinger_physmap_get(S), stinger_vertices_get(S), byte_string, length);
+  stinger_physmap_vtx_lookup(stinger_physmap_get(S), stinger_vertices_get(S), byte_string, length);
 }
 
 int
 stinger_mapping_physid_get(const stinger_t * S, vindex_t vertexID, char ** outbuffer, uint64_t * outbufferlength) {
-  return 0;//stinger_physmap_id_get(stinger_physmap_get(S), stinger_vertices_get(S), vertexID, outbuffer, outbufferlength);
+  stinger_physmap_id_get(stinger_physmap_get(S), stinger_vertices_get(S), vertexID, outbuffer, outbufferlength);
 }
 
 int
 stinger_mapping_physid_direct(const stinger_t * S, vindex_t vertexID, char ** out_ptr, uint64_t * out_len) {
-  return 0;//stinger_physmap_id_direct(stinger_physmap_get(S), stinger_vertices_get(S), vertexID, out_ptr, out_len);
+  stinger_physmap_id_direct(stinger_physmap_get(S), stinger_vertices_get(S), vertexID, out_ptr, out_len);
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
@@ -586,6 +593,9 @@ struct stinger *stinger_new (void)
   size_t vertices_start = 0;
   sz += stinger_vertices_size(STINGER_MAX_LVERTICES);
 
+  size_t physmap_start = sz;
+  sz += stinger_physmap_size(STINGER_MAX_LVERTICES); 
+
   size_t ebpool_start = sz;
   sz += sizeof(struct stinger_ebpool);
 
@@ -605,6 +615,7 @@ struct stinger *stinger_new (void)
   xzero(G, sizeof(struct stinger) + sz);
   G->length = length;
   G->vertices_start = vertices_start;
+  G->physmap_start = physmap_start;
   G->etype_names_start = etype_names_start;
   G->vtype_names_start = vtype_names_start;
   G->ETA_start = ETA_start;
@@ -613,6 +624,7 @@ struct stinger *stinger_new (void)
   MAP_STING(G);
 
   stinger_vertices_init(vertices, STINGER_MAX_LVERTICES);
+  stinger_physmap_init(physmap, STINGER_MAX_LVERTICES);
   stinger_names_init(etype_names, STINGER_NUMETYPES);
   stinger_names_init(vtype_names, STINGER_NUMVTYPES);
 
