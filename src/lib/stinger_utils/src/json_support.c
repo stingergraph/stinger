@@ -1,5 +1,6 @@
 #include "json_support.h"
 
+#include "stinger_core/xmalloc.h"
 #include "fmemopen/fmemopen.h"
 #include "int_hm_seq/int-hm-seq.h"
 
@@ -250,4 +251,94 @@ group_to_json(stinger_t * S, int64_t * group, int64_t groupsize) {
   return group_str;
 }
 
+/* produces the subgraph starting at vtx and including all neighboring
+ * vertices with the same label */
+string_t *
+labeled_subgraph_to_json(stinger_t * S, int64_t src, int64_t * labels, const int64_t vtxlimit_in) {
+  const int64_t vtxlimit = (vtxlimit_in < 1 || vtxlimit_in > STINGER_MAX_LVERTICES? STINGER_MAX_LVERTICES : vtxlimit_in);
+  string_t vertices, edges;
+  string_init_from_cstr(&vertices, "\"vertices\" : [ \n");
+  string_init_from_cstr(&edges, "\"edges\" : [ \n");
 
+  int_hm_seq_t * neighbors = int_hm_seq_new(stinger_outdegree_get(S, src));
+
+  char *vtx_str, *edge_str;
+  FILE * vtx_file;
+
+  int64_t which = 0;
+
+  vtx_str = xmalloc (2UL<<20UL);
+  edge_str = &vtx_str[1UL<<20UL];
+  vtx_file = fmemopen(vtx_str, sizeof(vtx_str) * 1UL<<20UL, "w");
+
+  uint8_t * found = xcalloc(sizeof(uint8_t), STINGER_MAX_LVERTICES);
+  int64_t * queue = xmalloc(sizeof(int64_t) * (vtxlimit < 1? 1 : vtxlimit));
+
+  queue[0] = src;
+  found[src] = 1;
+  int64_t q_top = 1;
+
+  int first_vtx = 1;
+  int edge_added = 0;
+
+  for(int64_t q_cur = 0; q_cur < q_top; q_cur++) {
+    int64_t group_vtx = which++;
+    int_hm_seq_insert(neighbors, queue[q_cur], group_vtx);
+    if(!first_vtx) {
+      fprintf(vtx_file, ",\n");
+    } else {
+      first_vtx = 0;
+    }
+    stinger_vertex_to_json_with_type_strings(stinger_vertices_get(S), stinger_vtype_names_get(S), stinger_physmap_get(S), queue[q_cur], vtx_file, 2);
+    fputc('\0',vtx_file);
+    fflush(vtx_file);
+    string_append_cstr(&vertices, vtx_str);
+    fseek(vtx_file, 0, SEEK_SET);
+
+    found[queue[q_cur]] = 2;
+
+    STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, queue[q_cur]) {
+      if(found[STINGER_EDGE_DEST] > 1) {
+	char * etype = stinger_etype_names_lookup_name(S, STINGER_EDGE_TYPE);
+	if(!edge_added) {
+	  edge_added = 1;
+	  if(etype) {
+	    sprintf(edge_str, "{ \"type\" : \"%s\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+	      etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, group_vtx, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
+	  } else {
+	    sprintf(edge_str, "{ \"type\" : \"%ld\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+	      STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, group_vtx, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
+	  }
+	} else {
+	  if(etype) {
+	    sprintf(edge_str, ",\n{ \"type\" : \"%s\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+	      etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, group_vtx, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
+	  } else {
+	    sprintf(edge_str, ",\n{ \"type\" : \"%ld\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+	      STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, group_vtx, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
+	  }
+	}
+	string_append_cstr(&edges, edge_str);
+      } else if(q_top < vtxlimit && !found[STINGER_EDGE_DEST] && labels[STINGER_EDGE_SOURCE] == labels[STINGER_EDGE_DEST]) {
+	found[STINGER_EDGE_DEST] = 1;
+	queue[q_top++] = STINGER_EDGE_DEST;
+      }
+    } STINGER_FORALL_EDGES_OF_VTX_END();
+  }
+
+  string_append_cstr(&vertices, "\n], ");
+  string_append_cstr(&edges, "\n]\n} ");
+
+  string_t * group_str = string_new_from_cstr("{\n\t");
+  string_append_string(group_str, &vertices);
+  string_append_string(group_str, &edges);
+
+  int_hm_seq_free(neighbors);
+  free(found);
+  free(queue);
+  fclose(vtx_file);
+  string_free_internal(&vertices);
+  string_free_internal(&edges);
+  free (vtx_str);
+  return group_str;
+}

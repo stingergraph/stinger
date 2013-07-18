@@ -157,6 +157,12 @@ stinger_mapping_physid_direct(const stinger_t * S, vindex_t vertexID, char ** ou
   stinger_physmap_id_direct(stinger_physmap_get(S), stinger_vertices_get(S), vertexID, out_ptr, out_len);
 }
 
+vindex_t
+stinger_mapping_nv(const stinger_t * S) {
+  return stinger_physmap_nv(stinger_physmap_get(S));
+}
+
+
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
  * EXTERNAL INTERFACE FOR VTYPE NAMES
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
