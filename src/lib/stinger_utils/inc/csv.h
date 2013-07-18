@@ -31,6 +31,6 @@ void
 csvIfIDExistsdouble(FILE * fp, char delim, struct stinger * s, uint64_t nv, double * values);
 
 int
-load_csv_graph (struct stinger * S, char * filename, int use_strings);
+load_csv_graph (struct stinger * S, char * filename, int use_numerics);
 
 #endif  /*CSV_H*/

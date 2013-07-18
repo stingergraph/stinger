@@ -34,10 +34,11 @@ int main(int argc, char *argv[])
   input_file[0] = '\0';
   char * file_type = (char *) xmalloc (128*sizeof(char));
   file_type[0] = '\0';
+  int use_numerics = 0;
 
   /* parse command line configuration */
   int opt = 0;
-  while(-1 != (opt = getopt(argc, argv, "p:b:n:i:t:h?"))) {
+  while(-1 != (opt = getopt(argc, argv, "p:b:n:i:t:1h?"))) {
     switch(opt) {
       case 'p': {
 		  port = atoi(optarg);
@@ -59,9 +60,13 @@ int main(int argc, char *argv[])
 		  strcpy (file_type, optarg);
 		} break;
 
+      case '1': {
+		  use_numerics = 1;
+		} break;
+
       case '?':
       case 'h': {
-		  printf("Usage:    %s [-p port] [-b buffer_size] [-n graph_name] [-i input_file_path [-t file_type]]\n", argv[0]);
+		  printf("Usage:    %s [-p port] [-b buffer_size] [-n graph_name] [-i input_file_path [-t file_type] -1 (for numeric IDs)]\n", argv[0]);
 		  printf("Defaults:\n\tport: %d\n\tbuffer_size: %lu\n\tgraph_name: %s\n", port, (unsigned long) buffer_size, graph_name);
 		  exit(0);
 		} break;
@@ -93,7 +98,7 @@ int main(int argc, char *argv[])
 		} break;  /* STINGER binary */
 
       case 'c': {
-		  load_csv_graph (S, input_file, 1);
+		  load_csv_graph (S, input_file, use_numerics);
 		} break;  /* CSV */
 
       case 'd': {
