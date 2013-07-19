@@ -7,6 +7,29 @@
 
 using namespace gt::stinger;
 
+/* function prototypes */
+void
+start_tcp_batch_server (struct stinger * S, int port, uint64_t buffer_size);
+
+void
+start_udp_graph_name_server (char * graph_name, size_t graph_sz, int port);
+
+int
+load_json_graph (struct stinger * S, char * filename);
+
+int
+process_batch(stinger_t * S, StingerBatch & batch, struct community_state * cstate);
+
+
+/* global variables */
+static bool dropped_vertices = false;
+static int64_t n_components, n_nonsingleton_components, max_compsize;
+static int64_t min_batch_ts, max_batch_ts;
+static int64_t * comp_vlist;
+static int64_t * comp_mark;
+
+
+/* utility functions */
 static inline char
 ascii_tolower (char x)
 {
@@ -22,6 +45,7 @@ src_string (const T& in, std::string& out)
   out = in.source_str();
   std::transform(out.begin(), out.end(), out.begin(), ascii_tolower);
 }
+
 template <class T>
 void
 dest_string (const T& in, std::string& out)
@@ -29,28 +53,6 @@ dest_string (const T& in, std::string& out)
   out = in.destination_str();
   std::transform(out.begin(), out.end(), out.begin(), ascii_tolower);
 }
-
-static bool dropped_vertices = false;
-
-void thisWorks(int port);
-void start_tcp_batch_server (struct stinger * S, int port, uint64_t buffer_size);
-void start_udp_graph_name_server (char * graph_name, size_t graph_sz, int port);
-//struct community_state cstate;
-static int64_t n_components, n_nonsingleton_components, max_compsize;
-static int64_t min_batch_ts, max_batch_ts;
-static double processing_time, spdup;
-static int64_t * comp_vlist;
-static int64_t * comp_mark;
-
-
-int
-process_batch(stinger_t * S, StingerBatch & batch,
-	      struct community_state * cstate);
-void
-components_init(struct stinger * S, int64_t nv, int64_t * component_map);
-
-void
-components_batch(struct stinger * S, int64_t nv, int64_t * component_map);
 
 #define V_A(X,...) do { fprintf(stdout, "%s %s %d:\n\t" #X "\n", __FILE__, __func__, __LINE__, __VA_ARGS__); fflush (stdout); } while (0)
 #define V(X) V_A(X,NULL)

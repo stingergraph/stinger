@@ -112,6 +112,7 @@ int main(int argc, char *argv[])
 		} break;  /* GML / GraphML / GEXF -- you pick */
 
       case 'j': {
+		  load_json_graph (S, input_file);
 		} break;  /* JSON */
 
       case 'x': {
