@@ -3,9 +3,9 @@
 #include <stdlib.h>
 #include "stinger_core/stinger.h"
 #include "stinger_core/xmalloc.h"
-#include "stinger_utils/stinger_utils.h"
 #include "compat/luc.h"
 #include "graph_el_support.h"
+#include "stinger_utils.h"
 
 int
 load_graph_el (struct stinger * S, const char * filename)

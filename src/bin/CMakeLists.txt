@@ -11,7 +11,7 @@ ELSE()
 ENDIF()
 
 SET(tgtdep_default string int_hm_seq stinger_core stinger_utils rt)
-SET(tgtdep_server protobuf)
+SET(tgtdep_server rapidjson protobuf)
 
 #################################################################
 # Iterate over each library and build appropriately based on type
