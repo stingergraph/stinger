@@ -21,7 +21,7 @@ stinger_physmap_init(stinger_physmap_t * physmap, int64_t max_size);
 size_t
 stinger_physmap_size(int64_t max_size);
 
-void
+stinger_physmap_t *
 stinger_physmap_free(stinger_physmap_t ** physmap);
 
 int

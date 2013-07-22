@@ -10,9 +10,13 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
+#include "stinger_core/stinger_error.h"
+
 int
 get_shared_map_info (char * hostname, int port, char ** name, size_t name_len, size_t * graph_sz)
 {
+  LOG_D("called...");
+
   int sock, n;
   unsigned int length;
   struct sockaddr_in server, from;
@@ -21,14 +25,14 @@ get_shared_map_info (char * hostname, int port, char ** name, size_t name_len, s
 
   sock = socket(AF_INET, SOCK_DGRAM, 0);
   if (sock < 0) {
-    perror("Failed to create socket");
+    LOG_F("Failed to create socket");
     exit(-1);
   }
 
   server.sin_family = AF_INET;
   hp = gethostbyname(hostname);
   if (hp == 0) {
-    error("Failed to find hostname %s", hostname);
+    LOG_F_A("Failed to find hostname %s", hostname);
     exit(-1);
   }
 
@@ -42,7 +46,7 @@ get_shared_map_info (char * hostname, int port, char ** name, size_t name_len, s
   tv.tv_sec = 5;
   tv.tv_usec = 0;
   if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
-    perror("Error");
+    LOG_F("Error");
     exit(-1);
   }
 
@@ -52,14 +56,14 @@ get_shared_map_info (char * hostname, int port, char ** name, size_t name_len, s
   sprintf(buffer, "NAME");
   n = sendto(sock, buffer, strlen(buffer), 0, (const struct sockaddr *) &server, length);
   if (n < 0) {
-    perror("Unable to send");
+    LOG_F("Unable to send");
     exit(-1);
   }
 
   /* Receive back the string containing the name of the shared map */
   n = recvfrom (sock, buffer, 256, 0, (struct sockaddr *) &from, &length);
   if (n < 0) {
-    perror("Unable to receive");
+    LOG_F("Unable to receive");
     exit(-1);
   }
   char * found = strchr(buffer, ':');
@@ -69,14 +73,14 @@ get_shared_map_info (char * hostname, int port, char ** name, size_t name_len, s
   sprintf(buffer, "SIZE");
   n = sendto(sock, buffer, strlen(buffer), 0, (const struct sockaddr *) &server, length);
   if (n < 0) {
-    perror("Unable to send");
+    LOG_F("Unable to send");
     exit(-1);
   }
 
   /* Receive the size of the map */
   n = recvfrom (sock, buffer, 256, 0, (struct sockaddr *) &from, &length);
   if (n < 0) {
-    perror("Unable to receive");
+    LOG_F("Unable to receive");
     exit(-1);
   }
   found = strchr(buffer, ':');

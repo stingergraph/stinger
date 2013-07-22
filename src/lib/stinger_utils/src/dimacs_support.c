@@ -15,6 +15,10 @@
 #include "stinger_core/x86_full_empty.h"
 #include "compat/luc.h"
 
+#ifdef __APPLE__
+#define MAP_ANONYMOUS MAP_ANON
+#endif
+
 /* A bucket sort */
 void
 SortStart (int64_t NV, int64_t NE, int64_t * sv1, int64_t * ev1, int64_t * w1, int64_t * sv2, int64_t * ev2, int64_t * w2, int64_t * start)

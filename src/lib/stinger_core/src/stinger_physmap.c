@@ -30,7 +30,7 @@ stinger_physmap_size(int64_t max_size) {
   return stinger_names_size(max_size);
 }
 
-void
+stinger_physmap_t *
 stinger_physmap_free(stinger_physmap_t ** physmap) {
   return stinger_names_free(physmap);
 }

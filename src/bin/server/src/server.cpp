@@ -6,6 +6,7 @@
 #include <sys/wait.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <signal.h>
 
 extern "C" {
 #include "stinger_core/stinger.h"
