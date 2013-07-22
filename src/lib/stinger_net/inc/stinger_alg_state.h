@@ -2,6 +2,7 @@
 #define  STINGER_ALG_STATE_H
 
 #include <string>
+#include <stdint.h>
 
 namespace gt {
   namespace stinger {

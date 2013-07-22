@@ -1,6 +1,12 @@
 #ifndef  STINGER_ERROR_H
 #define  STINGER_ERROR_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include <stdio.h>
+
 /**
 * @file stinger_error.h
 * @brief Yet another logging system :-)
@@ -63,6 +69,10 @@
 #endif
 #endif
 #endif
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif  /*STINGER_ERROR_H*/
