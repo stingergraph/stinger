@@ -1,22 +1,21 @@
-extern "C" {
-#include "stinger_core/stinger.h"
-#include "stinger_utils/csv.h"
-#include "stinger_utils/timer.h"
-}
-
-#include "proto/random_edge_generator.pb.h"
-#include "random_edge_generator.h"
-
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <unistd.h>
 #include <string>
-#include <netdb.h>
+#include <sys/types.h>
 #include <time.h>
+#include <netdb.h>
+
+extern "C" {
+#include "stinger_core/stinger.h"
+#include "stinger_core/xmalloc.h"
+#include "stinger_utils/csv.h"
+#include "stinger_utils/timer.h"
+#include "stinger_utils/stinger_sockets.h"
+}
+
+#include "random_edge_generator.h"
+
 
 using namespace gt::stinger;
 
@@ -89,27 +88,11 @@ main(int argc, char *argv[])
   }
 
   /* start the connection */
-  int sock_handle, n;
-  struct sockaddr_in serv_addr;
+  int sock_handle = connect_to_batch_server (server, port);
 
-  if (-1 == (sock_handle = socket(AF_INET, SOCK_STREAM, 0))) {
-    perror("Socket create failed");
-    exit(-1);
-  }
-
-  bzero ((char *) &serv_addr, sizeof(serv_addr));
-  serv_addr.sin_family = AF_INET;
-  bcopy ((char *) server->h_addr, (char *) &serv_addr.sin_addr.s_addr, server->h_length);
-  serv_addr.sin_port = htons(port);
-
-  uint8_t * buffer = (uint8_t *) malloc (buffer_size);
+  uint8_t * buffer = (uint8_t *) xmalloc (buffer_size);
   if(!buffer) {
     perror("Buffer alloc failed");
-    exit(-1);
-  }
-
-  if(-1 == connect(sock_handle, (const sockaddr *) &serv_addr, sizeof(serv_addr))) {
-    perror("Connection failed");
     exit(-1);
   }
 

@@ -13,6 +13,31 @@
 #include "stinger_core/stinger_error.h"
 
 int
+connect_to_batch_server (struct hostent * server, int port)
+{
+  /* start the connection */
+  int sock_handle, n;
+  struct sockaddr_in serv_addr;
+
+  if (-1 == (sock_handle = socket(AF_INET, SOCK_STREAM, 0))) {
+    perror("Socket create failed");
+    exit(-1);
+  }
+
+  bzero ((char *) &serv_addr, sizeof(serv_addr));
+  serv_addr.sin_family = AF_INET;
+  bcopy ((char *) server->h_addr, (char *) &serv_addr.sin_addr.s_addr, server->h_length);
+  serv_addr.sin_port = htons(port);
+
+  if(-1 == connect(sock_handle, (const struct sockaddr_in *) &serv_addr, sizeof(serv_addr))) {
+    perror("Connection failed");
+    exit(-1);
+  }
+
+  return sock_handle;
+}
+
+int
 get_shared_map_info (char * hostname, int port, char ** name, size_t name_len, size_t * graph_sz)
 {
   LOG_D("called...");

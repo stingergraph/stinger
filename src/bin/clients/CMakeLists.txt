@@ -7,10 +7,10 @@ SET(libdep_web_server string mongoose kv_store)
 
 IF(APPLE)
   SET(libdep_twitter_json ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib)
-  SET(libdep_random_edge_generator ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib)
+  SET(libdep_random_edge_generator ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib stinger_net)
 ELSE()
   SET(libdep_twitter_json ${CMAKE_BINARY_DIR}/lib/libprotobuf.so)
-  SET(libdep_random_edge_generator ${CMAKE_BINARY_DIR}/lib/libprotobuf.so)
+  SET(libdep_random_edge_generator ${CMAKE_BINARY_DIR}/lib/libprotobuf.so stinger_net)
 ENDIF()
 
 SET(tgtdep_default stinger_core stinger_utils rt)
