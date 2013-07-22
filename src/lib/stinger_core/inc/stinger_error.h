@@ -1,6 +1,3 @@
-#ifndef  STINGER_ERROR_H
-#define  STINGER_ERROR_H
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -26,6 +23,48 @@ extern "C" {
   #define LOG_OUTPUT stderr
 #endif
 
+#ifdef LOG_F
+#undef LOG_F
+#endif
+#ifdef LOG_F_A
+#undef LOG_F_A
+#endif
+
+#ifdef LOG_E
+#undef LOG_E
+#endif
+#ifdef LOG_E_A
+#undef LOG_E_A
+#endif
+
+#ifdef LOG_W
+#undef LOG_W
+#endif
+#ifdef LOG_W_A
+#undef LOG_W_A
+#endif
+
+#ifdef LOG_I
+#undef LOG_I
+#endif
+#ifdef LOG_I_A
+#undef LOG_I_A
+#endif
+
+#ifdef LOG_V
+#undef LOG_V
+#endif
+#ifdef LOG_V_A
+#undef LOG_V_A
+#endif
+
+#ifdef LOG_D
+#undef LOG_D
+#endif
+#ifdef LOG_D_A
+#undef LOG_D_A
+#endif
+
 #define LOG_D_A(X,...)
 #define LOG_D(X)
 
@@ -46,22 +85,32 @@ extern "C" {
 #define LOG_F(X) LOG_F_A(X, NULL)
 #ifndef LOG_AT_F
 
+#undef LOG_E_A
+#undef LOG_E
 #define LOG_E_A(X, ...) do { fprintf(LOG_OUTPUT, "ERROR: %s %d: " X "\n", __func__, __LINE__, __VA_ARGS__); } while(0);
 #define LOG_E(X) LOG_E_A(X, NULL)
 #ifndef LOG_AT_E
 
+#undef LOG_W_A
+#undef LOG_W
 #define LOG_W_A(X, ...) do { fprintf(LOG_OUTPUT, "WARNING: %s %d: " X "\n", __func__, __LINE__, __VA_ARGS__); } while(0);
 #define LOG_W(X) LOG_W_A(X, NULL)
 #ifndef LOG_AT_W
 
+#undef LOG_I_A
+#undef LOG_I
 #define LOG_I_A(X, ...) do { fprintf(LOG_OUTPUT, "INFO: %s %d: " X "\n", __func__, __LINE__, __VA_ARGS__); } while(0);
 #define LOG_I(X) LOG_I_A(X, NULL)
 #ifndef LOG_AT_A
 
+#undef LOG_V_A
+#undef LOG_V
 #define LOG_V_A(X, ...) do { fprintf(LOG_OUTPUT, "VERBOSE: %s %d: " X "\n", __func__, __LINE__, __VA_ARGS__); } while(0);
 #define LOG_V(X) LOG_V_A(X, NULL)
 #ifndef LOG_AT_V
 
+#undef LOG_D_A
+#undef LOG_D
 #define LOG_D_A(X, ...) do { fprintf(LOG_OUTPUT, "DEBUG: %s %d: " X "\n", __func__, __LINE__, __VA_ARGS__); } while(0);
 #define LOG_D(X) LOG_D_A(X, NULL)
 
@@ -74,5 +123,3 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
-
-#endif  /*STINGER_ERROR_H*/
