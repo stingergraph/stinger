@@ -1,0 +1,43 @@
+package gt.stinger;
+
+import "stinger_net/proto/stinger-batch.proto";
+
+enum AlgAction {
+  REGISTER_ALG	      = 0;
+  BEGIN_PREPROCESS    = 1;
+  END_PREPROCESS      = 2;
+  BEGIN_POSTPROCESS   = 3;
+  END_POSTPROCESS     = 4;
+}
+
+enum AlgActionResult {
+  SUCCESS	      = 0;
+  FAILURE_GENERIC     = 1;
+  FAILURE_NAME_EXISTS = 2;
+}
+
+message AlgToServer {
+  optional int64      protocol_version	= 1 [default = 1];
+
+  optional string     alg_name		= 2;
+  optional int64      alg_num		= 3;
+  optional int64      data_per_vertex	= 4 [default = 0];
+  required AlgAction  action		= 5;
+  repeated string     dep_name		= 6;
+}
+
+message ServerToAlg {
+  optional int64	    protocol_version	= 1 [default = 1];
+
+  optional string	    alg_name	      	= 2;
+  optional int64	    alg_num	      	= 3;
+  required AlgAction	    action	      	= 4;
+  required AlgActionResult  result	      	= 5;
+  optional int64	    batch_number      	= 6 [default = -1];
+
+  optional StingerBatch	    batch	      	= 7;
+  optional string	    stinger_loc	      	= 8;
+  optional string	    alg_data_loc      	= 9;
+  repeated string	    dep_data_loc      	= 10;
+  repeated int64	    dep_data_per_vertex	= 11;
+}

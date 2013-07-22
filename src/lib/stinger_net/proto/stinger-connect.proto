@@ -1,0 +1,11 @@
+package gt.stinger;
+
+enum ClientType {
+  CLIENT_STREAM	= 0;
+  CLIENT_ALG	= 1;
+}
+
+message Connect {
+  optional int64      protocol_version	= 1 [default = 1];
+  required ClientType type		= 2;
+}
