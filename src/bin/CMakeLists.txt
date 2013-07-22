@@ -5,9 +5,9 @@ include(ExternalProject)
 SET(libdep_default string int_hm_seq stinger_core stinger_utils)
 
 IF(APPLE)
-  SET(libdep_server ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib)
+  SET(libdep_server ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib stinger_net)
 ELSE()
-  SET(libdep_server ${CMAKE_BINARY_DIR}/lib/libprotobuf.so)
+  SET(libdep_server ${CMAKE_BINARY_DIR}/lib/libprotobuf.so stinger_net)
 ENDIF()
 
 SET(tgtdep_default string int_hm_seq stinger_core stinger_utils rt)
@@ -34,6 +34,7 @@ FOREACH(subdir ${subs})
       MESSAGE("BIN: DEFAULT SUBDIR FOUND ${subdir}")
 
       # Glob and compile and protobuf sources
+      SET(realprotosrc "")
       IF(EXISTS ${CMAKE_CURRENT_LIST_DIR}/${subdir}/proto)
 	IF(IS_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/${subdir}/proto)
 	  FILE(GLOB protos ABSOLUTE ${CMAKE_CURRENT_LIST_DIR}/${subdir}/proto/*.proto)

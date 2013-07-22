@@ -1,10 +1,20 @@
 include(ExternalProject)
 
-###############################################
-# Add library dependencies here as dep_<folder>
-SET(dep_stinger_utils stinger_core int_hm_seq string fmemopen compat)
-SET(dep_kv_store string)
+##################################################
+# Add library dependencies here as libdep_<folder>
+SET(libdep_stinger_utils stinger_core int_hm_seq string fmemopen compat)
+SET(libdep_kv_store string)
 SET(dep_mongoose dl)
+IF(APPLE)
+  SET(libdep_stinger_net ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib stinger_core)
+ELSE()
+  SET(libdep_stinger_net ${CMAKE_BINARY_DIR}/lib/libprotobuf.so stinger_core)
+ENDIF()
+
+#################################################
+# Add target dependencies here as tgtdep_<folder>
+SET(tgtdep_default protobuf)
+SET(tgtdep_stinger_net stinger_core)
 
 ################################################
 # make sure full-empty emulation isn't optimized
@@ -39,6 +49,7 @@ FOREACH(subdir ${subs})
       MESSAGE("LIB: DEFAULT SUBDIR FOUND ${subdir}")
 
       # Glob and compile and protobuf sources
+      SET(realprotosrc "")
       IF(EXISTS ${CMAKE_CURRENT_LIST_DIR}/${subdir}/proto)
 	IF(IS_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/${subdir}/proto)
 	  FILE(GLOB protos ABSOLUTE ${CMAKE_CURRENT_LIST_DIR}/${subdir}/proto/*.proto)
@@ -61,25 +72,34 @@ FOREACH(subdir ${subs})
 
 	# Build the shared library
 	ADD_LIBRARY(${subdir} SHARED ${srcs} ${realprotosrc} ${protohead})
-	TARGET_LINK_LIBRARIES(${subdir} ${dep_${subdir}})
+      TARGET_LINK_LIBRARIES(${subdir} ${libdep_${subdir}})
+      ADD_DEPENDENCIES(${subdir} ${tgtdep_default})
+      FOREACH(dep_target ${tgtdep_${subdir}})
+	ADD_DEPENDENCIES(${subdir} ${dep_target})
+      ENDFOREACH()
 	ADD_CUSTOM_COMMAND(TARGET ${subdir}
 	  POST_BUILD
 	  COMMAND ${CMAKE_COMMAND} -E remove_directory "${CMAKE_BINARY_DIR}/include/${subdir}"
 	  COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_LIST_DIR}/${subdir}/inc" "${CMAKE_BINARY_DIR}/include/${subdir}"
+	COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_BINARY_DIR}/${subdir}/proto" "${CMAKE_BINARY_DIR}/include/${subdir}/proto"
 	  )
 
 	# Build the static library
 	ADD_LIBRARY(${subdir}_static STATIC ${srcs} ${realprotosrc} ${protohead})
-	TARGET_LINK_LIBRARIES(${subdir}_static ${dep_${subdir}})
+      TARGET_LINK_LIBRARIES(${subdir}_static ${libdep_${subdir}})
+      ADD_DEPENDENCIES(${subdir}_static ${tgtdep_default})
+      FOREACH(dep_target ${tgtdep_${subdir}})
+	ADD_DEPENDENCIES(${subdir}_static ${dep_target})
+      ENDFOREACH()
 	ADD_CUSTOM_COMMAND(TARGET ${subdir}_static
 	  POST_BUILD
 	  COMMAND ${CMAKE_COMMAND} -E remove_directory "${CMAKE_BINARY_DIR}/include/${subdir}"
 	  COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_LIST_DIR}/${subdir}/inc" "${CMAKE_BINARY_DIR}/include/${subdir}"
+	COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_BINARY_DIR}/${subdir}/proto" "${CMAKE_BINARY_DIR}/include/${subdir}/proto"
 	  )
 	SET_TARGET_PROPERTIES(${subdir}_static PROPERTIES OUTPUT_NAME "${subdir}")
       ELSE()
 	IF (EXISTS ${CMAKE_CURRENT_LIST_DIR}/${subdir}/include)
-	MESSAGE("  here we are  ")
 	  ADD_CUSTOM_TARGET(${subdir} 
 	    ${CMAKE_COMMAND} -E remove_directory "${CMAKE_BINARY_DIR}/include/${subdir}"
 	    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_LIST_DIR}/${subdir}/include" "${CMAKE_BINARY_DIR}/include/${subdir}"
