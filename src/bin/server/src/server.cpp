@@ -18,9 +18,7 @@ extern "C" {
 #include "stinger_utils/csv.h"
 }
 
-#include "proto/stinger-batch.pb.h"
 #include "server.h"
-#include "send_rcv.h"
 
 using namespace gt::stinger;
 

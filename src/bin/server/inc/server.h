@@ -2,8 +2,8 @@
 #define _SERVER_H
 
 #include "stinger_core/stinger.h"
-#include "proto/stinger-batch.pb.h"
-#include "send_rcv.h"
+#include "stinger_net/proto/stinger-batch.pb.h"
+#include "stinger_net/send_rcv.h"
 
 using namespace gt::stinger;
 
