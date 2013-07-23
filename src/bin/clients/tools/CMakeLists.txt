@@ -3,6 +3,7 @@ include(ExternalProject)
 ###############################################
 # Add library dependencies here as dep_<folder>
 SET(libdep_default stinger_core stinger_utils)
+SET(libdep_web_server string mongoose kv_store)
 
 IF(APPLE)
 #  SET(libdep_twitter_json ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib stinger_net)
@@ -11,8 +12,7 @@ ELSE()
 ENDIF()
 
 SET(tgtdep_default stinger_core stinger_utils rt)
-#SET(tgtdep_twitter_json protobuf rapidjson stinger_net)
-SET(tgtdep_json_parser rapidjson)
+SET(tgtdep_web_server string rapidjson mongoose kv_store)
 
 #################################################################
 # Iterate over each library and build appropriately based on type

@@ -12,7 +12,6 @@ ENDIF()
 
 SET(tgtdep_default stinger_core stinger_utils rt)
 #SET(tgtdep_twitter_json protobuf rapidjson stinger_net)
-SET(tgtdep_json_parser rapidjson)
 
 #################################################################
 # Iterate over each library and build appropriately based on type
