@@ -8,6 +8,8 @@
 #include <unistd.h>
 #include <signal.h>
 
+#include "server.h"
+
 extern "C" {
 #include "stinger_core/stinger.h"
 #include "stinger_core/stinger_shared.h"
@@ -15,10 +17,9 @@ extern "C" {
 #include "stinger_utils/stinger_utils.h"
 #include "stinger_utils/timer.h"
 #include "stinger_utils/dimacs_support.h"
+#include "stinger_utils/json_support.h"
 #include "stinger_utils/csv.h"
 }
-
-#include "server.h"
 
 using namespace gt::stinger;
 
