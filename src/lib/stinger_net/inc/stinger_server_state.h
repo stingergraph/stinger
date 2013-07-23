@@ -54,6 +54,7 @@ namespace gt {
 	pthread_t main_loop;
 
 	stinger_t * stinger;
+	std::string stinger_loc;
 
 	/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
 	 * PRIVATE METHODS
@@ -112,8 +113,7 @@ namespace gt {
 	StingerAlgState *
 	get_alg(const std::string & name);
 
-
-	void
+        size_t
 	add_alg(size_t level, StingerAlgState * alg);
 
 	bool
@@ -130,6 +130,12 @@ namespace gt {
 
 	stinger_t *
 	get_stinger();
+
+	const std::string &
+	get_stinger_loc();
+
+	void
+	set_stinger_loc(const std::string & loc);
     };
 
   } /* gt */

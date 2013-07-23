@@ -52,6 +52,17 @@ handle_alg(struct AcceptedSock * sock, StingerServerState & server_state)
 
     LOG_D_A("Received new algorithm.  Printing incoming protobuf: %s", alg_to_server.DebugString().c_str());
 
+    ServerToAlg server_to_alg;
+    server_to_alg.set_alg_name(alg_to_server.alg_name());
+    server_to_alg.set_alg_num(alg_to_server.alg_num());
+    server_to_alg.set_action(alg_to_server.action());
+    server_to_alg.set_stinger_loc(server_state.get_stinger_loc());
+
+    if(alg_to_server.action() != REGISTER_ALG) {
+      LOG_E("Algorithm failed to register");
+      /* TODO handle this */
+    }
+
     /* check name and attempt to allocate space */
     if(is_simple_name(alg_to_server.alg_name().c_str(), alg_to_server.alg_name().length())) {
       int64_t data_total = alg_to_server.data_per_vertex() * STINGER_MAX_LVERTICES;
@@ -76,8 +87,6 @@ handle_alg(struct AcceptedSock * sock, StingerServerState & server_state)
       alg_state->data = data;
       alg_state->data_per_vertex = alg_to_server.data_per_vertex();
       alg_state->sock_handle = sock->handle;
-
-      ServerToAlg server_to_alg;
 
       int64_t max_level = 0;
       bool deps_resolved = true;
@@ -106,7 +115,9 @@ handle_alg(struct AcceptedSock * sock, StingerServerState & server_state)
 
       alg_state->level = max_level;
 
-      server_state.add_alg(max_level, alg_state);
+      server_to_alg.set_alg_num(server_state.add_alg(max_level, alg_state));
+
+      send_message(sock->handle, server_to_alg);
     } else {
       LOG_E_A("Error, requested name is not valid: %s",
 	alg_to_server.alg_name().c_str());
@@ -210,9 +221,11 @@ process_loop_handler(void * data)
 int
 main(int argc, char *argv[])
 {
-  struct stinger * S = stinger_new();
+  char * stinger_loc = NULL;
+  struct stinger * S = stinger_shared_new(&stinger_loc);
   StingerServerState & server_state = StingerServerState::get_server_state();
   server_state.set_stinger(S);
+  server_state.set_stinger_loc(stinger_loc);
 
   uint64_t buffer_size = 1ULL<<19ULL; /* 512KB - no specific reason for this size */
 

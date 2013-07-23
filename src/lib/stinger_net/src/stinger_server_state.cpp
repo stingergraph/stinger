@@ -214,13 +214,17 @@ StingerServerState::get_alg(const std::string & name)
   return rtn;
 }
 
-void
+size_t
 StingerServerState::add_alg(size_t level, StingerAlgState * alg)
 {
+  size_t rtn = 0;
   readfe((uint64_t *)&alg_lock);
   alg_tree[level].push_back(alg);
   alg_map[alg->name] = alg;
+  rtn = algs.size();
+  algs.push_back(alg);
   writeef((uint64_t *)&alg_lock, 1);
+  return rtn;
 }
 
 bool
@@ -256,4 +260,16 @@ stinger_t *
 StingerServerState::get_stinger()
 {
   return stinger;
+}
+
+const std::string &
+StingerServerState::get_stinger_loc()
+{
+  return stinger_loc;
+}
+
+void
+StingerServerState::set_stinger_loc(const std::string & loc)
+{
+  stinger_loc = loc;
 }
