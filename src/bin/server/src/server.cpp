@@ -104,9 +104,6 @@ int main(int argc, char *argv[])
 		  load_dimacs_graph (S, input_file);
 		} break;  /* DIMACS */
 
-      case 'e': {
-		} break;  /* Edge list */
-
       case 'g': {
 		} break;  /* GML / GraphML / GEXF -- you pick */
 
