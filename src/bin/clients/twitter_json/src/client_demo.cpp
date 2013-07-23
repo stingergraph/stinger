@@ -1,17 +1,3 @@
-extern "C" {
-#include "stinger_core/stinger.h"
-#include "stinger_utils/csv.h"
-#include "stinger_utils/timer.h"
-}
-
-#include "proto/twitter_json.pb.h"
-#include "twitter_json.h"
-
-#define RAPIDJSON_ASSERT(X) if (!(X)) { throw std::exception(); }
-#include "rapidjson/document.h"
-#include "rapidjson/filestream.h"
-#include "rapidjson/prettywriter.h"
-
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -21,6 +7,17 @@ extern "C" {
 #include <unistd.h>
 #include <string>
 #include <netdb.h>
+
+extern "C" {
+#include "stinger_core/stinger.h"
+#include "stinger_utils/csv.h"
+#include "stinger_utils/timer.h"
+}
+
+#include "twitter_json.h"
+
+#define RAPIDJSON_ASSERT(X) if (!(X)) { throw std::exception(); }
+
 
 using namespace gt::stinger;
 

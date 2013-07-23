@@ -1,12 +1,16 @@
-#ifndef _SEND_RCV_H
-#define _SEND_RCV_H
+#ifndef _TWITTER_JSON_H
+#define _TWITTER_JSON_H
 
-#include "proto/twitter_json.pb.h"
+#include "rapidjson/document.h"
+#include "rapidjson/filestream.h"
+#include "rapidjson/prettywriter.h"
+
+#include "stinger_net/proto/stinger-batch.pb.h"
+#include "stinger_net/send_rcv.h"
+
 
 using namespace gt::stinger;
 
 
-bool send_message(int socket, gt::stinger::StingerBatch & batch);
-bool recv_message(int socket, gt::stinger::StingerBatch & batch);
 
-#endif /* _SEND_RCV_H */
+#endif /* _TWITTER_JSON_H */
