@@ -56,6 +56,9 @@ void parse_args (const int argc, char *argv[],
 		 char **initial_graph_name, char **action_stream_name,
 		 int64_t * batch_size, int64_t * nbatch);
 
+int
+is_simple_name(const char * name, int64_t length);
+
 /* Freeing mem_handle frees all associated memory. */
 void snarf_graph (const char *initial_graph_name,
 		  int64_t * nv_out, int64_t * ne_out,

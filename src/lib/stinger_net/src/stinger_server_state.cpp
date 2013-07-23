@@ -21,10 +21,9 @@ struct delete_functor
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
  * PRIVATE METHODS
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
-StingerServerState::StingerServerState() : port(10101), alg_lock(1), stream_lock(1), batch_lock(1)
+StingerServerState::StingerServerState() : port(10101), alg_lock(1), stream_lock(1), batch_lock(1), dep_lock(1)
 {
-  LOG_D("Entering StingerServerState constructor");
-  LOG_D("Leaving StingerServerState constructor");
+  LOG_D("Initializing server state.");
 }
 
 StingerServerState::~StingerServerState()
@@ -156,21 +155,31 @@ StingerServerState::get_stream(std::string * name)
 }
 
 size_t
-StingerServerState::get_num_algs()
+StingerServerState::get_num_levels()
 {
   size_t num = 0;
   readfe((uint64_t *)&alg_lock);
-  num = algs.size();
+  num = alg_tree.size();
+  writeef((uint64_t *)&alg_lock, 1);
+  return num;
+}
+
+size_t
+StingerServerState::get_num_algs(size_t level)
+{
+  size_t num = 0;
+  readfe((uint64_t *)&alg_lock);
+  num = alg_tree[level].size();
   writeef((uint64_t *)&alg_lock, 1);
   return num;
 }
 
 StingerAlgState *
-StingerServerState::get_alg(size_t index)
+StingerServerState::get_alg(size_t level, size_t index)
 {
   StingerAlgState * rtn = NULL;
   readfe((uint64_t *)&alg_lock);
-  rtn = algs[index];
+  rtn = alg_tree[level][index];
   writeef((uint64_t *)&alg_lock, 1);
   return rtn;
 }
@@ -181,6 +190,16 @@ StingerServerState::get_alg(std::string * name)
   StingerAlgState * rtn = NULL;
   readfe((uint64_t *)&alg_lock);
   rtn = alg_map[name];
+  writeef((uint64_t *)&alg_lock, 1);
+  return rtn;
+}
+
+bool
+StingerServerState::has_alg(std::string * name)
+{
+  bool rtn = false;
+  readfe((uint64_t *)&alg_lock);
+  rtn = alg_map.count(name) > 0;
   writeef((uint64_t *)&alg_lock, 1);
   return rtn;
 }
@@ -196,4 +215,16 @@ void
 StingerServerState::set_main_loop_thread(pthread_t thread)
 {
   main_loop = thread;
+}
+
+void
+StingerServerState::set_stinger(stinger_t * S)
+{
+  stinger = S;
+}
+
+stinger_t *
+StingerServerState::get_stinger()
+{
+  return stinger;
 }
