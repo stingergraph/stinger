@@ -109,6 +109,33 @@ parse_args (const int argc, char *argv[],
 
 /* }}} */
 
+/**
+* @brief Tests if the string is less than 255 characters and contains only _, a-z, A-Z, 0-9
+*
+* @param name The string.
+* @param length The length of the string.
+*
+* @return 1 if the string is "simple", 0 otherwise
+*/
+int
+is_simple_name(const char * name, int64_t length)
+{
+  if(length > 254)
+    return 0;
+
+  for(int64_t i = 0; i < length; i++) {
+    char c = name[i];
+    if(!(
+      (c >= 'a' && c <= 'z') ||
+      (c >= 'A' && c <= 'Z') ||
+      (c >= '0' && c <= '9') ||
+      c == '_'))
+      return 0;
+  }
+
+  return 1;
+}
+
 /* {{{ File snarfing. */
 
 static int io_ready = 0;

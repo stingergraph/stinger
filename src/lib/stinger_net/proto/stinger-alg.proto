@@ -4,10 +4,12 @@ import "stinger_net/proto/stinger-batch.proto";
 
 enum AlgAction {
   REGISTER_ALG	      = 0;
-  BEGIN_PREPROCESS    = 1;
-  END_PREPROCESS      = 2;
-  BEGIN_POSTPROCESS   = 3;
-  END_POSTPROCESS     = 4;
+  BEGIN_INIT	      = 1;
+  END_INIT	      =	2;
+  BEGIN_PREPROCESS    = 3;
+  END_PREPROCESS      = 4;
+  BEGIN_POSTPROCESS   = 5;
+  END_POSTPROCESS     = 6;
 }
 
 enum AlgActionResult {
@@ -22,8 +24,10 @@ message AlgToServer {
   optional string     alg_name		= 2;
   optional int64      alg_num		= 3;
   optional int64      data_per_vertex	= 4 [default = 0];
-  required AlgAction  action		= 5;
-  repeated string     dep_name		= 6;
+  optional string     data_description	= 5;
+  required AlgAction  action		= 6;
+  repeated string     req_dep_name	= 7;
+  repeated string     opt_dep_name	= 8;
 }
 
 message ServerToAlg {
@@ -38,6 +42,8 @@ message ServerToAlg {
   optional StingerBatch	    batch	      	= 7;
   optional string	    stinger_loc	      	= 8;
   optional string	    alg_data_loc      	= 9;
-  repeated string	    dep_data_loc      	= 10;
-  repeated int64	    dep_data_per_vertex	= 11;
+  repeated string	    dep_name		= 10;
+  repeated string	    dep_description	= 11;
+  repeated string	    dep_data_loc      	= 12;
+  repeated int64	    dep_data_per_vertex	= 13;
 }

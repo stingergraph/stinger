@@ -1,6 +1,10 @@
 #ifndef  STINGER_SERVER_STATE_H
 #define  STINGER_SERVER_STATE_H
 
+extern "C" {
+  #include "stinger_core/stinger.h"
+}
+
 #include <pthread.h>
 #include <stdint.h>
 
@@ -30,7 +34,12 @@ namespace gt {
 
 	int64_t alg_lock;
 	std::vector<StingerAlgState *> algs;                     
+	std::vector<std::vector<StingerAlgState *> > alg_tree;
 	std::map<std::string *, StingerAlgState *> alg_map;        
+
+	int64_t dep_lock;
+	std::map<std::string *, std::vector<StingerAlgState *> > opt_dependencies;        
+	std::map<std::string *, std::vector<StingerAlgState *> > req_dependencies;        
 
 	int64_t stream_lock;
 	std::vector<StingerStreamState *> streams;
@@ -43,6 +52,8 @@ namespace gt {
 
 	std::vector<pthread_t> threads;
 	pthread_t main_loop;
+
+	stinger_t * stinger;
 
 	/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
 	 * PRIVATE METHODS
@@ -84,19 +95,43 @@ namespace gt {
 	get_stream(std::string * name);
 
 	size_t
-	get_num_algs();
+	get_num_levels();
+
+	size_t
+	get_num_algs(size_t level);
 
 	StingerAlgState *
-	get_alg(size_t index);
+	get_alg(size_t level, size_t index);
 
 	StingerAlgState *
 	get_alg(std::string * name);
+
+	bool
+	has_alg(std::string * name);
 
 	pthread_t &
 	push_thread(pthread_t & thread);
 
 	void
 	set_main_loop_thread(pthread_t thread);
+
+	void
+	set_stinger(stinger_t * S);
+
+	void
+	add_req_dep(std::string & parent, std::string & dependent);
+
+	void
+	add_opt_dep(std::string & parent, std::string & dependent);
+
+	std::string
+	get_next_req_dep(std::string & name);
+
+	std::string
+	get_next_opt_dep(std::string & name);
+
+	stinger_t *
+	get_stinger();
     };
 
   } /* gt */
