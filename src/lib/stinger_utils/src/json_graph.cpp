@@ -7,7 +7,7 @@ extern "C" {
 #include "stinger_core/stinger.h"
 }
 
-int
+extern "C" int
 load_json_graph (struct stinger * S, char * filename)
 {
   std::string line, text;

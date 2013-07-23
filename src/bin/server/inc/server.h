@@ -1,7 +1,9 @@
 #ifndef _SERVER_H
 #define _SERVER_H
 
+extern "C" {
 #include "stinger_core/stinger.h"
+}
 #include "stinger_net/proto/stinger-batch.pb.h"
 #include "stinger_net/send_rcv.h"
 
@@ -13,9 +15,6 @@ start_tcp_batch_server (struct stinger * S, int port, uint64_t buffer_size);
 
 void
 start_udp_graph_name_server (char * graph_name, size_t graph_sz, int port);
-
-int
-load_json_graph (struct stinger * S, char * filename);
 
 int
 process_batch(stinger_t * S, StingerBatch & batch, struct community_state * cstate);
