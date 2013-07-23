@@ -6,12 +6,15 @@ SET(libdep_default string int_hm_seq stinger_core stinger_utils)
 
 IF(APPLE)
   SET(libdep_server ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib stinger_net)
+  SET(libdep_server_alg_tmp ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib stinger_net)
 ELSE()
   SET(libdep_server ${CMAKE_BINARY_DIR}/lib/libprotobuf.so stinger_net)
+  SET(libdep_server_alg_tmp ${CMAKE_BINARY_DIR}/lib/libprotobuf.so stinger_net)
 ENDIF()
 
 SET(tgtdep_default string int_hm_seq stinger_core stinger_utils rt)
 SET(tgtdep_server rapidjson protobuf stinger_net)
+SET(tgtdep_server_alg_tmp rapidjson protobuf stinger_net)
 
 #################################################################
 # Iterate over each library and build appropriately based on type

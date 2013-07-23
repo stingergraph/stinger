@@ -145,7 +145,7 @@ StingerServerState::get_stream(size_t index)
 }
 
 StingerStreamState *
-StingerServerState::get_stream(std::string * name)
+StingerServerState::get_stream(std::string & name)
 {
   StingerStreamState * rtn = NULL;
   readfe((uint64_t *)&stream_lock);
@@ -165,6 +165,16 @@ StingerServerState::get_num_levels()
 }
 
 size_t
+StingerServerState::get_num_algs()
+{
+  size_t num = 0;
+  readfe((uint64_t *)&alg_lock);
+  num = algs.size();
+  writeef((uint64_t *)&alg_lock, 1);
+  return num;
+}
+
+size_t
 StingerServerState::get_num_algs(size_t level)
 {
   size_t num = 0;
@@ -172,6 +182,16 @@ StingerServerState::get_num_algs(size_t level)
   num = alg_tree[level].size();
   writeef((uint64_t *)&alg_lock, 1);
   return num;
+}
+
+StingerAlgState *
+StingerServerState::get_alg(size_t num)
+{
+  StingerAlgState * rtn = NULL;
+  readfe((uint64_t *)&alg_lock);
+  rtn = algs[num];
+  writeef((uint64_t *)&alg_lock, 1);
+  return rtn;
 }
 
 StingerAlgState *
@@ -185,7 +205,7 @@ StingerServerState::get_alg(size_t level, size_t index)
 }
 
 StingerAlgState *
-StingerServerState::get_alg(std::string * name)
+StingerServerState::get_alg(const std::string & name)
 {
   StingerAlgState * rtn = NULL;
   readfe((uint64_t *)&alg_lock);
@@ -194,8 +214,17 @@ StingerServerState::get_alg(std::string * name)
   return rtn;
 }
 
+void
+StingerServerState::add_alg(size_t level, StingerAlgState * alg)
+{
+  readfe((uint64_t *)&alg_lock);
+  alg_tree[level].push_back(alg);
+  alg_map[alg->name] = alg;
+  writeef((uint64_t *)&alg_lock, 1);
+}
+
 bool
-StingerServerState::has_alg(std::string * name)
+StingerServerState::has_alg(const std::string & name)
 {
   bool rtn = false;
   readfe((uint64_t *)&alg_lock);

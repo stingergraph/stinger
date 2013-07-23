@@ -35,15 +35,15 @@ namespace gt {
 	int64_t alg_lock;
 	std::vector<StingerAlgState *> algs;                     
 	std::vector<std::vector<StingerAlgState *> > alg_tree;
-	std::map<std::string *, StingerAlgState *> alg_map;        
+	std::map<std::string, StingerAlgState *> alg_map;        
 
 	int64_t dep_lock;
-	std::map<std::string *, std::vector<StingerAlgState *> > opt_dependencies;        
-	std::map<std::string *, std::vector<StingerAlgState *> > req_dependencies;        
+	std::map<std::string, std::vector<StingerAlgState *> > opt_dependencies;        
+	std::map<std::string, std::vector<StingerAlgState *> > req_dependencies;        
 
 	int64_t stream_lock;
 	std::vector<StingerStreamState *> streams;
-	std::map<std::string *, StingerStreamState *> stream_map;
+	std::map<std::string, StingerStreamState *> stream_map;
 
 	int64_t batch_lock;
 	std::queue<StingerBatch *> batches;
@@ -92,22 +92,32 @@ namespace gt {
 	get_stream(size_t index);
 
 	StingerStreamState *
-	get_stream(std::string * name);
+	get_stream(std::string & name);
 
 	size_t
 	get_num_levels();
 
 	size_t
+	get_num_algs();
+
+	size_t
 	get_num_algs(size_t level);
+
+	StingerAlgState *
+	get_alg(size_t num);
 
 	StingerAlgState *
 	get_alg(size_t level, size_t index);
 
 	StingerAlgState *
-	get_alg(std::string * name);
+	get_alg(const std::string & name);
+
+
+	void
+	add_alg(size_t level, StingerAlgState * alg);
 
 	bool
-	has_alg(std::string * name);
+	has_alg(const std::string & name);
 
 	pthread_t &
 	push_thread(pthread_t & thread);
@@ -117,18 +127,6 @@ namespace gt {
 
 	void
 	set_stinger(stinger_t * S);
-
-	void
-	add_req_dep(std::string & parent, std::string & dependent);
-
-	void
-	add_opt_dep(std::string & parent, std::string & dependent);
-
-	std::string
-	get_next_req_dep(std::string & name);
-
-	std::string
-	get_next_opt_dep(std::string & name);
 
 	stinger_t *
 	get_stinger();
