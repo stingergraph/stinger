@@ -41,9 +41,10 @@ message ServerToAlg {
 
   optional StingerBatch	    batch	      	= 7;
   optional string	    stinger_loc	      	= 8;
-  optional string	    alg_data_loc      	= 9;
-  repeated string	    dep_name		= 10;
-  repeated string	    dep_description	= 11;
-  repeated string	    dep_data_loc      	= 12;
-  repeated int64	    dep_data_per_vertex	= 13;
+  optional int64	    stinger_size	= 9;
+  optional string	    alg_data_loc      	= 10;
+  repeated string	    dep_name		= 11;
+  repeated string	    dep_description	= 12;
+  repeated string	    dep_data_loc      	= 13;
+  repeated int64	    dep_data_per_vertex	= 14;
 }

@@ -22,7 +22,7 @@
  * @return A pointer to the shared memory or NULL on failure.
  */
 void *
-shmmap (char * name, int oflags, mode_t mode, int prot, size_t size, int map) 
+shmmap (const char * name, int oflags, mode_t mode, int prot, size_t size, int map) 
 {
 #if !defined(__MTA__)
   int fd = shm_open(name, oflags, mode);
@@ -60,7 +60,7 @@ shmmap (char * name, int oflags, mode_t mode, int prot, size_t size, int map)
  * @return 0 on success, -1 on failure.
  */
 int
-shmunmap (char * name, void * ptr, size_t size) 
+shmunmap (const char * name, void * ptr, size_t size) 
 {
   if(munmap(ptr, size))
     return -1;
@@ -181,13 +181,13 @@ stinger_shared_new (char ** out)
  * @return A pointer to the stinger.
  */
 struct stinger *
-stinger_shared_map (char * name, size_t sz)
+stinger_shared_map (const char * name, size_t sz)
 {
   return shmmap (name, O_RDONLY, S_IRUSR, PROT_READ, sz, MAP_SHARED);
 }
 
 struct stinger *
-stinger_shared_private (char * name, size_t sz)
+stinger_shared_private (const char * name, size_t sz)
 {
   return shmmap (name, O_RDONLY, S_IRUSR, PROT_READ, sz, MAP_PRIVATE);
 }
@@ -200,7 +200,7 @@ stinger_shared_private (char * name, size_t sz)
  * @return A NULL pointer. Name and shared will also be freed.
  */
 struct stinger *
-stinger_shared_free (struct stinger *S, char * name, size_t sz)
+stinger_shared_free (struct stinger *S, const char * name, size_t sz)
 {
   if (!S)
     return S;
@@ -219,7 +219,7 @@ stinger_shared_free (struct stinger *S, char * name, size_t sz)
  * @return A NULL pointer.
  */
 struct stinger *
-stinger_shared_unmap (struct stinger *S, char *name, size_t sz)
+stinger_shared_unmap (struct stinger *S, const char *name, size_t sz)
 {
   if(!S)
     return S;

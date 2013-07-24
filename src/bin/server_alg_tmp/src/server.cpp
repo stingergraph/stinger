@@ -57,6 +57,7 @@ handle_alg(struct AcceptedSock * sock, StingerServerState & server_state)
     server_to_alg.set_alg_num(alg_to_server.alg_num());
     server_to_alg.set_action(alg_to_server.action());
     server_to_alg.set_stinger_loc(server_state.get_stinger_loc());
+    server_to_alg.set_stinger_size(sizeof(stinger_t) + server_state.get_stinger()->length);
 
     if(alg_to_server.action() != REGISTER_ALG) {
       LOG_E("Algorithm failed to register");
