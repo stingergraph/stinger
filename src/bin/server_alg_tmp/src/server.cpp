@@ -158,6 +158,8 @@ new_connection_handler(void * data)
 void *
 process_loop_handler(void * data)
 {
+  LOG_V("Main loop thread started");
+
   StingerServerState & server_state = StingerServerState::get_server_state();
 
   while(1) { /* TODO clean shutdown mechanism */
@@ -222,8 +224,11 @@ process_loop_handler(void * data)
 int
 main(int argc, char *argv[])
 {
+  LOG_V("Starting up");
   char * stinger_loc = NULL;
   struct stinger * S = stinger_shared_new(&stinger_loc);
+  LOG_V("Stinger allocated");
+
   StingerServerState & server_state = StingerServerState::get_server_state();
   server_state.set_stinger(S);
   server_state.set_stinger_loc(stinger_loc);
@@ -250,11 +255,12 @@ main(int argc, char *argv[])
     }
   }
 
+  LOG_V("Opening the socket");
   int sock_handle;
 
   struct sockaddr_in sock_addr = {
     .sin_family = AF_INET, 
-    .sin_port   = (in_port_t)server_state.get_port()
+    .sin_port   = htons((in_port_t)server_state.get_port())
   };
 
   if(-1 == (sock_handle = socket(AF_INET, SOCK_STREAM, 0))) {
@@ -272,6 +278,8 @@ main(int argc, char *argv[])
     exit(-1);
   }
 
+  LOG_V("Spawning the main loop thread");
+
   pthread_t main_loop_thread;
   pthread_create(&main_loop_thread, NULL, &process_loop_handler, NULL);
   server_state.set_main_loop_thread(main_loop_thread);
@@ -279,6 +287,7 @@ main(int argc, char *argv[])
   while(1) {
     struct AcceptedSock * accepted_sock = (struct AcceptedSock *)xcalloc(1,sizeof(struct AcceptedSock));
 
+    LOG_V("Waiting for connections...")
     accepted_sock->handle = accept(sock_handle, &(accepted_sock->addr), &(accepted_sock->len));
 
     pthread_t new_thread;

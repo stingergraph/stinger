@@ -6,12 +6,14 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "proto/stinger-alg.pb.h"
+#include "proto/stinger-connect.pb.h"
 #include "send_rcv.h"
 
 extern "C" {
@@ -25,36 +27,40 @@ using namespace gt::stinger;
 extern "C" stinger_registered_alg *
 stinger_register_alg_impl(stinger_register_alg_params params)
 {
-  struct addrinfo * res;
-  struct addrinfo hint;
-  hint.ai_protocol = AF_INET;
+  LOG_D("Registering alg");
 
-  char portname[256];
+  struct sockaddr_in sock_addr;
+  memset(&sock_addr, 0, sizeof(struct sockaddr_in));
+  struct hostent * hp = gethostbyname(params.host);
 
-  if(params.port) {
-    sprintf(portname, "%d", params.port);
-  } else {
-    sprintf(portname, "10101");
-  }
-
-  if(getaddrinfo(params.host, portname, &hint, &res)) {
-    LOG_E_A("Resolving %s %d failed", params.host, params.port);
-    freeaddrinfo(res);
+  if(!hp) {
+    LOG_E_A("Error resolving host %s", params.host);
     return NULL;
   }
 
-  int sock = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+  int sock = socket(AF_INET, SOCK_STREAM, 0);
   if(-1 == sock) {
     LOG_E("Error opening socket");
-    freeaddrinfo(res);
     return NULL;
   }
 
-  if(-1 == connect(sock, res->ai_addr, res->ai_addrlen)) {
+  memcpy(&sock_addr.sin_addr.s_addr, hp->h_addr, hp->h_length);
+  sock_addr.sin_family = AF_INET;
+
+  LOG_D_A("Socket open, connecting to host %s %s", params.host, inet_ntoa(**(struct in_addr **)hp->h_addr_list));
+
+  if(params.port) {
+    sock_addr.sin_port = htons(params.port);
+  } else {
+    sock_addr.sin_port = htons(10101);
+  }
+
+  if(-1 == connect(sock, (sockaddr *)&sock_addr, sizeof(struct sockaddr_in))) {
     LOG_E("Error connecting socket");
-    freeaddrinfo(res);
     return NULL;
   }
+
+  LOG_D("Connected to server");
 
   AlgToServer alg_to_server;
   alg_to_server.set_alg_name(params.name);
@@ -69,15 +75,21 @@ stinger_register_alg_impl(stinger_register_alg_params params)
     alg_to_server.add_req_dep_name(params.dependencies[i]);
   }
 
+  LOG_D("Sending message to server");
+  Connect connect;
+  connect.set_type(CLIENT_ALG);
+  send_message(sock, connect);
   send_message(sock, alg_to_server);
 
   ServerToAlg server_to_alg;
 
+  LOG_D("Waiting on message from server");
   recv_message(sock, server_to_alg);
+
+  LOG_D("Received message from server");
 
   if(server_to_alg.result() != SUCCESS) {
     LOG_E("Error connecting socket");
-    freeaddrinfo(res);
     return NULL;
   }
 
@@ -85,16 +97,15 @@ stinger_register_alg_impl(stinger_register_alg_params params)
 
   if(!rtn) {
     LOG_E("Failed to allocate return");
-    freeaddrinfo(res);
     return NULL;
   }
 
+  LOG_D_A("Mapping STINGER %s", server_to_alg.stinger_loc().c_str());
   rtn->sock = sock;
   rtn->stinger = stinger_shared_map(server_to_alg.stinger_loc().c_str(), server_to_alg.stinger_size());
 
   if(!rtn) {
     LOG_E("Failed to connect to stinger");
-    freeaddrinfo(res);
     free(rtn);
     return NULL;
   }
@@ -130,6 +141,5 @@ stinger_register_alg_impl(stinger_register_alg_params params)
     rtn->dep_data_per_vertex[d] = server_to_alg.dep_data_per_vertex(d);
   }
 
-  freeaddrinfo(res);
   return rtn;
 }

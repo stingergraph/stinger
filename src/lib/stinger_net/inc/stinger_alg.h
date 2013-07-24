@@ -34,7 +34,7 @@ typedef struct {
   int64_t num_dependencies;
 } stinger_register_alg_params;
 
-#define stinger_register_alg(...) stinger_register_alg_impl((stinger_register_alg_params){__VAR_ARGS__})
+#define stinger_register_alg(...) stinger_register_alg_impl((stinger_register_alg_params){__VA_ARGS__})
 stinger_registered_alg *
 stinger_register_alg_impl(stinger_register_alg_params params);
 

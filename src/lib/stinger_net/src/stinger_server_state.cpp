@@ -219,6 +219,7 @@ StingerServerState::add_alg(size_t level, StingerAlgState * alg)
 {
   size_t rtn = 0;
   readfe((uint64_t *)&alg_lock);
+  alg_tree.resize(level+1);
   alg_tree[level].push_back(alg);
   alg_map[alg->name] = alg;
   rtn = algs.size();
