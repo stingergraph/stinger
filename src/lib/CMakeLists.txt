@@ -14,6 +14,7 @@ ENDIF()
 #################################################
 # Add target dependencies here as tgtdep_<folder>
 SET(tgtdep_default protobuf)
+SET(tgtdep_stinger_utils rapidjson)
 SET(tgtdep_stinger_net stinger_core)
 
 ################################################
