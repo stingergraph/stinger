@@ -9,11 +9,13 @@ IF(APPLE)
   SET(libdep_random_edge_generator ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib stinger_net)
   SET(libdep_csv_stream ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib stinger_net)
   SET(libdep_json_stream ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib stinger_net)
+  SET(libdep_twitter_stream ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib stinger_net)
 ELSE()
   SET(libdep_twitter_json ${CMAKE_BINARY_DIR}/lib/libprotobuf.so stinger_net)
   SET(libdep_random_edge_generator ${CMAKE_BINARY_DIR}/lib/libprotobuf.so stinger_net)
   SET(libdep_csv_stream ${CMAKE_BINARY_DIR}/lib/libprotobuf.so stinger_net)
   SET(libdep_json_stream ${CMAKE_BINARY_DIR}/lib/libprotobuf.so stinger_net)
+  SET(libdep_twitter_stream ${CMAKE_BINARY_DIR}/lib/libprotobuf.so stinger_net)
 ENDIF()
 
 SET(tgtdep_default stinger_core stinger_utils rt)
@@ -21,6 +23,7 @@ SET(tgtdep_twitter_json protobuf rapidjson stinger_net)
 SET(tgtdep_random_edge_generator protobuf stinger_net)
 SET(tgtdep_csv_stream protobuf stinger_net)
 SET(tgtdep_json_stream protobuf stinger_net)
+SET(tgtdep_twitter_stream protobuf stinger_net)
 
 #################################################################
 # Iterate over each library and build appropriately based on type
