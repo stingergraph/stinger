@@ -14,6 +14,7 @@ typedef struct {
   char stinger_loc[256];
   char alg_data_loc[256];
   void * alg_data;
+  int64_t alg_data_per_vertex;
   int64_t batch;
   int sock;
   int64_t dep_count;

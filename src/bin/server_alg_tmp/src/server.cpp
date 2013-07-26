@@ -54,14 +54,23 @@ handle_alg(struct AcceptedSock * sock, StingerServerState & server_state)
 
     ServerToAlg server_to_alg;
     server_to_alg.set_alg_name(alg_to_server.alg_name());
-    server_to_alg.set_alg_num(alg_to_server.alg_num());
     server_to_alg.set_action(alg_to_server.action());
     server_to_alg.set_stinger_loc(server_state.get_stinger_loc());
     server_to_alg.set_stinger_size(sizeof(stinger_t) + server_state.get_stinger()->length);
+    server_to_alg.set_result(SUCCESS);
 
     if(alg_to_server.action() != REGISTER_ALG) {
       LOG_E("Algorithm failed to register");
-      /* TODO handle this */
+      server_to_alg.set_result(FAILURE_GENERIC);
+      send_message(sock->handle, server_to_alg);
+      return;
+    }
+
+    if(server_state.has_alg(alg_to_server.alg_name())) {
+      LOG_E("Algorithm already exists");
+      server_to_alg.set_result(FAILURE_NAME_EXISTS);
+      send_message(sock->handle, server_to_alg);
+      return;
     }
 
     /* check name and attempt to allocate space */
@@ -72,15 +81,21 @@ handle_alg(struct AcceptedSock * sock, StingerServerState & server_state)
 
       if(data_total) {
 	sprintf(map_name, "/%s", alg_to_server.alg_name().c_str());
-	data = shmmap(map_name, O_CREAT | O_RDWR | O_EXCL, S_IRUSR | S_IWUSR, PROT_READ | PROT_WRITE, data_total, MAP_SHARED);
+	LOG_D_A("Attempting to map %ld at %s", data_total, map_name);
+	data = shmmap(map_name, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, PROT_READ | PROT_WRITE, data_total, MAP_SHARED);
 
 	if(!data) {
 	  LOG_E_A("Error, mapping storage for algorithm %s failed (%ld bytes per vertex)", 
 	    alg_to_server.alg_name().c_str(), alg_to_server.data_per_vertex());
-	  /* TODO handle this */
+	  server_to_alg.set_result(FAILURE_GENERIC);
+	  send_message(sock->handle, server_to_alg);
 	  return;
 	}
+	server_to_alg.set_alg_data_loc(map_name);
+	LOG_D("Map success")
       }
+
+      LOG_D("Creating algorithm structure")
 
       StingerAlgState * alg_state = new StingerAlgState();
       alg_state->name = alg_to_server.alg_name();
@@ -88,6 +103,8 @@ handle_alg(struct AcceptedSock * sock, StingerServerState & server_state)
       alg_state->data = data;
       alg_state->data_per_vertex = alg_to_server.data_per_vertex();
       alg_state->sock_handle = sock->handle;
+
+      LOG_D("Resolving dependencies")
 
       int64_t max_level = 0;
       bool deps_resolved = true;
@@ -116,7 +133,11 @@ handle_alg(struct AcceptedSock * sock, StingerServerState & server_state)
 
       alg_state->level = max_level;
 
+      LOG_V_A("Adding algorithm %s at level %ld", alg_to_server.alg_name().c_str(), max_level);
+
       server_to_alg.set_alg_num(server_state.add_alg(max_level, alg_state));
+
+      LOG_V("Algorithm added. Sending response");
 
       send_message(sock->handle, server_to_alg);
     } else {
@@ -125,6 +146,26 @@ handle_alg(struct AcceptedSock * sock, StingerServerState & server_state)
       /* TODO handle this */
       return;
     }
+  }
+}
+
+int
+can_be_read(int fd) {
+  fd_set rfds;
+  struct timeval tv = {.tv_sec = 0, .tv_usec = 0};
+
+  FD_ZERO(&rfds);
+  FD_SET(fd, &rfds);
+
+  int retval = select(fd+1, &rfds, NULL, NULL, &tv);
+
+  if (retval == -1) {
+    LOG_E("Socket error in select");
+    return 0;
+  } else if (retval) {
+    return 1;
+  } else {
+    return 0;
   }
 }
 
@@ -172,8 +213,21 @@ process_loop_handler(void * data)
       for(size_t cur_alg_index = 0; cur_alg_index < stop_alg_index; cur_alg_index++) {
 	StingerAlgState * cur_alg = server_state.get_alg(cur_level_index, cur_alg_index);
 
-	if(cur_alg->state == ALG_STATE_READY_INIT) {
+	if(cur_alg->state == ALG_STATE_READY_INIT && can_be_read(cur_alg->sock_handle)) {
+	  AlgToServer alg_to_server;
+
+	  if(recv_message(cur_alg->sock_handle, alg_to_server) && alg_to_server.alg_name().compare(cur_alg->name) &&
+	    alg_to_server.action() == BEGIN_INIT) {
+	    
+	    ServerToAlg server_to_alg;
+	    server_to_alg.set_alg_name(alg_to_server.alg_name());
+	    server_to_alg.set_action(BEGIN_INIT);
+	    server_to_alg.set_result(SUCCESS);
+
+	    send_message(cur_alg->sock_handle, server_to_alg);
+	    cur_alg->state = ALG_STATE_PERFORMING_INIT;
 	  /* TODO handle initializing the algorithm and the static stuff */
+	  }
 	}
 
 	if(cur_alg->state == ALG_STATE_READY_PRE) {

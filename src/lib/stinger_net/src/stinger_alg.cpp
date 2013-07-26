@@ -68,6 +68,10 @@ stinger_register_alg_impl(stinger_register_alg_params params)
 
   if(params.data_per_vertex) {
     alg_to_server.set_data_per_vertex(params.data_per_vertex);
+    if(!params.data_description) {
+      LOG_E("Missing data description")
+      return NULL;
+    }
     alg_to_server.set_data_description(params.data_description);
   }
 
@@ -89,7 +93,7 @@ stinger_register_alg_impl(stinger_register_alg_params params)
   LOG_D("Received message from server");
 
   if(server_to_alg.result() != SUCCESS) {
-    LOG_E("Error connecting socket");
+    LOG_E("Error connecting to server");
     return NULL;
   }
 
@@ -109,10 +113,26 @@ stinger_register_alg_impl(stinger_register_alg_params params)
     free(rtn);
     return NULL;
   }
-
+                                                
   strcpy(rtn->stinger_loc, server_to_alg.stinger_loc().c_str());
-  strcpy(rtn->alg_data_loc, server_to_alg.alg_data_loc().c_str());
-  rtn->alg_data = shmmap(server_to_alg.alg_data_loc().c_str(), O_RDWR, S_IRUSR | S_IWUSR, PROT_READ | PROT_WRITE, params.data_per_vertex * STINGER_MAX_LVERTICES, MAP_SHARED);
+  LOG_D("STINGER mapped.");
+
+
+  rtn->alg_data_per_vertex = params.data_per_vertex;
+  if(params.data_per_vertex) {
+    LOG_D_A("Mapping alg storage at %s", server_to_alg.alg_data_loc().c_str());
+    strcpy(rtn->alg_data_loc, server_to_alg.alg_data_loc().c_str());
+    rtn->alg_data = shmmap(server_to_alg.alg_data_loc().c_str(), O_RDWR, S_IRUSR | S_IWUSR, PROT_READ | PROT_WRITE, params.data_per_vertex * STINGER_MAX_LVERTICES, MAP_SHARED);
+    if(!rtn->alg_data) {
+      LOG_E("Mapping alg data failed");
+    }
+  } else {
+    strcpy(rtn->alg_data_loc, "");
+    rtn->alg_data = NULL;
+  }
+
+  LOG_D("Handling dependencies");
+
   rtn->batch = 0;
   rtn->dep_count = server_to_alg.dep_name_size();
 
@@ -140,6 +160,8 @@ stinger_register_alg_impl(stinger_register_alg_params params)
     strcpy(rtn->dep_description[d], server_to_alg.dep_description(d).c_str());
     rtn->dep_data_per_vertex[d] = server_to_alg.dep_data_per_vertex(d);
   }
+
+  LOG_D_A("Algorithm %s successfully registered", params.name);
 
   return rtn;
 }
