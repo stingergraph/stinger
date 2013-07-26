@@ -44,6 +44,17 @@ struct AcceptedSock {
   int handle;
 };
 
+void *
+test_thread_handler(void *) {
+  StingerServerState & server_state = StingerServerState::get_server_state();
+  while(1) {
+    sleep(10);
+    StingerBatch * batch = new StingerBatch();
+    server_state.enqueue_batch(batch);
+  }
+  return NULL;
+}
+
 void
 handle_alg(struct AcceptedSock * sock, StingerServerState & server_state)
 {
@@ -214,10 +225,12 @@ process_loop_handler(void * data)
 	StingerAlgState * cur_alg = server_state.get_alg(cur_level_index, cur_alg_index);
 
 	if(cur_alg->state == ALG_STATE_READY_INIT && can_be_read(cur_alg->sock_handle)) {
+	  /* TODO handle initializing the algorithm and the static stuff */
 	  AlgToServer alg_to_server;
 
-	  if(recv_message(cur_alg->sock_handle, alg_to_server) && alg_to_server.alg_name().compare(cur_alg->name) &&
-	    alg_to_server.action() == BEGIN_INIT) {
+	  if(recv_message(cur_alg->sock_handle, alg_to_server))
+	    if(alg_to_server.alg_name().compare(cur_alg->name) == 0)
+	    if(alg_to_server.action() == BEGIN_INIT) {
 	    
 	    ServerToAlg server_to_alg;
 	    server_to_alg.set_alg_name(alg_to_server.alg_name());
@@ -226,7 +239,54 @@ process_loop_handler(void * data)
 
 	    send_message(cur_alg->sock_handle, server_to_alg);
 	    cur_alg->state = ALG_STATE_PERFORMING_INIT;
+	    while(!can_be_read(cur_alg->sock_handle)) {
+	      usleep(100);
+	    }
+	    if(recv_message(cur_alg->sock_handle, alg_to_server) && alg_to_server.alg_name().compare(cur_alg->name) == 0 &&
+	      alg_to_server.action() == END_INIT) {
+	      server_to_alg.set_action(END_INIT);
+	      server_to_alg.set_result(SUCCESS);
+	      send_message(cur_alg->sock_handle, server_to_alg);
+	      cur_alg->state = ALG_STATE_READY_PRE;
+	    } else {
+	      LOG_E("Algorithm sent invalid message. Expected end of init");
+	      cur_alg->state = ALG_STATE_ERROR;
+	      /* TODO HANDLE */
+	    }
+	  } else {
+	    LOG_E("Algorithm sent invalid message. Expected begin init");
+	    LOG_D_A("Alg name |%s| received name |%s|", alg_to_server.alg_name().c_str(), cur_alg->name.c_str());
+	    cur_alg->state = ALG_STATE_ERROR;
+	    /* TODO HANDLE */
+	  }
+	  else {
+	    LOG_E("Name match");
+	    LOG_D_A("Alg name |%s| received name |%s|", alg_to_server.alg_name().c_str(), cur_alg->name.c_str());
+	  }
+	  else {
+	    LOG_E("reading socket");
+	  }
+	}
+
+	if(cur_alg->state == ALG_STATE_READY_PRE && can_be_read(cur_alg->sock_handle)) {
 	  /* TODO handle initializing the algorithm and the static stuff */
+	  AlgToServer alg_to_server;
+
+	  if(recv_message(cur_alg->sock_handle, alg_to_server) && alg_to_server.alg_name().compare(cur_alg->name) == 0 &&
+	    alg_to_server.action() == BEGIN_PREPROCESS) {
+	    
+	    ServerToAlg server_to_alg;
+	    server_to_alg.set_alg_name(alg_to_server.alg_name());
+	    server_to_alg.set_action(BEGIN_PREPROCESS);
+	    server_to_alg.set_result(SUCCESS);
+	    server_to_alg.set_allocated_batch(batch);
+	    send_message(cur_alg->sock_handle, server_to_alg);
+	    server_to_alg.release_batch();
+	    cur_alg->state = ALG_STATE_PERFORMING_PRE;
+	  } else {
+	    LOG_E("Algorithm sent invalid message. Expected begin init");
+	    cur_alg->state = ALG_STATE_ERROR;
+	    /* TODO handle */
 	  }
 	}
 
@@ -243,6 +303,24 @@ process_loop_handler(void * data)
 
 	if(cur_alg->state == ALG_STATE_PERFORMING_PRE) {
 	  /* TODO wait on completion message */
+	  AlgToServer alg_to_server;
+
+	  while(!can_be_read(cur_alg->sock_handle)) {
+	    usleep(100);
+	  }
+	  if(recv_message(cur_alg->sock_handle, alg_to_server) && alg_to_server.alg_name().compare(cur_alg->name) == 0 &&
+	    alg_to_server.action() == END_PREPROCESS) {
+
+	    ServerToAlg server_to_alg;
+	    server_to_alg.set_action(END_PREPROCESS);
+	    server_to_alg.set_result(SUCCESS);
+	    send_message(cur_alg->sock_handle, server_to_alg);
+	    cur_alg->state = ALG_STATE_READY_POST;
+	  } else {
+	    LOG_E("Algorithm sent invalid message. Expected end of init");
+	    cur_alg->state = ALG_STATE_ERROR;
+	    /* TODO handle */
+	  }
 	}
       }
     }
@@ -258,6 +336,24 @@ process_loop_handler(void * data)
 
 	if(cur_alg->state == ALG_STATE_READY_POST) {
 	  /* TODO handle streaming postprocessing*/
+	  AlgToServer alg_to_server;
+
+	  if(recv_message(cur_alg->sock_handle, alg_to_server) && alg_to_server.alg_name().compare(cur_alg->name) == 0&&
+	    alg_to_server.action() == BEGIN_POSTPROCESS) {
+	    
+	    ServerToAlg server_to_alg;
+	    server_to_alg.set_alg_name(alg_to_server.alg_name());
+	    server_to_alg.set_action(BEGIN_POSTPROCESS);
+	    server_to_alg.set_result(SUCCESS);
+	    server_to_alg.set_allocated_batch(batch);
+	    send_message(cur_alg->sock_handle, server_to_alg);
+	    server_to_alg.release_batch();
+	    cur_alg->state = ALG_STATE_PERFORMING_POST;
+	  } else {
+	    LOG_E("Algorithm sent invalid message. Expected begin init");
+	    cur_alg->state = ALG_STATE_ERROR;
+	    /* TODO handle */
+	  }
 	}
       }
 
@@ -269,9 +365,29 @@ process_loop_handler(void * data)
 
 	if(cur_alg->state == ALG_STATE_PERFORMING_POST) {
 	  /* TODO wait for completion of post */
+	  AlgToServer alg_to_server;
+
+	  while(!can_be_read(cur_alg->sock_handle)) {
+	    usleep(100);
+	  }
+	  if(recv_message(cur_alg->sock_handle, alg_to_server) && alg_to_server.alg_name().compare(cur_alg->name) == 0 &&
+	    alg_to_server.action() == END_POSTPROCESS) {
+
+	    ServerToAlg server_to_alg;
+	    server_to_alg.set_action(END_POSTPROCESS);
+	    server_to_alg.set_result(SUCCESS);
+	    send_message(cur_alg->sock_handle, server_to_alg);
+	    cur_alg->state = ALG_STATE_READY_PRE;
+	  } else {
+	    LOG_E("Algorithm sent invalid message. Expected end of init");
+	    cur_alg->state = ALG_STATE_ERROR;
+	    /* TODO handle */
+	  }
 	}
       }
     }
+
+    delete batch;
   }
 }
 
@@ -337,6 +453,10 @@ main(int argc, char *argv[])
   pthread_t main_loop_thread;
   pthread_create(&main_loop_thread, NULL, &process_loop_handler, NULL);
   server_state.set_main_loop_thread(main_loop_thread);
+
+  /* TODO XXX remove me */
+  pthread_t test_thread;
+  pthread_create(&test_thread, NULL, &test_thread_handler, NULL);
 
   while(1) {
     struct AcceptedSock * accepted_sock = (struct AcceptedSock *)xcalloc(1,sizeof(struct AcceptedSock));

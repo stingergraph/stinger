@@ -97,12 +97,15 @@ stinger_register_alg_impl(stinger_register_alg_params params)
     return NULL;
   }
 
-  stinger_registered_alg * rtn = (stinger_registered_alg *) xmalloc(sizeof(stinger_registered_alg));
+  stinger_registered_alg * rtn = (stinger_registered_alg *) xcalloc(1, sizeof(stinger_registered_alg));
 
   if(!rtn) {
     LOG_E("Failed to allocate return");
     return NULL;
   }
+
+  strncpy(rtn->alg_name, server_to_alg.alg_name().c_str(),255);
+  rtn->alg_num = server_to_alg.alg_num();
 
   LOG_D_A("Mapping STINGER %s", server_to_alg.stinger_loc().c_str());
   rtn->sock = sock;
@@ -161,7 +164,394 @@ stinger_register_alg_impl(stinger_register_alg_params params)
     rtn->dep_data_per_vertex[d] = server_to_alg.dep_data_per_vertex(d);
   }
 
+  rtn->enabled = true;
   LOG_D_A("Algorithm %s successfully registered", params.name);
 
   return rtn;
+}
+
+extern "C" stinger_registered_alg *
+stinger_alg_begin_init(stinger_registered_alg * alg)
+{
+  LOG_D("Requesting init");
+
+  AlgToServer alg_to_server;
+  alg_to_server.set_alg_name(alg->alg_name);
+  alg_to_server.set_alg_num(alg->alg_num);
+  alg_to_server.set_action(BEGIN_INIT);
+
+  LOG_D("Sending message to server");
+  send_message(alg->sock, alg_to_server);
+
+  ServerToAlg server_to_alg;
+
+  LOG_D("Waiting on message from server");
+  recv_message(alg->sock, server_to_alg);
+
+  LOG_D("Received message from server");
+
+  if(server_to_alg.result() != SUCCESS || server_to_alg.action() != alg_to_server.action()) {
+    LOG_E("Error - failure at server or incorrect action returned");
+    alg->enabled = false;
+    return NULL;
+  }
+
+  LOG_D_A("Algorithm %s ready for init", alg->alg_name);
+
+  return alg;
+}
+
+extern "C" stinger_registered_alg *
+stinger_alg_end_init(stinger_registered_alg * alg)
+{
+  LOG_D("Ending init");
+
+  AlgToServer alg_to_server;
+  alg_to_server.set_alg_name(alg->alg_name);
+  alg_to_server.set_alg_num(alg->alg_num);
+  alg_to_server.set_action(END_INIT);
+
+  LOG_D("Sending message to server");
+  send_message(alg->sock, alg_to_server);
+
+  ServerToAlg server_to_alg;
+
+  LOG_D("Waiting on message from server");
+  recv_message(alg->sock, server_to_alg);
+
+  LOG_D("Received message from server");
+
+  if(server_to_alg.result() != SUCCESS || server_to_alg.action() != alg_to_server.action()) {
+    LOG_E("Error - failure at server or incorrect action returned");
+    alg->enabled = false;
+    return NULL;
+  }
+
+  LOG_D_A("Algorithm %s has completed init", alg->alg_name);
+
+  return alg;
+}
+
+extern "C" stinger_registered_alg *
+stinger_alg_begin_pre(stinger_registered_alg * alg)
+{
+  LOG_D("Requesting pre");
+
+  AlgToServer alg_to_server;
+  alg_to_server.set_alg_name(alg->alg_name);
+  alg_to_server.set_alg_num(alg->alg_num);
+  alg_to_server.set_action(BEGIN_PREPROCESS);
+
+  LOG_D("Sending message to server");
+  send_message(alg->sock, alg_to_server);
+
+  ServerToAlg * server_to_alg = NULL;
+  if(!alg->batch_storage) {
+    server_to_alg = new ServerToAlg();
+    alg->batch_storage = (void *)server_to_alg;
+  } else {
+    server_to_alg = (ServerToAlg *)alg->batch_storage;
+  }
+
+  LOG_D("Waiting on message from server");
+  recv_message(alg->sock, *server_to_alg);
+
+  LOG_D("Received message from server");
+
+  if(server_to_alg->result() != SUCCESS || server_to_alg->action() != alg_to_server.action()) {
+    LOG_E("Error - failure at server or incorrect action returned");
+    alg->enabled = false;
+    return NULL;
+  }
+
+  alg->num_insertions = server_to_alg->batch().insertions_size();
+
+  if(alg->insertions) {
+    free(alg->insertions);
+  }
+
+  alg->insertions = (stinger_edge_update *)xcalloc(alg->num_insertions, sizeof(stinger_edge_update));
+
+  alg->num_deletions  = server_to_alg->batch().deletions_size();
+
+  if(alg->deletions) {
+    free(alg->deletions);
+  }
+
+  alg->deletions = (stinger_edge_update *)xcalloc(alg->num_deletions, sizeof(stinger_edge_update));
+
+  switch(server_to_alg->batch().type()) {
+    case NUMBERS_ONLY: {
+      alg->batch_type = BATCH_NUMBERS_ONLY;
+      OMP("omp for")
+	for (size_t i = 0; i < server_to_alg->batch().insertions_size(); i++) {
+	  const EdgeInsertion & in = server_to_alg->batch().insertions(i);
+	  alg->insertions[i].type	  = in.type();
+	  alg->insertions[i].source	  = in.source();
+	  alg->insertions[i].destination  = in.destination();
+	  alg->insertions[i].weight	  = in.weight();
+	  alg->insertions[i].time	  = in.time();
+	}
+
+      OMP("omp for")
+	for(size_t d = 0; d < server_to_alg->batch().deletions_size(); d++) {
+	  const EdgeDeletion & del	= server_to_alg->batch().deletions(d);
+	  alg->deletions[d].type	= del.type();
+	  alg->deletions[d].source	= del.source();
+	  alg->deletions[d].destination	= del.destination();
+	}
+    } break;
+
+    case STRINGS_ONLY: {
+      alg->batch_type = BATCH_STRINGS_ONLY;
+      OMP("omp for")
+	for (size_t i = 0; i < server_to_alg->batch().insertions_size(); i++) {
+	  const EdgeInsertion & in = server_to_alg->batch().insertions(i);
+	  alg->insertions[i].type_str	      = in.type_str().c_str();
+	  alg->insertions[i].source_str	      = in.source_str().c_str();
+	  alg->insertions[i].destination_str  = in.destination_str().c_str();
+	  alg->insertions[i].weight	      = in.weight();
+	  alg->insertions[i].time	      = in.time();
+	}
+
+      OMP("omp for")
+	for(size_t d = 0; d < server_to_alg->batch().deletions_size(); d++) {
+	  const EdgeDeletion & del = server_to_alg->batch().deletions(d);
+	  alg->deletions[d].type_str	      = del.type_str().c_str();
+	  alg->deletions[d].source_str	      = del.source_str().c_str();
+	  alg->deletions[d].destination_str   = del.destination_str().c_str();
+	}
+    } break;
+
+    case MIXED: {
+      alg->batch_type = BATCH_MIXED;
+      OMP("omp for")
+	for (size_t i = 0; i < server_to_alg->batch().insertions_size(); i++) {
+	  const EdgeInsertion & in = server_to_alg->batch().insertions(i);
+          if(in.has_type_str()) {
+	    alg->insertions[i].type_str		= in.type_str().c_str();
+	  } else {
+	    alg->insertions[i].type		= in.type();
+	  }
+
+	  if(in.has_source_str()) {
+	    alg->insertions[i].source_str	= in.source_str().c_str();
+	  } else {
+	    alg->insertions[i].source		= in.source();
+	  }
+
+	  if(in.has_destination_str()) {
+	    alg->insertions[i].destination_str	= in.destination_str().c_str();
+	  } else {
+	    alg->insertions[i].destination      = in.destination();
+	  }
+
+	  alg->insertions[i].weight	      = in.weight();
+	  alg->insertions[i].time	      = in.time();
+	}
+
+      OMP("omp for")
+	for(size_t d = 0; d < server_to_alg->batch().deletions_size(); d++) {
+	  const EdgeDeletion & del = server_to_alg->batch().deletions(d);
+          if(del.has_type_str()) {
+	    alg->deletions[d].type_str		= del.type_str().c_str();
+	  } else {
+	    alg->deletions[d].type		= del.type();
+	  }
+
+	  if(del.has_source_str()) {
+	    alg->deletions[d].source_str	= del.source_str().c_str();
+	  } else {
+	    alg->deletions[d].source		= del.source();
+	  }
+
+	  if(del.has_destination_str()) {
+	    alg->deletions[d].destination_str	= del.destination_str().c_str();
+	  } else {
+	    alg->deletions[d].destination      = del.destination();
+	  }
+	}
+    } break;
+  }
+
+  LOG_D_A("Algorithm %s ready for pre", alg->alg_name);
+
+  return alg;
+}
+
+extern "C" stinger_registered_alg *
+stinger_alg_end_pre(stinger_registered_alg * alg)
+{
+  LOG_D("Ending pre");
+
+  AlgToServer alg_to_server;
+  alg_to_server.set_alg_name(alg->alg_name);
+  alg_to_server.set_alg_num(alg->alg_num);
+  alg_to_server.set_action(END_PREPROCESS);
+
+  LOG_D("Sending message to server");
+  send_message(alg->sock, alg_to_server);
+
+  ServerToAlg * server_to_alg = NULL;
+  if(!alg->batch_storage) {
+    server_to_alg = new ServerToAlg();
+    alg->batch_storage = (void *)server_to_alg;
+  } else {
+    server_to_alg = (ServerToAlg *)alg->batch_storage;
+  }
+
+  LOG_D("Waiting on message from server");
+  recv_message(alg->sock, *server_to_alg);
+
+  LOG_D("Received message from server");
+
+  if(server_to_alg->result() != SUCCESS || server_to_alg->action() != alg_to_server.action()) {
+    LOG_E("Error - failure at server or incorrect action returned");
+    alg->enabled = false;
+    return NULL;
+  }
+
+  LOG_D_A("Algorithm %s has completed pre", alg->alg_name);
+
+  return alg;
+}
+
+extern "C" stinger_registered_alg *
+stinger_alg_begin_post(stinger_registered_alg * alg)
+{
+  LOG_D("Requesting post");
+
+  AlgToServer alg_to_server;
+  alg_to_server.set_alg_name(alg->alg_name);
+  alg_to_server.set_alg_num(alg->alg_num);
+  alg_to_server.set_action(BEGIN_POSTPROCESS);
+
+  LOG_D("Sending message to server");
+  send_message(alg->sock, alg_to_server);
+
+  ServerToAlg * server_to_alg = NULL;
+  if(!alg->batch_storage) {
+    server_to_alg = new ServerToAlg();
+    alg->batch_storage = (void *)server_to_alg;
+  } else {
+    server_to_alg = (ServerToAlg *)alg->batch_storage;
+  }
+
+  LOG_D("Waiting on message from server");
+  recv_message(alg->sock, *server_to_alg);
+
+  LOG_D("Received message from server");
+
+  if(server_to_alg->result() != SUCCESS || server_to_alg->action() != alg_to_server.action()) {
+    LOG_E("Error - failure at server or incorrect action returned");
+    alg->enabled = false;
+    return NULL;
+  }
+
+  switch(server_to_alg->batch().type()) {
+    case NUMBERS_ONLY: {
+      OMP("omp for")
+	for (size_t i = 0; i < server_to_alg->batch().insertions_size(); i++) {
+	  const EdgeInsertion & in	      = server_to_alg->batch().insertions(i);
+	  alg->insertions[i].type_str	      = in.type_str().c_str();
+	  alg->insertions[i].source_str	      = in.source_str().c_str();
+	  alg->insertions[i].destination_str  = in.destination_str().c_str();
+	}
+
+      OMP("omp for")
+	for(size_t d = 0; d < server_to_alg->batch().deletions_size(); d++) {
+	  const EdgeDeletion & del	      = server_to_alg->batch().deletions(d);
+	  alg->deletions[d].type_str	      = del.type_str().c_str();
+	  alg->deletions[d].source_str	      = del.source_str().c_str();
+	  alg->deletions[d].destination_str   = del.destination_str().c_str();
+	}
+    } break;
+
+    case STRINGS_ONLY: {
+      OMP("omp for")
+	for (size_t i = 0; i < server_to_alg->batch().insertions_size(); i++) {
+	  const EdgeInsertion & in	  = server_to_alg->batch().insertions(i);
+	  alg->insertions[i].type	  = in.type();
+	  alg->insertions[i].source	  = in.source();
+	  alg->insertions[i].destination  = in.destination();
+	}
+
+      OMP("omp for")
+	for(size_t d = 0; d < server_to_alg->batch().deletions_size(); d++) {
+	  const EdgeDeletion & del	= server_to_alg->batch().deletions(d);
+	  alg->deletions[d].type	= del.type();
+	  alg->deletions[d].source	= del.source();
+	  alg->deletions[d].destination	= del.destination();
+	}
+    } break;
+
+    case MIXED: {
+      OMP("omp for")
+	for (size_t i = 0; i < server_to_alg->batch().insertions_size(); i++) {
+	  const EdgeInsertion & in		= server_to_alg->batch().insertions(i);
+	  alg->insertions[i].type_str		= in.type_str().c_str();
+	  alg->insertions[i].type		= in.type();
+
+	  alg->insertions[i].source_str		= in.source_str().c_str();
+	  alg->insertions[i].source		= in.source();
+
+	  alg->insertions[i].destination_str	= in.destination_str().c_str();
+	  alg->insertions[i].destination	= in.destination();
+	}
+
+      OMP("omp for")
+	for(size_t d = 0; d < server_to_alg->batch().deletions_size(); d++) {
+	  const EdgeDeletion & del		= server_to_alg->batch().deletions(d);
+	  alg->deletions[d].type_str		= del.type_str().c_str();
+	  alg->deletions[d].type		= del.type();
+
+	  alg->deletions[d].source_str		= del.source_str().c_str();
+	  alg->deletions[d].source		= del.source();
+
+	  alg->deletions[d].destination_str	= del.destination_str().c_str();
+	  alg->deletions[d].destination	= del.destination();
+	}
+    } break;
+  }
+
+  LOG_D_A("Algorithm %s ready for post", alg->alg_name);
+
+  return alg;
+}
+
+extern "C" stinger_registered_alg *
+stinger_alg_end_post(stinger_registered_alg * alg)
+{
+  LOG_D("Ending post");
+
+  AlgToServer alg_to_server;
+  alg_to_server.set_alg_name(alg->alg_name);
+  alg_to_server.set_alg_num(alg->alg_num);
+  alg_to_server.set_action(END_POSTPROCESS);
+
+  LOG_D("Sending message to server");
+  send_message(alg->sock, alg_to_server);
+ 
+  ServerToAlg * server_to_alg = NULL;
+  if(!alg->batch_storage) {
+    server_to_alg = new ServerToAlg();
+    alg->batch_storage = (void *)server_to_alg;
+  } else {
+    server_to_alg = (ServerToAlg *)alg->batch_storage;
+  }
+
+  LOG_D("Waiting on message from server");
+  recv_message(alg->sock, *server_to_alg);
+
+  LOG_D("Received message from server");
+
+  if(server_to_alg->result() != SUCCESS || server_to_alg->action() != alg_to_server.action()) {
+    LOG_E("Error - failure at server or incorrect action returned");
+    alg->enabled = false;
+    return NULL;
+  }
+
+  LOG_D_A("Algorithm %s has completed post", alg->alg_name);
+
+  return alg;
 }
