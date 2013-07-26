@@ -105,19 +105,15 @@ main(int argc, char *argv[])
     if (!std::cin)
       break;
 
+    if (std::cin.eof())
+      break;
+
     rapidjson::Document document;
     document.Parse<0>(line.c_str());
 
     test_describe_object (document, breadcrumbs, found, 0);
 
   }
-
-
-
-
-
-
-
 
   /*
      StingerBatch batch;
