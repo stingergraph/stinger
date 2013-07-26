@@ -48,7 +48,7 @@ void *
 test_thread_handler(void *) {
   StingerServerState & server_state = StingerServerState::get_server_state();
   while(1) {
-    sleep(10);
+    usleep(500000);
     StingerBatch * batch = new StingerBatch();
     server_state.enqueue_batch(batch);
   }
@@ -228,9 +228,9 @@ process_loop_handler(void * data)
 	  /* TODO handle initializing the algorithm and the static stuff */
 	  AlgToServer alg_to_server;
 
-	  if(recv_message(cur_alg->sock_handle, alg_to_server))
-	    if(alg_to_server.alg_name().compare(cur_alg->name) == 0)
-	    if(alg_to_server.action() == BEGIN_INIT) {
+	  if(recv_message(cur_alg->sock_handle, alg_to_server) &&
+	    alg_to_server.alg_name().compare(cur_alg->name) == 0 &&
+	    alg_to_server.action() == BEGIN_INIT) {
 	    
 	    ServerToAlg server_to_alg;
 	    server_to_alg.set_alg_name(alg_to_server.alg_name());
@@ -258,13 +258,6 @@ process_loop_handler(void * data)
 	    LOG_D_A("Alg name |%s| received name |%s|", alg_to_server.alg_name().c_str(), cur_alg->name.c_str());
 	    cur_alg->state = ALG_STATE_ERROR;
 	    /* TODO HANDLE */
-	  }
-	  else {
-	    LOG_E("Name match");
-	    LOG_D_A("Alg name |%s| received name |%s|", alg_to_server.alg_name().c_str(), cur_alg->name.c_str());
-	  }
-	  else {
-	    LOG_E("reading socket");
 	  }
 	}
 
