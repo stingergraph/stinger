@@ -2,6 +2,8 @@
 #define _TWITTER_STREAM_H
 
 #include <iostream>
+#include <fstream>
+#include <istream>
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -19,10 +21,22 @@ static const char* kTypeNames[] = { "Null", "False", "True", "Object", "Array", 
 #define EDGE_TIME 3
 #define EDGE_TYPE 4
 
-int
-describe_object(rapidjson::Document& document, std::list<std::string> breadcrumbs, std::map<int, std::list<std::string> > found, int level);
+void
+print_list (std::list<std::string> l);
 
 int
-describe_array(rapidjson::Value& array, std::list<std::string> breadcrumbs, std::map<int, std::list<std::string> > found, int level);
+train_describe_object(rapidjson::Document& document, std::list<std::string> breadcrumbs, std::map<int, std::list<std::string> > &found, int level);
+
+int
+train_describe_array(rapidjson::Value& array, std::list<std::string> breadcrumbs, std::map<int, std::list<std::string> > &found, int level);
+
+int
+load_template_file (char * filename, char delimiter, std::map<int, std::list<std::string> > &found);
+
+int
+test_describe_object(rapidjson::Document& document, std::list<std::string> breadcrumbs, const std::map<int, std::list<std::string> > &found, int level);
+
+int
+test_describe_array(rapidjson::Value& array, std::list<std::string> breadcrumbs, const std::map<int, std::list<std::string> > &found, int level);
 
 #endif /* _TWITTER_STREAM_H */

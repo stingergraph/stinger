@@ -1,4 +1,3 @@
-#include <fstream>
 #include <cstdlib>
 #include <cstring>
 #include <sys/types.h>
@@ -79,111 +78,47 @@ main(int argc, char *argv[])
   }
 
   /* start the connection */
-  int sock_handle = connect_to_batch_server (server, port);
+//  int sock_handle = connect_to_batch_server (server, port);
 
-  /* actually generate and send the batches */
-  size_t line_len = 0;
-  int64_t line_number = 0;
 
-  //FILE * fp = (filename ? fopen(filename, "r") : stdin);
-  std::ifstream fp;
-  fp.open (filename);
+  /* load the template file */
+  std::map<int, std::list<std::string> > found;
 
-  if (!fp.is_open()) {
-    char errmsg[257];
-    snprintf (errmsg, 256, "Opening \"%s\" failed", filename);
-    errmsg[256] = 0;
-    perror (errmsg);
-    exit (-1);
+  load_template_file (filename, '\r', found);
+
+  printf("Here are the results:\n\n");
+  for (int64_t i = 0; i < 5; i++) {
+    printf("%ld: ", i);
+    print_list (found[i]);
   }
 
-  std::map<int, std::list<std::string> > found;
+  assert(found.size() == 5);
+
+
+  /* begin parsing stdin */
   std::list<std::string> breadcrumbs;
+  std::string line;
 
   /* read the lines */
-  while (!fp.eof())
+  while (std::getline (std::cin, line, '\r'))
   {
-    rapidjson::Document document;
-    StingerBatch batch;
-    batch.set_make_undirected(true);
-    batch.set_type(STRINGS_ONLY);
-    batch.set_keep_alive(true);
+    if (!std::cin)
+      break;
 
-    line_number++;
-    std::string line;
-    std::getline (fp, line, '\r');
+    rapidjson::Document document;
     document.Parse<0>(line.c_str());
 
-    describe_object (document, breadcrumbs, found, 0);
+    test_describe_object (document, breadcrumbs, found, 0);
 
-
-
-#if 0
-    assert(document.HasMember("is_delete"));
-    assert(document["is_delete"].IsNumber());
-    assert(document["is_delete"].IsInt());
-    int64_t is_delete = document["is_delete"].GetInt();
-
-    if (!is_delete)
-    {
-      /* insertion */
-      EdgeInsertion * insertion = batch.add_insertions();
-
-      assert(document.HasMember("source"));
-      assert(document["source"].IsString());
-      assert(document.HasMember("target"));
-      assert(document["target"].IsString());
-      insertion->set_source_str(document["source"].GetString());
-      insertion->set_destination_str(document["target"].GetString());
-
-      if (document.HasMember("weight")) {
-	if (document["weight"].IsNumber() && document["weight"].IsInt()) {
-	  insertion->set_weight(document["weight"].GetInt());
-	}
-      }
-
-      if (document.HasMember("time")) {
-	if (document["time"].IsNumber() && document["time"].IsInt()) {
-	  insertion->set_time(document["time"].GetInt());
-	}
-      }
-
-      if (document.HasMember("type")) {
-	if (document["type"].IsString()) {
-	  insertion->set_type_str(document["type"].GetString());
-	}
-      }
-
-    }
-    else
-    {
-      /* deletion */
-      EdgeDeletion * deletion = batch.add_deletions();
-
-      assert(document.HasMember("source"));
-      assert(document["source"].IsString());
-      assert(document.HasMember("target"));
-      assert(document["target"].IsString());
-      deletion->set_source_str(document["source"].GetString());
-      deletion->set_destination_str(document["target"].GetString());
-
-      if (document.HasMember("type")) {
-	if (document["type"].IsString()) {
-	  deletion->set_type_str(document["type"].GetString());
-	}
-      }
-
-    }
-
-    if (!(line_number % batch_size))
-    {
-      V("Sending messages.");
-      send_message(sock_handle, batch);
-    }
-#endif
   }
 
-  fp.close();
+
+
+
+
+
+
+
   /*
      StingerBatch batch;
      batch.set_make_undirected(true);
