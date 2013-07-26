@@ -16,18 +16,34 @@ print_list (std::list<std::string> l)
 }
 
 int
-list_diff (std::list<std::string> a, std::list<std::string> b)
+list_diff (const std::list<std::string> &a, const std::list<std::string> &b)
 {
-  for (std::list<std::string>::const_iterator it_a = a.begin(), it_b = b.begin(), end_a = a.end(), end_b = b.end();
-	it_a != end_a, it_b != end_b; ++it_a, ++it_b) {
-    if (*it_a != *it_b)
+  if (a.empty() || b.empty())
+    return 0;
+
+//  printf("\n\nstart diff\n");
+  for (std::list<std::string>::const_iterator it_a = a.begin(), it_b = b.begin();
+	it_a != a.end() && it_b != b.end(); it_a++, it_b++) {
+//    printf("a: %s\t b: %s", (*it_a).c_str(), (*it_b).c_str());
+    if ( strcmp((*it_a).c_str(), (*it_b).c_str()) != 0 ) {
+//      printf("\nreturn 0\n");
       return 0;
+    }
+//    printf("\n");
   }
-  return 1;
+
+  if (a.size() == b.size()) {
+//    printf("return 2\n");
+    return 2;
+  }
+  else {
+//    printf("return 1\n");
+    return 1;
+  }
 }
 
 int
-train_describe_object(rapidjson::Document& document, std::list<std::string> breadcrumbs, std::map<int, std::list<std::string> > &found, int level)
+train_describe_object(rapidjson::Document& document, std::list<std::string> &breadcrumbs, std::map<int, std::list<std::string> > &found, int level)
 {
   assert(document.IsObject());
 
@@ -76,7 +92,7 @@ train_describe_object(rapidjson::Document& document, std::list<std::string> brea
 }
 
 int
-train_describe_array(rapidjson::Value& array, std::list<std::string> breadcrumbs, std::map<int, std::list<std::string> > &found, int level)
+train_describe_array(rapidjson::Value& array, std::list<std::string> &breadcrumbs, std::map<int, std::list<std::string> > &found, int level)
 {
   assert(array.IsArray());
 
@@ -140,29 +156,53 @@ load_template_file (char * filename, char delimiter, std::map<int, std::list<std
 }
 
 int
-test_describe_object(rapidjson::Document& document, std::list<std::string> breadcrumbs, const std::map<int, std::list<std::string> > &found, int level)
+test_describe_object(rapidjson::Document& document, std::list<std::string> &breadcrumbs, const std::map<int, std::list<std::string> > &found, int level)
 {
   assert(document.IsObject());
 
   for (rapidjson::Value::ConstMemberIterator itr = document.MemberBegin(); itr != document.MemberEnd(); ++itr) {
     breadcrumbs.push_back(itr->name.GetString());
-    if (itr->value.GetType() == 3) { /* object */
-      rapidjson::StringBuffer sb;
-      rapidjson::Writer<rapidjson::StringBuffer> writer (sb);
-      itr->value.Accept(writer);
-      rapidjson::Document obj;
-      obj.Parse<0>(sb.GetString());
-      test_describe_object(obj, breadcrumbs, found, level+1);
+
+    int flag = -1;
+    for (int64_t i = 0; i < 5; i++) {
+      int rtn = list_diff (breadcrumbs, found.at(i));
+      if (rtn == 1)
+	flag = 1000;   /* continue down this branch of the tree */
+      if (rtn == 2) {
+	flag = i;      /* this is something we are looking for; code set */
+	break;
+      }
     }
-    else if (itr->value.GetType() == 4) { /* array */
-      test_describe_array((rapidjson::Value&) itr->value, breadcrumbs, found, level+1);
+
+    const rapidjson::Value& val = itr->value;
+    int type = val.GetType();
+    if (flag == 1000) {  /* continue down this branch */
+      //print_list(breadcrumbs);
+      if (type == 3) { /* object */
+	rapidjson::StringBuffer sb;
+	rapidjson::Writer<rapidjson::StringBuffer> writer (sb);
+	val.Accept(writer);
+	rapidjson::Document obj;
+	obj.Parse<0>(sb.GetString());
+	test_describe_object(obj, breadcrumbs, found, level+1);
+      }
+      else if (type == 4) { /* array */
+	test_describe_array((rapidjson::Value&) val, breadcrumbs, found, level+1);
+      }
     }
-    else if (itr->value.GetType() == 5) { /* string */
-      assert(itr->value.IsString());
+    else if (flag >= 0)   /* this is something we are looking for */
+    {
+      if (val.GetType() == 5) { /* string */
+	assert(val.IsString());
+	//printf("FOUND: %d, %s\n", flag, itr->value.GetString());
+      }
+      else if (val.GetType() == 6) { /* number */
+	assert(val.IsNumber());
+	assert(val.IsInt64());
+	//printf("FOUND: %d, %ld\n", flag, itr->value.GetInt64());
+      }
     }
-    else if (itr->value.GetType() == 6) { /* number */
-      assert(itr->value.IsNumber());
-    }
+
     breadcrumbs.pop_back();
   }
 
@@ -170,7 +210,7 @@ test_describe_object(rapidjson::Document& document, std::list<std::string> bread
 }
 
 int
-test_describe_array(rapidjson::Value& array, std::list<std::string> breadcrumbs, const std::map<int, std::list<std::string> > &found, int level)
+test_describe_array(rapidjson::Value& array, std::list<std::string> &breadcrumbs, const std::map<int, std::list<std::string> > &found, int level)
 {
   assert(array.IsArray());
 

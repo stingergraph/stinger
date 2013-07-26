@@ -25,18 +25,18 @@ void
 print_list (std::list<std::string> l);
 
 int
-train_describe_object(rapidjson::Document& document, std::list<std::string> breadcrumbs, std::map<int, std::list<std::string> > &found, int level);
+train_describe_object(rapidjson::Document& document, std::list<std::string> &breadcrumbs, std::map<int, std::list<std::string> > &found, int level);
 
 int
-train_describe_array(rapidjson::Value& array, std::list<std::string> breadcrumbs, std::map<int, std::list<std::string> > &found, int level);
+train_describe_array(rapidjson::Value& array, std::list<std::string> &breadcrumbs, std::map<int, std::list<std::string> > &found, int level);
 
 int
 load_template_file (char * filename, char delimiter, std::map<int, std::list<std::string> > &found);
 
 int
-test_describe_object(rapidjson::Document& document, std::list<std::string> breadcrumbs, const std::map<int, std::list<std::string> > &found, int level);
+test_describe_object(rapidjson::Document& document, std::list<std::string> &breadcrumbs, const std::map<int, std::list<std::string> > &found, int level);
 
 int
-test_describe_array(rapidjson::Value& array, std::list<std::string> breadcrumbs, const std::map<int, std::list<std::string> > &found, int level);
+test_describe_array(rapidjson::Value& array, std::list<std::string> &breadcrumbs, const std::map<int, std::list<std::string> > &found, int level);
 
 #endif /* _TWITTER_STREAM_H */
