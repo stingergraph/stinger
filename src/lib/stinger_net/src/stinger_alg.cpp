@@ -107,18 +107,20 @@ stinger_register_alg_impl(stinger_register_alg_params params)
   strncpy(rtn->alg_name, server_to_alg.alg_name().c_str(),255);
   rtn->alg_num = server_to_alg.alg_num();
 
-  LOG_D_A("Mapping STINGER %s", server_to_alg.stinger_loc().c_str());
-  rtn->sock = sock;
-  rtn->stinger = stinger_shared_map(server_to_alg.stinger_loc().c_str(), server_to_alg.stinger_size());
+  if(!args.is_remote) {
+    LOG_D_A("Mapping STINGER %s", server_to_alg.stinger_loc().c_str());
+    rtn->sock = sock;
+    rtn->stinger = stinger_shared_map(server_to_alg.stinger_loc().c_str(), server_to_alg.stinger_size());
 
-  if(!rtn) {
-    LOG_E("Failed to connect to stinger");
-    free(rtn);
-    return NULL;
+    if(!rtn) {
+      LOG_E("Failed to connect to stinger");
+      free(rtn);
+      return NULL;
+    }
+						  
+    strcpy(rtn->stinger_loc, server_to_alg.stinger_loc().c_str());
+    LOG_D("STINGER mapped.");
   }
-                                                
-  strcpy(rtn->stinger_loc, server_to_alg.stinger_loc().c_str());
-  LOG_D("STINGER mapped.");
 
 
   rtn->alg_data_per_vertex = params.data_per_vertex;
