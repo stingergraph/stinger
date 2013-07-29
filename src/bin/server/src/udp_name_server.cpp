@@ -35,7 +35,7 @@ start_udp_graph_name_server (char * graph_name, size_t graph_sz, int port)
   bzero (&server, length);
   server.sin_family = AF_INET;
   server.sin_addr.s_addr = INADDR_ANY;
-  server.sin_port = htons(port + 1);
+  server.sin_port = htons(port);
 
   if (bind(sock, (struct sockaddr *) &server, length) < 0) 
   {

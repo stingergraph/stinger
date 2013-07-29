@@ -52,7 +52,7 @@ stinger_register_alg_impl(stinger_register_alg_params params)
   if(params.port) {
     sock_addr.sin_port = htons(params.port);
   } else {
-    sock_addr.sin_port = htons(10101);
+    sock_addr.sin_port = htons(10103);
   }
 
   if(-1 == connect(sock, (sockaddr *)&sock_addr, sizeof(struct sockaddr_in))) {

@@ -64,6 +64,32 @@ main(int argc, char *argv[])
       LOG_I_A("Preprocessing algorithm... consistency check: %ld",
 	stinger_consistency_check(alg->stinger, STINGER_MAX_LVERTICES));
 
+      LOG_I_A("Preprocessing algorithm... num_insertions: %ld",
+	alg->num_insertions);
+      for(int64_t i = 0; i < alg->num_insertions; i++) {
+	LOG_I_A("\tINS: TYPE %s %ld FROM %s %ld TO %s %ld WEIGHT %ld TIME %ld", 
+	  alg->insertions[i].type_str,
+	  alg->insertions[i].type,
+	  alg->insertions[i].source_str,
+	  alg->insertions[i].source,
+	  alg->insertions[i].destination_str,
+	  alg->insertions[i].destination,
+	  alg->insertions[i].weight,
+	  alg->insertions[i].time);
+      }
+
+      LOG_I_A("Preprocessing algorithm... num_deletions: %ld",
+	alg->num_deletions);
+      for(int64_t i = 0; i < alg->num_deletions; i++) {
+	LOG_I_A("\tDEL: TYPE %s %ld FROM %s %ld TO %s %ld",
+	  alg->deletions[i].type_str,
+	  alg->deletions[i].type,
+	  alg->deletions[i].source_str,
+	  alg->deletions[i].source,
+	  alg->deletions[i].destination_str,
+	  alg->deletions[i].destination);
+      }
+
       stinger_alg_end_pre(alg);
     }
 
@@ -72,6 +98,32 @@ main(int argc, char *argv[])
 
       LOG_I_A("Postprocessing algorithm... consistency check: %ld",
 	stinger_consistency_check(alg->stinger, STINGER_MAX_LVERTICES));
+
+      LOG_I_A("Postprocessing algorithm... num_insertions: %ld",
+	alg->num_insertions);
+      for(int64_t i = 0; i < alg->num_insertions; i++) {
+	LOG_I_A("\tINS: TYPE %s %ld FROM %s %ld TO %s %ld WEIGHT %ld TIME %ld", 
+	  alg->insertions[i].type_str,
+	  alg->insertions[i].type,
+	  alg->insertions[i].source_str,
+	  alg->insertions[i].source,
+	  alg->insertions[i].destination_str,
+	  alg->insertions[i].destination,
+	  alg->insertions[i].weight,
+	  alg->insertions[i].time);
+      }
+
+      LOG_I_A("Postprocessing algorithm... num_deletions: %ld",
+	alg->num_deletions);
+      for(int64_t i = 0; i < alg->num_deletions; i++) {
+	LOG_I_A("\tDEL: TYPE %s %ld FROM %s %ld TO %s %ld",
+	  alg->deletions[i].type_str,
+	  alg->deletions[i].type,
+	  alg->deletions[i].source_str,
+	  alg->deletions[i].source,
+	  alg->deletions[i].destination_str,
+	  alg->deletions[i].destination);
+      }
 
       stinger_alg_end_post(alg);
     }

@@ -26,7 +26,10 @@ using namespace gt::stinger;
 int main(int argc, char *argv[])
 {
   /* default global options */
-  int port = 10101;
+  int port_names = 10101;
+  int port_streams = port_names + 1;
+  int port_algs = port_names + 2;
+
   uint64_t buffer_size = 1ULL << 28ULL;
   char * graph_name = (char *) xmalloc (128*sizeof(char));
   sprintf(graph_name, "/default");
@@ -38,10 +41,17 @@ int main(int argc, char *argv[])
 
   /* parse command line configuration */
   int opt = 0;
-  while(-1 != (opt = getopt(argc, argv, "p:b:n:i:t:1h?"))) {
+  while(-1 != (opt = getopt(argc, argv, "a:s:p:b:n:i:t:1h?"))) {
     switch(opt) {
       case 'p': {
-		  port = atoi(optarg);
+		  port_names = atoi(optarg);
+		} break;
+
+      case 'a': {
+		  port_algs = atoi(optarg);
+		} break;
+      case 's': {
+		  port_streams = atoi(optarg);
 		} break;
 
       case 'b': {
@@ -66,8 +76,8 @@ int main(int argc, char *argv[])
 
       case '?':
       case 'h': {
-		  printf("Usage:    %s [-p port] [-b buffer_size] [-n graph_name] [-i input_file_path [-t file_type] -1 (for numeric IDs)]\n", argv[0]);
-		  printf("Defaults:\n\tport: %d\n\tbuffer_size: %lu\n\tgraph_name: %s\n", port, (unsigned long) buffer_size, graph_name);
+		  printf("Usage:    %s [-p port_names] [-a port_algs] [-s port_streams] [-b buffer_size] [-n graph_name] [-i input_file_path [-t file_type] -1 (for numeric IDs)]\n", argv[0]);
+		  printf("Defaults:\n\tport_names: %d\n\tport_algs: %d\n\tport_streams: %d\n\tbuffer_size: %lu\n\tgraph_name: %s\n", port_names, port_algs, port_streams, (unsigned long) buffer_size, graph_name);
 		  exit(0);
 		} break;
 
@@ -139,7 +149,7 @@ int main(int argc, char *argv[])
   name_pid = fork ();
   if (name_pid == 0)
   {
-    start_udp_graph_name_server (graph_name, graph_sz, port);
+    start_udp_graph_name_server (graph_name, graph_sz, port_names);
     exit (0);
   }
 
@@ -147,7 +157,7 @@ int main(int argc, char *argv[])
   batch_pid = fork ();
   if (batch_pid == 0)
   {
-    start_tcp_batch_server (S, port, buffer_size);
+    start_tcp_batch_server (S, graph_name, port_streams, port_algs);
     exit (0);
   }
 

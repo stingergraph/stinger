@@ -15,6 +15,7 @@ message EdgeInsertion {
   optional string destination_str = 4 [default = ""];
   optional int64 weight = 5 [default = 1];
   optional int64 time = 6 [default = 1];
+  optional int64 result = 9;
 }
 
 message EdgeDeletion {

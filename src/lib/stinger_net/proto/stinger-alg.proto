@@ -13,9 +13,12 @@ enum AlgAction {
 }
 
 enum AlgActionResult {
-  SUCCESS	      = 0;
-  FAILURE_GENERIC     = 1;
-  FAILURE_NAME_EXISTS = 2;
+  SUCCESS		      = 0;
+  FAILURE_GENERIC     	      = 1;
+  FAILURE_NAME_EXISTS 	      = 2;
+  FAILURE_NAME_INVALID	      = 3;
+  FAILURE_DEPENDENCY  	      = 4;
+  FAILURE_UNEXPECTED_MESSAGE  =	5;
 }
 
 message AlgToServer {

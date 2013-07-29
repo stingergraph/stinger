@@ -9,59 +9,69 @@
 #include <errno.h>
 
 #include "server.h"
+#include "stinger_net/stinger_server_state.h"
 
+typedef struct {
+  struct stinger * S;
+  int sock;
+} handle_stream_args;
 
-void
-dostuff(struct stinger * S, int sock, uint64_t buffer_size)
+void *
+handle_stream(void * args)
 {
-  pid_t parent;
+  StingerServerState & server_state = StingerServerState::get_server_state();
 
-  const char * buffer = (char *) malloc (buffer_size);
-  if (!buffer) {
-    perror("Buffer alloc failed.\n");
-    exit(-1);
-  }
+  struct stinger *S = ((handle_stream_args *) args)->S;
+  int sock = ((handle_stream_args *) args)->sock;
+  free(args);
 
   int nfail = 0;
 
   V("Ready to accept messages.");
   while(1)
   {
-    StingerBatch batch;
-    if (recv_message(sock, batch)) {
+    StingerBatch * batch = new StingerBatch();
+    if (recv_message(sock, *batch)) {
       nfail = 0;
 
-      V_A("Received message of size %ld", (long)batch.ByteSize());
+      V_A("Received message of size %ld", (long)batch->ByteSize());
 
-      if (0 == batch.insertions_size () && 0 == batch.deletions_size ()) {
+      if (0 == batch->insertions_size () && 0 == batch->deletions_size ()) {
 	V("Empty batch.");
-	if (!batch.keep_alive ())
+	if (!batch->keep_alive ()) {
+	  delete batch;
 	  break;
-	else
+	} else {
+	  delete batch;
 	  continue;
+	}
       }
 
-      process_batch(S, batch, NULL);
+      server_state.enqueue_batch(batch);
 
-      if(!batch.keep_alive())
+      if(!batch->keep_alive()) {
+	delete batch;
 	break;
+      }
 
     } else {
       ++nfail;
       V("ERROR Parsing failed.\n");
       if (nfail > 2) break;
     }
-
-    /* poll to see if parent has died */
-    if (getppid() == 1)
-      break;
   }
 }
 
 void
-start_tcp_batch_server (struct stinger * S, int port, uint64_t buffer_size)
+start_tcp_batch_server (struct stinger * S, char * stinger_loc, int port_streams, int port_algs)
 {
+  StingerServerState & server_state = StingerServerState::get_server_state();
+  server_state.set_stinger(S);
+  server_state.set_stinger_loc(stinger_loc);
+  server_state.set_port(port_algs);
+
   int sock_handle, newsockfd;
+  pthread_t garbage_thread_handle;
   socklen_t clilen;
   struct sockaddr_in serv_addr, cli_addr;
   pid_t pid;
@@ -74,7 +84,7 @@ start_tcp_batch_server (struct stinger * S, int port, uint64_t buffer_size)
   bzero ((char *) &serv_addr, sizeof(serv_addr));
   serv_addr.sin_family = AF_INET;
   serv_addr.sin_addr.s_addr = INADDR_ANY;
-  serv_addr.sin_port = htons(port);
+  serv_addr.sin_port = htons(port_streams);
 
   if (-1 == bind(sock_handle, (struct sockaddr *) &serv_addr, sizeof(serv_addr))) {
     perror("Socket bind failed.\n");
@@ -88,36 +98,27 @@ start_tcp_batch_server (struct stinger * S, int port, uint64_t buffer_size)
 
   clilen = sizeof(cli_addr);
 
-  V_A("STINGER server listening for input on port %d, web server on port 8088.",
-      (int)port);
+  V_A("STINGER server listening for input on port %d",
+      (int)port_streams);
+
+  pthread_t alg_handling;
+  pthread_create(&alg_handling, NULL, start_alg_handling, NULL);
 
   while (1) {
     newsockfd = accept (sock_handle, (struct sockaddr *) &cli_addr, &clilen);
-    if (newsockfd < 0)
-    {
+
+    if (newsockfd < 0) {
       perror("Accept new connection failed.\n");
       exit(-1);
     }
-    pid = fork();
-    if (pid < 0) {
-      perror("Unable to fork.\n");
-      exit(-1);
-    }
-    if (pid == 0)
-    {
-      close(sock_handle);
-      dostuff(S, newsockfd, buffer_size);
-      exit(0);
-    }
-    else
-      close(newsockfd);
+
+    handle_stream_args * args = (handle_stream_args *)calloc(1, sizeof(handle_stream_args));
+    args->S = S;
+    args->sock = newsockfd;
+
+    pthread_create(&garbage_thread_handle, NULL, handle_stream, (void *)args);
   }
 
   close(sock_handle);
   return;
-
-
-
-
-
 }
