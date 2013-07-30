@@ -412,7 +412,7 @@ uint32_t
 stinger_consistency_check (struct stinger *S, uint64_t NV)
 {
   uint32_t returnCode = 0;
-  uint64_t *inDegree = calloc (NV, sizeof (uint64_t));
+  uint64_t *inDegree = xcalloc (NV, sizeof (uint64_t));
   if (inDegree == NULL) {
     returnCode |= 0x00000001;
     return returnCode;
