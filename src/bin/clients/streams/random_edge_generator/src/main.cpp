@@ -29,7 +29,7 @@ int
 main(int argc, char *argv[])
 {
   /* global options */
-  int port = 10101;
+  int port = 10102;
   int batch_size = 100000;
   int num_batches = -1;
   int nv = 1024;
@@ -113,10 +113,19 @@ main(int argc, char *argv[])
     for(int e = 0; e < batch_size; e++) {
       line++;
 
+      int64_t u = rand() % nv;
+      int64_t v = rand() % nv;
+
+      if(u == v) {
+	e--;
+	line--;
+	continue;
+      }
+
       /* is insert? */
       EdgeInsertion * insertion = batch.add_insertions();
-      insertion->set_source( rand() % nv );
-      insertion->set_destination( rand() % nv );
+      insertion->set_source(u);
+      insertion->set_destination(v);
       insertion->set_weight(1);
       insertion->set_time(line);
     }
