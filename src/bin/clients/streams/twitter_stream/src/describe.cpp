@@ -6,6 +6,125 @@
 #include "rapidjson/stringbuffer.h"
 #include "twitter_stream.h"
 
+/*
+struct EdgeCollection {
+  std::vector<int64_t> type;
+  std::vector<std::string> type_str;
+  std::vector<int64_t> source;
+  std::vector<std::string> source_str;
+  std::vector<int64_t> destination;
+  std::vector<std::string> destination_str;
+  std::vector<int64_t> weight;
+  std::vector<int64_t> time;
+};
+
+typedef enum {
+  VALUE_TYPE,
+  VALUE_TYPE_STR,
+  VALUE_SOURCE,
+  VALUE_SOURCE_STR,
+  VALUE_DESTINATION,
+  VALUE_DESTINATION_STR,
+  VALUE_WEIGHT,
+  VALUE_TIME
+} value_type_t;
+
+struct ExploreJSONGeneric {
+  ExploreJSONGeneric & child = NULL;
+
+  bool operator()(EdgeCollection & edges, rapidjson::Document & document);
+  void print();
+};
+
+struct ExploreJSONValue : ExploreJSONGeneric{
+  value_type_t value_type;
+
+  ExploreJSONValue(value_type_t type) : value_type(type) {}
+
+  bool operator()(EdgeCollection & edges, rapidjson::Document & document) {
+    switch(value_type) {
+      case VALUE_TYPE:
+	edges.type.append(document.GetInt64());
+	break;
+
+      case VALUE_TYPE_STR:
+	edges.type_str.append(std::string(document.GetString(), document.GetStringLength());
+	break;
+
+      case VALUE_SOURCE:
+	edges.source.append(document.GetInt64());
+	break;
+
+      case VALUE_SOURCE_STR:
+	edges.source_str.append(std::string(document.GetString(), document.GetStringLength());
+	break;
+
+      case VALUE_DESTINATION:
+	edges.destination.append(document.GetInt64());
+	break;
+
+      case VALUE_DESTINATION_STR:
+	edges.destination_str.append(std::string(document.GetString(), document.GetStringLength());
+	break;
+
+      case VALUE_WEIGHT:
+	edges.weight.append(document.GetInt64());
+	break;
+
+      case VALUE_TIME:
+	edges.time.append(document.GetInt64());
+	break;
+
+      default:
+	return false;
+    }
+    return true;
+  }
+
+  void print() {
+    printf(".value %ld", value_type);
+    child.print();
+  }
+};
+
+struct ExploreJSONArray : ExploreJSONGeneric {
+  ExploreJSONArray() : child = NULL {}
+
+  bool operator()(EdgeCollection & edges, rapidjson::Document & document) {
+    if(document.IsArray()) {
+      for(rapidjson::SizeType i = 0; i < document.Size(); i++) {
+	return child(edges, document[i]);
+      }
+    } else {
+      return false;
+    }
+  }
+
+  void print() {
+    printf(".@.");
+    child.print();
+  }
+};
+
+struct ExploreJSONObject : ExploreJSONGeneric {
+  std::string field_name;
+
+  ExploreJSONObject(std::string & field) : child = NULL, field_name(field) {}
+
+  bool operator()(EdgeCollection & edges, rapidjson::Document & document) {
+    if(document.HasMember(field_name.c_str()))
+      return child(edges, document[field_name.c_str()]);
+    else
+      return false;
+  }
+
+  void print() {
+    printf(".$.%s", field_name.c_str());
+    child.print();
+  }
+};
+
+*/
 void
 print_list (std::list<std::string> l)
 {

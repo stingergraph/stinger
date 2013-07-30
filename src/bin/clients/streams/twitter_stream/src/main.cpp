@@ -26,11 +26,11 @@ using namespace gt::stinger;
 #define V(X) V_A(X,NULL)
 
 
-  int
+int
 main(int argc, char *argv[])
 {
   /* global options */
-  int port = 10101;
+  int port = 10102;
   int batch_size = 100000;
   struct hostent * server = NULL;
   char * filename = NULL;
