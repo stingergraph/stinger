@@ -6,12 +6,15 @@ SET(libdep_default stinger_core stinger_utils)
 
 IF(APPLE)
   SET(libdep_test_alg ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib stinger_net)
+  SET(libdep_pagerank ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib stinger_net)
 ELSE()
   SET(libdep_test_alg ${CMAKE_BINARY_DIR}/lib/libprotobuf.so stinger_net)
+  SET(libdep_pagerank ${CMAKE_BINARY_DIR}/lib/libprotobuf.so stinger_net)
 ENDIF()
 
 SET(tgtdep_default stinger_core stinger_utils rt)
 SET(tgtdep_test_alg protobuf stinger_net)
+SET(tgtdep_pagerank protobuf stinger_net)
 
 #################################################################
 # Iterate over each library and build appropriately based on type
