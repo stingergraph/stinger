@@ -49,7 +49,6 @@ static PyObject *stinger_connect(PyObject *self, PyObject *args)
   if (!PyArg_ParseTuple(args, "si", &hostname, &port))
     return NULL;
 
-  /* Call the external C function to compute the chi-squared. */
   printf("hostname: %s\n", hostname);
   printf("port: %d\n", port);
   get_shared_map_info (hostname, port, &name, 1024, &sz);
@@ -99,8 +98,6 @@ static PyObject *stinger_vquery(PyObject *self, PyObject *args, PyObject *keywds
   global_config conf;
   parse_config(S, timerecentmin, timerecentmax, timefirstmin, timefirstmax, weightmax, weightmin, vtype, etype, &conf);
 
-  //int64_t vtx = stinger_mapping_lookup(S, vertex_name, strlen(vertex_name));
-
   PyObject *dict = NULL;
   PyListObject *list;
 
@@ -129,8 +126,6 @@ static PyObject *stinger_vquery(PyObject *self, PyObject *args, PyObject *keywds
     } STINGER_FORALL_EDGES_OF_VTX_END();
   }
 
-
-  /* Build the output tuple */
   return (PyObject *) list;
 }
 
@@ -147,12 +142,6 @@ static PyObject *stinger_stats(PyObject *self)
   int64_t ne = stinger_total_edges (S);
   uint32_t check = stinger_consistency_check (S, max_nv+1);
 
-  printf("nv: %ld\n", nv);
-  printf("max_nv: %ld\n", max_nv);
-  printf("ne: %ld\n", ne);
-  printf("check: %d\n", check);
-
-  /* Build the output tuple */
-  PyObject *ret = Py_BuildValue("i", 0);
-  return ret;
+  /* Build the output dict */
+  return Py_BuildValue("{s:l,s:l,s:l,s:l}", "nv", nv, "max_nv", max_nv, "ne", ne, "check", (int64_t)check);
 }
