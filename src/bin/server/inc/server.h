@@ -17,7 +17,7 @@ void
 start_udp_graph_name_server (char * graph_name, size_t graph_sz, int port);
 
 int
-process_batch(stinger_t * S, StingerBatch & batch, struct community_state * cstate);
+process_batch(stinger_t * S, StingerBatch & batch);
 
 void *
 start_alg_handling(void *);

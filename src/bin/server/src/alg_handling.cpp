@@ -14,6 +14,7 @@ extern "C" {
 
 #include "stinger_net/send_rcv.h"
 #include "stinger_net/stinger_server_state.h"
+#include "server.h"
 
 #if !defined(MTA)
 #define MTA(x)
@@ -345,6 +346,7 @@ process_loop_handler(void * data)
     }
 
     /* TODO update stinger */
+    process_batch(server_state.get_stinger(), *batch);
 
     /* loop through each algorithm, send start postprocessing message */
     stop_alg_level = server_state.get_num_levels();
@@ -448,9 +450,11 @@ start_alg_handling(void *)
   pthread_create(&main_loop_thread, NULL, &process_loop_handler, NULL);
   server_state.set_main_loop_thread(main_loop_thread);
 
-  /* TODO XXX remove me */
-  //pthread_t test_thread;
-  //pthread_create(&test_thread, NULL, &test_thread_handler, NULL);
+  /* ENABLE ME for a quick empty batch test */
+  /*
+  pthread_t test_thread;
+  pthread_create(&test_thread, NULL, &test_thread_handler, NULL);
+  */
 
   while(1) {
     struct AcceptedSock * accepted_sock = (struct AcceptedSock *)xcalloc(1,sizeof(struct AcceptedSock));

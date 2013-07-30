@@ -21,7 +21,8 @@ struct delete_functor
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
  * PRIVATE METHODS
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
-StingerServerState::StingerServerState() : port(10101), alg_lock(1), stream_lock(1), batch_lock(1), dep_lock(1)
+StingerServerState::StingerServerState() : port(10101), convert_num_to_string(1), 
+				    alg_lock(1), stream_lock(1), batch_lock(1), dep_lock(1)
 {
   LOG_D("Initializing server state.");
 }
@@ -80,6 +81,32 @@ StingerServerState::set_port(int new_port)
 }
 
 /**
+* @brief Indicates whether or not the server should convert stinger IDs to strings
+* when applying a batch so that algorithms have the string information in the post
+* processing stage.
+*
+* @return 0 - false, otherwise - true
+*/
+int
+StingerServerState::convert_numbers_only_to_strings() {
+  return convert_num_to_string;
+}
+
+/**
+* @brief Indicates whether or not the server should convert stinger IDs to strings
+* when applying a batch so that algorithms have the string information in the post
+* processing stage.
+*
+* @param new_value 0 - Do not convert, otherwise - Convert
+*
+* @return The input value
+*/
+int
+StingerServerState::set_convert_numbers_only_to_strings(int new_value) {
+  return convert_num_to_string = new_value;
+}
+
+/**
 * @brief Atomically enqueue a received batch.
 *
 * @param batch A pointer to the batch to be enqueued (DO NOT DELETE)
@@ -87,12 +114,12 @@ StingerServerState::set_port(int new_port)
 void
 StingerServerState::enqueue_batch(StingerBatch * batch)
 {
-  LOG_D_A("%p %ld insertions %ld deletions: Attempt to acquire lock", batch, batch->insertions_size(), batch->deletions_size());
+  LOG_D_A("%p %ld insertions %ld deletions: Attempt to acquire lock", batch, (long) batch->insertions_size(), (long) batch->deletions_size());
   readfe((uint64_t *)&batch_lock);
-  LOG_D_A("%p %ld insertions %ld deletions: Lock acquired, enqueueing", batch, batch->insertions_size(), batch->deletions_size());
+  LOG_D_A("%p %ld insertions %ld deletions: Lock acquired, enqueueing", batch, (long) batch->insertions_size(), (long) batch->deletions_size());
   batches.push(batch);
   writeef((uint64_t *)&batch_lock, 1);
-  LOG_D_A("%p %ld insertions %ld deletions: Lock released", batch, batch->insertions_size(), batch->deletions_size());
+  LOG_D_A("%p %ld insertions %ld deletions: Lock released", batch, (long) batch->insertions_size(), (long) batch->deletions_size());
 }
 
 /**

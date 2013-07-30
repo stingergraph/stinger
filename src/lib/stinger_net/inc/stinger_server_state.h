@@ -49,6 +49,7 @@ namespace gt {
 	std::queue<StingerBatch *> batches;
 
 	int port;
+	int convert_num_to_string;
 
 	std::vector<pthread_t> threads;
 	pthread_t main_loop;
@@ -76,6 +77,12 @@ namespace gt {
 
 	int
 	set_port(int new_port);
+
+	int
+	convert_numbers_only_to_strings();
+
+	int
+	set_convert_numbers_only_to_strings(int new_value);
 
 	pthread_t *
 	get_main_loop() { return &main_loop; }

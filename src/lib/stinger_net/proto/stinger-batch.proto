@@ -25,6 +25,7 @@ message EdgeDeletion {
   optional string source_str = 2 [default = ""];
   optional int64 destination =3 [default = 1];
   optional string destination_str = 4 [default = ""];
+  optional int64 result = 7;
 }
 
 enum BatchType {
