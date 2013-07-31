@@ -135,12 +135,10 @@ main(int argc, char *argv[])
     send_message(sock_handle, batch);
     sleep(2);
 
+    batch_num++;
     if((batch_num >= num_batches) && (num_batches != -1)) {
       break;
-    } else {
-      batch_num++;
     }
-    batch_num++;
   }
 
   StingerBatch batch;
