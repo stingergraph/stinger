@@ -1,6 +1,11 @@
 #ifndef STINGER_NAMES_H_
 #define STINGER_NAMES_H_
 
+#ifdef __cplusplus
+#define restrict
+extern "C" {
+#endif
+
 #define NAME_STR_MAX 255
 
 typedef struct stinger_names {
@@ -38,5 +43,10 @@ stinger_names_lookup_name(stinger_names_t * sn, int64_t type);
 
 int64_t
 stinger_names_count(stinger_names_t * sn);
+
+#ifdef __cplusplus
+}
+#undef restrict
+#endif
 
 #endif

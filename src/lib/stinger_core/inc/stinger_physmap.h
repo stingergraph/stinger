@@ -1,6 +1,11 @@
 #ifndef  STINGER_PHYSMAP_H
 #define  STINGER_PHYSMAP_H
 
+#ifdef __cplusplus
+#define restrict
+extern "C" {
+#endif
+
 #include <stdio.h>
 #include "stinger_names.h"
 #include "stinger_vertex.h"
@@ -39,5 +44,10 @@ stinger_physmap_id_direct(stinger_physmap_t * p, stinger_vertices_t * v, vindex_
 int64_t
 stinger_physmap_nv(stinger_physmap_t * p);
 
+
+#ifdef __cplusplus
+}
+#undef restrict
+#endif
 
 #endif  /*STINGER_PHYSMAP_H*/

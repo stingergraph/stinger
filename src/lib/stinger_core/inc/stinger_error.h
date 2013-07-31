@@ -1,4 +1,5 @@
 #ifdef __cplusplus
+#define restrict
 extern "C" {
 #endif
 
@@ -122,4 +123,5 @@ extern "C" {
 
 #ifdef __cplusplus
 }
+#undef restrict
 #endif

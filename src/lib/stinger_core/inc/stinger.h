@@ -1,6 +1,11 @@
 #if !defined(STINGER_H_)
 #define STINGER_H_
 
+#ifdef __cplusplus
+#define restrict
+extern "C" {
+#endif
+
 #include <stdint.h>
 
 #include "stinger_vertex.h"
@@ -351,5 +356,10 @@ size_t stinger_graph_size (const struct stinger *);
 uint32_t stinger_consistency_check (struct stinger *S, uint64_t NV);
 
 #include "stinger_traversal.h"
+
+#ifdef __cplusplus
+}
+#undef restrict
+#endif
 
 #endif /* STINGER_H_ */

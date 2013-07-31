@@ -2,6 +2,11 @@
 #if !defined(STINGER_ATOMICS_H_)
 #define STINGER_ATOMICS_H_
 
+#ifdef __cplusplus
+#define restrict
+extern "C" {
+#endif
+
 #include "stinger.h"
 
 static inline int stinger_int_fetch_add (int *, int);
@@ -298,6 +303,11 @@ stinger_ptr_cas (void **p, void *v, void *newv)
 /* }}} */
 #else
 #error "Needs atomic operations defined."
+#endif
+
+#ifdef __cplusplus
+}
+#undef restrict
 #endif
 
 #endif /* STINGER_ATOMICS_H_ */

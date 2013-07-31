@@ -1,6 +1,11 @@
 #ifndef  STINGER_RETURN_H
 #define  STINGER_RETURN_H
 
+#ifdef __cplusplus
+#define restrict
+extern "C" {
+#endif
+
 #define STINGER_RETURN_TYPES \
   TYPE(STINGER_SUCCESS), \
   TYPE(STINGER_REMOVE), \
@@ -20,5 +25,10 @@ stinger_return_to_string(stinger_return_t ret);
 
 stinger_return_t
 stinger_return_from_string(char * str);
+
+#ifdef __cplusplus
+}
+#undef restrict
+#endif
 
 #endif  /*STINGER_RETURN_H*/

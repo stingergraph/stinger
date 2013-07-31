@@ -1,6 +1,11 @@
 #if !defined(STINGER_DEFS_H_)
 #define STINGER_DEFS_H_
 
+#ifdef __cplusplus
+#define restrict
+extern "C" {
+#endif
+
 /** @file */
 
 /**
@@ -100,5 +105,10 @@
     assert (from < STINGER_MAX_LVERTICES);  \
     assert (to < STINGER_MAX_LVERTICES);    \
   } while (0)
+
+#ifdef __cplusplus
+}
+#undef restrict
+#endif
 
 #endif /* STINGER_DEFS_H_ */

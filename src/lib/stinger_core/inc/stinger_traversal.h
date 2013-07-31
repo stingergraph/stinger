@@ -1,6 +1,11 @@
 #if !defined(STINGER_TRAVERSAL_H_)
 #define STINGER_TRAVERSAL_H_
 
+#ifdef __cplusplus
+#define restrict
+extern "C" {
+#endif
+
 #include "stinger_internal.h"
 
 #undef STINGER_FORALL_EDGES_OF_VTX_BEGIN
@@ -631,5 +636,10 @@
     } break; \
   } \
 } 
+
+#ifdef __cplusplus
+}
+#undef restrict
+#endif
 
 #endif /* STINGER_TRAVERSAL_H_ */
