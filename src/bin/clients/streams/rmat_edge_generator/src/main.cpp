@@ -12,10 +12,10 @@ extern "C" {
 #include "stinger_utils/csv.h"
 #include "stinger_utils/timer.h"
 #include "stinger_utils/stinger_sockets.h"
+#include "random.h"
 }
 
-#include "random_edge_generator.h"
-
+#include "rmat_edge_generator.h"
 
 using namespace gt::stinger;
 
@@ -33,18 +33,13 @@ main(int argc, char *argv[])
   int batch_size = 100000;
   int num_batches = -1;
   int nv = 1024;
-  uint64_t buffer_size = 1ULL << 28ULL;
   struct hostent * server = NULL;
 
   int opt = 0;
-  while(-1 != (opt = getopt(argc, argv, "p:b:a:x:y:n:"))) {
+  while(-1 != (opt = getopt(argc, argv, "p:a:x:y:n:"))) {
     switch(opt) {
       case 'p': {
 	port = atoi(optarg);
-      } break;
-
-      case 'b': {
-	buffer_size = atol(optarg);
       } break;
 
       case 'x': {
@@ -69,14 +64,14 @@ main(int argc, char *argv[])
 
       case '?':
       case 'h': {
-	printf("Usage:    %s [-p port] [-a server_addr] [-b buffer_size] [-n num_vertices] [-x batch_size] [-y num_batches]\n", argv[0]);
-	printf("Defaults:\n\tport: %d\n\tserver: localhost\n\tbuffer_size: %lu\n\tnum_vertices: %d\n", port, (unsigned long) buffer_size, nv);
+	printf("Usage:    %s [-p port] [-a server_addr] [-n num_vertices] [-x batch_size] [-y num_batches]\n", argv[0]);
+	printf("Defaults:\n\tport: %d\n\tserver: localhost\n\tnum_vertices: %d\n", port, nv);
 	exit(0);
       } break;
     }
   }
 
-  V_A("Running with: port: %d buffer_size: %lu\n", port, (unsigned long) buffer_size);
+  V_A("Running with: port: %d\n", port);
 
   /* connect to localhost if server is unspecified */
   if(NULL == server) {
@@ -87,22 +82,31 @@ main(int argc, char *argv[])
     }
   }
 
-  /* start the connection */
-  int sock_handle = connect_to_batch_server (server, port);
-
-  uint8_t * buffer = (uint8_t *) xmalloc (buffer_size);
-  if(!buffer) {
-    perror("Buffer alloc failed");
+  if(!(nv > 0)) {
+    printf("ERROR: incorrect number of vertices");
     exit(-1);
   }
 
+  /* start the connection */
+  int sock_handle = connect_to_batch_server (server, port);
+
   /* actually generate and send the batches */
-  char * buf = NULL, ** fields = NULL;
-  uint64_t bufSize = 0, * lengths = NULL, fieldsSize = 0, count = 0;
   int64_t line = 0;
-  int batch_num = 0;
+  int64_t batch_num = 0;
 
   srand (time(NULL));
+
+  int64_t scale = 0;
+  int64_t tmp_nv = nv;
+  while (tmp_nv >>= 1) ++scale;
+
+  double a = 0.55;
+  double b = 0.15;
+  double c = 0.15;
+  double d = 0.25;
+
+  dxor128_env_t env;
+  dxor128_seed(&env, 0);
 
   while(1) {
     StingerBatch batch;
@@ -113,8 +117,9 @@ main(int argc, char *argv[])
     for(int e = 0; e < batch_size; e++) {
       line++;
 
-      int64_t u = rand() % nv;
-      int64_t v = rand() % nv;
+      int64_t u, v;
+      rmat_edge (&u, &v, scale, a, b, c, d, &env);
+      printf("%ld\t\t%ld\n", u, v);
 
       if(u == v) {
 	e--;
@@ -139,6 +144,7 @@ main(int argc, char *argv[])
     if((batch_num >= num_batches) && (num_batches != -1)) {
       break;
     }
+    
   }
 
   StingerBatch batch;
@@ -147,6 +153,5 @@ main(int argc, char *argv[])
   batch.set_keep_alive(false);
   send_message(sock_handle, batch);
 
-  free(buffer);
   return 0;
 }

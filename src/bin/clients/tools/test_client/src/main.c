@@ -8,7 +8,7 @@
 
 int main (int argc, char *argv[])
 {
-  int port = 10102;
+  int port = 10101;
   char hostname[] = "localhost";
   char name[1024];
   size_t sz;
