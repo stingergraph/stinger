@@ -12,10 +12,10 @@ extern "C" {
 #include "stinger_utils/csv.h"
 #include "stinger_utils/timer.h"
 #include "stinger_utils/stinger_sockets.h"
+#include "random.h"
 }
 
 #include "rmat_edge_generator.h"
-
 
 using namespace gt::stinger;
 
@@ -105,6 +105,9 @@ main(int argc, char *argv[])
   double c = 0.15;
   double d = 0.25;
 
+  dxor128_env_t env;
+  dxor128_seed(&env, 0);
+
   while(1) {
     StingerBatch batch;
     batch.set_make_undirected(true);
@@ -115,7 +118,8 @@ main(int argc, char *argv[])
       line++;
 
       int64_t u, v;
-      RMAT (scale, a, b, c, d, &u, &v);
+      rmat_edge (&u, &v, scale, a, b, c, d, &env);
+      printf("%ld\t\t%ld\n", u, v);
 
       if(u == v) {
 	e--;

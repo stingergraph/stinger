@@ -6,8 +6,9 @@
 
 using namespace gt::stinger;
 
-void
-RMAT (int64_t scale, double a, double b, double c, double d, int64_t *start, int64_t *end);
 
+void
+rmat_edge (int64_t * iout, int64_t * jout,
+           int SCALE, double A, double B, double C, double D, dxor128_env_t * env);
 
 #endif /* _RMAT_EDGE_GENERATOR_H */
