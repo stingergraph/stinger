@@ -1,6 +1,11 @@
 #ifndef STINGER_CORE_UTILS_H_
 #define STINGER_CORE_UTILS_H_
 
+#ifdef __cplusplus
+#define restrict
+extern "C" {
+#endif
+
 #include "stinger.h"
 
 /* 
@@ -22,5 +27,10 @@ int64_t prefix_sum (const int64_t n, int64_t *ary);
 int64_t find_in_sorted (const int64_t tofind, const int64_t N, const int64_t * restrict ary);
 
 int i64_cmp (const void *a, const void *b);
+
+#ifdef __cplusplus
+}
+#undef restrict
+#endif
 
 #endif

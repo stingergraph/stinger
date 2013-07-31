@@ -1,6 +1,11 @@
 #ifndef  STINGER_VERTEX_H
 #define  STINGER_VERTEX_H
 
+#ifdef __cplusplus
+#define restrict
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <stdio.h>
 
@@ -161,5 +166,10 @@ stinger_vertices_max_vertices_get(const stinger_vertices_t * vertices);
 
 int64_t 
 stinger_vertices_size_bytes(const stinger_vertices_t * vertices);
+
+#ifdef __cplusplus
+}
+#undef restrict
+#endif
 
 #endif  /*STINGER_VERTEX_H*/

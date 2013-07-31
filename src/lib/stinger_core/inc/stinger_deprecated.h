@@ -1,6 +1,11 @@
 #ifndef STINGER_DEPRECATED_H
 #define STINGER_DEPRECATED_H
 
+#ifdef __cplusplus
+#define restrict
+extern "C" {
+#endif
+
 #include <stdint.h>
 
 /* These functions are included for backwards compatability, but are not recommended
@@ -67,4 +72,9 @@ stinger_physmap_get_key (stinger_physmap_t * map, char ** outbuffer, uint64_t * 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
  * END STINGER_PHYSMAP.H
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+#ifdef __cplusplus
+}
+#undef restrict
+#endif
+
 #endif

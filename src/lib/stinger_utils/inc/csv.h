@@ -1,6 +1,11 @@
 #ifndef  CSV_H
 #define  CSV_H
 
+#ifdef __cplusplus
+#define restrict
+extern "C" {
+#endif
+
 #include <stdio.h>
 
 void
@@ -32,5 +37,10 @@ csvIfIDExistsdouble(FILE * fp, char delim, struct stinger * s, uint64_t nv, doub
 
 int
 load_csv_graph (struct stinger * S, char * filename, int use_numerics);
+
+#ifdef __cplusplus
+}
+#undef restrict
+#endif
 
 #endif  /*CSV_H*/

@@ -5,18 +5,9 @@
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
 #include "twitter_stream.h"
+#include "stinger_net/proto/stinger-batch.pb.h"
 
-/*
-struct EdgeCollection {
-  std::vector<int64_t> type;
-  std::vector<std::string> type_str;
-  std::vector<int64_t> source;
-  std::vector<std::string> source_str;
-  std::vector<int64_t> destination;
-  std::vector<std::string> destination_str;
-  std::vector<int64_t> weight;
-  std::vector<int64_t> time;
-};
+using namespace gt::stinger;
 
 typedef enum {
   VALUE_TYPE,
@@ -29,50 +20,514 @@ typedef enum {
   VALUE_TIME
 } value_type_t;
 
-struct ExploreJSONGeneric {
-  ExploreJSONGeneric & child = NULL;
+typedef enum {
+  PATH_DEFAULT,
+  PATH_EXACT,
+  PATH_ORDERED
+} path_type_t;
 
-  bool operator()(EdgeCollection & edges, rapidjson::Document & document);
-  void print();
+struct EdgeCollection;
+
+struct ExploreJSONGeneric {
+  ExploreJSONGeneric * child;
+  ExploreJSONGeneric() : child(NULL) {}
+  ~ExploreJSONGeneric() { delete child; }
+
+  virtual bool operator()(EdgeCollection & edges, rapidjson::Value & document);
+  virtual void print();
+  virtual ExploreJSONGeneric * copy(path_type_t path);
 };
 
-struct ExploreJSONValue : ExploreJSONGeneric{
+struct EdgeCollection {
+  std::vector<ExploreJSONGeneric *> start;
+  path_type_t path;
+
+  std::vector<int64_t> type;
+  std::vector<std::string> type_str;
+  std::vector<int64_t> source;
+  std::vector<std::string> source_str;
+  std::vector<int64_t> destination;
+  std::vector<std::string> destination_str;
+  std::vector<int64_t> weight;
+  std::vector<int64_t> time;
+
+  int64_t apply(StingerBatch & batch, rapidjson::Value & document, int64_t & timestamp) {
+    /* TODO figure out what to do about missing fields */
+    for(int64_t i = 0; i < start.size(); i++) {
+      if(!(*start[i])(*this, document)) {
+	return 0;
+      }
+    }
+    switch(path) {
+      default:
+      case PATH_EXACT:
+      case PATH_DEFAULT: {
+	for(int64_t t = 0; t < type.size(); t++) {
+	  for(int64_t s = 0; s < source.size(); s++) {
+	    for(int64_t d = 0; d < destination.size(); d++) {
+	      if(weight.size()) {
+		for(int64_t w = 0; w < weight.size(); w++) {
+		  if(time.size()) {
+		    for(int64_t m = 0; m < time.size(); m++) {
+		      EdgeInsertion * in = batch.add_insertions();
+		      in->set_type(type[t]); in->set_source(source[s]); in->set_destination(destination[d]);
+		      in->set_weight(weight[w]); in->set_time(time[m]);
+		    }
+		  } else {
+		    EdgeInsertion * in = batch.add_insertions();
+		    in->set_type(type[t]); in->set_source(source[s]); in->set_destination(destination[d]);
+		    in->set_weight(weight[w]); in->set_time(timestamp++);
+		  }
+		}
+	      } else {
+		  if(time.size()) {
+		    for(int64_t m = 0; m < time.size(); m++) {
+		      EdgeInsertion * in = batch.add_insertions();
+		      in->set_type(type[t]); in->set_source(source[s]); in->set_destination(destination[d]);
+		      in->set_weight(1); in->set_time(time[m]);
+		    }
+		  } else {
+		    EdgeInsertion * in = batch.add_insertions();
+		    in->set_type(type[t]); in->set_source(source[s]); in->set_destination(destination[d]);
+		    in->set_weight(1); in->set_time(timestamp++);
+		  }
+	      }
+	    }
+	    for(int64_t d = 0; d < destination_str.size(); d++) {
+	      if(weight.size()) {
+		for(int64_t w = 0; w < weight.size(); w++) {
+		  if(time.size()) {
+		    for(int64_t m = 0; m < time.size(); m++) {
+		      EdgeInsertion * in = batch.add_insertions();
+		      in->set_type(type[t]); in->set_source(source[s]); in->set_destination_str(destination_str[d]);
+		      in->set_weight(weight[w]); in->set_time(time[m]);
+		    }
+		  } else {
+		    EdgeInsertion * in = batch.add_insertions();
+		    in->set_type(type[t]); in->set_source(source[s]); in->set_destination_str(destination_str[d]);
+		    in->set_weight(weight[w]); in->set_time(timestamp++);
+		  }
+		}
+	      } else {
+		  if(time.size()) {
+		    for(int64_t m = 0; m < time.size(); m++) {
+		      EdgeInsertion * in = batch.add_insertions();
+		      in->set_type(type[t]); in->set_source(source[s]); in->set_destination_str(destination_str[d]);
+		      in->set_weight(1); in->set_time(time[m]);
+		    }
+		  } else {
+		    EdgeInsertion * in = batch.add_insertions();
+		    in->set_type(type[t]); in->set_source(source[s]); in->set_destination_str(destination_str[d]);
+		    in->set_weight(1); in->set_time(timestamp++);
+		  }
+	      }
+	    }
+	  }
+	  for(int64_t s = 0; s < source_str.size(); s++) {
+	    for(int64_t d = 0; d < destination.size(); d++) {
+	      if(weight.size()) {
+		for(int64_t w = 0; w < weight.size(); w++) {
+		  if(time.size()) {
+		    for(int64_t m = 0; m < time.size(); m++) {
+		      EdgeInsertion * in = batch.add_insertions();
+		      in->set_type(type[t]); in->set_source_str(source_str[s]); in->set_destination(destination[d]);
+		      in->set_weight(weight[w]); in->set_time(time[m]);
+		    }
+		  } else {
+		    EdgeInsertion * in = batch.add_insertions();
+		    in->set_type(type[t]); in->set_source_str(source_str[s]); in->set_destination(destination[d]);
+		    in->set_weight(weight[w]); in->set_time(timestamp++);
+		  }
+		}
+	      } else {
+		  if(time.size()) {
+		    for(int64_t m = 0; m < time.size(); m++) {
+		      EdgeInsertion * in = batch.add_insertions();
+		      in->set_type(type[t]); in->set_source_str(source_str[s]); in->set_destination(destination[d]);
+		      in->set_weight(1); in->set_time(time[m]);
+		    }
+		  } else {
+		    EdgeInsertion * in = batch.add_insertions();
+		    in->set_type(type[t]); in->set_source_str(source_str[s]); in->set_destination(destination[d]);
+		    in->set_weight(1); in->set_time(timestamp++);
+		  }
+	      }
+	    }
+	    for(int64_t d = 0; d < destination_str.size(); d++) {
+	      if(weight.size()) {
+		for(int64_t w = 0; w < weight.size(); w++) {
+		  if(time.size()) {
+		    for(int64_t m = 0; m < time.size(); m++) {
+		      EdgeInsertion * in = batch.add_insertions();
+		      in->set_type(type[t]); in->set_source_str(source_str[s]); in->set_destination_str(destination_str[d]);
+		      in->set_weight(weight[w]); in->set_time(time[m]);
+		    }
+		  } else {
+		    EdgeInsertion * in = batch.add_insertions();
+		    in->set_type(type[t]); in->set_source_str(source_str[s]); in->set_destination_str(destination_str[d]);
+		    in->set_weight(weight[w]); in->set_time(timestamp++);
+		  }
+		}
+	      } else {
+		  if(time.size()) {
+		    for(int64_t m = 0; m < time.size(); m++) {
+		      EdgeInsertion * in = batch.add_insertions();
+		      in->set_type(type[t]); in->set_source_str(source_str[s]); in->set_destination_str(destination_str[d]);
+		      in->set_weight(1); in->set_time(time[m]);
+		    }
+		  } else {
+		    EdgeInsertion * in = batch.add_insertions();
+		    in->set_type(type[t]); in->set_source_str(source_str[s]); in->set_destination_str(destination_str[d]);
+		    in->set_weight(1); in->set_time(timestamp++);
+		  }
+	      }
+	    }
+	  }
+	}
+	for(int64_t t = 0; t < type_str.size(); t++) {
+	  for(int64_t s = 0; s < source.size(); s++) {
+	    for(int64_t d = 0; d < destination.size(); d++) {
+	      if(weight.size()) {
+		for(int64_t w = 0; w < weight.size(); w++) {
+		  if(time.size()) {
+		    for(int64_t m = 0; m < time.size(); m++) {
+		      EdgeInsertion * in = batch.add_insertions();
+		      in->set_type(0); in->set_source(source[s]); in->set_destination(destination[d]);
+		      in->set_weight(weight[w]); in->set_time(time[m]);
+		    }
+		  } else {
+		    EdgeInsertion * in = batch.add_insertions();
+		    in->set_type(0); in->set_source(source[s]); in->set_destination(destination[d]);
+		    in->set_weight(weight[w]); in->set_time(timestamp++);
+		  }
+		}
+	      } else {
+		  if(time.size()) {
+		    for(int64_t m = 0; m < time.size(); m++) {
+		      EdgeInsertion * in = batch.add_insertions();
+		      in->set_type(0); in->set_source(source[s]); in->set_destination(destination[d]);
+		      in->set_weight(1); in->set_time(time[m]);
+		    }
+		  } else {
+		    EdgeInsertion * in = batch.add_insertions();
+		    in->set_type(0); in->set_source(source[s]); in->set_destination(destination[d]);
+		    in->set_weight(1); in->set_time(timestamp++);
+		  }
+	      }
+	    }
+	    for(int64_t d = 0; d < destination_str.size(); d++) {
+	      if(weight.size()) {
+		for(int64_t w = 0; w < weight.size(); w++) {
+		  if(time.size()) {
+		    for(int64_t m = 0; m < time.size(); m++) {
+		      EdgeInsertion * in = batch.add_insertions();
+		      in->set_type(0); in->set_source(source[s]); in->set_destination_str(destination_str[d]);
+		      in->set_weight(weight[w]); in->set_time(time[m]);
+		    }
+		  } else {
+		    EdgeInsertion * in = batch.add_insertions();
+		    in->set_type(0); in->set_source(source[s]); in->set_destination_str(destination_str[d]);
+		    in->set_weight(weight[w]); in->set_time(timestamp++);
+		  }
+		}
+	      } else {
+		  if(time.size()) {
+		    for(int64_t m = 0; m < time.size(); m++) {
+		      EdgeInsertion * in = batch.add_insertions();
+		      in->set_type(0); in->set_source(source[s]); in->set_destination_str(destination_str[d]);
+		      in->set_weight(1); in->set_time(time[m]);
+		    }
+		  } else {
+		    EdgeInsertion * in = batch.add_insertions();
+		    in->set_type(0); in->set_source(source[s]); in->set_destination_str(destination_str[d]);
+		    in->set_weight(1); in->set_time(timestamp++);
+		  }
+	      }
+	    }
+	  }
+	  for(int64_t s = 0; s < source_str.size(); s++) {
+	    for(int64_t d = 0; d < destination.size(); d++) {
+	      if(weight.size()) {
+		for(int64_t w = 0; w < weight.size(); w++) {
+		  if(time.size()) {
+		    for(int64_t m = 0; m < time.size(); m++) {
+		      EdgeInsertion * in = batch.add_insertions();
+		      in->set_type(0); in->set_source_str(source_str[s]); in->set_destination(destination[d]);
+		      in->set_weight(weight[w]); in->set_time(time[m]);
+		    }
+		  } else {
+		    EdgeInsertion * in = batch.add_insertions();
+		    in->set_type(0); in->set_source_str(source_str[s]); in->set_destination(destination[d]);
+		    in->set_weight(weight[w]); in->set_time(timestamp++);
+		  }
+		}
+	      } else {
+		  if(time.size()) {
+		    for(int64_t m = 0; m < time.size(); m++) {
+		      EdgeInsertion * in = batch.add_insertions();
+		      in->set_type(0); in->set_source_str(source_str[s]); in->set_destination(destination[d]);
+		      in->set_weight(1); in->set_time(time[m]);
+		    }
+		  } else {
+		    EdgeInsertion * in = batch.add_insertions();
+		    in->set_type(0); in->set_source_str(source_str[s]); in->set_destination(destination[d]);
+		    in->set_weight(1); in->set_time(timestamp++);
+		  }
+	      }
+	    }
+	    for(int64_t d = 0; d < destination_str.size(); d++) {
+	      if(weight.size()) {
+		for(int64_t w = 0; w < weight.size(); w++) {
+		  if(time.size()) {
+		    for(int64_t m = 0; m < time.size(); m++) {
+		      EdgeInsertion * in = batch.add_insertions();
+		      in->set_type(0); in->set_source_str(source_str[s]); in->set_destination_str(destination_str[d]);
+		      in->set_weight(weight[w]); in->set_time(time[m]);
+		    }
+		  } else {
+		    EdgeInsertion * in = batch.add_insertions();
+		    in->set_type(0); in->set_source_str(source_str[s]); in->set_destination_str(destination_str[d]);
+		    in->set_weight(weight[w]); in->set_time(timestamp++);
+		  }
+		}
+	      } else {
+		  if(time.size()) {
+		    for(int64_t m = 0; m < time.size(); m++) {
+		      EdgeInsertion * in = batch.add_insertions();
+		      in->set_type(0); in->set_source_str(source_str[s]); in->set_destination_str(destination_str[d]);
+		      in->set_weight(1); in->set_time(time[m]);
+		    }
+		  } else {
+		    EdgeInsertion * in = batch.add_insertions();
+		    in->set_type(0); in->set_source_str(source_str[s]); in->set_destination_str(destination_str[d]);
+		    in->set_weight(1); in->set_time(timestamp++);
+		  }
+	      }
+	    }
+	  }
+	}
+	if(!type.size() && !type_str.size()) {
+	  for(int64_t s = 0; s < source.size(); s++) {
+	    for(int64_t d = 0; d < destination.size(); d++) {
+	      if(weight.size()) {
+		for(int64_t w = 0; w < weight.size(); w++) {
+		  if(time.size()) {
+		    for(int64_t m = 0; m < time.size(); m++) {
+		      EdgeInsertion * in = batch.add_insertions();
+		      in->set_type(0); in->set_source(source[s]); in->set_destination(destination[d]);
+		      in->set_weight(weight[w]); in->set_time(time[m]);
+		    }
+		  } else {
+		    EdgeInsertion * in = batch.add_insertions();
+		    in->set_type(0); in->set_source(source[s]); in->set_destination(destination[d]);
+		    in->set_weight(weight[w]); in->set_time(timestamp++);
+		  }
+		}
+	      } else {
+		  if(time.size()) {
+		    for(int64_t m = 0; m < time.size(); m++) {
+		      EdgeInsertion * in = batch.add_insertions();
+		      in->set_type(0); in->set_source(source[s]); in->set_destination(destination[d]);
+		      in->set_weight(1); in->set_time(time[m]);
+		    }
+		  } else {
+		    EdgeInsertion * in = batch.add_insertions();
+		    in->set_type(0); in->set_source(source[s]); in->set_destination(destination[d]);
+		    in->set_weight(1); in->set_time(timestamp++);
+		  }
+	      }
+	    }
+	    for(int64_t d = 0; d < destination_str.size(); d++) {
+	      if(weight.size()) {
+		for(int64_t w = 0; w < weight.size(); w++) {
+		  if(time.size()) {
+		    for(int64_t m = 0; m < time.size(); m++) {
+		      EdgeInsertion * in = batch.add_insertions();
+		      in->set_type(0); in->set_source(source[s]); in->set_destination_str(destination_str[d]);
+		      in->set_weight(weight[w]); in->set_time(time[m]);
+		    }
+		  } else {
+		    EdgeInsertion * in = batch.add_insertions();
+		    in->set_type(0); in->set_source(source[s]); in->set_destination_str(destination_str[d]);
+		    in->set_weight(weight[w]); in->set_time(timestamp++);
+		  }
+		}
+	      } else {
+		  if(time.size()) {
+		    for(int64_t m = 0; m < time.size(); m++) {
+		      EdgeInsertion * in = batch.add_insertions();
+		      in->set_type(0); in->set_source(source[s]); in->set_destination_str(destination_str[d]);
+		      in->set_weight(1); in->set_time(time[m]);
+		    }
+		  } else {
+		    EdgeInsertion * in = batch.add_insertions();
+		    in->set_type(0); in->set_source(source[s]); in->set_destination_str(destination_str[d]);
+		    in->set_weight(1); in->set_time(timestamp++);
+		  }
+	      }
+	    }
+	  }
+	  for(int64_t s = 0; s < source_str.size(); s++) {
+	    for(int64_t d = 0; d < destination.size(); d++) {
+	      if(weight.size()) {
+		for(int64_t w = 0; w < weight.size(); w++) {
+		  if(time.size()) {
+		    for(int64_t m = 0; m < time.size(); m++) {
+		      EdgeInsertion * in = batch.add_insertions();
+		      in->set_type(0); in->set_source_str(source_str[s]); in->set_destination(destination[d]);
+		      in->set_weight(weight[w]); in->set_time(time[m]);
+		    }
+		  } else {
+		    EdgeInsertion * in = batch.add_insertions();
+		    in->set_type(0); in->set_source_str(source_str[s]); in->set_destination(destination[d]);
+		    in->set_weight(weight[w]); in->set_time(timestamp++);
+		  }
+		}
+	      } else {
+		  if(time.size()) {
+		    for(int64_t m = 0; m < time.size(); m++) {
+		      EdgeInsertion * in = batch.add_insertions();
+		      in->set_type(0); in->set_source_str(source_str[s]); in->set_destination(destination[d]);
+		      in->set_weight(1); in->set_time(time[m]);
+		    }
+		  } else {
+		    EdgeInsertion * in = batch.add_insertions();
+		    in->set_type(0); in->set_source_str(source_str[s]); in->set_destination(destination[d]);
+		    in->set_weight(1); in->set_time(timestamp++);
+		  }
+	      }
+	    }
+	    for(int64_t d = 0; d < destination_str.size(); d++) {
+	      if(weight.size()) {
+		for(int64_t w = 0; w < weight.size(); w++) {
+		  if(time.size()) {
+		    for(int64_t m = 0; m < time.size(); m++) {
+		      EdgeInsertion * in = batch.add_insertions();
+		      in->set_type(0); in->set_source_str(source_str[s]); in->set_destination_str(destination_str[d]);
+		      in->set_weight(weight[w]); in->set_time(time[m]);
+		    }
+		  } else {
+		    EdgeInsertion * in = batch.add_insertions();
+		    in->set_type(0); in->set_source_str(source_str[s]); in->set_destination_str(destination_str[d]);
+		    in->set_weight(weight[w]); in->set_time(timestamp++);
+		  }
+		}
+	      } else {
+		  if(time.size()) {
+		    for(int64_t m = 0; m < time.size(); m++) {
+		      EdgeInsertion * in = batch.add_insertions();
+		      in->set_type(0); in->set_source_str(source_str[s]); in->set_destination_str(destination_str[d]);
+		      in->set_weight(1); in->set_time(time[m]);
+		    }
+		  } else {
+		    EdgeInsertion * in = batch.add_insertions();
+		    in->set_type(0); in->set_source_str(source_str[s]); in->set_destination_str(destination_str[d]);
+		    in->set_weight(1); in->set_time(timestamp++);
+		  }
+	      }
+	    }
+	  }
+	}
+      } break;
+
+      case PATH_ORDERED: {
+/*	int64_t max = 0;
+	max = max > type.size() ? max : type.size();
+	max = max > type_str.size() ? max : type_str.size();
+	max = max > source.size() ? max : source.size();
+	max = max > source_str.size() ? max : source_str.size();
+	max = max > destination.size() ? max : destination.size();
+	max = max > destination_str.size() ? max : destination_str.size();
+	for(int64_t e = 0; e < max; e++) {
+	  EdgeInsertion * in = batch.add_insertions();
+	  if(e < type.size()) {
+	    if(e <
+	  } else if(e < type_str.size()) {
+	  } else {
+	  }
+	}*/
+	/* TODO */
+      } break;
+    }
+  }
+};
+
+struct EdgeCollectionSet {
+  std::vector<EdgeCollection *> set;
+  int64_t time;
+
+  EdgeCollectionSet() : time(0) {}
+
+  EdgeCollection * get_collection(int64_t index) {
+    while(index > set.size()) {
+      set.push_back(NULL);
+    }
+
+    return set[index];
+  }
+
+  EdgeCollection * set_collection(int64_t index, EdgeCollection * val) {
+    while(index > set.size()) {
+      set.push_back(NULL);
+    }
+
+    return set[index] = val;
+  }
+
+  int64_t apply(StingerBatch & batch, rapidjson::Value & document) {
+    int64_t rtn = 0;
+
+    for(int64_t index = 0; index < set.size(); index++) {
+      if(set[index]) {
+	rtn += set[index]->apply(batch, document, time);
+      }
+    }
+
+    return rtn;
+  }
+
+  int64_t learn(rapidjson::Value & document) {
+    /* TODO */
+  }
+};
+
+struct ExploreJSONValue : public ExploreJSONGeneric {
   value_type_t value_type;
 
-  ExploreJSONValue(value_type_t type) : value_type(type) {}
+  ExploreJSONValue(value_type_t type) : ExploreJSONGeneric(), value_type(type) {}
 
-  bool operator()(EdgeCollection & edges, rapidjson::Document & document) {
+  virtual bool operator()(EdgeCollection & edges, rapidjson::Value & document) {
     switch(value_type) {
       case VALUE_TYPE:
-	edges.type.append(document.GetInt64());
+	edges.type.push_back(document.GetInt64());
 	break;
 
       case VALUE_TYPE_STR:
-	edges.type_str.append(std::string(document.GetString(), document.GetStringLength());
+	edges.type_str.push_back(std::string(document.GetString(), document.GetStringLength()));
 	break;
 
       case VALUE_SOURCE:
-	edges.source.append(document.GetInt64());
+	edges.source.push_back(document.GetInt64());
 	break;
 
       case VALUE_SOURCE_STR:
-	edges.source_str.append(std::string(document.GetString(), document.GetStringLength());
+	edges.source_str.push_back(std::string(document.GetString(), document.GetStringLength()));
 	break;
 
       case VALUE_DESTINATION:
-	edges.destination.append(document.GetInt64());
+	edges.destination.push_back(document.GetInt64());
 	break;
 
       case VALUE_DESTINATION_STR:
-	edges.destination_str.append(std::string(document.GetString(), document.GetStringLength());
+	edges.destination_str.push_back(std::string(document.GetString(), document.GetStringLength()));
 	break;
 
       case VALUE_WEIGHT:
-	edges.weight.append(document.GetInt64());
+	edges.weight.push_back(document.GetInt64());
 	break;
 
       case VALUE_TIME:
-	edges.time.append(document.GetInt64());
+	edges.time.push_back(document.GetInt64());
 	break;
 
       default:
@@ -81,50 +536,83 @@ struct ExploreJSONValue : ExploreJSONGeneric{
     return true;
   }
 
-  void print() {
-    printf(".value %ld", value_type);
-    child.print();
+  virtual void print() {
+    printf(".value %ld", (long)value_type);
+  }
+
+  virtual ExploreJSONGeneric * copy(path_type_t path) {
+    ExploreJSONValue * rtn = new ExploreJSONValue(value_type);
+    rtn->child = child->copy(path);
+    return rtn;
   }
 };
 
-struct ExploreJSONArray : ExploreJSONGeneric {
-  ExploreJSONArray() : child = NULL {}
+struct ExploreJSONArray : public ExploreJSONGeneric {
+  rapidjson::SizeType index;
 
-  bool operator()(EdgeCollection & edges, rapidjson::Document & document) {
+  ExploreJSONArray() : ExploreJSONGeneric(), index(0) {}
+
+  virtual bool operator()(EdgeCollection & edges, rapidjson::Value & document) {
     if(document.IsArray()) {
-      for(rapidjson::SizeType i = 0; i < document.Size(); i++) {
-	return child(edges, document[i]);
+      if(index == -1) {
+	for(rapidjson::SizeType i = 0; i < document.Size(); i++) {
+	  return (*child)(edges, document[i]);
+	}
+      } else {
+	  return (*child)(edges, document[index]);
       }
     } else {
       return false;
     }
   }
 
-  void print() {
+  virtual void print() {
     printf(".@.");
-    child.print();
+    child->print();
+  }
+
+  virtual ExploreJSONGeneric * copy(path_type_t path) {
+    ExploreJSONArray * rtn = new ExploreJSONArray();
+    switch(path) {
+      default:
+      case PATH_ORDERED:
+      case PATH_DEFAULT:
+       rtn->index = -1;
+       break;
+      case PATH_EXACT:
+       rtn->index = index;
+       break;
+    }
+
+    rtn->child = child->copy(path);
+    return rtn;
   }
 };
 
-struct ExploreJSONObject : ExploreJSONGeneric {
+struct ExploreJSONObject : public ExploreJSONGeneric {
   std::string field_name;
 
-  ExploreJSONObject(std::string & field) : child = NULL, field_name(field) {}
+  ExploreJSONObject(std::string & field) : ExploreJSONGeneric(), field_name(field) {}
 
-  bool operator()(EdgeCollection & edges, rapidjson::Document & document) {
+  virtual bool operator()(EdgeCollection & edges, rapidjson::Value & document) {
     if(document.HasMember(field_name.c_str()))
-      return child(edges, document[field_name.c_str()]);
+      return (*child)(edges, document[field_name.c_str()]);
     else
       return false;
   }
 
-  void print() {
+  virtual void print() {
     printf(".$.%s", field_name.c_str());
-    child.print();
+    child->print();
+  }
+
+  virtual ExploreJSONGeneric * copy(path_type_t path) {
+    ExploreJSONObject * rtn = new ExploreJSONObject(field_name);
+    rtn->child = child->copy(path);
+    return rtn;
   }
 };
 
-*/
 void
 print_list (std::list<std::string> l)
 {

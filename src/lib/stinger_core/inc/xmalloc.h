@@ -4,6 +4,12 @@
 
 #if !defined(XMALLOC_H_)
 #define XMALLOC_H_
+
+#ifdef __cplusplus
+#define restrict
+extern "C" {
+#endif
+
 #if defined(__GNUC__)
 #define FNATTR_MALLOC __attribute__((malloc))
 #else
@@ -31,5 +37,9 @@ void xzero (void *x, const size_t sz);
   } \
 }
 
+#ifdef __cplusplus
+}
+#undef restrict
+#endif
 
 #endif /* XMALLOC_H_ */

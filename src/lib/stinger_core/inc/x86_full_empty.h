@@ -16,6 +16,11 @@
 #ifndef	X86_FULL_EMPTY_C
 #define	X86_FULL_EMPTY_C
 
+#ifdef __cplusplus
+#define restrict
+extern "C" {
+#endif
+
 #include    "stinger_atomics.h"
 
 #if !defined(__MTA__) /* x86 only */
@@ -39,6 +44,11 @@ uint64_t
 writexf(uint64_t * v, uint64_t new_val);
 
 #endif  /* x86 only */
+
+#ifdef __cplusplus
+}
+#undef restrict
+#endif
 
 #endif  /*X86-FULL-EMPTY_C*/
 

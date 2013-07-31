@@ -1,6 +1,11 @@
 #ifndef  STINGER_SHARED_H
 #define  STINGER_SHARED_H
 
+#ifdef __cplusplus
+#define restrict
+extern "C" {
+#endif
+
 #include "stinger.h"
 
 #define MAX_NAME_LEN 256
@@ -25,5 +30,10 @@ stinger_shared_free (struct stinger *S, const char *name, size_t sz);
 
 struct stinger *
 stinger_shared_unmap (struct stinger *S, const char *name, size_t sz);
+
+#ifdef __cplusplus
+}
+#undef restrict
+#endif
 
 #endif  /*STINGER_SHARED_H*/

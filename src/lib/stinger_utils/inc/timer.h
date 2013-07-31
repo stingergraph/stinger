@@ -1,6 +1,11 @@
 #if !defined (TIMER_H_)
 #define TIMER_H_
 
+#ifdef __cplusplus
+#define restrict
+extern "C" {
+#endif
+
 void init_timer (void);
 double timer_getres (void);
 void tic (void);
@@ -16,6 +21,11 @@ struct stats {
 };
 
 struct stats stats_tic_data, stats_toc_data;
+#endif
+
+#ifdef __cplusplus
+}
+#undef restrict
 #endif
 
 #endif /* TIMER_H_ */

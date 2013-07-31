@@ -1,6 +1,11 @@
 #if !defined(STINGER_INTERNAL_H_)
 #define STINGER_INTERNAL_H_
 
+#ifdef __cplusplus
+#define restrict
+extern "C" {
+#endif
+
 #define EBPOOL_SIZE (STINGER_MAX_LVERTICES*4)
 
 #define MAP_STING(X) \
@@ -215,5 +220,10 @@ new_blk_ebs (eb_index_t *out, const struct stinger * G,
              const int64_t etype);
 
 #include "stinger_deprecated.h"
+
+#ifdef __cplusplus
+}
+#undef restrict
+#endif
 
 #endif /* STINGER_INTERNAL_H_ */
