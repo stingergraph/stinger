@@ -1,6 +1,11 @@
 #ifndef  XML_SUPPORT_H
 #define  XML_SUPPORT_H
 
+#ifdef __cplusplus
+#define restrict
+extern "C" {
+#endif
+
 #define XML_TAB "  "
 
 #define XML_INIT(OUT, INDENT) { FILE * xml_out = OUT; int64_t xml_indent = INDENT 
@@ -19,5 +24,10 @@
 
 void
 stinger_vertex_to_xml(const stinger_vertices_t * vertices, vindex_t v, FILE * out, int64_t indent_level);
+
+#ifdef __cplusplus
+}
+#undef restrict
+#endif
 
 #endif  /*XML_SUPPORT_H*/

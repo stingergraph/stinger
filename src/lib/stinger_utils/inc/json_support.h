@@ -1,6 +1,11 @@
 #ifndef  JSON_SUPPORT_H
 #define  JSON_SUPPORT_H
 
+#ifdef __cplusplus
+#define restrict
+extern "C" {
+#endif
+
 #include "stinger_core/stinger.h"
 #include "string/astring.h"
 
@@ -38,5 +43,10 @@ labeled_subgraph_to_json(stinger_t * S, int64_t src, int64_t * labels, const int
 
 int
 load_json_graph (struct stinger * S, char * filename);
+
+#ifdef __cplusplus
+}
+#undef restrict
+#endif
 
 #endif  /*JSON_SUPPORT_H*/

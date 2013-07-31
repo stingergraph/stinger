@@ -1,6 +1,11 @@
 #if !defined(STINGER_UTILS_H_)
 #define STINGER_UTILS_H_
 
+#ifdef __cplusplus
+#define restrict
+extern "C" {
+#endif
+
 #include "stinger_core/stinger.h"
 
 #define INITIAL_GRAPH_NAME_DEFAULT "initial-graph.bin"
@@ -119,4 +124,10 @@ int64_t find_in_sorted (const int64_t tofind,
                 const int64_t N, const int64_t * ary);
 
 int64_t prefix_sum (const int64_t n, int64_t *ary);
+
+#ifdef __cplusplus
+}
+#undef restrict
+#endif
+
 #endif /* STINGER_UTILS_H_ */

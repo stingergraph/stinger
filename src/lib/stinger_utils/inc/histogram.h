@@ -1,7 +1,12 @@
 #ifndef  HISTOGRAM_H
 #define  HISTOGRAM_H
 
-#include "stinger.h"
+#ifdef __cplusplus
+#define restrict
+extern "C" {
+#endif
+
+#include "stinger_core/stinger.h"
 
 #include <stdint.h>
 
@@ -16,5 +21,10 @@ histogram_float(struct stinger * S, float * scores, int64_t count, char * path, 
 
 void
 histogram_double(struct stinger * S, double * scores, int64_t count, char * path, char * name, int64_t iteration);
+
+#ifdef __cplusplus
+}
+#undef restrict
+#endif
 
 #endif  /*HISTOGRAM_H*/
