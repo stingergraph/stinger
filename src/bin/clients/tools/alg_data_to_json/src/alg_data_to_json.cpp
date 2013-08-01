@@ -53,7 +53,8 @@ description_string_to_json (char * description_string)
 
 
 rapidjson::Document *
-array_to_json (char * description_string, int64_t nv, uint8_t * data, char * search_string)
+array_to_json_range (char * description_string, int64_t nv, uint8_t * data, char * search_string,
+		     int64_t start, int64_t end)
 {
   size_t off = 0;
   size_t len = strlen(description_string);
@@ -81,7 +82,7 @@ array_to_json (char * description_string, int64_t nv, uint8_t * data, char * sea
     if (strcmp(pch, search_string) == 0) {
       switch (description_string[off]) {
 	case 'f':
-	  for (int64_t i = 0; i < nv; i++) {
+	  for (int64_t i = start; i < end; i++) {
 	    rapidjson::Value v;
 	    v.SetDouble((double)((float *) data)[i]);
 	    a.PushBack(v, allocator);
@@ -90,7 +91,7 @@ array_to_json (char * description_string, int64_t nv, uint8_t * data, char * sea
 	  break;
 
 	case 'd':
-	  for (int64_t i = 0; i < nv; i++) {
+	  for (int64_t i = start; i < end; i++) {
 	    rapidjson::Value v;
 	    v.SetDouble((double)((double *) data)[i]);
 	    a.PushBack(v, allocator);
@@ -99,7 +100,7 @@ array_to_json (char * description_string, int64_t nv, uint8_t * data, char * sea
 	  break;
 
 	case 'i':
-	  for (int64_t i = 0; i < nv; i++) {
+	  for (int64_t i = start; i < end; i++) {
 	    rapidjson::Value v;
 	    v.SetInt(((int32_t *) data)[i]);
 	    a.PushBack(v, allocator);
@@ -108,7 +109,7 @@ array_to_json (char * description_string, int64_t nv, uint8_t * data, char * sea
 	  break;
 
 	case 'l':
-	  for (int64_t i = 0; i < nv; i++) {
+	  for (int64_t i = start; i < end; i++) {
 	    rapidjson::Value v;
 	    v.SetInt64(((int64_t *) data)[i]);
 	    a.PushBack(v, allocator);
@@ -117,7 +118,7 @@ array_to_json (char * description_string, int64_t nv, uint8_t * data, char * sea
 	  break;
 
 	case 'b':
-	  for (int64_t i = 0; i < nv; i++) {
+	  for (int64_t i = start; i < end; i++) {
 	    rapidjson::Value v;
 	    v.SetInt((int)((char *) data)[i]);
 	    a.PushBack(v, allocator);
@@ -175,11 +176,18 @@ array_to_json (char * description_string, int64_t nv, uint8_t * data, char * sea
 }
 
 
+rapidjson::Document *
+array_to_json (char * description_string, int64_t nv, uint8_t * data, char * search_string)
+{
+  return array_to_json_range (description_string, nv, data, search_string, 0, nv);
+}
+
+
 int
 main (void)
 {
   char * description_string = "dfill mean test data kcore neighbors";
-  int64_t nv = 1024;
+  int64_t nv = 20;
   size_t sz = 0;
 
   sz += nv * sizeof(double);
@@ -228,7 +236,8 @@ main (void)
 */
 
   //rapidjson::Document * json = description_string_to_json (description_string);
-  rapidjson::Document * json = array_to_json (description_string, nv, (uint8_t *)data, "neighbors");
+  //rapidjson::Document * json = array_to_json (description_string, nv, (uint8_t *)data, "neighbors");
+  rapidjson::Document * json = array_to_json_range (description_string, nv, (uint8_t *)data, "neighbors", 5, 10);
 
   rapidjson::StringBuffer strbuf;
   rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
