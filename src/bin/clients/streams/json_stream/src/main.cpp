@@ -1,23 +1,13 @@
-#include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <string>
 #include <sys/types.h>
 #include <time.h>
 #include <netdb.h>
 
-extern "C" {
-#include "stinger_core/stinger.h"
-#include "stinger_core/xmalloc.h"
-#include "stinger_utils/csv.h"
-#include "stinger_utils/timer.h"
 #include "stinger_utils/stinger_sockets.h"
-}
-
-#include "rapidjson/document.h"
-#include "rapidjson/filestream.h"
-#include "rapidjson/prettywriter.h"
-#include "json_stream.h"
+#include "stinger_utils/timer.h"
+#include "stinger_net/send_rcv.h"
+#include "explore_json.h"
 
 using namespace gt::stinger;
 
@@ -27,18 +17,18 @@ using namespace gt::stinger;
 #define V(X) V_A(X,NULL)
 
 
-  int
+int
 main(int argc, char *argv[])
 {
   /* global options */
-  int port = 10101;
-  int batch_size = 100000;
+  int port = 10102;
+  int batch_size = 1000;
+  double timeout = 0;
   struct hostent * server = NULL;
   char * filename = NULL;
-  int use_numerics = 0;
 
   int opt = 0;
-  while(-1 != (opt = getopt(argc, argv, "p:a:x:1"))) {
+  while(-1 != (opt = getopt(argc, argv, "p:a:xt:"))) {
     switch(opt) {
       case 'p': {
 		  port = atoi(optarg);
@@ -48,10 +38,6 @@ main(int argc, char *argv[])
 		  batch_size = atol(optarg);
 		} break;
 
-      case '1': {
-		  use_numerics = 1;
-		} break;
-
       case 'a': {
 		  server = gethostbyname(optarg);
 		  if(NULL == server) {
@@ -59,11 +45,14 @@ main(int argc, char *argv[])
 		    exit(-1);
 		  }
 		} break;
+      case 't': {
+	timeout = atof(optarg);
+      } break;
 
       case '?':
       case 'h': {
-		  printf("Usage:    %s [-p port] [-a server_addr] [-x batch_size] filename\n", argv[0]);
-		  printf("Defaults:\n\tport: %d\n\tserver: localhost\n\tbatch_size: %d", port, batch_size);
+		  printf("Usage:    %s [-p port] [-a server_addr] [-t timeout] [-x batch_size] filename\n", argv[0]);
+		  printf("Defaults:\n\tport: %d\n\tserver: localhost\n\ttimeout:%lf\n\tbatch_size: %d", port, timeout, batch_size);
 		  exit(0);
 		} break;
     }
@@ -86,105 +75,48 @@ main(int argc, char *argv[])
   /* start the connection */
   int sock_handle = connect_to_batch_server (server, port);
 
-  /* actually generate and send the batches */
-  char * line = NULL;
-  size_t line_len = 0;
-  int64_t line_number = 0;
 
-  FILE * fp = (filename ? fopen(filename, "r") : stdin);
-  if (!fp) {
-    char errmsg[257];
-    snprintf (errmsg, 256, "Opening \"%s\" failed", filename);
-    errmsg[256] = 0;
-    perror (errmsg);
-    exit (-1);
+  EdgeCollectionSet edge_finder;
+
+  FILE * fp = fopen(filename, "r");
+  char *line = NULL;
+  size_t linecap = 0;
+  ssize_t linelen;
+  rapidjson::Document document;
+  while ((linelen = getdelim(&line, &linecap, '\r', fp)) > 0) {
+    document.ParseInsitu<0>(line);
+    if(document.IsObject())
+      edge_finder.learn(document);
   }
 
-  /* read the lines */
-  while (!feof(fp))
-  {
-    rapidjson::Document document;
-    StingerBatch batch;
-    batch.set_make_undirected(true);
-    batch.set_type(use_numerics ? NUMBERS_ONLY : STRINGS_ONLY);
-    batch.set_keep_alive(true);
-
-    line_number++;
-    getline(&line, &line_len, fp);
-    document.Parse<0>(line);
-
-    assert(document.IsObject());
-
-    assert(document.HasMember("is_delete"));
-    assert(document["is_delete"].IsNumber());
-    assert(document["is_delete"].IsInt());
-    int64_t is_delete = document["is_delete"].GetInt();
-
-    if (!is_delete)
-    {
-      /* insertion */
-      EdgeInsertion * insertion = batch.add_insertions();
-
-      assert(document.HasMember("source"));
-      assert(document["source"].IsString());
-      assert(document.HasMember("target"));
-      assert(document["target"].IsString());
-      insertion->set_source_str(document["source"].GetString());
-      insertion->set_destination_str(document["target"].GetString());
-
-      if (document.HasMember("weight")) {
-	if (document["weight"].IsNumber() && document["weight"].IsInt()) {
-	  insertion->set_weight(document["weight"].GetInt());
-	}
-      }
-
-      if (document.HasMember("time")) {
-	if (document["time"].IsNumber() && document["time"].IsInt()) {
-	  insertion->set_time(document["time"].GetInt());
-	}
-      }
-
-      if (document.HasMember("type")) {
-	if (document["type"].IsString()) {
-	  insertion->set_type_str(document["type"].GetString());
-	}
-      }
-
-    }
-    else
-    {
-      /* deletion */
-      EdgeDeletion * deletion = batch.add_deletions();
-
-      assert(document.HasMember("source"));
-      assert(document["source"].IsString());
-      assert(document.HasMember("target"));
-      assert(document["target"].IsString());
-      deletion->set_source_str(document["source"].GetString());
-      deletion->set_destination_str(document["target"].GetString());
-
-      if (document.HasMember("type")) {
-	if (document["type"].IsString()) {
-	  deletion->set_type_str(document["type"].GetString());
-	}
-      }
-
-    }
-
-    if (!(line_number % batch_size))
-    {
-      V("Sending messages.");
-      send_message(sock_handle, batch);
-    }
-  }
-
-  fclose(fp);
+  LOG_V("Printing learn");
+  edge_finder.print();
 
   StingerBatch batch;
   batch.set_make_undirected(true);
-  batch.set_type(NUMBERS_ONLY);
-  batch.set_keep_alive(false);
-  send_message(sock_handle, batch);
+  batch.set_type(MIXED);
+  batch.set_keep_alive(true);
+
+  tic(); 
+  double timesince = 0;
+  while ((linelen = getdelim(&line, &linecap, '\r', stdin)) > 0) {
+    document.ParseInsitu<0>(line);
+    if(document.IsObject()) {
+      edge_finder.apply(batch, document);
+    }
+    timesince += toc();
+    if(batch.insertions_size() + batch.deletions_size() >= batch_size || (timeout > 0 && timesince >= timeout)) {
+      send_message(sock_handle, batch);
+      timesince = 0;
+      batch.Clear();
+      batch.set_make_undirected(true);
+      batch.set_type(MIXED);
+      batch.set_keep_alive(true);
+    }
+  }
+
+  if(batch.insertions_size() + batch.deletions_size())
+    send_message(sock_handle, batch);
 
   return 0;
 }

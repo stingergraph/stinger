@@ -1,11 +1,9 @@
-#include <cstdio>
+#ifndef  EXPLORE_JSON_H
+#define  EXPLORE_JSON_H
 
 #include "rapidjson/document.h"
-#include "rapidjson/filestream.h"
-#include "rapidjson/prettywriter.h"
-#include "rapidjson/stringbuffer.h"
-#include "twitter_stream.h"
 #include "stinger_net/proto/stinger-batch.pb.h"
+#include "stinger_core/stinger_error.h"
 
 using namespace gt::stinger;
 
@@ -31,16 +29,25 @@ struct EdgeCollection;
 struct ExploreJSONGeneric {
   ExploreJSONGeneric * child;
   ExploreJSONGeneric() : child(NULL) {}
-  ~ExploreJSONGeneric() { delete child; }
+  ~ExploreJSONGeneric() { if (child) delete child; }
 
-  virtual bool operator()(EdgeCollection & edges, rapidjson::Value & document);
-  virtual void print();
-  virtual ExploreJSONGeneric * copy(path_type_t path);
+  virtual bool operator()(EdgeCollection & edges, rapidjson::Value & document) { LOG_E("Error, this is a generic object"); }
+  virtual void print() { LOG_E("Error, this is a generic object"); }
+  virtual ExploreJSONGeneric * copy(path_type_t path) { LOG_E("Error, this is a generic object"); }
 };
 
 struct EdgeCollection {
   std::vector<ExploreJSONGeneric *> start;
   path_type_t path;
+
+  EdgeCollection() : path(PATH_DEFAULT) {}
+
+  ~EdgeCollection() { 
+    for(int64_t s = 0; s < start.size(); s++) {
+      if(start[s])
+	delete start[s];
+    }
+  }
 
   std::vector<int64_t> type;
   std::vector<std::string> type_str;
@@ -51,7 +58,23 @@ struct EdgeCollection {
   std::vector<int64_t> weight;
   std::vector<int64_t> time;
 
+  void print() {
+    for(int64_t s = 0; s < start.size(); s++) {
+      if(start[s])
+	start[s]->print();
+    }
+  }
+
   int64_t apply(StingerBatch & batch, rapidjson::Value & document, int64_t & timestamp) {
+    type.clear();
+    type_str.clear();
+    source.clear();
+    source_str.clear();
+    destination.clear();
+    destination_str.clear();
+    weight.clear();
+    time.clear();
+
     /* TODO figure out what to do about missing fields */
     for(int64_t i = 0; i < start.size(); i++) {
       if(!(*start[i])(*this, document)) {
@@ -431,63 +454,50 @@ struct EdgeCollection {
       } break;
 
       case PATH_ORDERED: {
-/*	int64_t max = 0;
-	max = max > type.size() ? max : type.size();
-	max = max > type_str.size() ? max : type_str.size();
-	max = max > source.size() ? max : source.size();
-	max = max > source_str.size() ? max : source_str.size();
-	max = max > destination.size() ? max : destination.size();
-	max = max > destination_str.size() ? max : destination_str.size();
-	for(int64_t e = 0; e < max; e++) {
+	int64_t stop = 0;
+	stop = stop > source.size() ? stop : source.size();
+	stop = stop < destination.size() ? stop : destination.size();
+
+	for(int64_t e = 0; e < stop; e++) {
 	  EdgeInsertion * in = batch.add_insertions();
 	  if(e < type.size()) {
-	    if(e <
-	  } else if(e < type_str.size()) {
+	    in->set_type(type[e]);
+	  } else if(e + type.size() < type_str.size()) {
+	    in->set_type_str(type_str[e-type.size()]);
 	  } else {
+	    in->set_type(0);
 	  }
-	}*/
-	/* TODO */
+
+	  if(e < source.size()) {
+	    in->set_source(source[e]);
+	  } else if(e + source.size() < source_str.size()) {
+	    in->set_source_str(source_str[e-source.size()]);
+	  }
+
+	  if(e < destination.size()) {
+	    in->set_destination(destination[e]);
+	  } else if(e + destination.size() < destination_str.size()) {
+	    in->set_destination_str(destination_str[e-destination.size()]);
+	  }
+
+	  if(e < weight.size()) {
+	    in->set_weight(weight[e]);
+	  } else if(weight.size()) {
+	    in->set_weight(weight[weight.size()-1]);
+	  } else {
+	    in->set_weight(1);
+	  }
+
+	  if(e < time.size()) {
+	    in->set_time(time[e]);
+	  } else if(time.size()) {
+	    in->set_time(time[time.size()-1]);
+	  } else {
+	    in->set_time(timestamp++);
+	  }
+	}
       } break;
     }
-  }
-};
-
-struct EdgeCollectionSet {
-  std::vector<EdgeCollection *> set;
-  int64_t time;
-
-  EdgeCollectionSet() : time(0) {}
-
-  EdgeCollection * get_collection(int64_t index) {
-    while(index > set.size()) {
-      set.push_back(NULL);
-    }
-
-    return set[index];
-  }
-
-  EdgeCollection * set_collection(int64_t index, EdgeCollection * val) {
-    while(index > set.size()) {
-      set.push_back(NULL);
-    }
-
-    return set[index] = val;
-  }
-
-  int64_t apply(StingerBatch & batch, rapidjson::Value & document) {
-    int64_t rtn = 0;
-
-    for(int64_t index = 0; index < set.size(); index++) {
-      if(set[index]) {
-	rtn += set[index]->apply(batch, document, time);
-      }
-    }
-
-    return rtn;
-  }
-
-  int64_t learn(rapidjson::Value & document) {
-    /* TODO */
   }
 };
 
@@ -497,37 +507,46 @@ struct ExploreJSONValue : public ExploreJSONGeneric {
   ExploreJSONValue(value_type_t type) : ExploreJSONGeneric(), value_type(type) {}
 
   virtual bool operator()(EdgeCollection & edges, rapidjson::Value & document) {
+    LOG_D_A("Value type %ld", value_type);
     switch(value_type) {
       case VALUE_TYPE:
-	edges.type.push_back(document.GetInt64());
+	if(document.IsInt64())
+	  edges.type.push_back(document.GetInt64());
 	break;
 
       case VALUE_TYPE_STR:
-	edges.type_str.push_back(std::string(document.GetString(), document.GetStringLength()));
+	if(document.IsString())
+	  edges.type_str.push_back(std::string(document.GetString(), document.GetStringLength()));
 	break;
 
       case VALUE_SOURCE:
-	edges.source.push_back(document.GetInt64());
+	if(document.IsInt64())
+	  edges.source.push_back(document.GetInt64());
 	break;
 
       case VALUE_SOURCE_STR:
-	edges.source_str.push_back(std::string(document.GetString(), document.GetStringLength()));
+	if(document.IsString())
+	  edges.source_str.push_back(std::string(document.GetString(), document.GetStringLength()));
 	break;
 
       case VALUE_DESTINATION:
-	edges.destination.push_back(document.GetInt64());
+	if(document.IsInt64())
+	  edges.destination.push_back(document.GetInt64());
 	break;
 
       case VALUE_DESTINATION_STR:
-	edges.destination_str.push_back(std::string(document.GetString(), document.GetStringLength()));
+	if(document.IsString())
+	  edges.destination_str.push_back(std::string(document.GetString(), document.GetStringLength()));
 	break;
 
       case VALUE_WEIGHT:
-	edges.weight.push_back(document.GetInt64());
+	if(document.IsInt64())
+	  edges.weight.push_back(document.GetInt64());
 	break;
 
       case VALUE_TIME:
-	edges.time.push_back(document.GetInt64());
+	if(document.IsInt64())
+	  edges.time.push_back(document.GetInt64());
 	break;
 
       default:
@@ -537,12 +556,18 @@ struct ExploreJSONValue : public ExploreJSONGeneric {
   }
 
   virtual void print() {
-    printf(".value %ld", (long)value_type);
+    printf("value %ld\n", (long)value_type);
   }
 
   virtual ExploreJSONGeneric * copy(path_type_t path) {
+    LOG_D("Called");
     ExploreJSONValue * rtn = new ExploreJSONValue(value_type);
-    rtn->child = child->copy(path);
+    if(child) {
+      rtn->child = child->copy(path);
+    } else {
+      rtn->child = NULL;
+    }
+    LOG_D_A("Returning %p", rtn);
     return rtn;
   }
 };
@@ -567,11 +592,15 @@ struct ExploreJSONArray : public ExploreJSONGeneric {
   }
 
   virtual void print() {
-    printf(".@.");
+    if(index == -1)
+      printf("@.");
+    else
+      printf("@.%ld.", index);
     child->print();
   }
 
   virtual ExploreJSONGeneric * copy(path_type_t path) {
+    LOG_D("Called");
     ExploreJSONArray * rtn = new ExploreJSONArray();
     switch(path) {
       default:
@@ -584,7 +613,12 @@ struct ExploreJSONArray : public ExploreJSONGeneric {
        break;
     }
 
-    rtn->child = child->copy(path);
+    if(child) {
+      rtn->child = child->copy(path);
+    } else {
+      rtn->child = NULL;
+    }
+    LOG_D_A("Returning %p", rtn);
     return rtn;
   }
 };
@@ -592,9 +626,11 @@ struct ExploreJSONArray : public ExploreJSONGeneric {
 struct ExploreJSONObject : public ExploreJSONGeneric {
   std::string field_name;
 
-  ExploreJSONObject(std::string & field) : ExploreJSONGeneric(), field_name(field) {}
+  ExploreJSONObject() : ExploreJSONGeneric(), field_name("") {}
 
   virtual bool operator()(EdgeCollection & edges, rapidjson::Value & document) {
+    if(!document.IsObject())
+      LOG_E_A("Document isn't object - field: %s", field_name.c_str());
     if(document.HasMember(field_name.c_str()))
       return (*child)(edges, document[field_name.c_str()]);
     else
@@ -602,245 +638,183 @@ struct ExploreJSONObject : public ExploreJSONGeneric {
   }
 
   virtual void print() {
-    printf(".$.%s", field_name.c_str());
+    printf("$.%s.", field_name.c_str());
     child->print();
   }
 
   virtual ExploreJSONGeneric * copy(path_type_t path) {
-    ExploreJSONObject * rtn = new ExploreJSONObject(field_name);
+    LOG_D("Called");
+    ExploreJSONObject * rtn = new ExploreJSONObject();
+    rtn->field_name = field_name;
     rtn->child = child->copy(path);
+    LOG_D_A("Returning %p", rtn);
     return rtn;
   }
 };
 
-void
-print_list (std::list<std::string> l)
-{
-  for (std::list<std::string>::const_iterator iterator = l.begin(), end = l.end(); iterator != end; ++iterator) {
-    std::cout << *iterator << " -> ";
-  }
-  std::cout << std::endl;
-}
+struct EdgeCollectionSet {
+  std::vector<EdgeCollection *> set;
+  int64_t time;
 
-int
-list_diff (const std::list<std::string> &a, const std::list<std::string> &b)
-{
-  if (a.empty() || b.empty())
-    return 0;
+  EdgeCollectionSet() : time(0) {}
 
-//  printf("\n\nstart diff\n");
-  for (std::list<std::string>::const_iterator it_a = a.begin(), it_b = b.begin();
-	it_a != a.end() && it_b != b.end(); it_a++, it_b++) {
-//    printf("a: %s\t b: %s", (*it_a).c_str(), (*it_b).c_str());
-    if ( strcmp((*it_a).c_str(), (*it_b).c_str()) != 0 ) {
-//      printf("\nreturn 0\n");
-      return 0;
-    }
-//    printf("\n");
-  }
-
-  if (a.size() == b.size()) {
-//    printf("return 2\n");
-    return 2;
-  }
-  else {
-//    printf("return 1\n");
-    return 1;
-  }
-}
-
-int
-train_describe_object(rapidjson::Document& document, std::list<std::string> &breadcrumbs, std::map<int, std::list<std::string> > &found, int level)
-{
-  assert(document.IsObject());
-
-  for (rapidjson::Value::ConstMemberIterator itr = document.MemberBegin(); itr != document.MemberEnd(); ++itr) {
-    breadcrumbs.push_back(itr->name.GetString());
-//    print_list(breadcrumbs);
-//    printf("Type of member %s is %s\n", itr->name.GetString(), kTypeNames[itr->value.GetType()]);
-    if (itr->value.GetType() == 3) { /* object */
-      rapidjson::StringBuffer sb;
-      rapidjson::Writer<rapidjson::StringBuffer> writer (sb);
-      itr->value.Accept(writer);
-      rapidjson::Document obj;
-      obj.Parse<0>(sb.GetString());
-      train_describe_object(obj, breadcrumbs, found, level+1);
-    }
-    else if (itr->value.GetType() == 4) { /* array */
-      train_describe_array((rapidjson::Value&) itr->value, breadcrumbs, found, level+1);
-    }
-    else if (itr->value.GetType() == 5) { /* string */
-      assert(itr->value.IsString());
-      //printf("%s is %s\n", itr->name.GetString(), itr->value.GetString());
-      if ( strncmp(itr->value.GetString(),"$STINGER SOURCE VERTEX$", 23) == 0 ) {
-	found[SOURCE_VTX] = breadcrumbs;
-      }
-      if ( strncmp(itr->value.GetString(),"$STINGER TARGET VERTEX$", 23) == 0 ) {
-	found[TARGET_VTX] = breadcrumbs;
-      }
-      if ( strncmp(itr->value.GetString(),"$STINGER EDGE WEIGHT$", 21) == 0 ) {
-	found[EDGE_WEIGHT] = breadcrumbs;
-      }
-      if ( strncmp(itr->value.GetString(),"$STINGER EDGE TIME$", 19) == 0 ) {
-	found[EDGE_TIME] = breadcrumbs;
-      }
-      if ( strncmp(itr->value.GetString(),"$STINGER EDGE TYPE$", 19) == 0 ) {
-	found[EDGE_TYPE] = breadcrumbs;
-      }
-    }
-    else if (itr->value.GetType() == 6) {
-      assert(itr->value.IsNumber());
-    }
-    breadcrumbs.pop_back();
-  }
-
-//  printf("\n");
-  return 0;
-}
-
-int
-train_describe_array(rapidjson::Value& array, std::list<std::string> &breadcrumbs, std::map<int, std::list<std::string> > &found, int level)
-{
-  assert(array.IsArray());
-
-  for (rapidjson::SizeType i = 0; i < array.Size(); i++) {
-
-    if (array[i].GetType() == 3) { /* object */
-      rapidjson::StringBuffer sb;
-      rapidjson::Writer<rapidjson::StringBuffer> writer (sb);
-      array[i].Accept(writer);
-      rapidjson::Document obj;
-      obj.Parse<0>(sb.GetString());
-      train_describe_object(obj, breadcrumbs, found, level+1);
-    }
-    else if (array[i].GetType() == 4) { /* array */
-      train_describe_array(array[i], breadcrumbs, found, level+1);
-    }
-    else if (array[i].GetType() == 5) { /* string */
-    }
-    else if (array[i].GetType() == 6) { /* number */
+  ~EdgeCollectionSet() {
+    for(int64_t e = 0; e < set.size(); e++) {
+      if(set[e])
+	delete set[e];
     }
   }
 
-//  printf("\n");
+  EdgeCollection * get_collection(int64_t index) {
+    while(index >= set.size()) {
+      set.push_back(NULL);
+    }
 
-  return 0;
-}
-
-int
-load_template_file (char * filename, char delimiter, std::map<int, std::list<std::string> > &found)
-{
-  std::ifstream fp;
-  fp.open (filename);
-
-  if (!fp.is_open()) {
-    char errmsg[257];
-    snprintf (errmsg, 256, "Opening \"%s\" failed", filename);
-    errmsg[256] = 0;
-    perror (errmsg);
-    exit (-1);
-  } 
-  
-  std::list<std::string> breadcrumbs;
-
-  /* read the lines */
-  while (!fp.eof())
-  {
-    rapidjson::Document document;
-    
-    std::string line;
-    std::getline (fp, line, delimiter);
-    document.Parse<0>(line.c_str());
-
-    train_describe_object (document, breadcrumbs, found, 0);
-
+    return set[index];
   }
 
-  fp.close();
-
-  return 0;
-
-}
-
-int
-test_describe_object(rapidjson::Document& document, std::list<std::string> &breadcrumbs, const std::map<int, std::list<std::string> > &found, int level)
-{
-  assert(document.IsObject());
-
-  for (rapidjson::Value::ConstMemberIterator itr = document.MemberBegin(); itr != document.MemberEnd(); ++itr) {
-    breadcrumbs.push_back(itr->name.GetString());
-
-    int flag = -1;
-    for (int64_t i = 0; i < 5; i++) {
-      int rtn = list_diff (breadcrumbs, found.at(i));
-      if (rtn == 1)
-	flag = 1000;   /* continue down this branch of the tree */
-      if (rtn == 2) {
-	flag = i;      /* this is something we are looking for; code set */
-	break;
+  void print() {
+    for(int64_t index = 0; index < set.size(); index++) {
+      if(set[index]) {
+	set[index]->print();
       }
-    }
-
-    const rapidjson::Value& val = itr->value;
-    int type = val.GetType();
-    if (flag == 1000) {  /* continue down this branch */
-      //print_list(breadcrumbs);
-      if (type == 3) { /* object */
-	rapidjson::StringBuffer sb;
-	rapidjson::Writer<rapidjson::StringBuffer> writer (sb);
-	val.Accept(writer);
-	rapidjson::Document obj;
-	obj.Parse<0>(sb.GetString());
-	test_describe_object(obj, breadcrumbs, found, level+1);
-      }
-      else if (type == 4) { /* array */
-	test_describe_array((rapidjson::Value&) val, breadcrumbs, found, level+1);
-      }
-    }
-    else if (flag >= 0)   /* this is something we are looking for */
-    {
-      if (val.GetType() == 5) { /* string */
-	assert(val.IsString());
-	//printf("FOUND: %d, %s\n", flag, itr->value.GetString());
-      }
-      else if (val.GetType() == 6) { /* number */
-	assert(val.IsNumber());
-	assert(val.IsInt64());
-	//printf("FOUND: %d, %ld\n", flag, itr->value.GetInt64());
-      }
-    }
-
-    breadcrumbs.pop_back();
-  }
-
-  return 0;
-}
-
-int
-test_describe_array(rapidjson::Value& array, std::list<std::string> &breadcrumbs, const std::map<int, std::list<std::string> > &found, int level)
-{
-  assert(array.IsArray());
-
-  for (rapidjson::SizeType i = 0; i < array.Size(); i++) {
-
-    if (array[i].GetType() == 3) { /* object */
-      rapidjson::StringBuffer sb;
-      rapidjson::Writer<rapidjson::StringBuffer> writer (sb);
-      array[i].Accept(writer);
-      rapidjson::Document obj;
-      obj.Parse<0>(sb.GetString());
-      test_describe_object(obj, breadcrumbs, found, level+1);
-    }
-    else if (array[i].GetType() == 4) { /* array */
-      test_describe_array(array[i], breadcrumbs, found, level+1);
-    }
-    else if (array[i].GetType() == 5) { /* string */
-    }
-    else if (array[i].GetType() == 6) { /* number */
     }
   }
 
+  EdgeCollection * set_collection(int64_t index, EdgeCollection * val) {
+    while(index >= set.size()) {
+      set.push_back(NULL);
+    }
 
-  return 0;
-}
+    return set[index] = val;
+  }
 
+  int64_t apply(StingerBatch & batch, rapidjson::Value & document) {
+    int64_t rtn = 0;
+
+    for(int64_t index = 0; index < set.size(); index++) {
+      if(set[index]) {
+	rtn += set[index]->apply(batch, document, time);
+      }
+    }
+
+    return rtn;
+  }
+
+  int64_t learn(const rapidjson::Value & document, ExploreJSONGeneric * top = NULL, ExploreJSONGeneric * bottom = NULL) {
+    LOG_D("Learning");
+    int64_t rtn = 0;
+    ExploreJSONGeneric * parent = bottom;
+
+    if(document.IsObject()) {
+      LOG_D("Learning an object");
+      if(top) {
+	bottom->child = new ExploreJSONObject();
+	bottom = bottom->child;
+      } else {
+	top = new ExploreJSONObject();
+	bottom = top;
+      }
+      for (rapidjson::Value::ConstMemberIterator itr = document.MemberBegin(); itr != document.MemberEnd(); ++itr) {
+	(static_cast<ExploreJSONObject *>(bottom))->field_name = itr->name.GetString();
+	rtn += learn(itr->value, top, bottom);
+      }
+    } else if(document.IsArray()) {
+      LOG_D("Learning an array");
+      if(top) {
+	bottom->child = new ExploreJSONArray();
+	bottom = bottom->child;
+      } else {
+	top = new ExploreJSONArray();
+	bottom = top;
+      }
+      for (int64_t i = 0; i < document.Size(); i++) {
+	(static_cast<ExploreJSONArray *>(bottom))->index = i;
+	rtn += learn(document[i], top, bottom);
+      }
+    } else if(document.IsString()) {
+      const char * string = document.GetString();
+      LOG_D_A("Learning a string %s", string);
+      if(string[0] != '$') {
+	return rtn;
+      }
+      string++;
+
+      value_type_t type;
+      if(0 == strncmp(string, "type", 4)) {
+	string += 4;
+	if(0 == strncmp(string, "_str", 4)) {
+	  string += 4;
+	  type = VALUE_TYPE_STR;
+	} else {
+	  type = VALUE_TYPE;
+	}
+      } else if(0 == strncmp(string, "source", 6)) {
+	string += 6;
+	if(0 == strncmp(string, "_str", 4)) {
+	  type = VALUE_SOURCE_STR;
+	  string += 4;
+	} else {
+	  type = VALUE_SOURCE;
+	}
+      } else if(0 == strncmp(string, "destination", 11)) {
+	string += 11;
+	if(0 == strncmp(string, "_str", 4)) {
+	  type = VALUE_DESTINATION_STR;
+	  string += 4;
+	} else {
+	  type = VALUE_DESTINATION;
+	}
+      } else if(0 == strncmp(string, "weight", 6)) {
+	string += 6;
+	type = VALUE_WEIGHT;
+      } else if(0 == strncmp(string, "time", 4)) {
+	string += 4;
+	type = VALUE_TIME;
+      } else {
+	LOG_W_A("Unknown type string: %s", string);
+	return rtn;
+      }
+
+      char * end;
+      int64_t index = strtol(string, &end, 0);
+      EdgeCollection * col = get_collection(index);
+      if(!col) {
+	col = new EdgeCollection();
+	set_collection(index, col);
+      }
+
+      LOG_D_A("String %s end %s", string, end);
+      string = end;
+      if(top) {
+	bottom->child = new ExploreJSONValue(type);
+	bottom = bottom->child;
+      } else {
+	top = new ExploreJSONValue(type);
+	bottom = top;
+      }
+
+      path_type_t path = PATH_DEFAULT;
+      if(0 == strncmp(string, "ordered", 7)) {
+	path = PATH_ORDERED;
+      } else if(0 == strncmp(string, "exact", 5)) {
+	path = PATH_EXACT;
+      }
+
+      ExploreJSONGeneric * chain = top->copy(path);
+      col->start.push_back(chain);
+      col->path = path;
+      rtn++;
+    } else {
+      return rtn;
+    }
+
+    if(parent)
+      parent->child = NULL;
+    delete bottom;
+
+    return rtn;
+  }
+};
+
+#endif  /*EXPLORE_JSON_H*/

@@ -33,7 +33,6 @@ main(int argc, char *argv[])
   int batch_size = 100000;
   int num_batches = -1;
   int nv = 1024;
-  uint64_t buffer_size = 1ULL << 28ULL;
   struct hostent * server = NULL;
 
   int opt = 0;
@@ -41,10 +40,6 @@ main(int argc, char *argv[])
     switch(opt) {
       case 'p': {
 	port = atoi(optarg);
-      } break;
-
-      case 'b': {
-	buffer_size = atol(optarg);
       } break;
 
       case 'x': {
@@ -69,14 +64,14 @@ main(int argc, char *argv[])
 
       case '?':
       case 'h': {
-	printf("Usage:    %s [-p port] [-a server_addr] [-b buffer_size] [-n num_vertices] [-x batch_size] [-y num_batches]\n", argv[0]);
-	printf("Defaults:\n\tport: %d\n\tserver: localhost\n\tbuffer_size: %lu\n\tnum_vertices: %d\n", port, (unsigned long) buffer_size, nv);
+	printf("Usage:    %s [-p port] [-a server_addr] [-n num_vertices] [-x batch_size] [-y num_batches]\n", argv[0]);
+	printf("Defaults:\n\tport: %d\n\tserver: localhost\n\tnum_vertices: %d\n", port, nv);
 	exit(0);
       } break;
     }
   }
 
-  V_A("Running with: port: %d buffer_size: %lu\n", port, (unsigned long) buffer_size);
+  V_A("Running with: port: %d\n", port);
 
   /* connect to localhost if server is unspecified */
   if(NULL == server) {
@@ -89,12 +84,6 @@ main(int argc, char *argv[])
 
   /* start the connection */
   int sock_handle = connect_to_batch_server (server, port);
-
-  uint8_t * buffer = (uint8_t *) xmalloc (buffer_size);
-  if(!buffer) {
-    perror("Buffer alloc failed");
-    exit(-1);
-  }
 
   /* actually generate and send the batches */
   char * buf = NULL, ** fields = NULL;
@@ -147,6 +136,5 @@ main(int argc, char *argv[])
   batch.set_keep_alive(false);
   send_message(sock_handle, batch);
 
-  free(buffer);
   return 0;
 }

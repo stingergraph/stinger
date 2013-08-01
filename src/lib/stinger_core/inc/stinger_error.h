@@ -102,7 +102,7 @@ extern "C" {
 #undef LOG_I
 #define LOG_I_A(X, ...) do { fprintf(LOG_OUTPUT, "INFO: %s %d: " X "\n", __func__, __LINE__, __VA_ARGS__); fflush(LOG_OUTPUT); } while(0);
 #define LOG_I(X) LOG_I_A(X, NULL)
-#ifndef LOG_AT_A
+#ifndef LOG_AT_I
 
 #undef LOG_V_A
 #undef LOG_V
