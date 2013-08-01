@@ -13,6 +13,7 @@ ENDIF()
 
 SET(tgtdep_default stinger_core stinger_utils rt)
 SET(tgtdep_web_server string rapidjson mongoose kv_store)
+SET(tgtdep_alg_data_to_json rapidjson)
 
 #################################################################
 # Iterate over each library and build appropriately based on type
