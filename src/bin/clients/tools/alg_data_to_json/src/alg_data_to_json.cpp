@@ -177,6 +177,135 @@ array_to_json_range (char * description_string, int64_t nv, uint8_t * data, char
 
 
 rapidjson::Document *
+array_to_json_set (char * description_string, int64_t nv, uint8_t * data, char * search_string,
+		     int64_t * set, int64_t set_len)
+{
+  size_t off = 0;
+  size_t len = strlen(description_string);
+  char * tmp = (char *) xmalloc ((len+1) * sizeof(char));
+  strcpy(tmp, description_string);
+
+  rapidjson::Document * document = new rapidjson::Document();
+  rapidjson::Document::AllocatorType& allocator = document->GetAllocator();
+
+  document->SetObject();
+
+  rapidjson::Value a(rapidjson::kArrayType);
+
+  /* the description string is space-delimited */
+  char * ptr = strtok (tmp, " ");
+
+  /* skip the formatting */
+  char * pch = strtok (NULL, " ");
+
+  int64_t done = 0;
+
+  while (pch != NULL)
+  {
+    printf("pch = %s\n", pch);
+    if (strcmp(pch, search_string) == 0) {
+      switch (description_string[off]) {
+	case 'f':
+	  for (int64_t i = 0; i < set_len; i++) {
+	    int64_t vtx = set[i];
+	    rapidjson::Value v;
+	    v.SetDouble((double)((float *) data)[vtx]);
+	    a.PushBack(v, allocator);
+	  }
+	  done = 1;
+	  break;
+
+	case 'd':
+	  for (int64_t i = 0; i < set_len; i++) {
+	    int64_t vtx = set[i];
+	    rapidjson::Value v;
+	    v.SetDouble((double)((double *) data)[vtx]);
+	    a.PushBack(v, allocator);
+	  }
+	  done = 1;
+	  break;
+
+	case 'i':
+	  for (int64_t i = 0; i < set_len; i++) {
+	    int64_t vtx = set[i];
+	    rapidjson::Value v;
+	    v.SetInt(((int32_t *) data)[vtx]);
+	    a.PushBack(v, allocator);
+	  }
+	  done = 1;
+	  break;
+
+	case 'l':
+	  for (int64_t i = 0; i < set_len; i++) {
+	    int64_t vtx = set[i];
+	    rapidjson::Value v;
+	    v.SetInt64(((int64_t *) data)[vtx]);
+	    a.PushBack(v, allocator);
+	  }
+	  done = 1;
+	  break;
+
+	case 'b':
+	  for (int64_t i = 0; i < set_len; i++) {
+	    int64_t vtx = set[i];
+	    rapidjson::Value v;
+	    v.SetInt((int)((char *) data)[vtx]);
+	    a.PushBack(v, allocator);
+	  }
+	  done = 1;
+	  break;
+
+	default:
+	  LOG_W_A("Umm...what letter was that?\ndescription_string: %s", description_string);
+	  done = 1;
+
+      }
+      
+
+
+    } else {
+      switch (description_string[off]) {
+	case 'f':
+	  data += (nv * sizeof(float));
+	  break;
+
+	case 'd':
+	  data += (nv * sizeof(double));
+	  break;
+
+	case 'i':
+	  data += (nv * sizeof(int32_t));
+	  break;
+
+	case 'l':
+	  data += (nv * sizeof(int64_t));
+	  break;
+
+	case 'b':
+	  data += (nv * sizeof(uint8_t));
+	  break;
+
+	default:
+	  LOG_W_A("Umm...what letter was that?\ndescription_string: %s", description_string);
+
+      }
+      off++;
+    }
+    
+    if (done)
+      break;
+
+    pch = strtok (NULL, " ");
+  }
+
+  document->AddMember(search_string, a, allocator);
+
+  free(tmp);
+  return document;
+}
+
+
+rapidjson::Document *
 array_to_json (char * description_string, int64_t nv, uint8_t * data, char * search_string)
 {
   return array_to_json_range (description_string, nv, data, search_string, 0, nv);
@@ -237,7 +366,10 @@ main (void)
 
   //rapidjson::Document * json = description_string_to_json (description_string);
   //rapidjson::Document * json = array_to_json (description_string, nv, (uint8_t *)data, "neighbors");
-  rapidjson::Document * json = array_to_json_range (description_string, nv, (uint8_t *)data, "neighbors", 5, 10);
+  //rapidjson::Document * json = array_to_json_range (description_string, nv, (uint8_t *)data, "neighbors", 5, 10);
+
+  int64_t test_set[5] = {0, 5, 6, 7, 2};
+  rapidjson::Document * json = array_to_json_set (description_string, nv, (uint8_t *)data, "neighbors", (int64_t *)&test_set, 5);
 
   rapidjson::StringBuffer strbuf;
   rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
