@@ -1,20 +1,14 @@
-#include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <string>
 #include <sys/types.h>
 #include <time.h>
 #include <netdb.h>
 
-extern "C" {
-#include "stinger_core/stinger.h"
-#include "stinger_core/xmalloc.h"
-#include "stinger_utils/csv.h"
-#include "stinger_utils/timer.h"
 #include "stinger_utils/stinger_sockets.h"
-}
-
-#include "csv_stream.h"
+#include "stinger_utils/timer.h"
+#include "stinger_net/send_rcv.h"
+#include "stinger_utils/csv.h"
+#include "explore_csv.h"
 
 using namespace gt::stinger;
 
@@ -23,48 +17,26 @@ using namespace gt::stinger;
 #define V_A(X,...) fprintf(stdout, "%s %s %d:\n\t" #X "\n", __FILE__, __func__, __LINE__, __VA_ARGS__);
 #define V(X) V_A(X,NULL)
 
-enum csv_fields {
-  FIELD_IS_DELETE,
-  FIELD_SOURCE,
-  FIELD_DEST,
-  FIELD_WEIGHT,
-  FIELD_TIME,
-  FIELD_TYPE
-};
 
-  int
+int
 main(int argc, char *argv[])
 {
   /* global options */
-  int port = 10101;
-  int batch_size = 100000;
-  int num_batches = -1;
-  uint64_t buffer_size = 1ULL << 28ULL;
+  int port = 10102;
+  int batch_size = 1000;
+  double timeout = 0;
   struct hostent * server = NULL;
   char * filename = NULL;
-  int use_numerics = 0;
 
   int opt = 0;
-  while(-1 != (opt = getopt(argc, argv, "p:b:a:x:y:1"))) {
+  while(-1 != (opt = getopt(argc, argv, "p:a:xt:"))) {
     switch(opt) {
       case 'p': {
 		  port = atoi(optarg);
 		} break;
 
-      case 'b': {
-		  buffer_size = atol(optarg);
-		} break;
-
       case 'x': {
 		  batch_size = atol(optarg);
-		} break;
-
-      case 'y': {
-		  num_batches = atol(optarg);
-		} break;
-
-      case '1': {
-		  use_numerics = 1;
 		} break;
 
       case 'a': {
@@ -74,11 +46,14 @@ main(int argc, char *argv[])
 		    exit(-1);
 		  }
 		} break;
+      case 't': {
+	timeout = atof(optarg);
+      } break;
 
       case '?':
       case 'h': {
-		  printf("Usage:    %s [-p port] [-a server_addr] [-b buffer_size] [-x batch_size] [-y num_batches]\n", argv[0]);
-		  printf("Defaults:\n\tport: %d\n\tserver: localhost\n\tbuffer_size: %lu\n", port, (unsigned long) buffer_size);
+		  printf("Usage:    %s [-p port] [-a server_addr] [-t timeout] [-x batch_size] filename\n", argv[0]);
+		  printf("Defaults:\n\tport: %d\n\tserver: localhost\n\ttimeout:%lf\n\tbatch_size: %d", port, timeout, batch_size);
 		  exit(0);
 		} break;
     }
@@ -87,7 +62,7 @@ main(int argc, char *argv[])
   if (optind < argc && 0 != strcmp (argv[optind], "-"))
     filename = argv[optind];
 
-  V_A("Running with: port: %d buffer_size: %lu\n", port, (unsigned long) buffer_size);
+  V_A("Running with: port: %d\n", port);
 
   /* connect to localhost if server is unspecified */
   if(NULL == server) {
@@ -101,98 +76,49 @@ main(int argc, char *argv[])
   /* start the connection */
   int sock_handle = connect_to_batch_server (server, port);
 
-  uint8_t * buffer = (uint8_t *) xmalloc (buffer_size);
-  if(!buffer) {
-    perror("Buffer alloc failed");
-    exit(-1);
-  }
 
-  /* actually generate and send the batches */
+  EdgeCollectionSet edge_finder;
+
+  FILE * fp = fopen(filename, "r");
   char * buf = NULL, ** fields = NULL;
   uint64_t bufSize = 0, * lengths = NULL, fieldsSize = 0, count = 0;
-  int64_t line = 0;
-  int batch_num = 0;
-
-  FILE * fp = (filename ? fopen(filename, "r") : stdin);
-  if (!fp) {
-    char errmsg[257];
-    snprintf (errmsg, 256, "Opening \"%s\" failed", filename);
-    errmsg[256] = 0;
-    perror (errmsg);
-    exit (-1);
-  }
-
-  /* read the lines */
-  StingerBatch batch;
-  batch.set_make_undirected(true);
-  batch.set_type(use_numerics ? NUMBERS_ONLY : STRINGS_ONLY);
-  batch.set_keep_alive(true);
 
   while (!feof(fp)) {
-    line++;
     readCSVLineDynamic(',', fp, &buf, &bufSize, &fields, &lengths, &fieldsSize, &count);
-
     if (count <= 1)
       continue;
-    if (count < 3) {
-      E_A("ERROR: too few elements on line %ld", (long) line);
-      continue;
-    }
+    edge_finder.learn(fields, (int64_t *)lengths, count);
+  }
 
-    /* is insert? */
-    if (fields[FIELD_IS_DELETE][0] == '0') {
-      EdgeInsertion * insertion = batch.add_insertions();
+  LOG_V("Printing learn");
+  edge_finder.print();
 
-      if (!use_numerics) {
-	insertion->set_source_str(fields[FIELD_SOURCE]);
-	insertion->set_destination_str(fields[FIELD_DEST]);
-      } else {
-	insertion->set_source(atol(fields[FIELD_SOURCE]));
-	insertion->set_destination(atol(fields[FIELD_DEST]));
-      }
+  StingerBatch batch;
+  batch.set_make_undirected(true);
+  batch.set_type(MIXED);
+  batch.set_keep_alive(true);
 
-      if (count > 3) {
-	insertion->set_weight(atol(fields[FIELD_WEIGHT]));
-	if (count > 4) {
-	  insertion->set_time(atol(fields[FIELD_TIME]));
-	  if (count > 5) {
-	    insertion->set_type_str(fields[FIELD_TYPE]);
-	  }
-	}
-      }
-
-    } else {
-      EdgeDeletion * deletion = batch.add_deletions();
-
-      if (!use_numerics) {
-	deletion->set_source_str(fields[FIELD_SOURCE]);
-	deletion->set_destination_str(fields[FIELD_DEST]);
-      } else {
-	deletion->set_source(atol(fields[FIELD_SOURCE]));
-	deletion->set_destination(atol(fields[FIELD_DEST]));
-      }
-      if (count > 5) {
-	deletion->set_type_str(fields[FIELD_TYPE]);
-      }
-    }
-
-    if (!(line % batch_size))
-    {
-      V("Sending messages.");
+  tic(); 
+  double timesince = 0;
+  while (!feof(stdin)) {
+    readCSVLineDynamic(',', stdin, &buf, &bufSize, &fields, &lengths, &fieldsSize, &count);
+    if (count > 1)
+      edge_finder.apply(batch, fields, (int64_t *)lengths, count);
+    timesince += toc();
+    if(batch.insertions_size() + batch.deletions_size() >= batch_size || (timeout > 0 && timesince >= timeout)) {
       send_message(sock_handle, batch);
+      timesince = 0;
+      batch.Clear();
+      batch.set_make_undirected(true);
+      batch.set_type(MIXED);
+      batch.set_keep_alive(true);
     }
   }
 
+  if(batch.insertions_size() + batch.deletions_size()) {
+    send_message(sock_handle, batch);
+  }
 
-  sleep(2);
-
-
-
-  batch.set_make_undirected(true);
-  batch.set_type(NUMBERS_ONLY);
-  batch.set_keep_alive(false);
-  send_message(sock_handle, batch);
-
-  free(buffer);
+  free(buf); free(fields); free(lengths);
   return 0;
 }
