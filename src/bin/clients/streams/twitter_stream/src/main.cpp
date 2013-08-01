@@ -4,19 +4,10 @@
 #include <time.h>
 #include <netdb.h>
 
-extern "C" {
-#include "stinger_core/stinger.h"
-#include "stinger_core/xmalloc.h"
-#include "stinger_utils/csv.h"
-#include "stinger_utils/timer.h"
 #include "stinger_utils/stinger_sockets.h"
-}
-
-#include "rapidjson/document.h"
-#include "rapidjson/filestream.h"
-#include "rapidjson/prettywriter.h"
-#include "rapidjson/stringbuffer.h"
-#include "twitter_stream.h"
+#include "stinger_utils/timer.h"
+#include "stinger_net/send_rcv.h"
+#include "explore_json.h"
 
 using namespace gt::stinger;
 
@@ -31,12 +22,13 @@ main(int argc, char *argv[])
 {
   /* global options */
   int port = 10102;
-  int batch_size = 100000;
+  int batch_size = 1000;
+  double timeout = 0;
   struct hostent * server = NULL;
   char * filename = NULL;
 
   int opt = 0;
-  while(-1 != (opt = getopt(argc, argv, "p:a:x"))) {
+  while(-1 != (opt = getopt(argc, argv, "p:a:xt:"))) {
     switch(opt) {
       case 'p': {
 		  port = atoi(optarg);
@@ -53,11 +45,14 @@ main(int argc, char *argv[])
 		    exit(-1);
 		  }
 		} break;
+      case 't': {
+	timeout = atof(optarg);
+      } break;
 
       case '?':
       case 'h': {
-		  printf("Usage:    %s [-p port] [-a server_addr] [-x batch_size] filename\n", argv[0]);
-		  printf("Defaults:\n\tport: %d\n\tserver: localhost\n\tbatch_size: %d", port, batch_size);
+		  printf("Usage:    %s [-p port] [-a server_addr] [-t timeout] [-x batch_size] filename\n", argv[0]);
+		  printf("Defaults:\n\tport: %d\n\tserver: localhost\n\ttimeout:%lf\n\tbatch_size: %d", port, timeout, batch_size);
 		  exit(0);
 		} break;
     }
@@ -78,49 +73,50 @@ main(int argc, char *argv[])
   }
 
   /* start the connection */
-//  int sock_handle = connect_to_batch_server (server, port);
+  int sock_handle = connect_to_batch_server (server, port);
 
 
-  /* load the template file */
-  std::map<int, std::list<std::string> > found;
+  EdgeCollectionSet edge_finder;
 
-  load_template_file (filename, '\r', found);
-
-  printf("Here are the results:\n\n");
-  for (int64_t i = 0; i < 5; i++) {
-    printf("%ld: ", i);
-    print_list (found[i]);
+  FILE * fp = fopen(filename, "r");
+  char *line = NULL;
+  size_t linecap = 0;
+  ssize_t linelen;
+  rapidjson::Document document;
+  while ((linelen = getdelim(&line, &linecap, '\r', fp)) > 0) {
+    document.ParseInsitu<0>(line);
+    if(document.IsObject())
+      edge_finder.learn(document);
   }
 
-  assert(found.size() == 5);
+  LOG_V("Printing learn");
+  edge_finder.print();
 
+  StingerBatch batch;
+  batch.set_make_undirected(true);
+  batch.set_type(MIXED);
+  batch.set_keep_alive(true);
 
-  /* begin parsing stdin */
-  std::list<std::string> breadcrumbs;
-  std::string line;
-
-  /* read the lines */
-  while (std::getline (std::cin, line, '\r'))
-  {
-    if (!std::cin)
-      break;
-
-    if (std::cin.eof())
-      break;
-
-    rapidjson::Document document;
-    document.Parse<0>(line.c_str());
-
-    test_describe_object (document, breadcrumbs, found, 0);
-
+  tic(); 
+  double timesince = 0;
+  while ((linelen = getdelim(&line, &linecap, '\r', stdin)) > 0) {
+    document.ParseInsitu<0>(line);
+    if(document.IsObject()) {
+      edge_finder.apply(batch, document);
+    }
+    timesince += toc();
+    if(batch.insertions_size() + batch.deletions_size() >= batch_size || (timeout > 0 && timesince >= timeout)) {
+      send_message(sock_handle, batch);
+      timesince = 0;
+      batch.Clear();
+      batch.set_make_undirected(true);
+      batch.set_type(MIXED);
+      batch.set_keep_alive(true);
+    }
   }
 
-  /*
-     StingerBatch batch;
-     batch.set_make_undirected(true);
-     batch.set_type(NUMBERS_ONLY);
-     batch.set_keep_alive(false);
-     send_message(sock_handle, batch);
-   */
+  if(batch.insertions_size() + batch.deletions_size())
+    send_message(sock_handle, batch);
+
   return 0;
 }
