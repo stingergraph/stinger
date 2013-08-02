@@ -20,29 +20,23 @@ extern "C" {
 void
 process_json_rpc_request ();
 
-rapidjson::Document *
-json_rpc_response (rapidjson::Value& result, rapidjson::Value& id)
+void
+json_rpc_response (rapidjson::Document& document, rapidjson::Value& result, rapidjson::Value& id)
 {
-  rapidjson::Document * document = new rapidjson::Document();
-  rapidjson::Document::AllocatorType& allocator = document->GetAllocator();
-  document->SetObject();
+  rapidjson::Document::AllocatorType& allocator = document.GetAllocator();
 
-  document->AddMember("jsonrpc", "2.0", allocator);
-  document->AddMember("result", result, allocator);
-  document->AddMember("id", id, allocator);
-
-  return document;
+  document.AddMember("jsonrpc", "2.0", allocator);
+  document.AddMember("result", result, allocator);
+  document.AddMember("id", id, allocator);
 }
 
 
-rapidjson::Document *
-json_rpc_error (int32_t error_code, rapidjson::Value& id)
+void
+json_rpc_error (rapidjson::Document& document, int32_t error_code, rapidjson::Value& id)
 {
-  rapidjson::Document * document = new rapidjson::Document();
-  rapidjson::Document::AllocatorType& allocator = document->GetAllocator();
-  document->SetObject();
+  rapidjson::Document::AllocatorType& allocator = document.GetAllocator();
 
-  document->AddMember("jsonrpc", "2.0", allocator);
+  document.AddMember("jsonrpc", "2.0", allocator);
 
   rapidjson::Value err_obj (rapidjson::kObjectType);
   rapidjson::Value code, message;
@@ -81,8 +75,6 @@ json_rpc_error (int32_t error_code, rapidjson::Value& id)
 
   err_obj.AddMember("code", code, allocator);
   err_obj.AddMember("message", message, allocator);
-  document->AddMember("error", err_obj, allocator);
-  document->AddMember("id", id, allocator);
-
-  return document;
+  document.AddMember("error", err_obj, allocator);
+  document.AddMember("id", id, allocator);
 }

@@ -646,23 +646,24 @@ main (void)
 */
 
   rapidjson::Document document;
-  //rapidjson::Value * result = description_string_to_json (description_string, document);
+  document.SetObject();
+  rapidjson::Value * result = description_string_to_json (description_string, document);
   //rapidjson::Value * result = array_to_json (description_string, nv, (uint8_t *)data, "test", document);
   //rapidjson::Value * result = array_to_json_range (description_string, nv, (uint8_t *)data, "neighbors", 5, 10, document);
   //rapidjson::Value * result = array_to_json_sorted_range (description_string, nv, (uint8_t *)data, "test", 0, 10, document);
 
-  int64_t test_set[5] = {0, 5, 6, 7, 2};
-  rapidjson::Value * result = array_to_json_set (description_string, nv, (uint8_t *)data, "neighbors", (int64_t *)&test_set, 5, document);
+  //int64_t test_set[5] = {0, 5, 6, 7, 2};
+  //rapidjson::Value * result = array_to_json_set (description_string, nv, (uint8_t *)data, "neighbors", (int64_t *)&test_set, 5, document);
 
   rapidjson::Value id;
   id.SetInt(64);
-  //rapidjson::Document * json = json_rpc_error(-32100, id);
-  rapidjson::Document * json = json_rpc_response((rapidjson::Value&)(*result), id);
+  //json_rpc_error(document, -32100, id);
+  json_rpc_response(document, (rapidjson::Value&)(*result), id);
 
 
   rapidjson::StringBuffer strbuf;
   rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
-  json->Accept(writer);
+  document.Accept(writer);
   printf("--\n%s\n--\n", strbuf.GetString());
 
   free(data);
