@@ -19,6 +19,8 @@ extern "C" {
 #include "json_rpc.h"
 #include "rpc_state.h"
 
+using namespace gt::stinger;
+
 
 rapidjson::Value *
 description_string_to_json (char * description_string, rapidjson::Document& document)

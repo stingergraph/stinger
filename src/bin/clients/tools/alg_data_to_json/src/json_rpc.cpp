@@ -16,6 +16,10 @@ extern "C" {
 #include "rapidjson/stringbuffer.h"
 
 #include "json_rpc.h"
+#include "rpc_state.h"
+
+using namespace gt::stinger;
+
 
 void
 json_rpc_process_request (rapidjson::Document& document, rapidjson::Document& response)

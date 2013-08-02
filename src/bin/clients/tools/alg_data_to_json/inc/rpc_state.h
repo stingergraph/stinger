@@ -1,10 +1,12 @@
 #ifndef RPC_STATE_H_
 #define RPC_STATE_H_
 
+#include <map>
 #include <stdint.h>
 #include "stinger_net/stinger_alg_state.h"
-
 #include "stinger_core/stinger.h"
+#include "stinger_core/stinger_error.h"
+#include "rapidjson/document.h"
 
 namespace gt {
   namespace stinger {
@@ -51,13 +53,13 @@ namespace gt {
 	      if(!params[p->name].IsString()) {
 		return false;
 	      }
-	      *((int64_t *)p->output) = params[p->name].GetString();
+	      *((char **)p->output) = (char *) params[p->name].GetString();
 	    } break;
 	    case TYPE_DOUBLE: {
 	      if(!params[p->name].IsDouble()) {
 		return false;
 	      }
-	      *((int64_t *)p->output) = params[p->name].GetDouble();
+	      *((double *)p->output) = params[p->name].GetDouble();
 	    } break;
 	  }
 	}
@@ -81,12 +83,11 @@ namespace gt {
 	int64_t alg_lock;
 	std::vector<StingerAlgState *> algs;                     
 	std::map<std::string, StingerAlgState *> alg_map;        
-
 	std::map<std::string, JSON_RPCFunction *> function_map;
 
 
       public:
-	JSON_RPCServerState & get_server_state();
+	static JSON_RPCServerState & get_server_state();
 
 	size_t
 	get_num_algs();

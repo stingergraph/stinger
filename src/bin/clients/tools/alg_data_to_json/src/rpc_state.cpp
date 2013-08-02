@@ -1,4 +1,9 @@
+
+#include "stinger_core/x86_full_empty.h"
 #include "rpc_state.h"
+
+using namespace gt::stinger;
+
 
 JSON_RPCServerState &
 JSON_RPCServerState::get_server_state() {
@@ -61,20 +66,20 @@ JSON_RPCServerState::has_alg(const std::string & name)
 }
 
 void
-add_rpc_function(std::string name, JSON_RPCFunction * func)
+JSON_RPCServerState::add_rpc_function(std::string name, JSON_RPCFunction * func)
 {
   if(func)
     function_map[name] = func;
 }
 
 JSON_RPCFunction *
-get_rpc_function(std::string name)
+JSON_RPCServerState::get_rpc_function(std::string name)
 {
   return function_map[name];
 }
 
 bool
-has_rpc_function(std::string name)
+JSON_RPCServerState::has_rpc_function(std::string name)
 {
   return function_map.count(name) > 0;
 }
