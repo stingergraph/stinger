@@ -17,6 +17,7 @@ extern "C" {
 
 #include "alg_data_to_json.h"
 #include "json_rpc.h"
+#include "rpc_state.h"
 
 
 rapidjson::Value *
@@ -596,6 +597,8 @@ array_to_json (char * description_string, int64_t nv, uint8_t * data,
 int
 main (void)
 {
+  JSON_RPCServerState & server_state = JSON_RPCServerState::get_server_state();
+
   char * description_string = "dfill mean test data kcore neighbors";
   int64_t nv = 20;
   size_t sz = 0;
@@ -657,8 +660,12 @@ main (void)
 
   rapidjson::Value id;
   id.SetInt(64);
+
+  rapidjson::Document test;
+  test.SetArray();
   //json_rpc_error(document, -32100, id);
-  json_rpc_response(document, (rapidjson::Value&)(*result), id);
+  //json_rpc_response(document, (rapidjson::Value&)(*result), id);
+  json_rpc_process_request(test, document);
 
 
   rapidjson::StringBuffer strbuf;

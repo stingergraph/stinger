@@ -3,6 +3,9 @@
 
 
 void
+json_rpc_process_request (rapidjson::Document& document, rapidjson::Document& response);
+
+void
 json_rpc_response (rapidjson::Document& document, rapidjson::Value& result, rapidjson::Value& id);
 
 void
