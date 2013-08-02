@@ -16,6 +16,8 @@ extern "C" {
 #include "rapidjson/stringbuffer.h"
 
 #include "alg_data_to_json.h"
+#include "json_rpc.h"
+
 
 rapidjson::Document *
 description_string_to_json (char * description_string)
@@ -641,15 +643,16 @@ main (void)
   //rapidjson::Document * json = array_to_json_range (description_string, nv, (uint8_t *)data, "neighbors", 5, 10);
   //rapidjson::Document * json = array_to_json_sorted_range (description_string, nv, (uint8_t *)data, "test", 0, 10);
 
-  int64_t test_set[5] = {0, 5, 6, 7, 2};
-  rapidjson::Document * json = array_to_json_set (description_string, nv, (uint8_t *)data, "neighbors", (int64_t *)&test_set, 5);
+  //int64_t test_set[5] = {0, 5, 6, 7, 2};
+  //rapidjson::Document * json = array_to_json_set (description_string, nv, (uint8_t *)data, "neighbors", (int64_t *)&test_set, 5);
 
-
+  rapidjson::Document * json = json_rpc_error(-32100);
 
   rapidjson::StringBuffer strbuf;
   rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
   json->Accept(writer);
   printf("--\n%s\n--\n", strbuf.GetString());
 
+  free(data);
   return 0;
 }

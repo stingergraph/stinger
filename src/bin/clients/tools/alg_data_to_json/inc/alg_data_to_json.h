@@ -1,5 +1,5 @@
-#ifndef _ALG_DATA_TO_JSON_STREAM_H
-#define _ALG_DATA_TO_JSON_STREAM_H
+#ifndef _ALG_DATA_TO_JSON_H
+#define _ALG_DATA_TO_JSON_H
 
 template <typename T>
 struct compare_pair_desc {
@@ -35,4 +35,4 @@ rapidjson::Document *
 array_to_json (char * description_string, int64_t nv, uint8_t * data, char * search_string);
 
 
-#endif /* _ALG_DATA_TO_JSON_STREAM_H */
+#endif /* _ALG_DATA_TO_JSON_H */
