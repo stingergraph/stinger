@@ -21,7 +21,22 @@ void
 process_json_rpc_request ();
 
 rapidjson::Document *
-json_rpc_error (int32_t error_code)
+json_rpc_response (rapidjson::Value& result, rapidjson::Value& id)
+{
+  rapidjson::Document * document = new rapidjson::Document();
+  rapidjson::Document::AllocatorType& allocator = document->GetAllocator();
+  document->SetObject();
+
+  document->AddMember("jsonrpc", "2.0", allocator);
+  document->AddMember("result", result, allocator);
+  document->AddMember("id", id, allocator);
+
+  return document;
+}
+
+
+rapidjson::Document *
+json_rpc_error (int32_t error_code, rapidjson::Value& id)
 {
   rapidjson::Document * document = new rapidjson::Document();
   rapidjson::Document::AllocatorType& allocator = document->GetAllocator();
@@ -67,6 +82,7 @@ json_rpc_error (int32_t error_code)
   err_obj.AddMember("code", code, allocator);
   err_obj.AddMember("message", message, allocator);
   document->AddMember("error", err_obj, allocator);
+  document->AddMember("id", id, allocator);
 
   return document;
 }

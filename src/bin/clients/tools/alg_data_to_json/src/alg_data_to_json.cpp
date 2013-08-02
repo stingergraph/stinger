@@ -19,17 +19,17 @@ extern "C" {
 #include "json_rpc.h"
 
 
-rapidjson::Document *
-description_string_to_json (char * description_string)
+rapidjson::Value *
+description_string_to_json (char * description_string, rapidjson::Document& document)
 {
   size_t len = strlen(description_string);
   char * tmp = (char *) xmalloc ((len+1) * sizeof(char));
   strcpy(tmp, description_string);
 
-  rapidjson::Document * document = new rapidjson::Document();
-  rapidjson::Document::AllocatorType& allocator = document->GetAllocator();
+  rapidjson::Document::AllocatorType& allocator = document.GetAllocator();
 
-  document->SetObject();
+  rapidjson::Value * rtn = new rapidjson::Value();
+  rtn->SetObject();
 
   rapidjson::Value a(rapidjson::kArrayType);
 
@@ -48,16 +48,17 @@ description_string_to_json (char * description_string)
     pch = strtok (NULL, " ");
   }
 
-  document->AddMember("alg_data", a, allocator);
+  rtn->AddMember("alg_data", a, allocator);
 
   free(tmp);
-  return document;
+  return rtn;
 }
 
 
-rapidjson::Document *
-array_to_json_range (char * description_string, int64_t nv, uint8_t * data, char * search_string,
-		     int64_t start, int64_t end)
+rapidjson::Value *
+array_to_json_range (char * description_string, int64_t nv, uint8_t * data,
+		     char * search_string, int64_t start, int64_t end,
+		     rapidjson::Document& document)
 {
   if (start >= nv) {
     LOG_E_A("Invalid range: %ld to %ld. Expecting [0, %ld).", start, end, nv);
@@ -72,10 +73,10 @@ array_to_json_range (char * description_string, int64_t nv, uint8_t * data, char
   char * tmp = (char *) xmalloc ((len+1) * sizeof(char));
   strcpy(tmp, description_string);
 
-  rapidjson::Document * document = new rapidjson::Document();
-  rapidjson::Document::AllocatorType& allocator = document->GetAllocator();
+  rapidjson::Document::AllocatorType& allocator = document.GetAllocator();
 
-  document->SetObject();
+  rapidjson::Value * rtn = new rapidjson::Value();
+  rtn->SetObject();
 
   rapidjson::Value result (rapidjson::kObjectType);
   rapidjson::Value vtx_id (rapidjson::kArrayType);
@@ -208,16 +209,18 @@ array_to_json_range (char * description_string, int64_t nv, uint8_t * data, char
   result.AddMember("count", count, allocator);
   result.AddMember("vertex_id", vtx_id, allocator);
   result.AddMember("value", vtx_val, allocator);
-  document->AddMember(search_string, result, allocator);
+
+  rtn->AddMember(search_string, result, allocator);
 
   free(tmp);
-  return document;
+  return rtn;
 }
 
 
-rapidjson::Document *
-array_to_json_sorted_range (char * description_string, int64_t nv, uint8_t * data, char * search_string,
-		     int64_t start, int64_t end)
+rapidjson::Value *
+array_to_json_sorted_range (char * description_string, int64_t nv, uint8_t * data,
+			    char * search_string, int64_t start, int64_t end,
+			    rapidjson::Document& document)
 {
   if (start >= nv) {
     LOG_E_A("Invalid range: %ld to %ld. Expecting [0, %ld).", start, end, nv);
@@ -232,10 +235,10 @@ array_to_json_sorted_range (char * description_string, int64_t nv, uint8_t * dat
   char * tmp = (char *) xmalloc ((len+1) * sizeof(char));
   strcpy(tmp, description_string);
 
-  rapidjson::Document * document = new rapidjson::Document();
-  rapidjson::Document::AllocatorType& allocator = document->GetAllocator();
+  rapidjson::Document::AllocatorType& allocator = document.GetAllocator();
 
-  document->SetObject();
+  rapidjson::Value * rtn = new rapidjson::Value();
+  rtn->SetObject();
 
   rapidjson::Value result (rapidjson::kObjectType);
   rapidjson::Value vtx_id (rapidjson::kArrayType);
@@ -413,16 +416,18 @@ array_to_json_sorted_range (char * description_string, int64_t nv, uint8_t * dat
   result.AddMember("count", count, allocator);
   result.AddMember("vertex_id", vtx_id, allocator);
   result.AddMember("value", vtx_val, allocator);
-  document->AddMember(search_string, result, allocator);
+
+  rtn->AddMember(search_string, result, allocator);
 
   free(tmp);
-  return document;
+  return rtn;
 }
 
 
-rapidjson::Document *
-array_to_json_set (char * description_string, int64_t nv, uint8_t * data, char * search_string,
-		     int64_t * set, int64_t set_len)
+rapidjson::Value *
+array_to_json_set (char * description_string, int64_t nv, uint8_t * data,
+		   char * search_string, int64_t * set, int64_t set_len,
+		   rapidjson::Document& document)
 {
   if (set_len < 1) {
     LOG_E_A("Invalid set length: %ld.", set_len);
@@ -436,10 +441,10 @@ array_to_json_set (char * description_string, int64_t nv, uint8_t * data, char *
   char * tmp = (char *) xmalloc ((len+1) * sizeof(char));
   strcpy(tmp, description_string);
 
-  rapidjson::Document * document = new rapidjson::Document();
-  rapidjson::Document::AllocatorType& allocator = document->GetAllocator();
+  rapidjson::Document::AllocatorType& allocator = document.GetAllocator();
 
-  document->SetObject();
+  rapidjson::Value * rtn = new rapidjson::Value();
+  rtn->SetObject();
 
   rapidjson::Value result (rapidjson::kObjectType);
   rapidjson::Value vtx_id (rapidjson::kArrayType);
@@ -572,17 +577,19 @@ array_to_json_set (char * description_string, int64_t nv, uint8_t * data, char *
 
   result.AddMember("vertex_id", vtx_id, allocator);
   result.AddMember("value", vtx_val, allocator);
-  document->AddMember(search_string, result, allocator);
+
+  rtn->AddMember(search_string, result, allocator);
 
   free(tmp);
-  return document;
+  return rtn;
 }
 
 
-rapidjson::Document *
-array_to_json (char * description_string, int64_t nv, uint8_t * data, char * search_string)
+rapidjson::Value *
+array_to_json (char * description_string, int64_t nv, uint8_t * data,
+	       char * search_string, rapidjson::Document& document)
 {
-  return array_to_json_range (description_string, nv, data, search_string, 0, nv);
+  return array_to_json_range (description_string, nv, data, search_string, 0, nv, document);
 }
 
 
@@ -638,15 +645,20 @@ main (void)
 * dll mean kcore neighbors
 */
 
-  //rapidjson::Document * json = description_string_to_json (description_string);
-  //rapidjson::Document * json = array_to_json (description_string, nv, (uint8_t *)data, "test");
-  //rapidjson::Document * json = array_to_json_range (description_string, nv, (uint8_t *)data, "neighbors", 5, 10);
-  //rapidjson::Document * json = array_to_json_sorted_range (description_string, nv, (uint8_t *)data, "test", 0, 10);
+  rapidjson::Document document;
+  //rapidjson::Value * result = description_string_to_json (description_string, document);
+  //rapidjson::Value * result = array_to_json (description_string, nv, (uint8_t *)data, "test", document);
+  //rapidjson::Value * result = array_to_json_range (description_string, nv, (uint8_t *)data, "neighbors", 5, 10, document);
+  //rapidjson::Value * result = array_to_json_sorted_range (description_string, nv, (uint8_t *)data, "test", 0, 10, document);
 
-  //int64_t test_set[5] = {0, 5, 6, 7, 2};
-  //rapidjson::Document * json = array_to_json_set (description_string, nv, (uint8_t *)data, "neighbors", (int64_t *)&test_set, 5);
+  int64_t test_set[5] = {0, 5, 6, 7, 2};
+  rapidjson::Value * result = array_to_json_set (description_string, nv, (uint8_t *)data, "neighbors", (int64_t *)&test_set, 5, document);
 
-  rapidjson::Document * json = json_rpc_error(-32100);
+  rapidjson::Value id;
+  id.SetInt(64);
+  //rapidjson::Document * json = json_rpc_error(-32100, id);
+  rapidjson::Document * json = json_rpc_response((rapidjson::Value&)(*result), id);
+
 
   rapidjson::StringBuffer strbuf;
   rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);

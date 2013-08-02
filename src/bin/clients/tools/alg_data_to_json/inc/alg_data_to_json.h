@@ -16,23 +16,26 @@ private:
 };
 
 
-rapidjson::Document *
-description_string_to_json (char * description_string);
+rapidjson::Value *
+description_string_to_json (char * description_string, rapidjson::Document& document);
 
-rapidjson::Document *
-array_to_json_range (char * description_string, int64_t nv, uint8_t * data, char * search_string,
-		     int64_t start, int64_t end);
+rapidjson::Value *
+array_to_json_range (char * description_string, int64_t nv, uint8_t * data,
+		     char * search_string, int64_t start, int64_t end,
+		     rapidjson::Document& document);
 
-rapidjson::Document *
-array_to_json_sorted_range (char * description_string, int64_t nv, uint8_t * data, char * search_string,
-		     int64_t start, int64_t end);
+rapidjson::Value *
+array_to_json_sorted_range (char * description_string, int64_t nv, uint8_t * data,
+			    char * search_string, int64_t start, int64_t end,
+			    rapidjson::Document& document);
 
-rapidjson::Document *
-array_to_json_set (char * description_string, int64_t nv, uint8_t * data, char * search_string,
-		     int64_t * set);
+rapidjson::Value *
+array_to_json_set (char * description_string, int64_t nv, uint8_t * data,
+		   char * search_string, int64_t * set, rapidjson::Document& document);
 
-rapidjson::Document *
-array_to_json (char * description_string, int64_t nv, uint8_t * data, char * search_string);
+rapidjson::Value *
+array_to_json (char * description_string, int64_t nv, uint8_t * data,
+	       char * search_string, rapidjson::Document& document);
 
 
 #endif /* _ALG_DATA_TO_JSON_H */
