@@ -14,7 +14,8 @@ namespace gt {
     typedef enum {
       TYPE_INT64,
       TYPE_STRING,
-      TYPE_DOUBLE
+      TYPE_DOUBLE,
+      TYPE_NONE
     } type_t;
 
     typedef struct {
@@ -67,13 +68,6 @@ namespace gt {
       }
     };
 
-    struct JSON_RPC_get_algorithms : JSON_RPCFunction {
-      JSON_RPC_get_algorithms(JSON_RPCServerState * state) : JSON_RPCFunction(state) { }
-      virtual int64_t operator()(rapidjson::Value & params, rapidjson::Value & result) {
-	/* TODO */
-	
-      }
-    };
 
     class JSON_RPCServerState {
       private:

@@ -10,10 +10,9 @@ extern "C" {
 }
 
 #include "rapidjson/document.h"
-#include "rapidjson/filestream.h"
-#include "rapidjson/prettywriter.h"
-#include "rapidjson/writer.h"
+#include "rapidjson/rapidjson.h"
 #include "rapidjson/stringbuffer.h"
+#include "rapidjson/prettywriter.h"
 
 #include "alg_data_to_json.h"
 #include "json_rpc.h"
@@ -21,15 +20,28 @@ extern "C" {
 
 using namespace gt::stinger;
 
+int64_t 
+JSON_RPC_get_data_description::operator()(rapidjson::Value & params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
+  char * algorithm_name;
+  rpc_params_t p[] = {
+    {"algorithm_name", TYPE_STRING, &algorithm_name},
+    {NULL, TYPE_NONE, NULL}
+  };
+
+  if (contains_params(p, params)) {
+    StingerAlgState * alg_state = server_state->get_alg(p->name);
+    //return description_string_to_json(alg_state->data_description.c_str(), result, allocator);
+  } else {
+  }
+
+}
 
 rapidjson::Value *
-description_string_to_json (char * description_string, rapidjson::Document& document)
+description_string_to_json (const char * description_string, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator)
 {
   size_t len = strlen(description_string);
   char * tmp = (char *) xmalloc ((len+1) * sizeof(char));
   strcpy(tmp, description_string);
-
-  rapidjson::Document::AllocatorType& allocator = document.GetAllocator();
 
   rapidjson::Value * rtn = new rapidjson::Value();
   rtn->SetObject();
@@ -59,9 +71,9 @@ description_string_to_json (char * description_string, rapidjson::Document& docu
 
 
 rapidjson::Value *
-array_to_json_range (char * description_string, int64_t nv, uint8_t * data,
-		     char * search_string, int64_t start, int64_t end,
-		     rapidjson::Document& document)
+array_to_json_range (const char * description_string, int64_t nv, uint8_t * data,
+		     const char * search_string, int64_t start, int64_t end,
+		     rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator)
 {
   if (start >= nv) {
     LOG_E_A("Invalid range: %ld to %ld. Expecting [0, %ld).", start, end, nv);
@@ -75,8 +87,6 @@ array_to_json_range (char * description_string, int64_t nv, uint8_t * data,
   size_t len = strlen(description_string);
   char * tmp = (char *) xmalloc ((len+1) * sizeof(char));
   strcpy(tmp, description_string);
-
-  rapidjson::Document::AllocatorType& allocator = document.GetAllocator();
 
   rapidjson::Value * rtn = new rapidjson::Value();
   rtn->SetObject();
@@ -221,9 +231,9 @@ array_to_json_range (char * description_string, int64_t nv, uint8_t * data,
 
 
 rapidjson::Value *
-array_to_json_sorted_range (char * description_string, int64_t nv, uint8_t * data,
-			    char * search_string, int64_t start, int64_t end,
-			    rapidjson::Document& document)
+array_to_json_sorted_range (const char * description_string, int64_t nv, uint8_t * data,
+			    const char * search_string, int64_t start, int64_t end,
+			    rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator)
 {
   if (start >= nv) {
     LOG_E_A("Invalid range: %ld to %ld. Expecting [0, %ld).", start, end, nv);
@@ -237,8 +247,6 @@ array_to_json_sorted_range (char * description_string, int64_t nv, uint8_t * dat
   size_t len = strlen(description_string);
   char * tmp = (char *) xmalloc ((len+1) * sizeof(char));
   strcpy(tmp, description_string);
-
-  rapidjson::Document::AllocatorType& allocator = document.GetAllocator();
 
   rapidjson::Value * rtn = new rapidjson::Value();
   rtn->SetObject();
@@ -428,9 +436,9 @@ array_to_json_sorted_range (char * description_string, int64_t nv, uint8_t * dat
 
 
 rapidjson::Value *
-array_to_json_set (char * description_string, int64_t nv, uint8_t * data,
-		   char * search_string, int64_t * set, int64_t set_len,
-		   rapidjson::Document& document)
+array_to_json_set (const char * description_string, int64_t nv, uint8_t * data,
+		   const char * search_string, int64_t * set, int64_t set_len,
+		   rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator)
 {
   if (set_len < 1) {
     LOG_E_A("Invalid set length: %ld.", set_len);
@@ -443,8 +451,6 @@ array_to_json_set (char * description_string, int64_t nv, uint8_t * data,
   size_t len = strlen(description_string);
   char * tmp = (char *) xmalloc ((len+1) * sizeof(char));
   strcpy(tmp, description_string);
-
-  rapidjson::Document::AllocatorType& allocator = document.GetAllocator();
 
   rapidjson::Value * rtn = new rapidjson::Value();
   rtn->SetObject();
@@ -589,10 +595,10 @@ array_to_json_set (char * description_string, int64_t nv, uint8_t * data,
 
 
 rapidjson::Value *
-array_to_json (char * description_string, int64_t nv, uint8_t * data,
-	       char * search_string, rapidjson::Document& document)
+array_to_json (const char * description_string, int64_t nv, uint8_t * data,
+	       const char * search_string, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator)
 {
-  return array_to_json_range (description_string, nv, data, search_string, 0, nv, document);
+  return array_to_json_range (description_string, nv, data, search_string, 0, nv, allocator);
 }
 
 
@@ -652,7 +658,7 @@ main (void)
 
   rapidjson::Document document;
   document.SetObject();
-  rapidjson::Value * result = description_string_to_json (description_string, document);
+  rapidjson::Value * result = description_string_to_json (description_string, document.GetAllocator());
   //rapidjson::Value * result = array_to_json (description_string, nv, (uint8_t *)data, "test", document);
   //rapidjson::Value * result = array_to_json_range (description_string, nv, (uint8_t *)data, "neighbors", 5, 10, document);
   //rapidjson::Value * result = array_to_json_sorted_range (description_string, nv, (uint8_t *)data, "test", 0, 10, document);
