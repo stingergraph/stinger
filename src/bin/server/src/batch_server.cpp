@@ -69,6 +69,7 @@ start_tcp_batch_server (struct stinger * S, char * stinger_loc, int port_streams
   server_state.set_stinger(S);
   server_state.set_stinger_loc(stinger_loc);
   server_state.set_port(port_algs);
+  server_state.set_mon_stinger(stinger_loc, sizeof(stinger_t) + S->length);
 
   int sock_handle, newsockfd;
   pthread_t garbage_thread_handle;

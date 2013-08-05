@@ -10,7 +10,9 @@ extern "C" {
 
 #include "stinger_stream_state.h"
 #include "stinger_alg_state.h"
+#include "stinger_mon_state.h"
 #include "proto/stinger-batch.pb.h"
+#include "proto/stinger-monitor.pb.h"
 
 /* STL - TODO explore other options */
 #include <map>
@@ -36,6 +38,11 @@ namespace gt {
 	std::vector<StingerAlgState *> algs;                     
 	std::vector<std::vector<StingerAlgState *> > alg_tree;
 	std::map<std::string, StingerAlgState *> alg_map;        
+
+	int64_t mon_lock;
+	std::vector<StingerMonState *> monitors;                     
+	std::map<std::string, StingerMonState *> monitor_map;        
+	ServerToMon server_to_mon;
 
 	int64_t dep_lock;
 	std::map<std::string, std::vector<StingerAlgState *> > opt_dependencies;        
@@ -125,6 +132,27 @@ namespace gt {
 
 	bool
 	has_alg(const std::string & name);
+
+	size_t
+	get_num_mons();
+
+	StingerMonState *
+	get_mon(size_t num);
+
+	StingerMonState *
+	get_mon(const std::string & name);
+
+        size_t
+	add_mon(StingerMonState * mon);
+
+	bool
+	has_mon(const std::string & name);
+
+	void
+	set_mon_stinger(std::string loc, int64_t size);
+
+	ServerToMon *
+	get_server_to_mon_copy();
 
 	pthread_t &
 	push_thread(pthread_t & thread);
