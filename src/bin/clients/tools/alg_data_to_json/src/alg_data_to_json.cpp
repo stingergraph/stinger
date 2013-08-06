@@ -17,6 +17,7 @@ extern "C" {
 #include "alg_data_to_json.h"
 #include "json_rpc.h"
 #include "rpc_state.h"
+#include "mon_handling.h"
 
 using namespace gt::stinger;
 
@@ -607,6 +608,8 @@ main (void)
 {
   JSON_RPCServerState & server_state = JSON_RPCServerState::get_server_state();
 
+  mon_connect(10103, "localhost", "json_rpc");
+
   char * description_string = "dfill mean test data kcore neighbors";
   int64_t nv = 20;
   size_t sz = 0;
@@ -682,5 +685,7 @@ main (void)
   printf("--\n%s\n--\n", strbuf.GetString());
 
   free(data);
+  while(1) {
+  }
   return 0;
 }

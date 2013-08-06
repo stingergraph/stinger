@@ -92,7 +92,7 @@ stinger_register_alg_impl(stinger_register_alg_params params)
 
   LOG_D("Received message from server");
 
-  if(server_to_alg.result() != SUCCESS) {
+  if(server_to_alg.result() != ALG_SUCCESS) {
     LOG_E("Error connecting to server");
     return NULL;
   }
@@ -192,7 +192,7 @@ stinger_alg_begin_init(stinger_registered_alg * alg)
 
   LOG_D("Received message from server");
 
-  if(server_to_alg.result() != SUCCESS || server_to_alg.action() != alg_to_server.action()) {
+  if(server_to_alg.result() != ALG_SUCCESS || server_to_alg.action() != alg_to_server.action()) {
     LOG_E("Error - failure at server or incorrect action returned");
     alg->enabled = false;
     return NULL;
@@ -223,7 +223,7 @@ stinger_alg_end_init(stinger_registered_alg * alg)
 
   LOG_D("Received message from server");
 
-  if(server_to_alg.result() != SUCCESS || server_to_alg.action() != alg_to_server.action()) {
+  if(server_to_alg.result() != ALG_SUCCESS || server_to_alg.action() != alg_to_server.action()) {
     LOG_E("Error - failure at server or incorrect action returned");
     alg->enabled = false;
     return NULL;
@@ -260,7 +260,7 @@ stinger_alg_begin_pre(stinger_registered_alg * alg)
 
   LOG_D("Received message from server");
 
-  if(server_to_alg->result() != SUCCESS || server_to_alg->action() != alg_to_server.action()) {
+  if(server_to_alg->result() != ALG_SUCCESS || server_to_alg->action() != alg_to_server.action()) {
     LOG_E("Error - failure at server or incorrect action returned");
     alg->enabled = false;
     return NULL;
@@ -407,7 +407,7 @@ stinger_alg_end_pre(stinger_registered_alg * alg)
 
   LOG_D("Received message from server");
 
-  if(server_to_alg->result() != SUCCESS || server_to_alg->action() != alg_to_server.action()) {
+  if(server_to_alg->result() != ALG_SUCCESS || server_to_alg->action() != alg_to_server.action()) {
     LOG_E("Error - failure at server or incorrect action returned");
     alg->enabled = false;
     return NULL;
@@ -444,7 +444,7 @@ stinger_alg_begin_post(stinger_registered_alg * alg)
 
   LOG_D("Received message from server");
 
-  if(server_to_alg->result() != SUCCESS || server_to_alg->action() != alg_to_server.action()) {
+  if(server_to_alg->result() != ALG_SUCCESS || server_to_alg->action() != alg_to_server.action()) {
     LOG_E("Error - failure at server or incorrect action returned");
     alg->enabled = false;
     return NULL;
@@ -547,7 +547,7 @@ stinger_alg_end_post(stinger_registered_alg * alg)
 
   LOG_D("Received message from server");
 
-  if(server_to_alg->result() != SUCCESS || server_to_alg->action() != alg_to_server.action()) {
+  if(server_to_alg->result() != ALG_SUCCESS || server_to_alg->action() != alg_to_server.action()) {
     LOG_E("Error - failure at server or incorrect action returned");
     alg->enabled = false;
     return NULL;

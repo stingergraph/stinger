@@ -9,12 +9,12 @@ enum MonAction {
 }
 
 enum MonActionResult {
-  SUCCESS		      = 0;
-  FAILURE_GENERIC     	      = 1;
-  FAILURE_NAME_EXISTS 	      = 2;
-  FAILURE_NAME_INVALID	      = 3;
-  FAILURE_DEPENDENCY  	      = 4;
-  FAILURE_UNEXPECTED_MESSAGE  =	5;
+  MON_SUCCESS		      = 0;
+  MON_FAILURE_GENERIC     	      = 1;
+  MON_FAILURE_NAME_EXISTS 	      = 2;
+  MON_FAILURE_NAME_INVALID	      = 3;
+  MON_FAILURE_DEPENDENCY  	      = 4;
+  MON_FAILURE_UNEXPECTED_MESSAGE  =	5;
 }
 
 message MonToServer {

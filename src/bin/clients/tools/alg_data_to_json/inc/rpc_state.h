@@ -2,11 +2,14 @@
 #define RPC_STATE_H_
 
 #include <map>
+#include <string>
 #include <stdint.h>
 #include "stinger_net/stinger_alg_state.h"
 #include "stinger_core/stinger.h"
 #include "stinger_core/stinger_error.h"
 #include "rapidjson/document.h"
+
+#include "stinger_net/proto/stinger-monitor.pb.h"
 
 namespace gt {
   namespace stinger {
@@ -74,11 +77,14 @@ namespace gt {
 	/* I'm a singleton */
 	JSON_RPCServerState();
 
-	int64_t alg_lock;
-	std::vector<StingerAlgState *> algs;                     
-	std::map<std::string, StingerAlgState *> alg_map;        
+	std::vector<StingerAlgState *> * algs;                     
+	std::map<std::string, StingerAlgState *> * alg_map;        
 	std::map<std::string, JSON_RPCFunction *> function_map;
+	pthread_rwlock_t alg_lock;
 
+	stinger_t * stinger;
+	std::string stinger_loc;
+	int64_t stinger_sz;
 
       public:
 	static JSON_RPCServerState & get_server_state();
@@ -92,9 +98,6 @@ namespace gt {
 	StingerAlgState *
 	get_alg(const std::string & name);
 
-	size_t
-	add_alg(StingerAlgState * alg);
-
 	bool
 	has_alg(const std::string & name);
 
@@ -106,6 +109,16 @@ namespace gt {
 
 	bool
 	has_rpc_function(std::string name);
+
+	void
+	get_alg_read_lock();
+
+	void
+	release_alg_read_lock();
+
+	void
+	update_algs(stinger_t * stinger_copy, std::string new_loc, int64_t new_sz, 
+	  std::vector<StingerAlgState *> * new_algs, std::map<std::string, StingerAlgState *> * new_alg_map);
     };
 
   }
