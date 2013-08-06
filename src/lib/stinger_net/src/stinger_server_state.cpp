@@ -22,7 +22,7 @@ struct delete_functor
  * PRIVATE METHODS
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 StingerServerState::StingerServerState() : port(10101), convert_num_to_string(1), 
-				    alg_lock(1), stream_lock(1), batch_lock(1), dep_lock(1)
+				    alg_lock(1), stream_lock(1), batch_lock(1), dep_lock(1), mon_lock(1)
 {
   LOG_D("Initializing server state.");
 }
@@ -252,6 +252,13 @@ StingerServerState::add_alg(size_t level, StingerAlgState * alg)
   rtn = algs.size();
   algs.push_back(alg);
   writeef((uint64_t *)&alg_lock, 1);
+
+  readfe((uint64_t *)&mon_lock);
+  server_to_mon.add_dep_name(alg->name);
+  server_to_mon.add_dep_data_loc(alg->data_loc);
+  server_to_mon.add_dep_description(alg->data_description);
+  server_to_mon.add_dep_data_per_vertex(alg->data_per_vertex);
+  writeef((uint64_t *)&mon_lock, 1);
   return rtn;
 }
 
@@ -262,6 +269,75 @@ StingerServerState::has_alg(const std::string & name)
   readfe((uint64_t *)&alg_lock);
   rtn = alg_map.count(name) > 0;
   writeef((uint64_t *)&alg_lock, 1);
+  return rtn;
+}
+
+size_t
+StingerServerState::get_num_mons()
+{
+  size_t num = 0;
+  readfe((uint64_t *)&mon_lock);
+  num = monitors.size();
+  writeef((uint64_t *)&mon_lock, 1);
+  return num;
+}
+
+StingerMonState *
+StingerServerState::get_mon(size_t num)
+{
+  StingerMonState * rtn = NULL;
+  readfe((uint64_t *)&mon_lock);
+  rtn = monitors[num];
+  writeef((uint64_t *)&mon_lock, 1);
+  return rtn;
+}
+
+StingerMonState *
+StingerServerState::get_mon(const std::string & name)
+{
+  StingerMonState * rtn = NULL;
+  readfe((uint64_t *)&mon_lock);
+  rtn = monitor_map[name];
+  writeef((uint64_t *)&mon_lock, 1);
+  return rtn;
+}
+
+size_t
+StingerServerState::add_mon(StingerMonState * mon)
+{
+  size_t rtn = 0;
+  readfe((uint64_t *)&mon_lock);
+  monitor_map[mon->name] = mon;
+  rtn = monitors.size();
+  monitors.push_back(mon);
+  writeef((uint64_t *)&mon_lock, 1);
+  return rtn;
+}
+
+bool
+StingerServerState::has_mon(const std::string & name)
+{
+  bool rtn = false;
+  readfe((uint64_t *)&mon_lock);
+  rtn = monitor_map.count(name) > 0;
+  writeef((uint64_t *)&mon_lock, 1);
+  return rtn;
+}
+
+void
+StingerServerState::set_mon_stinger(std::string loc, int64_t size) {
+  readfe((uint64_t *)&mon_lock);
+  server_to_mon.set_stinger_loc(loc);
+  server_to_mon.set_stinger_size(size);
+  writeef((uint64_t *)&mon_lock, 1);
+}
+
+
+ServerToMon *
+StingerServerState::get_server_to_mon_copy() {
+  readfe((uint64_t *)&mon_lock);
+  ServerToMon * rtn = new ServerToMon(server_to_mon);
+  writeef((uint64_t *)&mon_lock, 1);
   return rtn;
 }
 

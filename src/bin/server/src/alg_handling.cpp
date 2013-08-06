@@ -69,18 +69,18 @@ handle_alg(struct AcceptedSock * sock, StingerServerState & server_state)
     server_to_alg.set_action(alg_to_server.action());
     server_to_alg.set_stinger_loc(server_state.get_stinger_loc());
     server_to_alg.set_stinger_size(sizeof(stinger_t) + server_state.get_stinger()->length);
-    server_to_alg.set_result(SUCCESS);
+    server_to_alg.set_result(ALG_SUCCESS);
 
     if(alg_to_server.action() != REGISTER_ALG) {
       LOG_E("Algorithm failed to register");
-      server_to_alg.set_result(FAILURE_GENERIC);
+      server_to_alg.set_result(ALG_FAILURE_GENERIC);
       send_message(sock->handle, server_to_alg);
       return;
     }
 
     if(server_state.has_alg(alg_to_server.alg_name())) {
       LOG_E("Algorithm already exists");
-      server_to_alg.set_result(FAILURE_NAME_EXISTS);
+      server_to_alg.set_result(ALG_FAILURE_NAME_EXISTS);
       send_message(sock->handle, server_to_alg);
       return;
     }
@@ -99,7 +99,7 @@ handle_alg(struct AcceptedSock * sock, StingerServerState & server_state)
 	if(!data) {
 	  LOG_E_A("Error, mapping storage for algorithm %s failed (%ld bytes per vertex)", 
 	    alg_to_server.alg_name().c_str(), alg_to_server.data_per_vertex());
-	  server_to_alg.set_result(FAILURE_GENERIC);
+	  server_to_alg.set_result(ALG_FAILURE_GENERIC);
 	  send_message(sock->handle, server_to_alg);
 	  return;
 	}
@@ -114,6 +114,7 @@ handle_alg(struct AcceptedSock * sock, StingerServerState & server_state)
       alg_state->data_loc = map_name;
       alg_state->data = data;
       alg_state->data_per_vertex = alg_to_server.data_per_vertex();
+      alg_state->data_description = alg_to_server.data_description();
       alg_state->sock_handle = sock->handle;
 
       LOG_D("Resolving dependencies")
@@ -139,7 +140,7 @@ handle_alg(struct AcceptedSock * sock, StingerServerState & server_state)
 	  ServerToAlg server_to_alg;
 	  server_to_alg.set_alg_name(alg_to_server.alg_name());
 	  server_to_alg.set_action(alg_to_server.action());
-	  server_to_alg.set_result(FAILURE_DEPENDENCY);
+	  server_to_alg.set_result(ALG_FAILURE_DEPENDENCY);
 
 	  deps_resolved = false;
           shmunmap(map_name, data, data_total);
@@ -164,9 +165,53 @@ handle_alg(struct AcceptedSock * sock, StingerServerState & server_state)
       ServerToAlg server_to_alg;
       server_to_alg.set_alg_name(alg_to_server.alg_name());
       server_to_alg.set_action(alg_to_server.action());
-      server_to_alg.set_result(FAILURE_NAME_INVALID);
+      server_to_alg.set_result(ALG_FAILURE_NAME_INVALID);
       return;
     }
+  }
+}
+
+void
+handle_mon(struct AcceptedSock * sock, StingerServerState & server_state)
+{
+  MonToServer mon_to_server;
+  if(recv_message(sock->handle, mon_to_server)) {
+
+    LOG_D_A("Received new algorithm.  Printing incoming protobuf: %s", mon_to_server.DebugString().c_str());
+
+    ServerToMon * server_to_mon = server_state.get_server_to_mon_copy();
+    server_to_mon->set_mon_name(mon_to_server.mon_name());
+    server_to_mon->set_action(mon_to_server.action());
+    server_to_mon->set_result(MON_SUCCESS);
+
+    if(mon_to_server.action() != REGISTER_MON) {
+      LOG_E("Monitor failed to register");
+      server_to_mon->set_result(MON_FAILURE_GENERIC);
+      send_message(sock->handle, *server_to_mon);
+      return;
+    }
+
+    if(server_state.has_mon(mon_to_server.mon_name())) {
+      LOG_E("Monitor already exists");
+      server_to_mon->set_result(MON_FAILURE_NAME_EXISTS);
+      send_message(sock->handle, *server_to_mon);
+      return;
+    }
+
+    LOG_D("Creating monitor structure")
+
+    StingerMonState * mon_state = new StingerMonState();
+    mon_state->name = mon_to_server.mon_name();
+    mon_state->sock_handle = sock->handle;
+
+    LOG_V_A("Adding monitor %s", mon_to_server.mon_name().c_str());
+    server_to_mon->set_mon_num(server_state.add_mon(mon_state));
+    
+    LOG_V_A("Monitor added. Sending response:\n\t%s", server_to_mon->DebugString().c_str());
+
+    send_message(sock->handle, *server_to_mon);
+
+    delete server_to_mon;
   }
 }
 
@@ -205,8 +250,13 @@ new_connection_handler(void * data)
     break;
 
     case CLIENT_ALG:
-      LOG_V("Received client connection");
+      LOG_V("Received algorithm client connection");
       handle_alg(accepted_sock, server_state);
+    break;
+
+    case CLIENT_MONITOR:
+      LOG_V("Received monitor client connection");
+      handle_mon(accepted_sock, server_state);
     break;
 
     default:
@@ -256,7 +306,7 @@ process_loop_handler(void * data)
 	    ServerToAlg server_to_alg;
 	    server_to_alg.set_alg_name(alg_to_server.alg_name());
 	    server_to_alg.set_action(BEGIN_INIT);
-	    server_to_alg.set_result(SUCCESS);
+	    server_to_alg.set_result(ALG_SUCCESS);
 
 	    send_message(cur_alg->sock_handle, server_to_alg);
 	    cur_alg->state = ALG_STATE_PERFORMING_INIT;
@@ -266,7 +316,7 @@ process_loop_handler(void * data)
 	    if(recv_message(cur_alg->sock_handle, alg_to_server) && alg_to_server.alg_name().compare(cur_alg->name) == 0 &&
 	      alg_to_server.action() == END_INIT) {
 	      server_to_alg.set_action(END_INIT);
-	      server_to_alg.set_result(SUCCESS);
+	      server_to_alg.set_result(ALG_SUCCESS);
 	      send_message(cur_alg->sock_handle, server_to_alg);
 	      cur_alg->state = ALG_STATE_READY_PRE;
 	    } else {
@@ -275,7 +325,8 @@ process_loop_handler(void * data)
 	      ServerToAlg server_to_alg;
 	      server_to_alg.set_alg_name(alg_to_server.alg_name());
 	      server_to_alg.set_action(alg_to_server.action());
-	      server_to_alg.set_result(FAILURE_UNEXPECTED_MESSAGE);
+	      server_to_alg.set_result(ALG_FAILURE_UNEXPECTED_MESSAGE);
+	      send_message(cur_alg->sock_handle, server_to_alg);
 	    }
 	  } else {
 	    LOG_E_A("Algorithm <%s> sent invalid message. Expected begin init", alg_to_server.alg_name().c_str());
@@ -283,7 +334,8 @@ process_loop_handler(void * data)
 	    ServerToAlg server_to_alg;
 	    server_to_alg.set_alg_name(alg_to_server.alg_name());
 	    server_to_alg.set_action(alg_to_server.action());
-	    server_to_alg.set_result(FAILURE_UNEXPECTED_MESSAGE);
+	    server_to_alg.set_result(ALG_FAILURE_UNEXPECTED_MESSAGE);
+	    send_message(cur_alg->sock_handle, server_to_alg);
 	  }
 	}
 
@@ -297,7 +349,7 @@ process_loop_handler(void * data)
 	    ServerToAlg server_to_alg;
 	    server_to_alg.set_alg_name(alg_to_server.alg_name());
 	    server_to_alg.set_action(BEGIN_PREPROCESS);
-	    server_to_alg.set_result(SUCCESS);
+	    server_to_alg.set_result(ALG_SUCCESS);
 	    server_to_alg.set_allocated_batch(batch);
 	    send_message(cur_alg->sock_handle, server_to_alg);
 	    server_to_alg.release_batch();
@@ -308,7 +360,8 @@ process_loop_handler(void * data)
 	    ServerToAlg server_to_alg;
 	    server_to_alg.set_alg_name(alg_to_server.alg_name());
 	    server_to_alg.set_action(alg_to_server.action());
-	    server_to_alg.set_result(FAILURE_UNEXPECTED_MESSAGE);
+	    server_to_alg.set_result(ALG_FAILURE_UNEXPECTED_MESSAGE);
+	    send_message(cur_alg->sock_handle, server_to_alg);
 	  }
 	}
       }
@@ -330,7 +383,7 @@ process_loop_handler(void * data)
 
 	    ServerToAlg server_to_alg;
 	    server_to_alg.set_action(END_PREPROCESS);
-	    server_to_alg.set_result(SUCCESS);
+	    server_to_alg.set_result(ALG_SUCCESS);
 	    send_message(cur_alg->sock_handle, server_to_alg);
 	    cur_alg->state = ALG_STATE_READY_POST;
 	  } else {
@@ -339,7 +392,7 @@ process_loop_handler(void * data)
 	    ServerToAlg server_to_alg;
 	    server_to_alg.set_alg_name(alg_to_server.alg_name());
 	    server_to_alg.set_action(alg_to_server.action());
-	    server_to_alg.set_result(FAILURE_UNEXPECTED_MESSAGE);
+	    server_to_alg.set_result(ALG_FAILURE_UNEXPECTED_MESSAGE);
 	  }
 	}
       }
@@ -364,7 +417,7 @@ process_loop_handler(void * data)
 	    ServerToAlg server_to_alg;
 	    server_to_alg.set_alg_name(alg_to_server.alg_name());
 	    server_to_alg.set_action(BEGIN_POSTPROCESS);
-	    server_to_alg.set_result(SUCCESS);
+	    server_to_alg.set_result(ALG_SUCCESS);
 	    server_to_alg.set_allocated_batch(batch);
 	    send_message(cur_alg->sock_handle, server_to_alg);
 	    server_to_alg.release_batch();
@@ -375,7 +428,8 @@ process_loop_handler(void * data)
 	    ServerToAlg server_to_alg;
 	    server_to_alg.set_alg_name(alg_to_server.alg_name());
 	    server_to_alg.set_action(alg_to_server.action());
-	    server_to_alg.set_result(FAILURE_UNEXPECTED_MESSAGE);
+	    server_to_alg.set_result(ALG_FAILURE_UNEXPECTED_MESSAGE);
+	    send_message(cur_alg->sock_handle, server_to_alg);
 	  }
 	}
       }
@@ -397,7 +451,7 @@ process_loop_handler(void * data)
 
 	    ServerToAlg server_to_alg;
 	    server_to_alg.set_action(END_POSTPROCESS);
-	    server_to_alg.set_result(SUCCESS);
+	    server_to_alg.set_result(ALG_SUCCESS);
 	    send_message(cur_alg->sock_handle, server_to_alg);
 	    cur_alg->state = ALG_STATE_READY_PRE;
 	  } else {
@@ -406,8 +460,74 @@ process_loop_handler(void * data)
 	    ServerToAlg server_to_alg;
 	    server_to_alg.set_alg_name(alg_to_server.alg_name());
 	    server_to_alg.set_action(alg_to_server.action());
-	    server_to_alg.set_result(FAILURE_UNEXPECTED_MESSAGE);
+	    server_to_alg.set_result(ALG_FAILURE_UNEXPECTED_MESSAGE);
+	    send_message(cur_alg->sock_handle, server_to_alg);
 	  }
+	}
+      }
+    }
+
+    /* Look through each monitor and send an update message (using a copy of the cached message for dependencies) */
+    size_t stop_mon_index = server_state.get_num_mons();
+    {
+      ServerToMon * server_to_mon = server_state.get_server_to_mon_copy();
+      for(size_t cur_mon_index = 0; cur_mon_index < stop_mon_index; cur_mon_index++) {
+	StingerMonState * cur_mon = server_state.get_mon(cur_mon_index);
+
+	if(cur_mon->state == MON_STATE_READY_UPDATE) {
+	  MonToServer mon_to_server;
+
+	  if(recv_message(cur_mon->sock_handle, mon_to_server) && (mon_to_server.mon_name().compare(cur_mon->name) == 0) &&
+	    mon_to_server.action() == BEGIN_UPDATE) {
+	    
+	    server_to_mon->set_mon_name(mon_to_server.mon_name());
+	    server_to_mon->set_action(BEGIN_UPDATE);
+	    server_to_mon->set_result(MON_SUCCESS);
+	    server_to_mon->set_allocated_batch(batch);
+	    send_message(cur_mon->sock_handle, *server_to_mon);
+	    server_to_mon->release_batch();
+	    cur_mon->state = MON_STATE_PERFORMING_UPDATE;
+	  } else {
+	    LOG_E_A("Monitor <%s> sent invalid message. Expected begin postprocess", mon_to_server.mon_name().c_str());
+	    cur_mon->state = MON_STATE_ERROR;
+	    server_to_mon->set_mon_name(mon_to_server.mon_name());
+	    server_to_mon->set_action(mon_to_server.action());
+	    server_to_mon->set_result(MON_FAILURE_UNEXPECTED_MESSAGE);
+	    send_message(cur_mon->sock_handle, *server_to_mon);
+	  }
+	}
+      }
+
+      delete server_to_mon;
+    }
+
+    /* TODO timeout */
+
+    /* loop through each monitor and wait for message indicating finished postprocesing */
+    for(size_t cur_mon_index = 0; cur_mon_index < stop_mon_index; cur_mon_index++) {
+      StingerMonState * cur_mon = server_state.get_mon(cur_mon_index);
+
+      if(cur_mon->state == MON_STATE_PERFORMING_UPDATE) {
+	MonToServer mon_to_server;
+
+	while(!can_be_read(cur_mon->sock_handle)) {
+	  usleep(100);
+	}
+	if(recv_message(cur_mon->sock_handle, mon_to_server) && mon_to_server.mon_name().compare(cur_mon->name) == 0 &&
+	  mon_to_server.action() == END_UPDATE) {
+
+	  ServerToMon server_to_mon;
+	  server_to_mon.set_action(END_UPDATE);
+	  server_to_mon.set_result(MON_SUCCESS);
+	  send_message(cur_mon->sock_handle, server_to_mon);
+	  cur_mon->state = MON_STATE_READY_UPDATE;
+	} else {
+	  LOG_E_A("Monitor <%s> sent invalid message. Expected end postprocess", mon_to_server.mon_name().c_str());
+	  cur_mon->state = MON_STATE_ERROR;
+	  ServerToMon server_to_mon;
+	  server_to_mon.set_mon_name(mon_to_server.mon_name());
+	  server_to_mon.set_action(mon_to_server.action());
+	  server_to_mon.set_result(MON_FAILURE_UNEXPECTED_MESSAGE);
 	}
       }
     }

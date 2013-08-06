@@ -1,8 +1,9 @@
 package gt.stinger;
 
 enum ClientType {
-  CLIENT_STREAM	= 0;
-  CLIENT_ALG	= 1;
+  CLIENT_STREAM	  = 0;
+  CLIENT_ALG	  = 1;
+  CLIENT_MONITOR  = 2;
 }
 
 message Connect {

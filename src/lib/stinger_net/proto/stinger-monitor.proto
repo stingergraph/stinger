@@ -1,0 +1,44 @@
+package gt.stinger;
+
+import "stinger_net/proto/stinger-batch.proto";
+
+enum MonAction {
+  REGISTER_MON	      = 0;
+  BEGIN_UPDATE	      = 1;
+  END_UPDATE	      = 2;
+}
+
+enum MonActionResult {
+  MON_SUCCESS		      = 0;
+  MON_FAILURE_GENERIC     	      = 1;
+  MON_FAILURE_NAME_EXISTS 	      = 2;
+  MON_FAILURE_NAME_INVALID	      = 3;
+  MON_FAILURE_DEPENDENCY  	      = 4;
+  MON_FAILURE_UNEXPECTED_MESSAGE  =	5;
+}
+
+message MonToServer {
+  optional int64      protocol_version	= 1 [default = 1];
+
+  optional string     mon_name		= 2;
+  optional int64      mon_num		= 3;
+  required MonAction  action		= 6;
+}
+
+message ServerToMon {
+  optional int64	    protocol_version	= 1 [default = 1];
+
+  optional string	    mon_name	      	= 2;
+  optional int64	    mon_num	      	= 3;
+  required MonAction	    action	      	= 4;
+  required MonActionResult  result	      	= 5;
+  optional int64	    batch_number      	= 6 [default = -1];
+
+  optional StingerBatch	    batch	      	= 7;
+  optional string	    stinger_loc	      	= 8;
+  optional int64	    stinger_size	= 9;
+  repeated string	    dep_name		= 11;
+  repeated string	    dep_description	= 12;
+  repeated string	    dep_data_loc      	= 13;
+  repeated int64	    dep_data_per_vertex	= 14;
+}
