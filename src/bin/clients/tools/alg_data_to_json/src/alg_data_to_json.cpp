@@ -29,6 +29,7 @@ int
 begin_request_handler(struct mg_connection *conn)
 {
   LOG_D("Receiving request");
+  const struct mg_request_info *request_info = mg_get_request_info(conn);
 
   uint8_t * storage = (uint8_t *)xmalloc(MAX_REQUEST_SIZE);
 
@@ -44,15 +45,22 @@ begin_request_handler(struct mg_connection *conn)
   rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(out_buf);
   output.Accept(writer);
 
+  const char * out_ch = out_buf.GetString();
+  int out_len = out_buf.Size();
+
+  LOG_D_A("Sending back response:%d\n%s", out_len, out_ch);
+
   mg_printf(conn,
 	    "HTTP/1.1 200 OK\r\n"
 	    "Content-Type: text/plain\r\n"
 	    "Content-Length: %d\r\n"        // Always set Content-Length
-	    "\r\n"
-	    "%.*s",
-	    out_buf.Size(), out_buf.Size(), out_buf.GetString());
+	    "\r\n",
+	    out_len);
+  mg_write(conn, out_ch, out_len);
 
-  return 1;
+  free(storage);
+
+  return "";
 }
 
 int64_t 

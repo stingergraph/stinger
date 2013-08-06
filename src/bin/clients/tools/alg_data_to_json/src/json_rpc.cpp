@@ -29,8 +29,11 @@ json_rpc_process_request (rapidjson::Document& document, rapidjson::Document& re
   is_null.SetNull();
   rapidjson::Value result;
   result.SetObject();
+  response.SetObject();
 
   rapidjson::Document::AllocatorType& allocator = response.GetAllocator();
+
+
 
   /* Is the input a valid JSON object -- should also check when it's parsed */
   if (!document.IsObject()) {
@@ -43,12 +46,17 @@ json_rpc_process_request (rapidjson::Document& document, rapidjson::Document& re
 
   /* Does it have a jsonrpc field */
   if (!document.HasMember("jsonrpc")) {
+
     response.AddMember("jsonrpc", "2.0", allocator);
+
     json_rpc_error (-32600, result, allocator);
+
     response.AddMember("error", result, allocator);
+
     response.AddMember("id", is_null, allocator);
     return;
   }
+
 
   /* Is the jsonrpc field a string */
   if (!document["jsonrpc"].IsString()) {
@@ -68,6 +76,7 @@ json_rpc_process_request (rapidjson::Document& document, rapidjson::Document& re
     return;
   }
 
+
   /* Does it have an id field */
   /* TODO: notifications will change this */
   if (!document.HasMember("id")) {
@@ -77,6 +86,8 @@ json_rpc_process_request (rapidjson::Document& document, rapidjson::Document& re
     response.AddMember("id", is_null, allocator);
     return;
   }
+
+
 
   /* Is the id field a number of a string */
   /* Get the id field */
@@ -97,6 +108,7 @@ json_rpc_process_request (rapidjson::Document& document, rapidjson::Document& re
   }
   rapidjson::Value& id = document["id"];
 
+
   /* Does it have a method field */
   if (!document.HasMember("method")) {
     response.AddMember("jsonrpc", "2.0", allocator);
@@ -106,6 +118,7 @@ json_rpc_process_request (rapidjson::Document& document, rapidjson::Document& re
     return;
   }
 
+
   /* Is the method field a string */
   if (!document["method"].IsString()) {
     response.AddMember("jsonrpc", "2.0", allocator);
@@ -114,6 +127,7 @@ json_rpc_process_request (rapidjson::Document& document, rapidjson::Document& re
     response.AddMember("id", id, allocator);
     return;
   }
+
 
   /* Parse the method field */
 
@@ -127,6 +141,7 @@ json_rpc_process_request (rapidjson::Document& document, rapidjson::Document& re
     /* Params is an array */
     const rapidjson::Value& params = document["params"];
   }
+
 
   /* call the function */
   /*error_code <- (params, response)
