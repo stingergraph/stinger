@@ -50,17 +50,19 @@ begin_request_handler(struct mg_connection *conn)
 
   LOG_D_A("Sending back response:%d\n%s", out_len, out_ch);
 
-  mg_printf(conn,
+  int code = mg_printf(conn,
 	    "HTTP/1.1 200 OK\r\n"
 	    "Content-Type: text/plain\r\n"
 	    "Content-Length: %d\r\n"        // Always set Content-Length
-	    "\r\n",
-	    out_len);
-  mg_write(conn, out_ch, out_len);
+	    "\r\n"
+	    "%s",
+	    out_len, out_ch);
+
+  LOG_D_A("Code was %d", code);
 
   free(storage);
 
-  return "";
+  return 1;
 }
 
 int64_t 
