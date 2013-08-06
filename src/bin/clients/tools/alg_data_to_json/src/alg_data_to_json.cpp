@@ -19,7 +19,41 @@ extern "C" {
 #include "rpc_state.h"
 #include "mon_handling.h"
 
+#include "mongoose/mongoose.h"
+
 using namespace gt::stinger;
+
+#define MAX_REQUEST_SIZE (1ULL << 22ULL)
+
+int
+begin_request_handler(struct mg_connection *conn)
+{
+  LOG_D("Receiving request");
+
+  uint8_t * storage = (uint8_t *)xmalloc(MAX_REQUEST_SIZE);
+
+  int64_t read = mg_read(conn, storage, MAX_REQUEST_SIZE);
+
+  LOG_D_A("Parsing request:\n%.*s", read, storage);
+  rapidjson::Document input, output;
+  input.ParseInsitu<0>((char *)storage);
+
+  json_rpc_process_request(input, output);
+
+  rapidjson::StringBuffer out_buf;
+  rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(out_buf);
+  output.Accept(writer);
+
+  mg_printf(conn,
+	    "HTTP/1.1 200 OK\r\n"
+	    "Content-Type: text/plain\r\n"
+	    "Content-Length: %d\r\n"        // Always set Content-Length
+	    "\r\n"
+	    "%.*s",
+	    out_buf.Size(), out_buf.Size(), out_buf.GetString());
+
+  return 1;
+}
 
 int64_t 
 JSON_RPC_get_data_description::operator()(rapidjson::Value & params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
@@ -723,7 +757,20 @@ main (void)
   }
   tmp += nv * sizeof(int64_t);
 
+  /* Mongoose setup and start */
+  struct mg_context *ctx;
+  struct mg_callbacks callbacks;
 
+  // List of options. Last element must be NULL.
+  const char *opts[] = {"listening_ports", "8088", NULL};
+
+  // Prepare callbacks structure. We have only one callback, the rest are NULL.
+  memset(&callbacks, 0, sizeof(callbacks));
+  callbacks.begin_request = begin_request_handler;
+
+  // Start the web server.
+  ctx = mg_start(&callbacks, NULL, opts);
+  
 
 /*
 *   - f = float
