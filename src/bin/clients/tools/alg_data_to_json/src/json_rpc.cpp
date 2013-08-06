@@ -27,35 +27,54 @@ json_rpc_process_request (rapidjson::Document& document, rapidjson::Document& re
   JSON_RPCServerState & server_state = JSON_RPCServerState::get_server_state();
   rapidjson::Value is_null;
   is_null.SetNull();
+  rapidjson::Value result;
+  result.SetObject();
+
+  rapidjson::Document::AllocatorType& allocator = response.GetAllocator();
 
   /* Is the input a valid JSON object -- should also check when it's parsed */
   if (!document.IsObject()) {
-    json_rpc_error (response, -32600, is_null);
+    response.AddMember("jsonrpc", "2.0", allocator);
+    json_rpc_error (-32600, result, allocator);
+    response.AddMember("error", result, allocator);
+    response.AddMember("id", is_null, allocator);
     return;
   }
 
   /* Does it have a jsonrpc field */
   if (!document.HasMember("jsonrpc")) {
-    json_rpc_error (response, -32600, is_null);
+    response.AddMember("jsonrpc", "2.0", allocator);
+    json_rpc_error (-32600, result, allocator);
+    response.AddMember("error", result, allocator);
+    response.AddMember("id", is_null, allocator);
     return;
   }
 
   /* Is the jsonrpc field a string */
   if (!document["jsonrpc"].IsString()) {
-    json_rpc_error (response, -32600, is_null);
+    response.AddMember("jsonrpc", "2.0", allocator);
+    json_rpc_error (-32600, result, allocator);
+    response.AddMember("error", result, allocator);
+    response.AddMember("id", is_null, allocator);
     return;
   }
 
   /* Is the jsonrpc field equal to 2.0 */
   if (strcmp(document["jsonrpc"].GetString(), "2.0") != 0) {
-    json_rpc_error (response, -32600, is_null);
+    response.AddMember("jsonrpc", "2.0", allocator);
+    json_rpc_error (-32600, result, allocator);
+    response.AddMember("error", result, allocator);
+    response.AddMember("id", is_null, allocator);
     return;
   }
 
   /* Does it have an id field */
   /* TODO: notifications will change this */
   if (!document.HasMember("id")) {
-    json_rpc_error (response, -32000, is_null);
+    response.AddMember("jsonrpc", "2.0", allocator);
+    json_rpc_error (-32000, result, allocator);
+    response.AddMember("error", result, allocator);
+    response.AddMember("id", is_null, allocator);
     return;
   }
 
@@ -70,20 +89,29 @@ json_rpc_process_request (rapidjson::Document& document, rapidjson::Document& re
     id_str = (const char *) document["id"].GetString();
   }
   else {
-    json_rpc_error (response, -32600, is_null);
+    response.AddMember("jsonrpc", "2.0", allocator);
+    json_rpc_error (-32600, result, allocator);
+    response.AddMember("error", result, allocator);
+    response.AddMember("id", is_null, allocator);
     return;
   }
-  const rapidjson::Value& id = document["id"];
+  rapidjson::Value& id = document["id"];
 
   /* Does it have a method field */
   if (!document.HasMember("method")) {
-    json_rpc_error (response, -32600, is_null);
+    response.AddMember("jsonrpc", "2.0", allocator);
+    json_rpc_error (-32600, result, allocator);
+    response.AddMember("error", result, allocator);
+    response.AddMember("id", id, allocator);
     return;
   }
 
   /* Is the method field a string */
   if (!document["method"].IsString()) {
-    json_rpc_error (response, -32600, is_null);
+    response.AddMember("jsonrpc", "2.0", allocator);
+    json_rpc_error (-32600, result, allocator);
+    response.AddMember("error", result, allocator);
+    response.AddMember("id", id, allocator);
     return;
   }
 
@@ -103,7 +131,10 @@ json_rpc_process_request (rapidjson::Document& document, rapidjson::Document& re
   /* call the function */
   /*error_code <- (params, response)
   if (error_code)
-    json_rpc_error(response); */
+    response.AddMember("jsonrpc", "2.0", allocator);
+    json_rpc_error(response); 
+    response.AddMember("error", result, allocator);
+    response.AddMember("id", id, allocator); */
 
 }
 
@@ -118,14 +149,9 @@ json_rpc_response (rapidjson::Document& document, rapidjson::Value& result, rapi
 }
 
 
-void
-json_rpc_error (rapidjson::Document& document, int32_t error_code, rapidjson::Value& id)
+int32_t
+json_rpc_error (int32_t error_code, rapidjson::Value& err_obj, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator)
 {
-  rapidjson::Document::AllocatorType& allocator = document.GetAllocator();
-
-  document.AddMember("jsonrpc", "2.0", allocator);
-
-  rapidjson::Value err_obj (rapidjson::kObjectType);
   rapidjson::Value code, message;
   code.SetInt(error_code);
 
@@ -167,6 +193,6 @@ json_rpc_error (rapidjson::Document& document, int32_t error_code, rapidjson::Va
 
   err_obj.AddMember("code", code, allocator);
   err_obj.AddMember("message", message, allocator);
-  document.AddMember("error", err_obj, allocator);
-  document.AddMember("id", id, allocator);
+
+  return error_code;
 }

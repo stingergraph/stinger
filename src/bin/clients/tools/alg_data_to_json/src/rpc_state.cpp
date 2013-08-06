@@ -1,3 +1,4 @@
+#include <pthread.h>
 
 #include "stinger_core/x86_full_empty.h"
 #include "stinger_core/stinger_shared.h"

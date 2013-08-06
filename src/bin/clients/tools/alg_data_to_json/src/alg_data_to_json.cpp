@@ -31,10 +31,10 @@ JSON_RPC_get_data_description::operator()(rapidjson::Value & params, rapidjson::
 
   if (contains_params(p, params)) {
     StingerAlgState * alg_state = server_state->get_alg(p->name);
-    //return description_string_to_json(alg_state->data_description.c_str(), result, allocator);
+    return description_string_to_json(alg_state->data_description.c_str(), result, allocator);
   } else {
+    return json_rpc_error(-32602, result, allocator);
   }
-
 }
 
 int
@@ -69,6 +69,34 @@ description_string_to_json (const char * description_string,
   return 0;
 }
 
+
+int64_t 
+JSON_RPC_get_data_array_range::operator()(rapidjson::Value & params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
+  char * algorithm_name;
+  char * data_array_name;
+  int64_t count, offset;
+  rpc_params_t p[] = {
+    {"algorithm_name", TYPE_STRING, &algorithm_name},
+    {"data_array_name", TYPE_STRING, &data_array_name},
+    {"offset", TYPE_INT64, &count},
+    {"count", TYPE_INT64, &offset},
+    {NULL, TYPE_NONE, NULL}
+  };
+
+  if (contains_params(p, params)) {
+    StingerAlgState * alg_state = server_state->get_alg(p->name);
+    return array_to_json_range(alg_state->data_description.c_str(),
+	STINGER_MAX_LVERTICES,
+	(uint8_t *)alg_state->data,
+	data_array_name,
+	offset,
+	offset+count,
+	result,
+	allocator);
+  } else {
+    return json_rpc_error(-32602, result, allocator);
+  }
+}
 
 int
 array_to_json_range (const char * description_string, int64_t nv, uint8_t * data,
@@ -227,6 +255,34 @@ array_to_json_range (const char * description_string, int64_t nv, uint8_t * data
   return 0;
 }
 
+
+int64_t 
+JSON_RPC_get_data_array_sorted_range::operator()(rapidjson::Value & params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
+  char * algorithm_name;
+  char * data_array_name;
+  int64_t count, offset;
+  rpc_params_t p[] = {
+    {"algorithm_name", TYPE_STRING, &algorithm_name},
+    {"data_array_name", TYPE_STRING, &data_array_name},
+    {"offset", TYPE_INT64, &count},
+    {"count", TYPE_INT64, &offset},
+    {NULL, TYPE_NONE, NULL}
+  };
+
+  if (contains_params(p, params)) {
+    StingerAlgState * alg_state = server_state->get_alg(p->name);
+    return array_to_json_sorted_range(alg_state->data_description.c_str(),
+	STINGER_MAX_LVERTICES,
+	(uint8_t *)alg_state->data,
+	data_array_name,
+	offset,
+	offset+count,
+	result,
+	allocator);
+  } else {
+    return json_rpc_error(-32602, result, allocator);
+  }
+}
 
 int
 array_to_json_sorted_range (const char * description_string, int64_t nv, uint8_t * data,
@@ -431,6 +487,8 @@ array_to_json_sorted_range (const char * description_string, int64_t nv, uint8_t
 }
 
 
+/* functor TODO -- need to convert SET to array/len */
+
 int
 array_to_json_set (const char * description_string, int64_t nv, uint8_t * data,
 		   const char * search_string, int64_t * set, int64_t set_len,
@@ -587,6 +645,29 @@ array_to_json_set (const char * description_string, int64_t nv, uint8_t * data,
   return 0;
 }
 
+
+int64_t 
+JSON_RPC_get_data_array::operator()(rapidjson::Value & params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
+  char * algorithm_name;
+  char * data_array_name;
+  rpc_params_t p[] = {
+    {"algorithm_name", TYPE_STRING, &algorithm_name},
+    {"data_array_name", TYPE_STRING, &data_array_name},
+    {NULL, TYPE_NONE, NULL}
+  };
+
+  if (contains_params(p, params)) {
+    StingerAlgState * alg_state = server_state->get_alg(p->name);
+    return array_to_json(alg_state->data_description.c_str(),
+	STINGER_MAX_LVERTICES,
+	(uint8_t *)alg_state->data,
+	data_array_name,
+	result,
+	allocator);
+  } else {
+    return json_rpc_error(-32602, result, allocator);
+  }
+}
 
 int
 array_to_json (const char * description_string, int64_t nv, uint8_t * data,
