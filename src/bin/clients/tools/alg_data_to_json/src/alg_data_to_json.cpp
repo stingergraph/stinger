@@ -36,15 +36,14 @@ JSON_RPC_get_data_description::operator()(rapidjson::Value & params, rapidjson::
 
 }
 
-rapidjson::Value *
-description_string_to_json (const char * description_string, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator)
+int
+description_string_to_json (const char * description_string,
+  rapidjson::Value& rtn,
+  rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator)
 {
   size_t len = strlen(description_string);
   char * tmp = (char *) xmalloc ((len+1) * sizeof(char));
   strcpy(tmp, description_string);
-
-  rapidjson::Value * rtn = new rapidjson::Value();
-  rtn->SetObject();
 
   rapidjson::Value a(rapidjson::kArrayType);
 
@@ -63,16 +62,17 @@ description_string_to_json (const char * description_string, rapidjson::MemoryPo
     pch = strtok (NULL, " ");
   }
 
-  rtn->AddMember("alg_data", a, allocator);
+  rtn.AddMember("alg_data", a, allocator);
 
   free(tmp);
-  return rtn;
+  return 0;
 }
 
 
-rapidjson::Value *
+int
 array_to_json_range (const char * description_string, int64_t nv, uint8_t * data,
 		     const char * search_string, int64_t start, int64_t end,
+		     rapidjson::Value& rtn,
 		     rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator)
 {
   if (start >= nv) {
@@ -87,9 +87,6 @@ array_to_json_range (const char * description_string, int64_t nv, uint8_t * data
   size_t len = strlen(description_string);
   char * tmp = (char *) xmalloc ((len+1) * sizeof(char));
   strcpy(tmp, description_string);
-
-  rapidjson::Value * rtn = new rapidjson::Value();
-  rtn->SetObject();
 
   rapidjson::Value result (rapidjson::kObjectType);
   rapidjson::Value vtx_id (rapidjson::kArrayType);
@@ -223,16 +220,17 @@ array_to_json_range (const char * description_string, int64_t nv, uint8_t * data
   result.AddMember("vertex_id", vtx_id, allocator);
   result.AddMember("value", vtx_val, allocator);
 
-  rtn->AddMember(search_string, result, allocator);
+  rtn.AddMember(search_string, result, allocator);
 
   free(tmp);
-  return rtn;
+  return 0;
 }
 
 
-rapidjson::Value *
+int
 array_to_json_sorted_range (const char * description_string, int64_t nv, uint8_t * data,
 			    const char * search_string, int64_t start, int64_t end,
+			    rapidjson::Value& rtn,
 			    rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator)
 {
   if (start >= nv) {
@@ -247,9 +245,6 @@ array_to_json_sorted_range (const char * description_string, int64_t nv, uint8_t
   size_t len = strlen(description_string);
   char * tmp = (char *) xmalloc ((len+1) * sizeof(char));
   strcpy(tmp, description_string);
-
-  rapidjson::Value * rtn = new rapidjson::Value();
-  rtn->SetObject();
 
   rapidjson::Value result (rapidjson::kObjectType);
   rapidjson::Value vtx_id (rapidjson::kArrayType);
@@ -428,16 +423,17 @@ array_to_json_sorted_range (const char * description_string, int64_t nv, uint8_t
   result.AddMember("vertex_id", vtx_id, allocator);
   result.AddMember("value", vtx_val, allocator);
 
-  rtn->AddMember(search_string, result, allocator);
+  rtn.AddMember(search_string, result, allocator);
 
   free(tmp);
-  return rtn;
+  return 0;
 }
 
 
-rapidjson::Value *
+int
 array_to_json_set (const char * description_string, int64_t nv, uint8_t * data,
 		   const char * search_string, int64_t * set, int64_t set_len,
+		   rapidjson::Value& rtn,
 		   rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator)
 {
   if (set_len < 1) {
@@ -451,9 +447,6 @@ array_to_json_set (const char * description_string, int64_t nv, uint8_t * data,
   size_t len = strlen(description_string);
   char * tmp = (char *) xmalloc ((len+1) * sizeof(char));
   strcpy(tmp, description_string);
-
-  rapidjson::Value * rtn = new rapidjson::Value();
-  rtn->SetObject();
 
   rapidjson::Value result (rapidjson::kObjectType);
   rapidjson::Value vtx_id (rapidjson::kArrayType);
@@ -587,18 +580,20 @@ array_to_json_set (const char * description_string, int64_t nv, uint8_t * data,
   result.AddMember("vertex_id", vtx_id, allocator);
   result.AddMember("value", vtx_val, allocator);
 
-  rtn->AddMember(search_string, result, allocator);
+  rtn.AddMember(search_string, result, allocator);
 
   free(tmp);
-  return rtn;
+  return 0;
 }
 
 
-rapidjson::Value *
+int
 array_to_json (const char * description_string, int64_t nv, uint8_t * data,
-	       const char * search_string, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator)
+	       const char * search_string,
+	       rapidjson::Value& val,
+	       rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator)
 {
-  return array_to_json_range (description_string, nv, data, search_string, 0, nv, allocator);
+  return array_to_json_range (description_string, nv, data, search_string, 0, nv, val, allocator);
 }
 
 
@@ -658,13 +653,16 @@ main (void)
 
   rapidjson::Document document;
   document.SetObject();
-  rapidjson::Value * result = description_string_to_json (description_string, document.GetAllocator());
-  //rapidjson::Value * result = array_to_json (description_string, nv, (uint8_t *)data, "test", document);
-  //rapidjson::Value * result = array_to_json_range (description_string, nv, (uint8_t *)data, "neighbors", 5, 10, document);
-  //rapidjson::Value * result = array_to_json_sorted_range (description_string, nv, (uint8_t *)data, "test", 0, 10, document);
+
+  rapidjson::Value result;
+  result.SetObject();
+  description_string_to_json (description_string, result, document.GetAllocator());
+  //array_to_json (description_string, nv, (uint8_t *)data, "test", result, document.GetAllocator());
+  //array_to_json_range (description_string, nv, (uint8_t *)data, "neighbors", 5, 10, result, document.GetAllocator());
+  //array_to_json_sorted_range (description_string, nv, (uint8_t *)data, "test", 0, 10, result, document.GetAllocator());
 
   //int64_t test_set[5] = {0, 5, 6, 7, 2};
-  //rapidjson::Value * result = array_to_json_set (description_string, nv, (uint8_t *)data, "neighbors", (int64_t *)&test_set, 5, document);
+  //array_to_json_set (description_string, nv, (uint8_t *)data, "neighbors", (int64_t *)&test_set, 5, result, document.GetAllocator());
 
   rapidjson::Value id;
   id.SetInt(64);
@@ -672,8 +670,8 @@ main (void)
   rapidjson::Document test;
   test.SetArray();
   //json_rpc_error(document, -32100, id);
-  //json_rpc_response(document, (rapidjson::Value&)(*result), id);
-  json_rpc_process_request(test, document);
+  json_rpc_response(document, result, id);
+  //json_rpc_process_request(test, document);
 
 
   rapidjson::StringBuffer strbuf;

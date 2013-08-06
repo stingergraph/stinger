@@ -51,26 +51,34 @@ struct JSON_RPC_get_data_array_set : JSON_RPCFunction {
 };
 
 
-rapidjson::Value *
-description_string_to_json (const char * description_string, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator);
+int
+description_string_to_json (const char * description_string,
+  rapidjson::Value& rtn,
+  rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator);
 
-rapidjson::Value *
+int
 array_to_json_range (const char * description_string, int64_t nv, uint8_t * data,
 		     const char * search_string, int64_t start, int64_t end,
+		     rapidjson::Value& rtn,
 		     rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator);
 
-rapidjson::Value *
+int
 array_to_json_sorted_range (const char * description_string, int64_t nv, uint8_t * data,
 			    const char * search_string, int64_t start, int64_t end,
+			    rapidjson::Value& rtn,
 			    rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator);
 
-rapidjson::Value *
+int
 array_to_json_set (const char * description_string, int64_t nv, uint8_t * data,
-		   const char * search_string, int64_t * set, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator);
+		   const char * search_string, int64_t * set,
+		   rapidjson::Value& rtn,
+		   rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator);
 
-rapidjson::Value *
+int
 array_to_json (const char * description_string, int64_t nv, uint8_t * data,
-	       const char * search_string, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator);
+	       const char * search_string,
+	       rapidjson::Value& val,
+	       rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator);
 
 
 #endif /* _ALG_DATA_TO_JSON_H */
