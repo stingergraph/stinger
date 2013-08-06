@@ -6,9 +6,9 @@ SET(libdep_default stinger_core stinger_utils)
 SET(libdep_web_server string mongoose kv_store)
 
 IF(APPLE)
-  SET(libdep_alg_data_to_json ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib stinger_net)
+  SET(libdep_alg_data_to_json ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib stinger_net mongoose)
 ELSE()
-  SET(libdep_alg_data_to_json ${CMAKE_BINARY_DIR}/lib/libprotobuf.so stinger_net)
+  SET(libdep_alg_data_to_json ${CMAKE_BINARY_DIR}/lib/libprotobuf.so stinger_net mongoose)
 ENDIF()
 
 SET(tgtdep_default stinger_core stinger_utils rt)
