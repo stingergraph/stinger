@@ -1,4 +1,5 @@
 #include "stinger_shared.h"
+#include "stinger_error.h"
 #include "x86_full_empty.h"
 #include "xmalloc.h"
 
@@ -62,18 +63,25 @@ shmmap (const char * name, int oflags, mode_t mode, int prot, size_t size, int m
 int
 shmunmap (const char * name, void * ptr, size_t size) 
 {
-  if(munmap(ptr, size))
+  if(munmap(ptr, size)) {
+    LOG_E_A("Unmapping %p of size %ld failed", ptr, (long)size);
     return -1;
+  }
 
+  return 0;
+}
+
+int
+shmunmap_kill(const char * name, void * ptr, size_t size) {
 #if !defined(__MTA__)
-  if(shm_unlink(name))
+  if(shm_unlink(name)) {
+    LOG_E_A("Unlinking %s", name);
     return -1;
+  }
 #else
   if(unlink(name))
     return -1;
 #endif
-
-  return 0;
 }
 
 
@@ -206,8 +214,6 @@ stinger_shared_free (struct stinger *S, const char * name, size_t sz)
     return S;
 
   int status = shmunmap(name, S, sz);
-  if (status < 0)
-    fprintf(stderr, "whooops\n");
   return NULL;
 }
 
