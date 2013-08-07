@@ -25,11 +25,15 @@ using namespace gt::stinger;
 
 #define MAX_REQUEST_SIZE (1ULL << 22ULL)
 
-int
+static int
 begin_request_handler(struct mg_connection *conn)
 {
   LOG_D("Receiving request");
   const struct mg_request_info *request_info = mg_get_request_info(conn);
+
+  if (strncmp(request_info->uri, "/data/", 6)==0) {
+    return 0;
+  }
 
   uint8_t * storage = (uint8_t *)xmalloc(MAX_REQUEST_SIZE);
 
