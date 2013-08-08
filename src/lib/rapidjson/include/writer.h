@@ -160,9 +160,9 @@ protected:
 	void WriteDouble(double d) {
 		char buffer[100];
 #if _MSC_VER
-		int ret = sprintf_s(buffer, sizeof(buffer), "%g", d);
+		int ret = sprintf_s(buffer, sizeof(buffer), "%20.15e", d);
 #else
-		int ret = snprintf(buffer, sizeof(buffer), "%g", d);
+		int ret = snprintf(buffer, sizeof(buffer), "%20.15e", d);
 #endif
 		RAPIDJSON_ASSERT(ret >= 1);
 		for (int i = 0; i < ret; i++)

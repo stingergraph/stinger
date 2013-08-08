@@ -35,7 +35,7 @@ using namespace gt::stinger;
 
 typedef struct {
   int sock;
-  char * name;
+  const char * name;
 } mon_handler_params_t;
 
 bool
@@ -85,7 +85,7 @@ mon_handler(void * args)
   Connect connect;
   connect.set_type(CLIENT_MONITOR);
   if(!send_message(params->sock, connect)) {
-    LOG_E_A("Error sending message to the server on %ld with message:\n%s", params->sock, connect.DebugString().c_str());
+    LOG_E_A("Error sending message to the server on %ld with message:\n%s", (long) params->sock, connect.DebugString().c_str());
     free(args);
     return NULL;
   }
@@ -101,7 +101,7 @@ mon_handler(void * args)
 
   ServerToMon server_to_mon;
   if(recv_message(params->sock, server_to_mon)) {
-    if(server_to_mon.action() != MON_SUCCESS) {
+    if(server_to_mon.result() != MON_SUCCESS) {
       LOG_E("Error registering with the server");
       free(args);
       return NULL;
@@ -138,7 +138,7 @@ mon_handler(void * args)
 }
 
 int64_t
-mon_connect(int port, char * host, char * name)
+mon_connect(int port, const char * host, const char * name)
 {
   struct sockaddr_in sock_addr;
   memset(&sock_addr, 0, sizeof(struct sockaddr_in));

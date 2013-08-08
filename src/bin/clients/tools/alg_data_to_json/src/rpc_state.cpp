@@ -1,5 +1,6 @@
 #include <pthread.h>
 
+#include "stinger_core/xmalloc.h"
 #include "stinger_core/x86_full_empty.h"
 #include "stinger_core/stinger_shared.h"
 #include "rpc_state.h"
@@ -59,6 +60,7 @@ JSON_RPCServerState::has_alg(const std::string & name)
 void
 JSON_RPCServerState::add_rpc_function(std::string name, JSON_RPCFunction * func)
 {
+  LOG_D_A("Adding RPC function %s", name.c_str());
   if(func)
     function_map[name] = func;
 }
@@ -119,5 +121,83 @@ JSON_RPCServerState::update_algs(stinger_t * stinger_copy, std::string new_loc, 
   algs = new_algs;
   alg_map = new_alg_map;
 
+  LOG_D("About to unlock");
   pthread_rwlock_unlock(&alg_lock);
+  LOG_D("Unlocked.");
 }
+
+bool
+JSON_RPCFunction::contains_params(rpc_params_t * p, rapidjson::Value & params)
+{
+  while(p->name) {
+    if(!params.HasMember(p->name)) {
+      if(p->optional) {
+	*((int64_t *)p->output) = p->def;
+      } else {
+	return false;
+      }
+    }
+    else {
+
+      switch(p->type) {
+	case TYPE_INT64: {
+	  if(!params[p->name].IsInt64()) {
+	    return false;
+	  }
+	  *((int64_t *)p->output) = params[p->name].GetInt64();
+	} break;
+	case TYPE_STRING: {
+	  if(!params[p->name].IsString()) {
+	    return false;
+	  }
+	  *((char **)p->output) = (char *) params[p->name].GetString();
+	} break;
+	case TYPE_DOUBLE: {
+	  if(!params[p->name].IsDouble()) {
+	    return false;
+	  }
+	  *((double *)p->output) = params[p->name].GetDouble();
+	} break;
+	case TYPE_BOOL: {
+	  if(!params[p->name].IsBool()) {
+	    return false;
+	  }
+	  *((bool *)p->output) = params[p->name].GetBool();
+	} break;
+	case TYPE_ARRAY: {
+	  if(!params[p->name].IsArray()) {
+	    return false;
+	  }
+	  params_array_t * ptr = (params_array_t *) p->output;
+	  ptr->len = params[p->name].Size();
+	  ptr->arr = (int64_t *) xmalloc(sizeof(int64_t) * ptr->len);
+	  stinger_t * S = server_state->get_stinger();
+	  for (int64_t i = 0; i < ptr->len; i++) {
+	    if (params[p->name][i].IsInt64()) {
+	      ptr->arr[i] = params[p->name][i].GetInt64();
+	    }
+	    else if (params[p->name][i].IsString()) {
+	      ptr->arr[i] = stinger_mapping_lookup(S, params[p->name][i].GetString(), params[p->name][i].GetStringLength());
+	    }
+	  }
+	} break;
+      }
+    }
+    p++;
+  }
+  return true;
+}
+
+stinger_t *
+JSON_RPCServerState::get_stinger()
+{
+  return stinger;
+}
+
+params_array_t::params_array_t():arr(NULL) {}
+
+params_array_t::~params_array_t() {
+  if (arr)
+    free (arr);
+}
+
