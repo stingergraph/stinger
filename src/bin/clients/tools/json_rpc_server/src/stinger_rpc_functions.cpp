@@ -725,8 +725,6 @@ array_to_json_set (stinger_t * S,
 
   int64_t done = 0;
 
-  LOG_D_A("set is %ld long", set_len);
-
   while (pch != NULL)
   {
     if (strcmp(pch, search_string) == 0) {
