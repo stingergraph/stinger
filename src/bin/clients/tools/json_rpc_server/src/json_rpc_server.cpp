@@ -16,7 +16,7 @@ extern "C" {
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/prettywriter.h"
 
-#include "alg_data_to_json.h"
+#include "json_rpc_server.h"
 #include "json_rpc.h"
 #include "rpc_state.h"
 #include "mon_handling.h"

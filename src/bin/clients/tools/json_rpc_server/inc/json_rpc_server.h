@@ -1,5 +1,5 @@
-#ifndef _ALG_DATA_TO_JSON_H
-#define _ALG_DATA_TO_JSON_H
+#ifndef _JSON_RPC_SERVER_H
+#define _JSON_RPC_SERVER_H
 
 #include "rpc_state.h"
 
@@ -104,4 +104,4 @@ array_to_json (stinger_t * S,
 	       rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator);
 
 
-#endif /* _ALG_DATA_TO_JSON_H */
+#endif /* _JSON_RPC_SERVER_H */
