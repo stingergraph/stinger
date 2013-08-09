@@ -90,6 +90,7 @@ main (void)
   server_state.add_rpc_function("get_data_array_sorted_range",	new JSON_RPC_get_data_array_sorted_range(&server_state));
   server_state.add_rpc_function("get_data_array", new JSON_RPC_get_data_array(&server_state));
   server_state.add_rpc_function("get_data_array_set", new JSON_RPC_get_data_array_set(&server_state));
+  server_state.add_rpc_function("get_data_array_stride", new JSON_RPC_get_data_array_stride(&server_state));
 
   mon_connect(10103, "localhost", "json_rpc");
 

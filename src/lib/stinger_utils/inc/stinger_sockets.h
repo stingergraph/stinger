@@ -6,6 +6,8 @@
 extern "C" {
 #endif
 
+#include <netdb.h>
+
 int
 connect_to_batch_server (struct hostent * server, int port);
 

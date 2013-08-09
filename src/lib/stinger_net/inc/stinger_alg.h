@@ -59,7 +59,7 @@ typedef struct {
 
 typedef struct {
   char * name;		       /* required argument */
-  char * host;
+  const char * host;
   int port;
   int is_remote;
   int64_t data_per_vertex;

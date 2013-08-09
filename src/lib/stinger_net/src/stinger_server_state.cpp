@@ -54,7 +54,7 @@ StingerServerState::get_server_state()
 int
 StingerServerState::get_port() 
 {
-  LOG_D_A("returning %ld", port);
+  LOG_D_A("returning %ld", (long) port);
   return port;
 }
 
@@ -71,11 +71,11 @@ StingerServerState::get_port()
 int
 StingerServerState::set_port(int new_port)
 {
-  LOG_D_A("called with %ld", new_port);
+  LOG_D_A("called with %ld", (long) new_port);
   if(new_port > 0 && new_port < 65535) {
     port = new_port;
   } else {
-    LOG_W_A("New port number %ld is invalid. Keeping %ld", new_port, port);
+    LOG_W_A("New port number %ld is invalid. Keeping %ld", (long) new_port, (long) port);
   }
   return port;
 }

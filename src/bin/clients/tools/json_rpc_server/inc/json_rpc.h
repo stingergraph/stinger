@@ -1,6 +1,7 @@
 #ifndef _JSON_RPC_H
 #define _JSON_RPC_H
 
+#include "rapidjson/document.h"
 
 void
 json_rpc_process_request (rapidjson::Document& document, rapidjson::Document& response);
