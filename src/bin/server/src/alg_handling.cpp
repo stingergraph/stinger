@@ -266,7 +266,7 @@ new_connection_handler(void * data)
     break;
   }
 
-  delete accepted_sock;
+  free(accepted_sock);
 }
 
 void *
