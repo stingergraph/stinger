@@ -73,7 +73,7 @@ main (const int argc, char *argv[])
   tic ();
   uint32_t errorCode = stinger_consistency_check (S, nv);
   double time_check = toc ();
-  PRINT_STAT_HEX64 ("error_code", errorCode);
+  PRINT_STAT_HEX64 ("error_code", (long unsigned) errorCode);
   PRINT_STAT_DOUBLE ("time_check", time_check);
 
   /* Updates */
@@ -121,7 +121,7 @@ main (const int argc, char *argv[])
   tic ();
   errorCode = stinger_consistency_check (S, nv);
   time_check = toc ();
-  PRINT_STAT_HEX64 ("error_code", errorCode);
+  PRINT_STAT_HEX64 ("error_code", (long unsigned) errorCode);
   PRINT_STAT_DOUBLE ("time_check", time_check);
 
   free(update_time_trace);

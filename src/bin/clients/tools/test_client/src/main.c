@@ -13,7 +13,7 @@ int main (int argc, char *argv[])
   char name[1024];
   size_t sz;
 
-  get_shared_map_info (hostname, port, &name, 1024, &sz);
+  get_shared_map_info (hostname, port, (char **) &name, 1024, &sz);
 
   printf("hostname: %s\n", hostname);
   printf("port: %d\n", port);

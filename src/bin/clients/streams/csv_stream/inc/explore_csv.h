@@ -506,7 +506,7 @@ struct ExploreCSVValue : public ExploreCSVGeneric {
   ExploreCSVValue(value_type_t type) : ExploreCSVGeneric(), value_type(type) {}
 
   virtual bool operator()(EdgeCollection & edges, char ** fields, int64_t * lengths, int64_t count, char * field) {
-    LOG_D_A("Value type %ld", value_type);
+    LOG_D_A("Value type %ld", (long) value_type);
     switch(value_type) {
       case VALUE_TYPE:
 	edges.type.push_back(atol(field));
