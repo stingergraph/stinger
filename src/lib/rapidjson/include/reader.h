@@ -26,6 +26,7 @@
 	parseError_ = msg; \
 	errorOffset_ = offset; \
 	longjmp(jmpbuf_, 1); \
+	fprintf(stderr, "%s %s %d RAPIDJSON CRAPPED OUT\n", __FILE__, __func__, __LINE__); \
 	RAPIDJSON_MULTILINEMACRO_END
 #endif
 

@@ -46,11 +46,11 @@ namespace gt {
       JSON_RPCFunction(JSON_RPCServerState * state) : server_state(state) {
       }
 
-      virtual int64_t operator()(rapidjson::Value & params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
+      virtual int64_t operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
 	LOG_W("This is a generic JSON_RPCFunction object and should not be called");
       }
 
-      bool contains_params(rpc_params_t * p, rapidjson::Value & params);
+      bool contains_params(rpc_params_t * p, rapidjson::Value * params);
 
     };
 

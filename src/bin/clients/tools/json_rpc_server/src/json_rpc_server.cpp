@@ -30,21 +30,25 @@ using namespace gt::stinger;
 static int
 begin_request_handler(struct mg_connection *conn)
 {
-  LOG_D("Receiving request");
   const struct mg_request_info *request_info = mg_get_request_info(conn);
+  LOG_D_A("Receiving request for %s", request_info->uri);
 
   if (strncmp(request_info->uri, "/data/", 6)==0) {
     return 0;
   }
 
   if (strncmp(request_info->uri, "/jsonrpc", 8)==0) {
-    uint8_t * storage = (uint8_t *)xmalloc(MAX_REQUEST_SIZE);
+    uint8_t * storage = (uint8_t *) xcalloc (1, MAX_REQUEST_SIZE);
 
     int64_t read = mg_read(conn, storage, MAX_REQUEST_SIZE);
+    if (read > MAX_REQUEST_SIZE-2) {
+      LOG_E_A("Request was too large: %ld", read);
+    }
+    storage[read] = '\0';
 
     LOG_D_A("Parsing request:\n%.*s", read, storage);
     rapidjson::Document input, output;
-    input.ParseInsitu<0>((char *)storage);
+    input.Parse<0>((char *)storage);
 
     json_rpc_process_request(input, output);
 
@@ -55,7 +59,7 @@ begin_request_handler(struct mg_connection *conn)
     const char * out_ch = out_buf.GetString();
     int out_len = out_buf.Size();
 
-    LOG_D_A("Sending back response:%d\n%s", out_len, out_ch);
+    LOG_D_A("RapidJSON parsed :%d\n%s", out_len, out_ch);
 
     int code = mg_printf(conn,
 	      "HTTP/1.1 200 OK\r\n"
@@ -80,6 +84,7 @@ int
 main (void)
 {
   JSON_RPCServerState & server_state = JSON_RPCServerState::get_server_state();
+  server_state.add_rpc_function("get_algorithms", new JSON_RPC_get_algorithms(&server_state));
   server_state.add_rpc_function("get_data_description", new JSON_RPC_get_data_description(&server_state));
   server_state.add_rpc_function("get_data_array_range", new JSON_RPC_get_data_array_range(&server_state));
   server_state.add_rpc_function("get_data_array_sorted_range",	new JSON_RPC_get_data_array_sorted_range(&server_state));

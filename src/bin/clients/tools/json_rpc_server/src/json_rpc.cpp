@@ -33,6 +33,15 @@ json_rpc_process_request (rapidjson::Document& document, rapidjson::Document& re
 
   rapidjson::Document::AllocatorType& allocator = response.GetAllocator();
 
+  rapidjson::StringBuffer out_buf;
+  rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(out_buf);
+  document.Accept(writer);
+
+  const char * out_ch = out_buf.GetString();
+  int out_len = out_buf.Size();
+
+  LOG_D_A("Sending back response:%d\n%s", out_len, out_ch);
+
   LOG_D("In the json_rpc_process_request function.");
 
   /* Is the input a valid JSON object -- should also check when it's parsed */
@@ -150,14 +159,11 @@ json_rpc_process_request (rapidjson::Document& document, rapidjson::Document& re
   LOG_D_A("Method %s exists.", method_str);
 
   /* Does the params field exist */
-  rapidjson::Value * params;
+  rapidjson::Value * params = NULL;
   if (document.HasMember("params")) {
 
     /* Params is an array */
     params = &document["params"];
-  }
-  if (!params) {
-    params = new rapidjson::Value;
   }
   
   LOG_D_A("Parameters read (if applicable).", method_str);
@@ -165,7 +171,7 @@ json_rpc_process_request (rapidjson::Document& document, rapidjson::Document& re
   server_state.get_alg_read_lock();
   /* call the function */
   response.AddMember("jsonrpc", "2.0", allocator);
-  if ((*server_state.get_rpc_function(method_str))(*params, result, allocator)) {
+  if ((*server_state.get_rpc_function(method_str))(params, result, allocator)) {
     response.AddMember("error", result, allocator);
   }
   else {

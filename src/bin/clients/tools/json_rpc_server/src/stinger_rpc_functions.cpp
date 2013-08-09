@@ -20,7 +20,36 @@ using namespace gt::stinger;
 
 
 int64_t 
-JSON_RPC_get_data_description::operator()(rapidjson::Value & params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
+JSON_RPC_get_algorithms::operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
+  return algorithms_to_json(server_state, result, allocator);
+}
+
+int
+algorithms_to_json (JSON_RPCServerState * server_state,
+  rapidjson::Value& rtn,
+  rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator)
+{
+  rapidjson::Value a(rapidjson::kArrayType);
+  rapidjson::Value v;
+  
+  size_t num_algs = server_state->get_num_algs();
+
+  for (size_t i = 0; i < num_algs; i++) {
+    StingerAlgState * alg_state = server_state->get_alg(i);
+    const char * alg_name = alg_state->name.c_str();
+
+    v.SetString(alg_name, strlen(alg_name), allocator);
+    a.PushBack(v, allocator);
+  }
+
+  rtn.AddMember("algorithms", a, allocator);
+
+  return 0;
+}
+
+
+int64_t 
+JSON_RPC_get_data_description::operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
   char * algorithm_name;
   rpc_params_t p[] = {
     {"name", TYPE_STRING, &algorithm_name, false, 0},
@@ -74,7 +103,7 @@ description_string_to_json (const char * description_string,
 
 
 int64_t 
-JSON_RPC_get_data_array_range::operator()(rapidjson::Value & params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
+JSON_RPC_get_data_array_range::operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
   char * algorithm_name;
   char * data_array_name;
   int64_t count, offset;
@@ -320,7 +349,7 @@ array_to_json_range (stinger_t * S,
 
 
 int64_t 
-JSON_RPC_get_data_array_sorted_range::operator()(rapidjson::Value & params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
+JSON_RPC_get_data_array_sorted_range::operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
   char * algorithm_name;
   char * data_array_name;
   int64_t count, offset;
@@ -653,7 +682,7 @@ array_to_json_sorted_range (stinger_t * S,
 
 
 int64_t 
-JSON_RPC_get_data_array_set::operator()(rapidjson::Value & params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
+JSON_RPC_get_data_array_set::operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
   char * algorithm_name;
   char * data_array_name;
   params_array_t set_array;
@@ -896,7 +925,7 @@ array_to_json_set (stinger_t * S,
 
 
 int64_t 
-JSON_RPC_get_data_array::operator()(rapidjson::Value & params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
+JSON_RPC_get_data_array::operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
   char * algorithm_name;
   char * data_array_name;
   bool strings;

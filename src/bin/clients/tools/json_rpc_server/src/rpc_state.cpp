@@ -127,10 +127,13 @@ JSON_RPCServerState::update_algs(stinger_t * stinger_copy, std::string new_loc, 
 }
 
 bool
-JSON_RPCFunction::contains_params(rpc_params_t * p, rapidjson::Value & params)
+JSON_RPCFunction::contains_params(rpc_params_t * p, rapidjson::Value * params)
 {
+  if (!params)
+    return true;
+
   while(p->name) {
-    if(!params.HasMember(p->name)) {
+    if(!params->HasMember(p->name)) {
       if(p->optional) {
 	*((int64_t *)p->output) = p->def;
       } else {
@@ -141,43 +144,43 @@ JSON_RPCFunction::contains_params(rpc_params_t * p, rapidjson::Value & params)
 
       switch(p->type) {
 	case TYPE_INT64: {
-	  if(!params[p->name].IsInt64()) {
+	  if(!(*params)[p->name].IsInt64()) {
 	    return false;
 	  }
-	  *((int64_t *)p->output) = params[p->name].GetInt64();
+	  *((int64_t *)p->output) = (*params)[p->name].GetInt64();
 	} break;
 	case TYPE_STRING: {
-	  if(!params[p->name].IsString()) {
+	  if(!(*params)[p->name].IsString()) {
 	    return false;
 	  }
-	  *((char **)p->output) = (char *) params[p->name].GetString();
+	  *((char **)p->output) = (char *) (*params)[p->name].GetString();
 	} break;
 	case TYPE_DOUBLE: {
-	  if(!params[p->name].IsDouble()) {
+	  if(!(*params)[p->name].IsDouble()) {
 	    return false;
 	  }
-	  *((double *)p->output) = params[p->name].GetDouble();
+	  *((double *)p->output) = (*params)[p->name].GetDouble();
 	} break;
 	case TYPE_BOOL: {
-	  if(!params[p->name].IsBool()) {
+	  if(!(*params)[p->name].IsBool()) {
 	    return false;
 	  }
-	  *((bool *)p->output) = params[p->name].GetBool();
+	  *((bool *)p->output) = (*params)[p->name].GetBool();
 	} break;
 	case TYPE_ARRAY: {
-	  if(!params[p->name].IsArray()) {
+	  if(!(*params)[p->name].IsArray()) {
 	    return false;
 	  }
 	  params_array_t * ptr = (params_array_t *) p->output;
-	  ptr->len = params[p->name].Size();
+	  ptr->len = (*params)[p->name].Size();
 	  ptr->arr = (int64_t *) xmalloc(sizeof(int64_t) * ptr->len);
 	  stinger_t * S = server_state->get_stinger();
 	  for (int64_t i = 0; i < ptr->len; i++) {
-	    if (params[p->name][i].IsInt64()) {
-	      ptr->arr[i] = params[p->name][i].GetInt64();
+	    if ((*params)[p->name][i].IsInt64()) {
+	      ptr->arr[i] = (*params)[p->name][i].GetInt64();
 	    }
-	    else if (params[p->name][i].IsString()) {
-	      ptr->arr[i] = stinger_mapping_lookup(S, params[p->name][i].GetString(), params[p->name][i].GetStringLength());
+	    else if ((*params)[p->name][i].IsString()) {
+	      ptr->arr[i] = stinger_mapping_lookup(S, (*params)[p->name][i].GetString(), (*params)[p->name][i].GetStringLength());
 	    }
 	  }
 	} break;

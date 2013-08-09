@@ -36,34 +36,39 @@ private:
 
 struct JSON_RPC_get_algorithms : JSON_RPCFunction {
   JSON_RPC_get_algorithms(JSON_RPCServerState * state) : JSON_RPCFunction(state) { }
-  virtual int64_t operator()(rapidjson::Value & params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
+  virtual int64_t operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
 };
 
 struct JSON_RPC_get_data_description : JSON_RPCFunction {
   JSON_RPC_get_data_description(JSON_RPCServerState * state) : JSON_RPCFunction(state) { }
-  virtual int64_t operator()(rapidjson::Value & params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
+  virtual int64_t operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
 };
 
 struct JSON_RPC_get_data_array : JSON_RPCFunction {
   JSON_RPC_get_data_array(JSON_RPCServerState * state) : JSON_RPCFunction(state) { }
-  virtual int64_t operator()(rapidjson::Value & params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
+  virtual int64_t operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
 };
 
 struct JSON_RPC_get_data_array_range : JSON_RPCFunction {
   JSON_RPC_get_data_array_range(JSON_RPCServerState * state) : JSON_RPCFunction(state) { }
-  virtual int64_t operator()(rapidjson::Value & params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
+  virtual int64_t operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
 };
 
 struct JSON_RPC_get_data_array_sorted_range : JSON_RPCFunction {
   JSON_RPC_get_data_array_sorted_range(JSON_RPCServerState * state) : JSON_RPCFunction(state) { }
-  virtual int64_t operator()(rapidjson::Value & params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
+  virtual int64_t operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
 };
 
 struct JSON_RPC_get_data_array_set : JSON_RPCFunction {
   JSON_RPC_get_data_array_set(JSON_RPCServerState * state) : JSON_RPCFunction(state) { }
-  virtual int64_t operator()(rapidjson::Value & params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
+  virtual int64_t operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
 };
 
+
+int
+algorithms_to_json (JSON_RPCServerState * server_state,
+  rapidjson::Value& rtn,
+  rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator);
 
 int
 description_string_to_json (const char * description_string,
