@@ -219,6 +219,7 @@ int
 can_be_read(int fd) {
   fd_set rfds;
   struct timeval tv;
+  memset(&tv, 0, sizeof(tv));
   tv.tv_sec = 0;
   tv.tv_usec = 0;
 
@@ -547,6 +548,7 @@ start_alg_handling(void *)
   int sock_handle;
 
   struct sockaddr_in sock_addr;
+  memset(&sock_addr, 0, sizeof(sock_addr));
   sock_addr.sin_family = AF_INET;
   sock_addr.sin_port   = htons((in_port_t)server_state.get_port());
 
