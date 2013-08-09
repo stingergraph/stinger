@@ -218,7 +218,9 @@ handle_mon(struct AcceptedSock * sock, StingerServerState & server_state)
 int
 can_be_read(int fd) {
   fd_set rfds;
-  struct timeval tv = {.tv_sec = 0, .tv_usec = 0};
+  struct timeval tv;
+  tv.tv_sec = 0;
+  tv.tv_usec = 0;
 
   FD_ZERO(&rfds);
   FD_SET(fd, &rfds);
@@ -544,10 +546,9 @@ start_alg_handling(void *)
   LOG_V("Opening the socket");
   int sock_handle;
 
-  struct sockaddr_in sock_addr = {
-    .sin_family = AF_INET, 
-    .sin_port   = htons((in_port_t)server_state.get_port())
-  };
+  struct sockaddr_in sock_addr;
+  sock_addr.sin_family = AF_INET;
+  sock_addr.sin_port   = htons((in_port_t)server_state.get_port());
 
   if(-1 == (sock_handle = socket(AF_INET, SOCK_STREAM, 0))) {
     LOG_F_A("Socket create failed: %s", strerror(errno));
