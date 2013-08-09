@@ -1,5 +1,6 @@
 STINGER
 =======
+[![Build Status](https://travis-ci.org/robmccoll/stinger.png?branch=master)](https://travis-ci.org/robmccoll/stinger)
 
 Learn more at [stingergraph.com](http://stingergraph.com).
 
