@@ -103,52 +103,10 @@ description_string_to_json (const char * description_string,
 
 
 int64_t 
-JSON_RPC_get_data_array_stride::operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
-  char * algorithm_name;
-  char * data_array_name;
-  int64_t stride;
-  bool strings;
-  rpc_params_t p[] = {
-    {"name", TYPE_STRING, &algorithm_name, false, 0},
-    {"data", TYPE_STRING, &data_array_name, false, 0},
-    {"stride", TYPE_INT64, &stride, false, 0},
-    {"strings", TYPE_BOOL, &strings, true, 0},
-    {NULL, TYPE_NONE, NULL, false, 0}
-  };
-
-  if (contains_params(p, params)) {
-    StingerAlgState * alg_state = server_state->get_alg(algorithm_name);
-    if (!alg_state) {
-      LOG_E ("AlgState is totally invalid");
-      return json_rpc_error(-32603, result, allocator);
-    }
-    return array_to_json_monolithic (
-	STRIDE,
-	server_state->get_stinger(),
-	result,
-	allocator,
-	alg_state->data_description.c_str(),
-	STINGER_MAX_LVERTICES,
-	(uint8_t *) alg_state->data,
-	strings,
-	data_array_name,
-	0,
-	STINGER_MAX_LVERTICES,
-	NULL,
-	NULL,
-	0,
-	stride
-    );
-  } else {
-    return json_rpc_error(-32602, result, allocator);
-  }
-}
-
-
-int64_t 
 JSON_RPC_get_data_array_range::operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
   char * algorithm_name;
   char * data_array_name;
+  int64_t stride;
   int64_t count, offset;
   bool strings;
   rpc_params_t p[] = {
@@ -157,6 +115,7 @@ JSON_RPC_get_data_array_range::operator()(rapidjson::Value * params, rapidjson::
     {"offset", TYPE_INT64, &offset, false, 0},
     {"count", TYPE_INT64, &count, false, 0},
     {"strings", TYPE_BOOL, &strings, true, 0},
+    {"stride", TYPE_INT64, &stride, true, 1},
     {NULL, TYPE_NONE, NULL, false, 0}
   };
 
@@ -176,8 +135,9 @@ JSON_RPC_get_data_array_range::operator()(rapidjson::Value * params, rapidjson::
 	(uint8_t *) alg_state->data,
 	strings,
 	data_array_name,
+	stride,
 	offset,
-	offset+count
+	offset+stride*count
     );
   } else {
     return json_rpc_error(-32602, result, allocator);
@@ -189,6 +149,7 @@ int64_t
 JSON_RPC_get_data_array_sorted_range::operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
   char * algorithm_name;
   char * data_array_name;
+  int64_t stride;
   int64_t count, offset;
   char * order;
   bool strings;
@@ -199,6 +160,7 @@ JSON_RPC_get_data_array_sorted_range::operator()(rapidjson::Value * params, rapi
     {"count", TYPE_INT64, &count, false, 0},
     {"order", TYPE_STRING, &order, true, (int64_t)"DESC"},
     {"strings", TYPE_BOOL, &strings, true, 0},
+    {"stride", TYPE_INT64, &stride, true, 1},
     {NULL, TYPE_NONE, NULL, false, 0}
   };
 
@@ -218,8 +180,9 @@ JSON_RPC_get_data_array_sorted_range::operator()(rapidjson::Value * params, rapi
 	(uint8_t *) alg_state->data,
 	strings,
 	data_array_name,
+	stride,
 	offset,
-	offset+count,
+	offset+stride*count,
 	order
     );
   } else {
@@ -258,6 +221,7 @@ JSON_RPC_get_data_array_set::operator()(rapidjson::Value * params, rapidjson::Va
 	(uint8_t *) alg_state->data,
 	strings,
 	data_array_name,
+	1,
 	0,
 	0,
 	NULL,
@@ -274,11 +238,13 @@ int64_t
 JSON_RPC_get_data_array::operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
   char * algorithm_name;
   char * data_array_name;
+  int64_t stride;
   bool strings;
   rpc_params_t p[] = {
     {"name", TYPE_STRING, &algorithm_name, false, 0},
     {"data", TYPE_STRING, &data_array_name, false, 0},
     {"strings", TYPE_BOOL, &strings, true, 0},
+    {"stride", TYPE_INT64, &stride, true, 1},
     {NULL, TYPE_NONE, NULL, false, 0}
   };
 
@@ -298,6 +264,7 @@ JSON_RPC_get_data_array::operator()(rapidjson::Value * params, rapidjson::Value 
 	(uint8_t *) alg_state->data,
 	strings,
 	data_array_name,
+	stride,
 	0,
 	STINGER_MAX_LVERTICES
     );
@@ -315,21 +282,12 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
 			    const char * description_string, int64_t nv, uint8_t * data,
 			    bool strings,
 			    const char * search_string,
+			    int64_t stride,
 			    int64_t start, int64_t end,
 			    const char * order_str,
-			    int64_t * set, int64_t set_len,
-			    int64_t stride
+			    int64_t * set, int64_t set_len
 			    )
 {
-  if (method == STRIDE) {
-    if (stride <= 0) {
-      LOG_W_A("Stride of %ld is not allowed. Fixing.", stride);
-      stride = 1;
-    }
-    if (stride >= nv) {
-      LOG_W_A("Stride of %ld only returns one value. This probably isn't what you want.", stride);
-    }
-  }
   if (method == SET) {
     if (set_len < 1) {
       LOG_E_A("Invalid set length: %ld.", set_len);
@@ -351,6 +309,13 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
   if (!S & strings) {
     LOG_E("STINGER pointer must be valid in order to process strings");
     return json_rpc_error(-32603, rtn, allocator);
+  }
+  if (stride <= 0) {
+    LOG_W_A("Stride of %ld is not allowed. Fixing.", stride);
+    stride = 1;
+  }
+  if (stride >= nv) {
+    LOG_W_A("Stride of %ld only returns one value. This probably isn't what you want.", stride);
   }
   
   bool asc;
@@ -416,7 +381,7 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
 	      int64_t vtx;
 	      if (method == SORTED)
 		vtx = idx[i];
-	      if (method == RANGE || method == STRIDE)
+	      if (method == RANGE)
 		vtx = i;
 	      if (method == SET)
 		vtx = set[i];
@@ -464,7 +429,7 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
 	      int64_t vtx;
 	      if (method == SORTED)
 		vtx = idx[i];
-	      if (method == RANGE || method == STRIDE)
+	      if (method == RANGE)
 		vtx = i;
 	      if (method == SET)
 		vtx = set[i];
@@ -512,7 +477,7 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
 	      int64_t vtx;
 	      if (method == SORTED)
 		vtx = idx[i];
-	      if (method == RANGE || method == STRIDE)
+	      if (method == RANGE)
 		vtx = i;
 	      if (method == SET)
 		vtx = set[i];
@@ -560,7 +525,7 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
 	      int64_t vtx;
 	      if (method == SORTED)
 		vtx = idx[i];
-	      if (method == RANGE || method == STRIDE)
+	      if (method == RANGE)
 		vtx = i;
 	      if (method == SET)
 		vtx = set[i];
@@ -608,7 +573,7 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
 	      int64_t vtx;
 	      if (method == SORTED)
 		vtx = idx[i];
-	      if (method == RANGE || method == STRIDE)
+	      if (method == RANGE)
 		vtx = i;
 	      if (method == SET)
 		vtx = set[i];
@@ -683,7 +648,7 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
     if (method == SORTED || method == RANGE) {
       offset.SetInt64(start);
       result.AddMember("offset", offset, allocator);
-      count.SetInt64(end-start);
+      count.SetInt64( (end-start)/stride );
       result.AddMember("count", count, allocator);
     }
     if (method == SORTED) {
