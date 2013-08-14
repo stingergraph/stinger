@@ -91,11 +91,16 @@ function List(tag) {
   this.height = (this.count + 3) * 18;
   this.name_pos_x = 80;
   this.label_pos_x = 0;
+  this.title_labels = ["Ranking", "Name", "Score", "Relative"];
+
+  this.colors = d3.scale.category20();
 
   this.x_space = function(d,i) {
-    return i * 80;
+    spacing = [0, 80, 180, 400];
+    return spacing[i];
   }
 
+  this.bar_width = this.width - this.x_space(0,3);
 
   /* create svg */
   this.svg = d3.select(tag).append("svg")
@@ -108,10 +113,10 @@ function List(tag) {
     .attr("class","labels")
     .attr("dx", ".35em")
     .attr("x", this.label_pos_x)
-    .attr("y", function(d,i) { return (i+2)*18; })
+    .attr("y", function(d,i) { return (i+2)*18 + 5; })
     .text(function(d) { return d; });
 
-  var titles = this.svg.selectAll(".titles").data(["Ranking", "Name", "Score"])
+  var titles = this.svg.selectAll(".titles").data(this.title_labels)
     .enter().append("text")
     .attr("class", "titles")
     .attr("x", this.x_space)
@@ -126,13 +131,13 @@ function List(tag) {
     text.attr("class","names")
       .transition()
       .delay(750)
-      .attr("y", function(d,i) { return (i+2)*18 });
+      .attr("y", function(d,i) { return (i+2)*18 + 5; });
 
     text.enter().append("text")
       .attr("class","names enter")
       .attr("dx", ".35em")
       .attr("x", this.x_space(0,1))
-      .attr("y", function(d,i) { return (i+2)*18; })
+      .attr("y", function(d,i) { return (i+2)*18 + 5; })
       .style("fill-opacity",1e-6)
       .text(function(d) { return d[0]; })
       .transition()
@@ -153,14 +158,14 @@ function List(tag) {
     values.attr("class","values update")
       .transition()
       .delay(750)
-      .attr("y", function(d,i) { return (i+2)*18 })
+      .attr("y", function(d,i) { return (i+2)*18 + 5; })
       .text(function(d) { return d[1] });
 
     values.enter().append("text")
       .attr("class","values enter")
       .attr("dx", ".35em")
       .attr("x", this.x_space(0,2))
-      .attr("y", function(d,i) { return (i+2)*18; })
+      .attr("y", function(d,i) { return (i+2)*18 + 5; })
       .style("fill-opacity",1e-6)
       .text(function(d) { return d[1]; })
       .transition()
@@ -173,6 +178,38 @@ function List(tag) {
       .transition()
       .duration(750)
       .style("fill-opacity",1e-6)
+      .remove();
+
+    var bars = this.svg.selectAll(".bars")
+      .data(data, function(d) { return d[0]; });
+
+    var maxval = _.max(data, function(d) { return d[1]; });
+    console.log(maxval[1]);
+    console.log(this.bar_width);
+
+    bars.attr("class", "bars update")
+      .transition()
+      .delay(750)
+      .attr("y", function(d,i) { return (i+1)*18 + 5; })
+      .attr("width", (function(max, width) { return function(d) { return max == 0 ? width : width * d[1] / max; }; })(maxval[1], this.bar_width));
+    
+    bars.enter().append("rect")
+      .attr("class", "bars enter")
+      .attr("x", this.x_space(0,3))
+      .attr("y", function(d,i) { return (i+1)*18 + 5; })
+      .attr("width", (function(max, width) { return function(d) { return max == 0 ? width : width * d[1] / max; }; })(maxval[1], this.bar_width))
+      .attr("height", 18)
+      .transition()
+      .delay(750)
+      .duration(750)
+      .style("fill", (function(colors) { return function(d) { return colors(d[0]);}; })(this.colors))
+      .style("fill-opacity",1);
+
+    bars.exit()
+      .attr("class", "bars exit")
+      .transition()
+      .duration(750)
+      .style("fill-opacity", 1e-6)
       .remove();
   }
 
