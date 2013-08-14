@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
 <link href="lib/bootstrap/css/bootstrap.min.css" rel="stylesheet"></link>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
-<script src="lib/d3/d3.v3.min.js"></script>
+<script src="lib/d3/d3.v3.js"></script>
 <script src="http://underscorejs.org/underscore-min.js"></script>
 
 <style type="text/css">
@@ -122,7 +123,7 @@ function List(tag) {
     var text = this.svg.selectAll(".names")
       .data(data, function (d) { return d[0] });
 
-    text.attr("class","names update")
+    text.attr("class","names")
       .transition()
       .delay(750)
       .attr("y", function(d,i) { return (i+2)*18 });
@@ -187,7 +188,7 @@ function Chart(tag) {
 
   this.margin = {
     top: 10,
-    right: 10,
+    right: 60,
     bottom: 20,
     left: 80
   };
@@ -240,35 +241,29 @@ function Chart(tag) {
     .attr("class", "y axis")
     .call(this.y.axis = this.yAxis);
 
-  this.data = null;
-  this.paths = null;
+  this.data = {};
+  this.paths = {};
 
-  this.update = function(data, t) {
-    /* init array as needed */
-    if(this.data == null) {
-      this.data = [];
-      this.paths = [];
+  this.colors = d3.scale.category20();
 
-      for(i = 0; i < data.length; i++) {
-	this.data[i] = [{time:0, value:0}];
-	this.paths[i] = this.graph.append("g")
-	    .append("path")
-	    .data([this.data[i]])
-	    .attr("class", "line");
-      }
-    }
-    for(i = this.data.length; i < data.length; i++) {
-      this.data[i] = [{time:0, value:0}];
-      this.paths[i] = this.graph.append("g")
-	  .append("path")
-	  .data([this.data[i]])
-	  .attr("class", "line");
-    }
-
+  this.update = function(data, names, t) {
     for(i = 0; i < data.length; i++) {
-      if(this.data[i].length > this.n)
-	this.data[i].shift();
-      this.data[i].push({time:t, value: data[i]});
+      if(!(names[i] in this.data)) {
+	this.data[names[i]] = [{time:t-1, value:0}];
+	this.paths[names[i]] = this.graph.append("g")
+	    .append("path")
+	    .data([this.data[names[i]]])
+	    .attr("class", "line")
+	    .style("stroke", this.colors(names[i]));
+      } 
+      if(this.data[names[i]][0].time < t - this.n) {
+	this.data[names[i]].shift();
+	if(this.data[names[i]].length <= 0) {
+	  delete this.data[names[i]];
+	  delete this.paths[names[i]];
+	}
+      }
+      this.data[names[i]].push({time:t, value: data[i]});
     }
 
     this.x.domain([t - this.n + 2, t]);
@@ -297,6 +292,39 @@ function Chart(tag) {
       .duration(this.duration)
       .ease("linear")
       .call(this.yAxis);
+
+    var text = this.svg.selectAll(".names").data(names, function(d) { return d; });
+
+    text.attr("class","names update")
+      .transition()
+      .delay(750)
+      .attr("y", function(d,i) { return (i+2)*18 })
+      .text(function(d) { return d; });
+
+    text.enter().append("text")
+      .attr("class","names enter")
+      .attr("dx", ".35em")
+      .attr("x", this.width + this.margin.left)
+      .attr("y", function(d,i) { return (i+2)*18; })
+      .style("fill-opacity",1e-6)
+      .text(function(d) { return d; })
+      .transition()
+      .delay(750)
+      .duration(750)
+      .style("fill-opacity",1)
+      .style("fill", 
+	(function(colors) { 
+	  return function(d) { 
+	    return colors(d);
+	  }; 
+	})(this.colors));
+
+    text.exit()
+      .attr("class", "names exit")
+      .transition()
+      .duration(750)
+      .style("fill-opacity",1e-6)
+      .remove();
   }
 };
 
@@ -306,7 +334,7 @@ chart_params = new Chart("#prchart");
 var t = 0;
 function update_page(data) {
   list_params.update(_.zip(data.result.pagerank.vertex_id, data.result.pagerank.value));
-  chart_params.update(data.result.pagerank.value, t);
+  chart_params.update(data.result.pagerank.value, data.result.pagerank.vertex_id, t);
   t += 1;
 
   $("#prdebug").append(JSON.stringify(data))
