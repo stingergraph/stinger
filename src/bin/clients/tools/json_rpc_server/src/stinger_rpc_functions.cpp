@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <functional>
 
-#define LOG_AT_W  /* warning only */
+//#define LOG_AT_W  /* warning only */
 
 extern "C" {
 #include "stinger_core/xmalloc.h"
@@ -106,9 +106,9 @@ int64_t
 JSON_RPC_get_data_array_range::operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
   char * algorithm_name;
   char * data_array_name;
-  int64_t stride;
+  int64_t stride, nsamples;
   int64_t count, offset;
-  bool strings;
+  bool strings, logscale;
   rpc_params_t p[] = {
     {"name", TYPE_STRING, &algorithm_name, false, 0},
     {"data", TYPE_STRING, &data_array_name, false, 0},
@@ -116,6 +116,8 @@ JSON_RPC_get_data_array_range::operator()(rapidjson::Value * params, rapidjson::
     {"count", TYPE_INT64, &count, false, 0},
     {"strings", TYPE_BOOL, &strings, true, 0},
     {"stride", TYPE_INT64, &stride, true, 1},
+    {"samples", TYPE_INT64, &nsamples, true, 0},
+    {"log", TYPE_BOOL, &logscale, true, 0},
     {NULL, TYPE_NONE, NULL, false, 0}
   };
 
@@ -124,6 +126,9 @@ JSON_RPC_get_data_array_range::operator()(rapidjson::Value * params, rapidjson::
     if (!alg_state) {
       LOG_E ("AlgState is totally invalid");
       return json_rpc_error(-32603, result, allocator);
+    }
+    if (nsamples) {
+      stride = (count + nsamples - 1) / nsamples;
     }
     return array_to_json_monolithic (
 	RANGE,
@@ -136,8 +141,9 @@ JSON_RPC_get_data_array_range::operator()(rapidjson::Value * params, rapidjson::
 	strings,
 	data_array_name,
 	stride,
+	logscale,
 	offset,
-	offset+stride*count
+	offset+count
     );
   } else {
     return json_rpc_error(-32602, result, allocator);
@@ -149,10 +155,10 @@ int64_t
 JSON_RPC_get_data_array_sorted_range::operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
   char * algorithm_name;
   char * data_array_name;
-  int64_t stride;
+  int64_t stride, nsamples;
   int64_t count, offset;
   char * order;
-  bool strings;
+  bool strings, logscale;
   rpc_params_t p[] = {
     {"name", TYPE_STRING, &algorithm_name, false, 0},
     {"data", TYPE_STRING, &data_array_name, false, 0},
@@ -161,6 +167,8 @@ JSON_RPC_get_data_array_sorted_range::operator()(rapidjson::Value * params, rapi
     {"order", TYPE_STRING, &order, true, (int64_t)"DESC"},
     {"strings", TYPE_BOOL, &strings, true, 0},
     {"stride", TYPE_INT64, &stride, true, 1},
+    {"samples", TYPE_INT64, &nsamples, true, 0},
+    {"log", TYPE_BOOL, &logscale, true, 0},
     {NULL, TYPE_NONE, NULL, false, 0}
   };
 
@@ -169,6 +177,9 @@ JSON_RPC_get_data_array_sorted_range::operator()(rapidjson::Value * params, rapi
     if (!alg_state) {
       LOG_E ("AlgState is totally invalid");
       return json_rpc_error(-32603, result, allocator);
+    }
+    if (nsamples) {
+      stride = (count + nsamples - 1) / nsamples;
     }
     return array_to_json_monolithic (
 	SORTED,
@@ -181,8 +192,9 @@ JSON_RPC_get_data_array_sorted_range::operator()(rapidjson::Value * params, rapi
 	strings,
 	data_array_name,
 	stride,
+	logscale,
 	offset,
-	offset+stride*count,
+	offset+count,
 	order
     );
   } else {
@@ -222,6 +234,7 @@ JSON_RPC_get_data_array_set::operator()(rapidjson::Value * params, rapidjson::Va
 	strings,
 	data_array_name,
 	1,
+	false,
 	0,
 	0,
 	NULL,
@@ -238,13 +251,15 @@ int64_t
 JSON_RPC_get_data_array::operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
   char * algorithm_name;
   char * data_array_name;
-  int64_t stride;
-  bool strings;
+  int64_t stride, nsamples;
+  bool strings, logscale;
   rpc_params_t p[] = {
     {"name", TYPE_STRING, &algorithm_name, false, 0},
     {"data", TYPE_STRING, &data_array_name, false, 0},
     {"strings", TYPE_BOOL, &strings, true, 0},
     {"stride", TYPE_INT64, &stride, true, 1},
+    {"samples", TYPE_INT64, &nsamples, true, 0},
+    {"log", TYPE_BOOL, &logscale, true, 0},
     {NULL, TYPE_NONE, NULL, false, 0}
   };
 
@@ -253,6 +268,9 @@ JSON_RPC_get_data_array::operator()(rapidjson::Value * params, rapidjson::Value 
     if (!alg_state) {
       LOG_E ("AlgState is totally invalid");
       return json_rpc_error(-32603, result, allocator);
+    }
+    if (nsamples) {
+      stride = (STINGER_MAX_LVERTICES + nsamples - 1) / nsamples;
     }
     return array_to_json_monolithic (
 	RANGE,
@@ -265,6 +283,7 @@ JSON_RPC_get_data_array::operator()(rapidjson::Value * params, rapidjson::Value 
 	strings,
 	data_array_name,
 	stride,
+	logscale,
 	0,
 	STINGER_MAX_LVERTICES
     );
@@ -283,6 +302,7 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
 			    bool strings,
 			    const char * search_string,
 			    int64_t stride,
+			    bool logscale,
 			    int64_t start, int64_t end,
 			    const char * order_str,
 			    int64_t * set, int64_t set_len
@@ -336,6 +356,8 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
     end = set_len;
   }
 
+  int64_t nsamples = (end - start + 1)/(stride);
+
   size_t off = 0;
   size_t len = strlen(description_string);
   char * tmp = (char *) xmalloc ((len+1) * sizeof(char));
@@ -377,14 +399,29 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
 	    }
 
 	    rapidjson::Value value, name, vtx_phys;
-	    for (int64_t i = start; i < end; i += stride) {
+	    double factor = pow((double)(end - start), 1.0 /(double)nsamples);
+	    for (double i = start; i < end; i += stride) {
+	      if (logscale) {
+		if (i != start) {
+		  i -= stride;
+		  int64_t prev = i;
+		  if (i != start) {
+		    i = pow (factor, log((double) (i - start)) / log (factor) + 1);
+		  } else {
+		    i = pow (factor, 1);
+		  }
+		  if (prev == ((int64_t) i))
+		    continue;
+		} 
+	      }
+
 	      int64_t vtx;
 	      if (method == SORTED)
-		vtx = idx[i];
+		vtx = idx[(int64_t)i];
 	      if (method == RANGE)
 		vtx = i;
 	      if (method == SET)
-		vtx = set[i];
+		vtx = set[(int64_t)i];
 	      value.SetDouble((double)((float *) data)[vtx]);
 	      vtx_val.PushBack(value, allocator);
 	      
@@ -425,14 +462,29 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
 	    }
 
 	    rapidjson::Value value, name, vtx_phys;
-	    for (int64_t i = start; i < end; i += stride) {
+	    double factor = pow((double)(end - start), 1.0 /(double)nsamples);
+	    for (double i = start; i < end; i += stride) {
+	      if (logscale) {
+		if (i != start) {
+		  i -= stride;
+		  int64_t prev = i;
+		  if (i != start) {
+		    i = pow (factor, log ((double) (i - start)) / log (factor) + 1);
+		  } else {
+		    i = pow (factor, 1);
+		  }
+		  if (prev == ((int64_t) i))
+		    continue;
+		} 
+	      }
+
 	      int64_t vtx;
 	      if (method == SORTED)
-		vtx = idx[i];
+		vtx = idx[(int64_t)i];
 	      if (method == RANGE)
 		vtx = i;
 	      if (method == SET)
-		vtx = set[i];
+		vtx = set[(int64_t)i];
 	      value.SetDouble((double)((double *) data)[vtx]);
 	      vtx_val.PushBack(value, allocator);
 
@@ -473,14 +525,29 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
 	    }
 
 	    rapidjson::Value value, name, vtx_phys;
-	    for (int64_t i = start; i < end; i += stride) {
+	    double factor = pow((double)(end - start), 1.0 /(double)nsamples);
+	    for (double i = start; i < end; i += stride) {
+	      if (logscale) {
+		if (i != start) {
+		  i -= stride;
+		  int64_t prev = i;
+		  if (i != start) {
+		    i = pow (factor, log ((double) (i - start)) / log (factor) + 1);
+		  } else {
+		    i = pow (factor, 1);
+		  }
+		  if (prev == ((int64_t) i))
+		    continue;
+		} 
+	      }
+
 	      int64_t vtx;
 	      if (method == SORTED)
-		vtx = idx[i];
+		vtx = idx[(int64_t)i];
 	      if (method == RANGE)
 		vtx = i;
 	      if (method == SET)
-		vtx = set[i];
+		vtx = set[(int64_t)i];
 	      value.SetInt((int)((int32_t *) data)[vtx]);
 	      vtx_val.PushBack(value, allocator);
 
@@ -521,14 +588,29 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
 	    }
 
 	    rapidjson::Value value, name, vtx_phys;
-	    for (int64_t i = start; i < end; i += stride) {
+	    double factor = pow((double)(end - start), 1.0 /(double)nsamples);
+	    for (double i = start; i < end; i += stride) {
+	      if (logscale) {
+		if (i != start) {
+		  i -= stride;
+		  int64_t prev = i;
+		  if (i != start) {
+		    i = pow (factor, log ((double) (i - start)) / log (factor) + 1);
+		  } else {
+		    i = pow (factor, 1);
+		  }
+		  if (prev == ((int64_t) i))
+		    continue;
+		} 
+	      }
+
 	      int64_t vtx;
 	      if (method == SORTED)
-		vtx = idx[i];
+		vtx = idx[(int64_t)i];
 	      if (method == RANGE)
 		vtx = i;
 	      if (method == SET)
-		vtx = set[i];
+		vtx = set[(int64_t)i];
 	      value.SetInt64((int64_t)((int64_t *) data)[vtx]);
 	      vtx_val.PushBack(value, allocator);
 
@@ -569,14 +651,29 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
 	    }
 
 	    rapidjson::Value value, name, vtx_phys;
-	    for (int64_t i = start; i < end; i += stride) {
+	    double factor = pow((double)(end - start), 1.0 /(double)nsamples);
+	    for (double i = start; i < end; i += stride) {
+	      if (logscale) {
+		if (i != start) {
+		  i -= stride;
+		  int64_t prev = i;
+		  if(i != start) {
+		    i = pow (factor, log ((double) (i - start)) / log (factor) + 1);
+		  } else {
+		    i = pow (factor, 1);
+		  }
+		  if (prev == ((int64_t) i))
+		    continue;
+		} 
+	      }
+
 	      int64_t vtx;
 	      if (method == SORTED)
-		vtx = idx[i];
+		vtx = idx[(int64_t)i];
 	      if (method == RANGE)
 		vtx = i;
 	      if (method == SET)
-		vtx = set[i];
+		vtx = set[(int64_t)i];
 	      value.SetInt((int)((uint8_t *) data)[vtx]);
 	      vtx_val.PushBack(value, allocator);
 
@@ -648,7 +745,7 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
     if (method == SORTED || method == RANGE) {
       offset.SetInt64(start);
       result.AddMember("offset", offset, allocator);
-      count.SetInt64( (end-start)/stride );
+      count.SetInt64(end-start);
       result.AddMember("count", count, allocator);
     }
     if (method == SORTED) {
