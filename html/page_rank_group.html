@@ -49,8 +49,8 @@
 <div class="navbar-inner">
 <div class="container">
 <ul class="nav">
-<li class="active"><a href="#">PageRank</a></li>
-<li><a href="#">Projects</a></li>
+<li><a href="page_rank_top.html">PageRank Top 25</a></li>
+<li class="active"><a href="page_rank_group.html">PageRank Group</a></li>
 <li><a href="#">Services</a></li>
 <li><a href="#">Downloads</a></li>
 <li><a href="#">About</a></li>
@@ -59,6 +59,22 @@
 </div>
 </div>
 </div><!-- /.navbar -->
+</div>
+
+<div class="well">
+  <form class="form-horizontal" onSubmit="update_member_list(); return false;">
+    <legend>Group Members</legend>
+    <div class="control-group">
+      <label class="control-label" for="inputMemberList">Member List</label>
+      <div class="controls">
+	<input type="text" id="inputMemberList" class="span8" value="0,1,2,3,4,5,6,7,8">
+      </div>
+      <div class="controls">
+	<br/>
+	<button type"submit" class="btn">Update</button>
+      </div>
+    </div>
+  </form>
 </div>
 
 <div class="well">
@@ -91,12 +107,12 @@ function List(tag) {
   this.height = (this.count + 3) * 18;
   this.name_pos_x = 80;
   this.label_pos_x = 0;
-  this.title_labels = ["Ranking", "Name", "Score", "Relative"];
+  this.title_labels = ["", "Name", "Score", "Relative"];
 
   this.colors = d3.scale.category20();
 
   this.x_space = function(d,i) {
-    spacing = [0, 80, 180, 400];
+    spacing = [0, 0, 100, 320, 400];
     return spacing[i];
   }
 
@@ -108,14 +124,6 @@ function List(tag) {
       .attr("height", this.height);
 
   /* create labels */
-  var labels = this.svg.selectAll(".labels").data(_.range(1,this.count+1))
-    .enter().append("text")
-    .attr("class","labels")
-    .attr("dx", ".35em")
-    .attr("x", this.label_pos_x)
-    .attr("y", function(d,i) { return (i+2)*18 + 5; })
-    .text(function(d) { return d; });
-
   var titles = this.svg.selectAll(".titles").data(this.title_labels)
     .enter().append("text")
     .attr("class", "titles")
@@ -179,6 +187,11 @@ function List(tag) {
       .duration(750)
       .style("fill-opacity",1e-6)
       .remove();
+
+    this.svg
+      .transition()
+      .delay(750)
+      .attr("height", (data.length + 2) * 18 + 15);
 
     var bars = this.svg.selectAll(".bars")
       .data(data, function(d) { return d[0]; });
@@ -367,11 +380,23 @@ function Chart(tag) {
 
 chart_params = new Chart("#prchart");
 
+var member_list = [];
+function update_member_list() {
+  console.log($("#inputMemberList")[0].value);
+  member_list = JSON.parse("[" + $("#inputMemberList")[0].value + "]");
+  console.log(member_list);
+  return false;
+}
+update_member_list();
+
 
 var t = 0;
 function update_page(data) {
-  list_params.update(_.zip(data.result.pagerank.vertex_id, data.result.pagerank.value));
-  chart_params.update(data.result.pagerank.value, data.result.pagerank.vertex_id, t);
+  zipped = _.zip(data.result.pagerank.vertex_id, data.result.pagerank.value);
+  zipped = _.sortBy(zipped, function(d) { return 1/d[1]; });
+  list_params.update(zipped);
+  unzipped = _.zip.apply(_, zipped);
+  chart_params.update(unzipped[1], unzipped[0], t);
   t += 1;
 
   $("#prdebug").append(JSON.stringify(data))
@@ -379,8 +404,8 @@ function update_page(data) {
 
 setInterval(
   function() {
-    rpc("get_data_array_sorted_range", 
-      {"name": "pagerank", "data": "pagerank", "offset": 0, "count": list_params.count, "order":"DESC"}, 
+    rpc("get_data_array_set", 
+      {"name": "pagerank", "data": "pagerank", "set": member_list, "order":"DESC"}, 
       1, 
       update_page, null);
   },
