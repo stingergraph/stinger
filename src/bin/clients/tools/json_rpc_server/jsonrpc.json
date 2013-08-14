@@ -1,0 +1,74 @@
+{
+    "jsonrpc": "2.0",
+    "method": "get_algorithms",
+    "id": 1
+}
+
+{
+    "jsonrpc": "2.0",
+    "method": "get_data_description",
+    "params": {
+        "name": "algorithm_name"
+    },
+    "id": 2
+}
+
+{
+    "jsonrpc": "2.0",
+    "method": "get_data_array",
+    "params": {
+        "name": "algorithm_name",
+        "data": "data_array_name",
+        "strings": true,
+	"stride": 1
+    },
+    "id": 3
+}
+
+{
+    "jsonrpc": "2.0",
+    "method": "get_data_array_range",
+    "params": {
+        "name": "algorithm_name",
+        "data": "data_array_name",
+        "offset": 0,
+        "count": 50,
+        "strings": true,
+	"stride": 1
+    },
+    "id": 4
+}
+
+{
+    "jsonrpc": "2.0",
+    "method": "get_data_array_sorted_range",
+    "params": {
+        "name": "algorithm_name",
+        "data": "data_array_name",
+        "offset": 0,
+        "count": 50,
+        "order": "ASC/DESC",
+        "strings": true,
+	"stride": 1
+    },
+    "id": 5
+}
+
+{
+    "jsonrpc": "2.0",
+    "method": "get_data_array_set",
+    "params": {
+        "name": "algorithm_name",
+        "data": "data_array_name",
+        "set": [
+            1,
+            2,
+            3,
+            4,
+            5
+        ],
+        "strings": true
+    },
+    "id": 6
+}
+
