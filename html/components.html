@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+<link href="lib/bootstrap/css/bootstrap.min.css" rel="stylesheet"></link>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="lib/d3/d3.v3.js"></script>
+<script src="http://underscorejs.org/underscore-min.js"></script>
+
+<style type="text/css">
+.enter {
+    fill: green;
+}
+
+.update {
+    fill: #333;
+}
+
+.exit {
+    fill: brown;
+}
+
+.labels {
+    font-weight: bold;
+}
+
+.titles {
+    font-weight: bold;
+}
+.axis path, .axis line {
+  fill: none;
+  stroke: #555555;
+  shape-rendering: crispEdges;
+}
+.line {
+  fill: none;
+  stroke: red;
+  stroke-width: 1px;
+}
+</style>
+
+</head>
+<body>
+<div class="container">
+
+<div class="masthead">
+<h3 class="muted">STINGER Demo</h3>
+<div class="navbar">
+<div class="navbar-inner">
+<div class="container">
+<ul class="nav">
+<li><a href="page_rank_top.html">PageRank Top 25</a></li>
+<li><a href="page_rank_group.html">PageRank Group</a></li>
+<li class="active"><a href="components.html">Components</a></li>
+<li><a href="#">Downloads</a></li>
+<li><a href="#">About</a></li>
+<li><a href="#">Contact</a></li>
+</ul>
+</div>
+</div>
+</div><!-- /.navbar -->
+</div>
+
+<div class="well">
+  <form class="form-horizontal" onSubmit="update_member_list(); return false;">
+    <legend>Group Members</legend>
+    <div class="control-group">
+      <label class="control-label" for="inputMemberList">Member List</label>
+      <div class="controls">
+	<input type="text" id="inputMemberList" class="span8" value="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24">
+      </div>
+      <div class="controls">
+	<br/>
+	<button type"submit" class="btn">Update</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<div class="well">
+<div id="labeladjmat"></div>
+</div>
+<div class="well">
+<div id="debug"></div>
+</div>
+</div>
+
+<script>
+
+function rpc(method, params, id, success, error) {
+  $.ajax({
+    url: "http://localhost:8088/jsonrpc",
+    type: "POST",
+    data: JSON.stringify({"jsonrpc": "2.0", "method": method, "params": params, "id": id}),
+    dataType: "json",
+    success: success,
+    error: error
+  });
+}
+
+function LabelAdjMatrix(tag) {
+  this.duration = 750;
+
+  this.margin = {
+    top: 100,
+    right: 100,
+    bottom: 60,
+    left: 100
+  };
+
+  this.width = 900 - this.margin.left - this.margin.right;
+  this.height = 900 - this.margin.top - this.margin.bottom;
+
+  this.colors = d3.scale.category20();
+
+  this.svg = d3.select(tag).append("svg")
+    .attr("width", this.width + this.margin.left + this.margin.right)
+    .attr("height", this.height + this.margin.top + this.margin.bottom);
+
+  this.update = function(labels) {
+
+    var row_titles = this.svg.selectAll(".row_titles").data(labels, function(d) { return d[0] });
+
+    row_titles.attr("class","row_titles")
+      .transition()
+      .delay(750)
+      .text(function(d) { return d[0]; })
+      .style("fill", (function(colors) { return function(d) { return colors(d[1]);}; })(this.colors))
+      .attr("y", 
+	(function(labels, height, offset) { 
+	  return function(d, i) {
+	    return offset + (i+0.5) * (height/labels);
+	  }
+	})(labels.length, this.height, this.margin.top));
+
+    row_titles.enter().append("text")
+      .attr("class", "row_titles")
+      .attr("text-anchor", "end")
+      .attr("x", this.margin.left - 5)
+      .attr("y", 
+	(function(labels, height, offset) { 
+	  return function(d, i) {
+	    return offset + (i+0.5) * (height/labels);
+	  }
+	})(labels.length, this.height, this.margin.top))
+      .text(function(d) { return d[0]; })
+      .style("fill-opacity",1e-6)
+      .transition()
+      .delay(750)
+      .duration(750)
+      .style("fill", (function(colors) { return function(d) { return colors(d[1]);}; })(this.colors))
+      .style("fill-opacity",1);
+
+    row_titles.exit()
+      .attr("class", "row_titles exit")
+      .transition()
+      .duration(750)
+      .style("fill-opacity",1e-6)
+      .remove();
+
+    var column_titles = this.svg.selectAll(".column_titles").data(labels, function(d) { return d[0] });
+
+    column_titles.attr("class","column_titles")
+      .transition()
+      .delay(750)
+      .text(function(d) { return d[0]; })
+      .style("fill", (function(colors) { return function(d) { return colors(d[1]);}; })(this.colors))
+      .attr("x", 
+	(function(labels, width, offset) { 
+	  return function(d, i) {
+	    return offset + (i+0.5) * (width/labels);
+	  }
+	})(labels.length, this.width, this.margin.left));
+
+    column_titles.enter().append("text")
+      .attr("class", "column_titles")
+      .attr("text-anchor", "end")
+      .attr("y", this.margin.top - 5)
+      .attr("x", 
+	(function(labels, width, offset) { 
+	  return function(d, i) {
+	    return offset + (i+0.5) * (width/labels);
+	  }
+	})(labels.length, this.width, this.margin.left))
+      .text(function(d) { return d[0]; })
+      .style("fill-opacity",1e-6)
+      .style("writing-mode", "tb")
+      .transition()
+      .delay(750)
+      .duration(750)
+      .style("fill", (function(colors) { return function(d) { return colors(d[1]);}; })(this.colors))
+      .style("fill-opacity",1);
+
+    column_titles.exit()
+      .attr("class", "column_titles exit")
+      .transition()
+      .duration(750)
+      .style("fill-opacity",1e-6)
+      .remove();
+
+    var matrix = []
+    for(i = 0; i < labels.length; i++) {
+      for(j = 0; j < labels.length; j++) {
+	matrix.push(
+	  {'v_x':i, 'v_y':j, 
+	  'row_v':labels[i][0], 'col_v':labels[j][0], 
+	  'label': (labels[i][1] == labels[j][1] ? labels[i][1] : -1)});
+      }
+    }
+    for(j in matrix) {
+      d = matrix[j];
+      console.log(d.v_x +","+ d.v_y);
+    }
+    console.log(matrix);
+
+    var rows = this.svg.selectAll(".rows").data(matrix, function(d) { return d.col_v + " " +  d.row_v });
+
+    rows
+      .transition()
+      .duration(200)
+      .style("fill-opacity",0.5)
+      .transition()
+      .duration(550)
+      .attr("x", 
+	(function(labels, width, offset) { 
+	  return function(d, i) {
+	    return offset + (d.v_x) * (width/labels);
+	  }
+	})(labels.length, this.width, this.margin.left))
+      .attr("y", 
+	(function(labels, height, offset) { 
+	  return function(d, i) {
+	    return offset + (d.v_y) * (height/labels);
+	  }
+	})(labels.length, this.height, this.margin.top))
+      .attr("width", this.width / labels.length)
+      .attr("height", this.height / (labels.length))
+      .style("fill", (function(colors) { return function(d) { if(d.label != -1) return colors(d.label); else return "#fff";}; })(this.colors))
+      .style("fill-opacity",1);
+    
+    rows.enter().append("rect")
+      .attr("class", "rows")
+      .attr("x", 
+	(function(labels, width, offset) { 
+	  return function(d, i) {
+	    return offset + (d.v_x) * (width/labels);
+	  }
+	})(labels.length, this.width, this.margin.left))
+      .attr("y", 
+	(function(labels, height, offset) { 
+	  return function(d, i) {
+	    return offset + (d.v_y) * (height/labels);
+	  }
+	})(labels.length, this.height, this.margin.top))
+      .attr("width", this.width / labels.length)
+      .attr("height", this.height / (labels.length))
+      .style("fill", (function(colors) { return function(d) { if(d.label != -1) return colors(d.label); else return "#fff";}; })(this.colors))
+      .style("stroke", "#fff")
+      .style("fill-opacity",1e-6)
+      .style("stroke-opacity",1e-6)
+      .transition()
+      .delay(750)
+      .duration(750)
+      .style("stroke-opacity",1)
+      .style("fill-opacity",1);
+
+    rows.exit()
+      .transition()
+      .duration(750)
+      .style("fill-opacity",1e-6)
+      .remove();
+  }
+}
+
+var label_adj_mat = new LabelAdjMatrix("#labeladjmat");
+
+
+var member_list = [];
+function update_member_list() {
+  member_list = JSON.parse("[" + $("#inputMemberList")[0].value + "]");
+  return false;
+}
+update_member_list();
+
+var t = 0;
+function update_page(data) {
+  labels = _.sortBy(_.zip(data.result.component_label.vertex_id, data.result.component_label.value), function(d) { return d[1] });
+  label_adj_mat.update(labels);
+  t += 1;
+
+  $("#debug").append(JSON.stringify(data))
+}
+
+var timing = setInterval(
+  function() {
+    rpc("get_data_array_set", 
+      {"name": "static_components", "data": "component_label", "set": member_list, "order":"DESC"}, 
+      1, 
+      update_page, null);
+  },
+  1500
+);
+
+</script>
+</body>
+</html>
