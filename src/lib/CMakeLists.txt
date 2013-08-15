@@ -51,6 +51,7 @@ FOREACH(subdir ${subs})
 
       # Glob and compile and protobuf sources
       SET(realprotosrc "")
+      SET(protohead "")
       IF(EXISTS ${CMAKE_CURRENT_LIST_DIR}/${subdir}/proto)
 	IF(IS_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/${subdir}/proto)
 	  FILE(GLOB protos ABSOLUTE ${CMAKE_CURRENT_LIST_DIR}/${subdir}/proto/*.proto)
