@@ -20,7 +20,8 @@
         "name": "algorithm_name",
         "data": "data_array_name",
         "strings": true,
-	"stride": 1
+	"stride": 1,
+	"samples": 10
     },
     "id": 3
 }
@@ -34,7 +35,8 @@
         "offset": 0,
         "count": 50,
         "strings": true,
-	"stride": 1
+	"stride": 1,
+	"samples": 10
     },
     "id": 4
 }
@@ -49,7 +51,8 @@
         "count": 50,
         "order": "ASC/DESC",
         "strings": true,
-	"stride": 1
+	"stride": 1,
+	"samples": 10
     },
     "id": 5
 }
