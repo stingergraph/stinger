@@ -133,6 +133,9 @@ namespace gt {
 	bool
 	has_alg(const std::string & name);
 
+	bool
+	delete_alg(const std::string & name);
+
 	size_t
 	get_num_mons();
 
@@ -150,6 +153,9 @@ namespace gt {
 
 	void
 	set_mon_stinger(std::string loc, int64_t size);
+
+	bool
+	delete_mon(const std::string & name);
 
 	ServerToMon *
 	get_server_to_mon_copy();

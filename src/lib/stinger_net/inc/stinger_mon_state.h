@@ -8,6 +8,7 @@
 namespace gt {
   namespace stinger {
 
+    /* NOTE: all non-processing states (error, etc.) must come after DONE */
     #define MON_STATES \
       STATE(READY_UPDATE), \
       STATE(PERFORMING_UPDATE), \

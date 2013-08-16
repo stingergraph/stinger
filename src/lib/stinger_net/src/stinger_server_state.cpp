@@ -272,6 +272,27 @@ StingerServerState::has_alg(const std::string & name)
   return rtn;
 }
 
+bool
+StingerServerState::delete_alg(const std::string & name)
+{
+  if(has_alg(name)) {
+    readfe((uint64_t *)&alg_lock);
+    for(int64_t i = 0; i < alg_tree.size(); i++) {
+      for(int64_t j = 0; j < alg_tree[i].size(); j++) {
+	if(0 == strcmp(alg_tree[i][j]->name.c_str(), name.c_str())) {
+	  alg_tree[i].erase(alg_tree[i].begin() + j);
+	}
+      }
+    }
+    delete alg_map[name];
+    alg_map.erase(name);
+    writeef((uint64_t *)&alg_lock, 1);
+    return true;
+  } else {
+    return false;
+  }
+}
+
 size_t
 StingerServerState::get_num_mons()
 {
@@ -322,6 +343,26 @@ StingerServerState::has_mon(const std::string & name)
   rtn = monitor_map.count(name) > 0;
   writeef((uint64_t *)&mon_lock, 1);
   return rtn;
+}
+
+bool
+StingerServerState::delete_mon(const std::string & name)
+{
+  if(has_mon(name)) {
+    readfe((uint64_t *)&mon_lock);
+    for(int64_t i = 0; i < monitors.size(); i++) {
+      if(0 == strcmp(monitors[i]->name.c_str(), name.c_str())) {
+	monitors.erase(monitors.begin() + i);
+	break;
+      }
+    }
+    delete monitor_map[name];
+    monitor_map.erase(name);
+    writeef((uint64_t *)&mon_lock, 1);
+    return true;
+  } else {
+    return false;
+  }
 }
 
 void
