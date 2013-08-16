@@ -79,10 +79,14 @@ handle_alg(struct AcceptedSock * sock, StingerServerState & server_state)
     }
 
     if(server_state.has_alg(alg_to_server.alg_name())) {
-      LOG_E("Algorithm already exists");
-      server_to_alg.set_result(ALG_FAILURE_NAME_EXISTS);
-      send_message(sock->handle, server_to_alg);
-      return;
+      if(server_state.get_alg(alg_to_server.alg_name())->state < ALG_STATE_DONE) {
+	LOG_E("Algorithm already exists");
+	server_to_alg.set_result(ALG_FAILURE_NAME_EXISTS);
+	send_message(sock->handle, server_to_alg);
+	return;
+      } else {
+	server_state.delete_alg(alg_to_server.alg_name());
+      }
     }
 
     /* check name and attempt to allocate space */
@@ -192,10 +196,14 @@ handle_mon(struct AcceptedSock * sock, StingerServerState & server_state)
     }
 
     if(server_state.has_mon(mon_to_server.mon_name())) {
-      LOG_E("Monitor already exists");
-      server_to_mon->set_result(MON_FAILURE_NAME_EXISTS);
-      send_message(sock->handle, *server_to_mon);
-      return;
+      if(server_state.get_mon(mon_to_server.mon_name())->state < MON_STATE_DONE) {
+	LOG_E("Monitor already exists");
+	server_to_mon->set_result(MON_FAILURE_NAME_EXISTS);
+	send_message(sock->handle, *server_to_mon);
+	return;
+      } else {
+	server_state.delete_mon(mon_to_server.mon_name());
+      }
     }
 
     LOG_D("Creating monitor structure")
@@ -299,7 +307,7 @@ process_loop_handler(void * data)
 	  }
 	}
 
-	if(cur_alg->state == ALG_STATE_READY_INIT && can_be_read(cur_alg->sock_handle)) {
+	if(cur_alg->state == ALG_STATE_READY_INIT) {
 	  AlgToServer alg_to_server;
 
 	  if(recv_message(cur_alg->sock_handle, alg_to_server) &&
@@ -343,7 +351,7 @@ process_loop_handler(void * data)
 	}
 
 	/* send init preprocessing message to each ready algorithm in this level */
-	if(cur_alg->state == ALG_STATE_READY_PRE && can_be_read(cur_alg->sock_handle)) {
+	if(cur_alg->state == ALG_STATE_READY_PRE) {
 	  AlgToServer alg_to_server;
 
 	  if(recv_message(cur_alg->sock_handle, alg_to_server) && alg_to_server.alg_name().compare(cur_alg->name) == 0 &&
@@ -411,7 +419,7 @@ process_loop_handler(void * data)
       for(size_t cur_alg_index = 0; cur_alg_index < stop_alg_index; cur_alg_index++) {
 	StingerAlgState * cur_alg = server_state.get_alg(cur_level_index, cur_alg_index);
 
-	if(cur_alg->state == ALG_STATE_READY_POST) {
+	if(cur_alg->state == ALG_STATE_READY_POST && can_be_read(cur_alg->sock_handle)) {
 	  AlgToServer alg_to_server;
 
 	  if(recv_message(cur_alg->sock_handle, alg_to_server) && alg_to_server.alg_name().compare(cur_alg->name) == 0&&
@@ -434,6 +442,9 @@ process_loop_handler(void * data)
 	    server_to_alg.set_result(ALG_FAILURE_UNEXPECTED_MESSAGE);
 	    send_message(cur_alg->sock_handle, server_to_alg);
 	  }
+	} else {
+	    LOG_E_A("Algorithm <%s> was not ready for postproces. Expected postprocess", cur_alg->name.c_str());
+	    cur_alg->state = ALG_STATE_ERROR;
 	}
       }
 
@@ -477,7 +488,7 @@ process_loop_handler(void * data)
       for(size_t cur_mon_index = 0; cur_mon_index < stop_mon_index; cur_mon_index++) {
 	StingerMonState * cur_mon = server_state.get_mon(cur_mon_index);
 
-	if(cur_mon->state == MON_STATE_READY_UPDATE) {
+	if(cur_mon->state == MON_STATE_READY_UPDATE && can_be_read(cur_mon->sock_handle)) {
 	  MonToServer mon_to_server;
 
 	  if(recv_message(cur_mon->sock_handle, mon_to_server) && (mon_to_server.mon_name().compare(cur_mon->name) == 0) &&
@@ -498,6 +509,9 @@ process_loop_handler(void * data)
 	    server_to_mon->set_result(MON_FAILURE_UNEXPECTED_MESSAGE);
 	    send_message(cur_mon->sock_handle, *server_to_mon);
 	  }
+	} else {
+	  LOG_E_A("Monitor <%s> was not ready for update. Expected begin update", cur_mon->name.c_str());
+	  cur_mon->state = MON_STATE_ERROR;
 	}
       }
 

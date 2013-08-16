@@ -8,6 +8,7 @@
 namespace gt {
   namespace stinger {
 
+    /* NOTE: all non-processing states (error, etc.) must come after DONE */
     #define ALG_STATES \
       STATE(READY_INIT), \
       STATE(PERFORMING_INIT), \
