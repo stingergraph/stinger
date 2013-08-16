@@ -110,8 +110,7 @@ main (void)
   ctx = mg_start(&callbacks, NULL, opts);
   
   /* infinite loop */
-  while(1) {
-  }
+  while (getchar() != 'q');
 
   return 0;
 }

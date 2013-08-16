@@ -161,8 +161,8 @@ int main(int argc, char *argv[])
     exit (0);
   }
 
-  printf("Press <return> to shut down the server...\n");
-  getchar();
+  printf("Press <q> to shut down the server...\n");
+  while (getchar() != 'q');
 
   printf("Shutting down the name server..."); fflush(stdout);
   int status;
