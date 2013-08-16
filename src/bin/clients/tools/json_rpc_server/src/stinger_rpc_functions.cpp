@@ -74,6 +74,8 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
   rapidjson::Value a(rapidjson::kArrayType);
   rapidjson::Value val(rapidjson::kArrayType);
   rapidjson::Value src, dst;
+  rapidjson::Value a_str(rapidjson::kArrayType);
+  rapidjson::Value src_str, dst_str;
 
   LOG_D ("BFS: Outdegree");
 
@@ -148,6 +150,18 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
       val.PushBack(src, allocator);
       val.PushBack(dst, allocator);
       a.PushBack(val, allocator);
+      if (strings) {
+	char * physID;
+	uint64_t len;
+	stinger_mapping_physid_direct(S, target, &physID, &len);
+	src_str.SetString(physID);
+	stinger_mapping_physid_direct(S, STINGER_EDGE_DEST, &physID, &len);
+	dst_str.SetString(physID);
+	val.SetArray();
+	val.PushBack(src_str, allocator);
+	val.PushBack(dst_str, allocator);
+	a_str.PushBack(val, allocator);
+      }
     }
   } STINGER_FORALL_EDGES_OF_VTX_END();
 
@@ -172,6 +186,18 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
 	  val.PushBack(src, allocator);
 	  val.PushBack(dst, allocator);
 	  a.PushBack(val, allocator);
+	  if (strings) {
+	    char * physID;
+	    uint64_t len;
+	    stinger_mapping_physid_direct(S, v, &physID, &len);
+	    src_str.SetString(physID);
+	    stinger_mapping_physid_direct(S, STINGER_EDGE_DEST, &physID, &len);
+	    dst_str.SetString(physID);
+	    val.SetArray();
+	    val.PushBack(src_str, allocator);
+	    val.PushBack(dst_str, allocator);
+	    a_str.PushBack(val, allocator);
+	  }
 	}
       } STINGER_FORALL_EDGES_OF_VTX_END();
     }
@@ -187,6 +213,8 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
   LOG_D ("BFS: Done");
 
   result.AddMember("subgraph", a, allocator);
+  if (strings)
+    result.AddMember("subgraph_str", a_str, allocator);
 
   delete Q;
   delete Qnext;
