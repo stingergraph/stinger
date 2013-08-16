@@ -419,7 +419,7 @@ process_loop_handler(void * data)
       for(size_t cur_alg_index = 0; cur_alg_index < stop_alg_index; cur_alg_index++) {
 	StingerAlgState * cur_alg = server_state.get_alg(cur_level_index, cur_alg_index);
 
-	if(cur_alg->state == ALG_STATE_READY_POST && can_be_read(cur_alg->sock_handle)) {
+	if(cur_alg->state == ALG_STATE_READY_POST) {
 	  AlgToServer alg_to_server;
 
 	  if(recv_message(cur_alg->sock_handle, alg_to_server) && alg_to_server.alg_name().compare(cur_alg->name) == 0&&
@@ -488,7 +488,7 @@ process_loop_handler(void * data)
       for(size_t cur_mon_index = 0; cur_mon_index < stop_mon_index; cur_mon_index++) {
 	StingerMonState * cur_mon = server_state.get_mon(cur_mon_index);
 
-	if(cur_mon->state == MON_STATE_READY_UPDATE && can_be_read(cur_mon->sock_handle)) {
+	if(cur_mon->state == MON_STATE_READY_UPDATE) {
 	  MonToServer mon_to_server;
 
 	  if(recv_message(cur_mon->sock_handle, mon_to_server) && (mon_to_server.mon_name().compare(cur_mon->name) == 0) &&
