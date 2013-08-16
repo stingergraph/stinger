@@ -3,6 +3,9 @@
 #include <cstring>
 #include <algorithm>
 #include <functional>
+#include <queue>
+#include <set>
+#include <vector>
 
 //#define LOG_AT_W  /* warning only */
 
@@ -17,6 +20,180 @@ extern "C" {
 #include "json_rpc.h"
 
 using namespace gt::stinger;
+
+
+int64_t 
+JSON_RPC_get_graph_stats::operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator)
+{
+  rapidjson::Value nv;
+  rapidjson::Value ne;
+
+  stinger_t * S = server_state->get_stinger();
+  if (!S) {
+    LOG_E ("STINGER pointer is invalid");
+    return json_rpc_error(-32603, result, allocator);
+  }
+
+  int64_t num_vertices = stinger_num_active_vertices (S);
+  nv.SetInt64(num_vertices);
+  int64_t num_edges = stinger_total_edges (S);
+  ne.SetInt64(num_edges);
+
+  result.AddMember("vertices", nv, allocator);
+  result.AddMember("edges", ne, allocator);
+
+  return 0;
+}
+
+
+int64_t 
+JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator)
+{
+  int64_t source;
+  int64_t target;
+  bool strings;
+  rpc_params_t p[] = {
+    {"source", TYPE_INT64, &source, false, 0},
+    {"target", TYPE_INT64, &target, false, 0},
+    {"strings", TYPE_BOOL, &strings, true, 0},
+    {NULL, TYPE_NONE, NULL, false, 0}
+  };
+
+  LOG_D ("BFS: Parameters");
+
+  if (!contains_params(p, params)) {
+    return json_rpc_error(-32602, result, allocator);
+  }
+
+  stinger_t * S = server_state->get_stinger();
+  if (!S) {
+    LOG_E ("STINGER pointer is invalid");
+    return json_rpc_error(-32603, result, allocator);
+  }
+
+  rapidjson::Value a(rapidjson::kArrayType);
+  rapidjson::Value val(rapidjson::kArrayType);
+  rapidjson::Value src, dst;
+
+  LOG_D ("BFS: Outdegree");
+
+  /* vertex has no edges -- this is easy */
+  if (stinger_outdegree (S, source) == 0 || stinger_outdegree (S, target) == 0) {
+    result.AddMember("subgraph", a, allocator);
+    return 0;
+  }
+
+  LOG_D ("BFS: Max Active");
+
+  /* breadth-first search */
+  int64_t nv = stinger_max_active_vertex (S);
+
+  int64_t * found   = (int64_t *) xmalloc (nv * sizeof(int64_t));
+  for (int64_t i = 0; i < nv; i++) {
+    found[i] = 0;
+  }
+  found[source] = 1;
+  std::vector<std::set<int64_t> > levels;
+  std::set<int64_t> frontier;
+
+  frontier.insert(source);
+  levels.push_back(frontier);
+
+  std::set<int64_t>::iterator it;
+
+  LOG_D ("BFS: Starting forward");
+
+  while (!found[target] && !levels.back().empty()) {
+    frontier.clear();
+    std::set<int64_t>& cur = levels.back();
+
+    for (it = cur.begin(); it != cur.end(); it++) {
+      int64_t v = *it;
+      LOG_D_A ("BFS: Processing %ld", (long) v);
+
+      STINGER_FORALL_EDGES_OF_VTX_BEGIN (S, v) {
+	if (!found[STINGER_EDGE_DEST]) {
+	  frontier.insert(STINGER_EDGE_DEST);
+	  found[STINGER_EDGE_DEST] = 1;
+	}
+      } STINGER_FORALL_EDGES_OF_VTX_END();
+
+    }
+
+    LOG_D ("BFS: New Level");
+    levels.push_back(frontier);
+  }
+
+  if (!found[target]) {
+    result.AddMember("subgraph", a, allocator);
+    return 0;
+  }
+
+  LOG_D ("BFS: Starting reverse");
+
+  std::queue<int64_t> * Q = new std::queue<int64_t>();
+  std::queue<int64_t> * Qnext = new std::queue<int64_t>();
+  std::queue<int64_t> * tempQ;
+
+  levels.pop_back();  /* this was the level that contained the target */
+  std::set<int64_t>& cur = levels.back();
+
+  STINGER_FORALL_EDGES_OF_VTX_BEGIN (S, target) {
+    if (cur.find(STINGER_EDGE_DEST) != cur.end()) {
+      Q->push(STINGER_EDGE_DEST); 
+      /* return edge <target, STINGER_EDGE_DEST> */
+      src.SetInt64(target);
+      dst.SetInt64(STINGER_EDGE_DEST);
+      val.SetArray();
+      val.PushBack(src, allocator);
+      val.PushBack(dst, allocator);
+      a.PushBack(val, allocator);
+    }
+  } STINGER_FORALL_EDGES_OF_VTX_END();
+
+  levels.pop_back();
+
+  LOG_D ("BFS: Target finished");
+
+  while (!levels.empty()) {
+    std::set<int64_t>& cur = levels.back();
+
+    while (!Q->empty()) {
+      int64_t v = Q->front();
+      Q->pop();
+
+      STINGER_FORALL_EDGES_OF_VTX_BEGIN (S, v) {
+	if (cur.find(STINGER_EDGE_DEST) != cur.end()) {
+	  Qnext->push(STINGER_EDGE_DEST);
+	  /* return edge <target, STINGER_EDGE_DEST> */
+	  src.SetInt64(v);
+	  dst.SetInt64(STINGER_EDGE_DEST);
+	  val.SetArray();
+	  val.PushBack(src, allocator);
+	  val.PushBack(dst, allocator);
+	  a.PushBack(val, allocator);
+	}
+      } STINGER_FORALL_EDGES_OF_VTX_END();
+    }
+
+    levels.pop_back();
+
+    tempQ = Q;
+    Q = Qnext;
+    Qnext = tempQ;
+
+  }
+
+  LOG_D ("BFS: Done");
+
+  result.AddMember("subgraph", a, allocator);
+
+  delete Q;
+  delete Qnext;
+  free (found);
+
+  return 0;
+}
 
 
 int64_t 

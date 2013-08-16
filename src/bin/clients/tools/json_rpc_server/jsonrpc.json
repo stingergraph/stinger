@@ -75,3 +75,20 @@
     "id": 6
 }
 
+{
+    "jsonrpc": "2.0",
+    "method": "get_graph_stats",
+    "id": 7
+}
+
+{
+    "jsonrpc": "2.0",
+    "method": "breadth_first_search",
+    "params": {
+        "source": 27,
+        "target": 151,
+        "strings": true
+    },
+    "id": 8
+}
+
