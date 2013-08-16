@@ -13,12 +13,13 @@ enum AlgAction {
 }
 
 enum AlgActionResult {
-  ALG_SUCCESS		      = 0;
+  ALG_SUCCESS			      = 0;
   ALG_FAILURE_GENERIC     	      = 1;
   ALG_FAILURE_NAME_EXISTS 	      = 2;
   ALG_FAILURE_NAME_INVALID	      = 3;
   ALG_FAILURE_DEPENDENCY  	      = 4;
-  ALG_FAILURE_UNEXPECTED_MESSAGE  =	5;
+  ALG_FAILURE_UNEXPECTED_MESSAGE      = 5;
+  ALG_FAILURE_TIMEOUT		      =	6;
 }
 
 message AlgToServer {
