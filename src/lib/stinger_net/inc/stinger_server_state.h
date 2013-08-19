@@ -56,7 +56,9 @@ namespace gt {
 	std::queue<StingerBatch *> batches;
 
 	int64_t alg_timeouts[ALG_STATE_MAX];
+	int64_t mon_timeouts[MON_STATE_MAX];
 	int64_t timeout_granularity;
+
 
 	int port;
 	int convert_num_to_string;
@@ -186,6 +188,9 @@ namespace gt {
 
 	int64_t
 	alg_timeout(int64_t which);
+
+	int64_t
+	mon_timeout(int64_t which);
     };
 
   } /* gt */
