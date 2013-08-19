@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+<link href="lib/bootstrap/css/bootstrap.min.css" rel="stylesheet"></link>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="lib/d3/d3.v3.js"></script>
+<script src="http://underscorejs.org/underscore-min.js"></script>
+
+<style type="text/css">
+.enter {
+    fill: green;
+}
+
+.update {
+    fill: #333;
+}
+
+.exit {
+    fill: brown;
+}
+
+.labels {
+    font-weight: bold;
+}
+
+.titles {
+    font-weight: bold;
+}
+.axis path, .axis line {
+  fill: none;
+  stroke: #555555;
+  shape-rendering: crispEdges;
+}
+.line {
+  fill: none;
+  stroke: red;
+  stroke-width: 1px;
+}
+.link {
+  stroke: black;
+  stroke-width: 2px;
+}
+</style>
+
+</head>
+<body>
+<div class="container">
+
+<div class="masthead">
+<h3 class="muted">STINGER Demo</h3>
+<div class="navbar">
+<div class="navbar-inner">
+<div class="container">
+<ul class="nav">
+<li><a href="page_rank_top.html">PageRank Top 25</a></li>
+<li><a href="page_rank_group.html">PageRank Group</a></li>
+<li><a href="components.html">Components</a></li>
+<li class="active"><a href="subgraph.html">Subgraph</a></li>
+<li><a href="http://www.stingergraph.com">About</a></li>
+</ul>
+</div>
+</div>
+</div><!-- /.navbar -->
+</div>
+
+<div class="well">
+  <form class="form-horizontal" onSubmit="update_member_list(); return false;">
+    <legend>Group Members</legend>
+    <div class="control-group">
+      <label class="control-label" for="inputMemberList">Member List</label>
+      <div class="controls">
+	<input type="text" id="inputMemberList" class="span8" value="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24">
+      </div>
+      <div class="controls">
+	<br/>
+	<button type"submit" class="btn">Update</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<div class="well">
+<div id="subgraphconn"></div>
+</div>
+<div class="well">
+<div id="debug"></div>
+</div>
+</div>
+
+<script>
+
+function rpc(method, params, id, success, error) {
+  $.ajax({
+    url: "http://localhost:8088/jsonrpc",
+    type: "POST",
+    data: JSON.stringify({"jsonrpc": "2.0", "method": method, "params": params, "id": id}),
+    dataType: "json",
+    success: success,
+    error: error
+  });
+}
+
+function SubgraphConn(tag) {
+
+  this.duration = 750;
+
+  this.margin = {
+    top: 100,
+    right: 100,
+    bottom: 60,
+    left: 100
+  };
+
+  this.width = 900 - this.margin.left - this.margin.right;
+  this.height = 900 - this.margin.top - this.margin.bottom;
+
+  this.colors = d3.scale.category20();
+
+  this.svg = d3.select(tag).append("svg")
+    .attr("width", this.width + this.margin.left + this.margin.right)
+    .attr("height", this.height + this.margin.top + this.margin.bottom);
+
+  this.update = function(graph, queue) {
+
+    var link = this.svg.selectAll(".link").data(graph.edges, function(d) {return d[0].name + " " + d[1].name;});
+
+    link.transition()
+      .duration(750)
+      .attr("x1", (function (width, offset) {return function(d) {return offset + d[0].level * width};}) (this.width / (queue.length-1), this.margin.left))
+      .attr("y1", (function (height, queue, offset) {return function(d) {return offset + (d[0].position + 0.5) * (height / (queue[d[0].level].length))};}) (this.height, queue, this.margin.top))
+      .attr("x2", (function (width, offset) {return function(d) {return offset + d[1].level * width};}) (this.width / (queue.length-1), this.margin.left))
+      .attr("y2", (function (height, queue, offset) {return function(d) {return offset + (d[1].position + 0.5) * (height / (queue[d[1].level].length))};}) (this.height, queue, this.margin.top));
+
+    console.log(queue);
+    console.log(graph);
+
+    link.enter().append("line")
+      .style("fill-opacity",1e-6)
+      .style("stroke-opacity",1e-6)
+      .transition()
+      .delay(750)
+      .duration(750)
+      .style("fill-opacity",1)
+      .style("stroke-opacity",1)
+      .attr("class", "link")
+      .attr("x1", (function (width, offset) {return function(d) {return offset + d[0].level * width};}) (this.width / (queue.length-1), this.margin.left))
+      .attr("y1", (function (height, queue, offset) {return function(d) {return offset + (d[0].position + 0.5) * (height / (queue[d[0].level].length))};}) (this.height, queue, this.margin.top))
+      .attr("x2", (function (width, offset) {return function(d) {return offset + d[1].level * width};}) (this.width / (queue.length-1), this.margin.left))
+      .attr("y2", (function (height, queue, offset) {return function(d) {return offset + (d[1].position + 0.5) * (height / (queue[d[1].level].length))};}) (this.height, queue, this.margin.top))
+      .style("stroke-width", function(d) { return 1; });
+
+    link.exit().transition()
+      .duration(750)
+      .style("fill-opacity",1e-6)
+      .style("stroke-opacity",1e-6)
+      .remove();
+
+    var node = this.svg.selectAll(".node").data(_.compact(graph.vertices), function(d) {return d.name;});
+
+    node.transition()
+      .duration(750)
+      .attr("cx", (function (width, offset) {return function(d) {return offset + d.level * width};}) (this.width / (queue.length-1), this.margin.left))
+      .attr("cy", (function (height, queue, offset) {return function(d) {return offset + (d.position + 0.5) * (height / (queue[d.level].length))};}) (this.height, queue, this.margin.top));
+
+    node.enter().append("circle")
+      .style("fill-opacity",1e-6)
+      .style("stroke-opacity",1e-6)
+      .transition()
+      .delay(750)
+      .duration(750)
+      .style("fill-opacity",1)
+      .style("stroke-opacity",1)
+      .attr("class", "node")
+      .attr("cx", (function (width, offset) {return function(d) {return offset + d.level * width};}) (this.width / (queue.length-1), this.margin.left))
+      .attr("cy", (function (height, queue, offset) {return function(d) {return offset + (d.position + 0.5) * (height / (queue[d.level].length))};}) (this.height, queue, this.margin.top))
+      .attr("r", 5)
+      .style("fill", (function(colors) {return function(d) { return colors(d.group); }}) (this.colors));
+
+    node.append("title")
+      .text(function(d) { return d.name; });
+
+    node.exit().transition().delay(750)
+      .style("fill-opacity",1e-6)
+      .style("stroke-opacity",1e-6)
+      .remove();
+
+
+  }
+}
+
+var my_subgraph = new SubgraphConn("#subgraphconn");
+
+var member_list = [];
+function update_member_list() {
+  member_list = JSON.parse("[" + $("#inputMemberList")[0].value + "]");
+  return false;
+}
+update_member_list();
+
+var t = 0;
+function update_page(data) {
+  var graph = {'edges': [], 'vertices': []};
+  _.map(data.result.subgraph, function(d) {
+    add_v = function(s,d) {
+      if (!(s in graph.vertices)) {
+	graph.vertices[s] = {'name': s, 'neighbors': [], 'level': -1, 'position': -1};
+      }
+      if (!(d in graph.vertices)) {
+	graph.vertices[d] = {'name': d, 'neighbors': [], 'level': -1, 'position': -1};
+      }
+      graph.vertices[s].neighbors.push(d);
+      graph.edges.push([graph.vertices[s], graph.vertices[d]]);
+    };
+    add_v(d[0],d[1]);
+  });
+
+  var queue = [];
+  
+  function dfs (v, depth) {
+    if (!(depth in queue)) {
+      queue[depth] = [];
+    }
+    console.log(v)
+    console.log(queue[depth])
+    if (!(_.contains(queue[depth], v))) {
+      graph.vertices[v].position = queue[depth].push(v)-1;
+      graph.vertices[v].level = depth;
+
+      console.log(v);
+      console.log(graph.vertices[v].neighbors);
+
+      for (var i = 0; i < graph.vertices[v].neighbors.length; i++) {
+	dfs (graph.vertices[v].neighbors[i], depth+1);
+      }
+    }
+    
+  }
+
+  dfs(10, 0);
+  console.log(graph);
+  my_subgraph.update(graph, queue);
+  
+  t += 1;
+
+  $("#debug").append(JSON.stringify(data))
+}
+
+var timing = setInterval(
+  function() {
+    rpc("breadth_first_search", 
+      {"source": 0, "target": 10}, 
+      1, 
+      update_page, null);
+  },
+  1500
+);
+
+</script>
+</body>
+</html>
