@@ -15,6 +15,7 @@ enum MonActionResult {
   MON_FAILURE_NAME_INVALID	      = 3;
   MON_FAILURE_DEPENDENCY  	      = 4;
   MON_FAILURE_UNEXPECTED_MESSAGE  =	5;
+  MON_FAILURE_TIMEOUT		      =	6;
 }
 
 message MonToServer {

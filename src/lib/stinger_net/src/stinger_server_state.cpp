@@ -25,6 +25,27 @@ StingerServerState::StingerServerState() : port(10101), convert_num_to_string(1)
 				    alg_lock(1), stream_lock(1), batch_lock(1), dep_lock(1), mon_lock(1)
 {
   LOG_D("Initializing server state.");
+
+
+  /* Setup timeout lengths (all in microsecs) */
+  for(int64_t i = 0; i < ALG_STATE_MAX; i++) {
+    alg_timeouts[i] = 0;
+  }
+  for(int64_t i = 0; i < MON_STATE_MAX; i++) {
+    mon_timeouts[i] = 0;
+  }
+
+  alg_timeouts[ALG_STATE_READY_INIT]        =  2000000;
+  alg_timeouts[ALG_STATE_PERFORMING_INIT]   = 10000000;
+  alg_timeouts[ALG_STATE_READY_PRE]         =  2000000;
+  alg_timeouts[ALG_STATE_PERFORMING_PRE]    =  5000000;
+  alg_timeouts[ALG_STATE_READY_POST]        =  2000000;
+  alg_timeouts[ALG_STATE_PERFORMING_POST]   =  5000000;
+
+  mon_timeouts[MON_STATE_READY_UPDATE]      =  2000000;
+  mon_timeouts[MON_STATE_PERFORMING_UPDATE] =  5000000;
+
+  timeout_granularity = 100;
 }
 
 StingerServerState::~StingerServerState()
@@ -417,4 +438,28 @@ void
 StingerServerState::set_stinger_loc(const std::string & loc)
 {
   stinger_loc = loc;
+}
+
+int64_t
+StingerServerState::time_granularity()
+{
+  return timeout_granularity;
+}
+
+int64_t
+StingerServerState::alg_timeout(int64_t which)
+{
+  if(which < ALG_STATE_MAX)
+    return alg_timeouts[which];
+  else
+    return 0;
+}
+
+int64_t
+StingerServerState::mon_timeout(int64_t which)
+{
+  if(which < MON_STATE_MAX)
+    return mon_timeouts[which];
+  else
+    return 0;
 }
