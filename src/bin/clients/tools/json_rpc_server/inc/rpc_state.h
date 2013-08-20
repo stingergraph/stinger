@@ -54,6 +54,22 @@ namespace gt {
 
     };
 
+    class JSON_RPCSession {
+      private:
+	int64_t the_lock;
+	int64_t session_id;
+	int64_t last_touched;
+
+
+      public:
+	JSON_RPCSession(int64_t sess_id) : session_id(sess_id), the_lock(0) {}
+	void lock();
+	void unlock();
+	virtual void update(StingerBatch & batch);
+	bool is_timed_out();
+	int64_t reset_timeout();
+	int64_t get_session_id();
+    };
 
     class JSON_RPCServerState {
       private:

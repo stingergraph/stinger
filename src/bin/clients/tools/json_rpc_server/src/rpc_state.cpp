@@ -1,4 +1,5 @@
 #include <pthread.h>
+#include <sys/time.h>
 
 #include "stinger_core/xmalloc.h"
 #include "stinger_core/x86_full_empty.h"
@@ -195,6 +196,41 @@ stinger_t *
 JSON_RPCServerState::get_stinger()
 {
   return stinger;
+}
+
+
+void
+JSON_RPCSession::lock()
+{
+  readfe((uint64_t *)&the_lock);
+}
+
+void
+JSON_RPCSession::unlock()
+{
+  writeef((uint64_t *)&the_lock, 0);
+}
+
+bool
+JSON_RPCSession::is_timed_out()
+{
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  return tv.tv_sec < last_touched;
+}
+
+int64_t
+JSON_RPCSession::reset_timeout()
+{
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  return last_touched = tv.tv_sec;
+}
+
+int64_t
+JSON_RPCSession::get_session_id()
+{
+  return session_id;
 }
 
 params_array_t::params_array_t():arr(NULL) {}
