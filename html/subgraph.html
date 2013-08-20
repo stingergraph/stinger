@@ -39,9 +39,19 @@
   stroke: red;
   stroke-width: 1px;
 }
+
 .link {
   stroke: black;
   stroke-width: 2px;
+}
+
+.level {
+  stroke: #bbb;
+  stroke-width: 2px;
+}
+
+.nodelabel {
+  text-shadow:1px 1px #bbb;
 }
 </style>
 
@@ -172,6 +182,38 @@ function SubgraphConn(tag, source, dest) {
     }
 
     dfs(this.dest, this.source);
+    console.log(queue);
+    console.log(graph);
+
+    var level = this.svg.selectAll(".level").data(queue, function(d,i) {return i; });
+
+    level.transition()
+      .duration(750)
+      .attr("x1", (function (width, offset) {return function(d,i) {return offset + i * width};}) (this.width / (queue.length-1), this.margin.left))
+      .attr("y1", this.margin.top)
+      .attr("x2", (function (width, offset) {return function(d,i) {return offset + i * width};}) (this.width / (queue.length-1), this.margin.left))
+      .attr("y2", this.height - this.margin.bottom);
+
+    level.enter().append("line")
+      .style("fill-opacity",1e-6)
+      .style("stroke-opacity",1e-6)
+      .transition()
+      .delay(750)
+      .duration(750)
+      .style("fill-opacity",1)
+      .style("stroke-opacity",1)
+      .attr("class", "level")
+      .attr("x1", (function (width, offset) {return function(d,i) {return offset + i * width};}) (this.width / (queue.length-1), this.margin.left))
+      .attr("y1", this.margin.top)
+      .attr("x2", (function (width, offset) {return function(d,i) {return offset + i * width};}) (this.width / (queue.length-1), this.margin.left))
+      .attr("y2", this.height - this.margin.bottom)
+      .style("stroke-width", function(d) { return 1; });
+
+    level.exit().transition()
+      .duration(750)
+      .style("fill-opacity",1e-6)
+      .style("stroke-opacity",1e-6)
+      .remove();
 
     var link = this.svg.selectAll(".link").data(graph.edges, function(d) {return d[0].name + " " + d[1].name;});
 
@@ -181,9 +223,6 @@ function SubgraphConn(tag, source, dest) {
       .attr("y1", (function (height, queue, offset) {return function(d) {return offset + (d[0].position + 0.5) * (height / (queue[d[0].level].length))};}) (this.height, queue, this.margin.top))
       .attr("x2", (function (width, offset) {return function(d) {return offset + d[1].level * width};}) (this.width / (queue.length-1), this.margin.left))
       .attr("y2", (function (height, queue, offset) {return function(d) {return offset + (d[1].position + 0.5) * (height / (queue[d[1].level].length))};}) (this.height, queue, this.margin.top));
-
-    console.log(queue);
-    console.log(graph);
 
     link.enter().append("line")
       .style("fill-opacity",1e-6)
@@ -240,8 +279,8 @@ function SubgraphConn(tag, source, dest) {
 
     nodelabel.transition()
       .duration(750)
-      .attr("cx", (function (width, offset) {return function(d) {return offset + d.level * width};}) (this.width / (queue.length-1), this.margin.left))
-      .attr("cy", (function (height, queue, offset) {return function(d) {return offset + (d.position + 0.5) * (height / (queue[d.level].length))};}) (this.height, queue, this.margin.top));
+      .attr("x", (function (width, offset) {return function(d) {return offset + d.level * width};}) (this.width / (queue.length-1), this.margin.left))
+      .attr("y", (function (height, queue, offset) {return function(d) {return offset + (d.position + 0.5) * (height / (queue[d.level].length))};}) (this.height, queue, this.margin.top - this.radius));
 
     nodelabel.enter().append("text")
       .style("fill-opacity",1e-6)
