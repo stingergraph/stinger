@@ -217,7 +217,7 @@ function SubgraphConn(tag, source, dest) {
       
     }
 
-    dfs(this.dest, this.source);
+    dfs(this.dest, 0);
     console.log(queue);
     console.log(graph);
 
