@@ -45,8 +45,12 @@
   stroke-width: 2px;
 }
 
+.levellabel {
+  color: #fff;
+}
+
 .level {
-  stroke: #bbb;
+  stroke: #fff;
   stroke-width: 2px;
 }
 
@@ -77,29 +81,48 @@
 </div>
 
 <div class="well">
-  <form class="form-horizontal" onSubmit="update_member_list(); return false;">
-    <legend>Shortest Paths</legend>
-    <div class="control-group">
-      <label class="control-label" for="inputSource">Source Vertex</label>
-      <label class="control-label" for="inputDest">Destination Vertex</label>
-      <div class="controls">
-	<input type="text" id="inputSource" class="" value="0">
-	<input type="text" id="inputDest" class="" value="0">
-      </div>
-      <div class="controls">
-	<br/>
-	<button type"submit" class="btn">Update</button>
-      </div>
-    </div>
-  </form>
+<form class="form-horizontal" onSubmit="return add_tracker();">
+<fieldset>
+
+<!-- Form Name -->
+<legend>Shortest Paths</legend>
+
+<span style=".center { float: none; margin-left: auto; margin-right: auto; } ">
+<!-- Text input-->
+<div class="control-group">
+<label class="control-label" for="inputsource">Source Vertex</label>
+<div class="controls">
+<input id="inputsource" name="inputsource" type="text" placeholder="0" class="input-xlarge">
+
+</div>
 </div>
 
-<div class="well">
-<div id="subgraphconn"></div>
+<!-- Text input-->
+<div class="control-group">
+<label class="control-label" for="inputdest">Destination Vertex</label>
+<div class="controls">
+<input id="inputdest" name="inputdest" type="text" placeholder="10" class="input-xlarge">
+
 </div>
-<div class="well">
-<div id="debug"></div>
 </div>
+
+<!-- Button -->
+<div class="control-group">
+<label class="control-label" for="add">View Paths</label>
+<div class="controls">
+<button id="add" name="add" class="btn btn-primary" type="submit">Add Tracker</button>
+</div>
+</div>
+</span>
+
+</fieldset>
+</form>
+
+</div>
+
+<div id="graphconns"></div>
+<div class="well" id="debug"></div>
+
 </div>
 
 <script>
@@ -115,6 +138,8 @@ function rpc(method, params, id, success, error) {
   });
 }
 
+var subgraphconns = [];
+
 function SubgraphConn(tag, source, dest) {
 
   this.source = source;
@@ -123,11 +148,17 @@ function SubgraphConn(tag, source, dest) {
   this.radius = 10;
 
   this.margin = {
-    top: 20,
+    top: 40,
     right: 40,
     bottom: 20,
     left: 40
   };
+
+  $(tag).append("<button aria-hidden=\"true\" class=\"close\" type=\"button\">×</button>")
+    .click((function (me) { return function() { me.close(); }; })(this));
+
+  $(tag).append("<div class=\"modal-header\"><h4>Shortest Paths from " + this.source + " to " + this.dest + "</h4></div>");
+
 
   this.width = 900 - this.margin.left - this.margin.right;
   this.height = 500 - this.margin.top - this.margin.bottom;
@@ -142,7 +173,12 @@ function SubgraphConn(tag, source, dest) {
     rpc("breadth_first_search", 
       {"source": this.source, "target": this.dest}, 
       1, 
-      this.update, null);
+      (function(me) { return function(data) { return me.update(data); }; })(this), null);
+  };
+
+  this.close = function() {
+    subgraphconns.splice(subgraphconns.indexOf(this),1);
+    $(tag).fadeOut(300, function() { $(this).remove(); });
   };
 
   this.update = function(data) {
@@ -215,6 +251,32 @@ function SubgraphConn(tag, source, dest) {
       .style("stroke-opacity",1e-6)
       .remove();
 
+    var levellabel = this.svg.selectAll(".levellabel").data(queue, function(d,i) {return i; });
+
+    levellabel.transition()
+      .duration(750)
+      .attr("x", (function (width, offset) {return function(d,i) {return offset + i * width};}) (this.width / (queue.length-1), this.margin.left));
+
+    levellabel.enter().append("text")
+      .text(function(d,i) { return i; })
+      .style("fill-opacity",1e-6)
+      .style("stroke-opacity",1e-6)
+      .attr("text-anchor", "middle")
+      .attr("class", "levellabel")
+      .attr("x", (function (width, offset) {return function(d,i) {return offset + i * width};}) (this.width / (queue.length-1), this.margin.left))
+      .attr("y", this.margin.top-3)
+      .transition()
+      .delay(750)
+      .duration(750)
+      .style("fill-opacity",1)
+      .style("stroke-opacity",1);
+
+    levellabel.exit().transition()
+      .duration(750)
+      .style("fill-opacity",1e-6)
+      .style("stroke-opacity",1e-6)
+      .remove();
+
     var link = this.svg.selectAll(".link").data(graph.edges, function(d) {return d[0].name + " " + d[1].name;});
 
     link.transition()
@@ -280,7 +342,7 @@ function SubgraphConn(tag, source, dest) {
     nodelabel.transition()
       .duration(750)
       .attr("x", (function (width, offset) {return function(d) {return offset + d.level * width};}) (this.width / (queue.length-1), this.margin.left))
-      .attr("y", (function (height, queue, offset) {return function(d) {return offset + (d.position + 0.5) * (height / (queue[d.level].length))};}) (this.height, queue, this.margin.top - this.radius));
+      .attr("y", (function (height, queue, offset) {return function(d) {return offset + (d.position + 0.5) * (height / (queue[d.level].length))};}) (this.height, queue, this.margin.top - this.radius - 3));
 
     nodelabel.enter().append("text")
       .style("fill-opacity",1e-6)
@@ -293,7 +355,7 @@ function SubgraphConn(tag, source, dest) {
       .attr("class", "nodelabel")
       .text(function(d) { return d.name; })
       .attr("x", (function (width, offset) {return function(d) {return offset + d.level * width};}) (this.width / (queue.length-1), this.margin.left))
-      .attr("y", (function (height, queue, offset) {return function(d) {return offset + (d.position + 0.5) * (height / (queue[d.level].length))};}) (this.height, queue, this.margin.top - this.radius))
+      .attr("y", (function (height, queue, offset) {return function(d) {return offset + (d.position + 0.5) * (height / (queue[d.level].length))};}) (this.height, queue, this.margin.top - this.radius - 3))
       .attr("text-anchor", "middle");
 
     nodelabel.exit().transition().delay(750)
@@ -303,23 +365,23 @@ function SubgraphConn(tag, source, dest) {
   }
 }
 
-var my_subgraph = new SubgraphConn("#subgraphconn", 0, 10);
+var next_id = 0;
 
-var t = 0;
-function update_page(data) {
-  my_subgraph.update(data);
-  
-  t += 1;
+function add_tracker() {
+  console.log("here");
+  $("#graphconns").prepend('<div class="well" id="subgraphconn' + next_id + '"></div>');
+  subgraphconns.push(new SubgraphConn("#subgraphconn" + next_id, parseInt($("#inputsource").val()), parseInt($("#inputdest").val())));
+  next_id += 1;
 
-  $("#debug").append(JSON.stringify(data))
+  return false;
 }
 
 var timing = setInterval(
   function() {
-    rpc("breadth_first_search", 
-      {"source": 0, "target": 10}, 
-      1, 
-      update_page, null);
+    for(i = 0; i < subgraphconns.length; i++) {
+      subgraphconns[i].call_remote();
+    }
+    //my_subgraph.call_remote();
   },
   1500
 );
