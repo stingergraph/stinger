@@ -9,6 +9,7 @@
 
 <style type="text/css">
 .enter {
+    stroke: green;
     fill: green;
 }
 
@@ -17,6 +18,7 @@
 }
 
 .exit {
+    stroke: brown;
     fill: brown;
 }
 
@@ -66,11 +68,13 @@
 
 <div class="well">
   <form class="form-horizontal" onSubmit="update_member_list(); return false;">
-    <legend>Group Members</legend>
+    <legend>Shortest Paths</legend>
     <div class="control-group">
-      <label class="control-label" for="inputMemberList">Member List</label>
+      <label class="control-label" for="inputSource">Source Vertex</label>
+      <label class="control-label" for="inputDest">Destination Vertex</label>
       <div class="controls">
-	<input type="text" id="inputMemberList" class="span8" value="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24">
+	<input type="text" id="inputSource" class="" value="0">
+	<input type="text" id="inputDest" class="" value="0">
       </div>
       <div class="controls">
 	<br/>
@@ -101,19 +105,22 @@ function rpc(method, params, id, success, error) {
   });
 }
 
-function SubgraphConn(tag) {
+function SubgraphConn(tag, source, dest) {
 
+  this.source = source;
+  this.dest = dest;
   this.duration = 750;
+  this.radius = 10;
 
   this.margin = {
-    top: 100,
-    right: 100,
-    bottom: 60,
-    left: 100
+    top: 20,
+    right: 40,
+    bottom: 20,
+    left: 40
   };
 
   this.width = 900 - this.margin.left - this.margin.right;
-  this.height = 900 - this.margin.top - this.margin.bottom;
+  this.height = 500 - this.margin.top - this.margin.bottom;
 
   this.colors = d3.scale.category20();
 
@@ -121,7 +128,50 @@ function SubgraphConn(tag) {
     .attr("width", this.width + this.margin.left + this.margin.right)
     .attr("height", this.height + this.margin.top + this.margin.bottom);
 
-  this.update = function(graph, queue) {
+  this.call_remote = function() {
+    rpc("breadth_first_search", 
+      {"source": this.source, "target": this.dest}, 
+      1, 
+      this.update, null);
+  };
+
+  this.update = function(data) {
+    $("#debug").append(JSON.stringify(data))
+
+    var graph = {'edges': [], 'vertices': []};
+    _.map(data.result.subgraph, function(d) {
+      add_v = function(s,d) {
+	if (!(s in graph.vertices)) {
+	  graph.vertices[s] = {'name': s, 'neighbors': [], 'level': -1, 'position': -1};
+	}
+	if (!(d in graph.vertices)) {
+	  graph.vertices[d] = {'name': d, 'neighbors': [], 'level': -1, 'position': -1};
+	}
+	graph.vertices[s].neighbors.push(d);
+	graph.edges.push([graph.vertices[s], graph.vertices[d]]);
+      };
+      add_v(d[0],d[1]);
+    });
+
+    var queue = [];
+    
+    function dfs (v, depth) {
+      if (!(depth in queue)) {
+	queue[depth] = [];
+      }
+      if (!(_.contains(queue[depth], v))) {
+	graph.vertices[v].position = queue[depth].push(v)-1;
+	graph.vertices[v].level = depth;
+
+
+	for (var i = 0; i < graph.vertices[v].neighbors.length; i++) {
+	  dfs (graph.vertices[v].neighbors[i], depth+1);
+	}
+      }
+      
+    }
+
+    dfs(this.dest, this.source);
 
     var link = this.svg.selectAll(".link").data(graph.edges, function(d) {return d[0].name + " " + d[1].name;});
 
@@ -174,8 +224,9 @@ function SubgraphConn(tag) {
       .attr("class", "node")
       .attr("cx", (function (width, offset) {return function(d) {return offset + d.level * width};}) (this.width / (queue.length-1), this.margin.left))
       .attr("cy", (function (height, queue, offset) {return function(d) {return offset + (d.position + 0.5) * (height / (queue[d.level].length))};}) (this.height, queue, this.margin.top))
-      .attr("r", 5)
+      .attr("r", this.radius)
       .style("fill", (function(colors) {return function(d) { return colors(d.group); }}) (this.colors));
+
 
     node.append("title")
       .text(function(d) { return d.name; });
@@ -185,61 +236,39 @@ function SubgraphConn(tag) {
       .style("stroke-opacity",1e-6)
       .remove();
 
+    var nodelabel = this.svg.selectAll(".nodelabel").data(_.compact(graph.vertices), function(d) {return d.name;});
 
+    nodelabel.transition()
+      .duration(750)
+      .attr("cx", (function (width, offset) {return function(d) {return offset + d.level * width};}) (this.width / (queue.length-1), this.margin.left))
+      .attr("cy", (function (height, queue, offset) {return function(d) {return offset + (d.position + 0.5) * (height / (queue[d.level].length))};}) (this.height, queue, this.margin.top));
+
+    nodelabel.enter().append("text")
+      .style("fill-opacity",1e-6)
+      .style("stroke-opacity",1e-6)
+      .transition()
+      .delay(750)
+      .duration(750)
+      .style("fill-opacity",1)
+      .style("stroke-opacity",1)
+      .attr("class", "nodelabel")
+      .text(function(d) { return d.name; })
+      .attr("x", (function (width, offset) {return function(d) {return offset + d.level * width};}) (this.width / (queue.length-1), this.margin.left))
+      .attr("y", (function (height, queue, offset) {return function(d) {return offset + (d.position + 0.5) * (height / (queue[d.level].length))};}) (this.height, queue, this.margin.top - this.radius))
+      .attr("text-anchor", "middle");
+
+    nodelabel.exit().transition().delay(750)
+      .style("fill-opacity",1e-6)
+      .style("stroke-opacity",1e-6)
+      .remove();
   }
 }
 
-var my_subgraph = new SubgraphConn("#subgraphconn");
-
-var member_list = [];
-function update_member_list() {
-  member_list = JSON.parse("[" + $("#inputMemberList")[0].value + "]");
-  return false;
-}
-update_member_list();
+var my_subgraph = new SubgraphConn("#subgraphconn", 0, 10);
 
 var t = 0;
 function update_page(data) {
-  var graph = {'edges': [], 'vertices': []};
-  _.map(data.result.subgraph, function(d) {
-    add_v = function(s,d) {
-      if (!(s in graph.vertices)) {
-	graph.vertices[s] = {'name': s, 'neighbors': [], 'level': -1, 'position': -1};
-      }
-      if (!(d in graph.vertices)) {
-	graph.vertices[d] = {'name': d, 'neighbors': [], 'level': -1, 'position': -1};
-      }
-      graph.vertices[s].neighbors.push(d);
-      graph.edges.push([graph.vertices[s], graph.vertices[d]]);
-    };
-    add_v(d[0],d[1]);
-  });
-
-  var queue = [];
-  
-  function dfs (v, depth) {
-    if (!(depth in queue)) {
-      queue[depth] = [];
-    }
-    console.log(v)
-    console.log(queue[depth])
-    if (!(_.contains(queue[depth], v))) {
-      graph.vertices[v].position = queue[depth].push(v)-1;
-      graph.vertices[v].level = depth;
-
-      console.log(v);
-      console.log(graph.vertices[v].neighbors);
-
-      for (var i = 0; i < graph.vertices[v].neighbors.length; i++) {
-	dfs (graph.vertices[v].neighbors[i], depth+1);
-      }
-    }
-    
-  }
-
-  dfs(10, 0);
-  console.log(graph);
-  my_subgraph.update(graph, queue);
+  my_subgraph.update(data);
   
   t += 1;
 
