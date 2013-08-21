@@ -60,12 +60,23 @@ namespace gt {
 	int64_t session_id;
 	int64_t last_touched;
 
-
       public:
-	JSON_RPCSession(int64_t sess_id) : session_id(sess_id), the_lock(0) {}
+	JSON_RPCSession(int64_t sess_id) : session_id(sess_id), the_lock(0) { }
 	void lock();
 	void unlock();
-	virtual void update(StingerBatch & batch);
+	virtual rpc_params_t * get_params() {
+	  LOG_W("This is a generic JSON_RPCSession object and should not be called");
+	};
+	virtual int64_t update(StingerBatch & batch,
+			    rapidjson::Value & result,
+			    rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
+	  LOG_W("This is a generic JSON_RPCSession object and should not be called");
+	}
+	virtual int64_t onRegister(JSON_RPCServerState * server_state,
+				rapidjson::Value & result,
+				rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
+	  LOG_W("This is a generic JSON_RPCSession object and should not be called");
+	}
 	bool is_timed_out();
 	int64_t reset_timeout();
 	int64_t get_session_id();
@@ -79,11 +90,13 @@ namespace gt {
 	std::vector<StingerAlgState *> * algs;                     
 	std::map<std::string, StingerAlgState *> * alg_map;        
 	std::map<std::string, JSON_RPCFunction *> function_map;
+	std::map<int64_t, JSON_RPCSession *> session_map;
 	pthread_rwlock_t alg_lock;
 
 	stinger_t * stinger;
 	std::string stinger_loc;
 	int64_t stinger_sz;
+	int64_t next_session_id;
 
       public:
 	static JSON_RPCServerState & get_server_state();
@@ -121,6 +134,12 @@ namespace gt {
 
 	stinger_t *
 	get_stinger();
+
+	int64_t
+	get_next_session();
+
+	int64_t
+	add_session(int64_t session_id, JSON_RPCSession * session);
     };
 
   }

@@ -17,7 +17,8 @@ JSON_RPCServerState::get_server_state() {
 }
 
 JSON_RPCServerState::JSON_RPCServerState() : stinger(NULL), 
-  stinger_loc(""), stinger_sz(0), algs(NULL), alg_map(NULL)
+  stinger_loc(""), stinger_sz(0), algs(NULL), alg_map(NULL),
+  next_session_id(1)
 {
   pthread_rwlock_init(&alg_lock, NULL);
 }
@@ -240,3 +241,15 @@ params_array_t::~params_array_t() {
     free (arr);
 }
 
+int64_t
+JSON_RPCServerState::get_next_session()
+{
+  return next_session_id++;
+}
+
+int64_t
+JSON_RPCServerState::add_session(int64_t session_id, JSON_RPCSession * session)
+{
+  session_map.insert( std::pair<int64_t, JSON_RPCSession *>(session_id, session) );
+  return session_id;
+}

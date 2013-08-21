@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.2/jquery.min.js"></script>
+<meta charset=utf-8 />
+<title>JS Bin</title>
+</head>
+<body>
+<script>
+var whatever = null;
+
+data = {"jsonrpc": "2.0", "method": "register", "params": {"type": "subgraph", "name": "static_components", "data": "component_label", "source": 10}, "id": 1};
+jQuery.ajax({
+url: "http://localhost:8088/jsonrpc",
+type: "POST",
+data: JSON.stringify(data),
+dataType: "json",
+success: function(data) {whatever = data; $(".register").append("<p>" + JSON.stringify(data) + "</p>");}
+});
+
+
+</script>
+<div class="register">register:&nbsp;</div>
+</body>
+</html>

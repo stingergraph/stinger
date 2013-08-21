@@ -92,3 +92,14 @@
     "id": 8
 }
 
+{
+    "jsonrpc": "2.0",
+    "method": "register",
+    "params": {
+	"type": "",
+	"name": "algorithm_name",
+	"data": "data_array_name",
+        "strings": true
+    },
+    "id": 9
+}

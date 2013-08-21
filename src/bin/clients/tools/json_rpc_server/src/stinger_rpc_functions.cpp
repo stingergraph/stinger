@@ -18,8 +18,57 @@ extern "C" {
 
 #include "json_rpc_server.h"
 #include "json_rpc.h"
+#include "session_handling.h"
 
 using namespace gt::stinger;
+
+
+int64_t 
+JSON_RPC_register::operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator)
+{
+  char * type_name;
+  rpc_params_t p[] = {
+    {"type", TYPE_STRING, &type_name, false, 0},
+    {NULL, TYPE_NONE, NULL, false, 0}
+  };
+
+  LOG_W ("Checking for parameter \"type\"");
+
+  if (!contains_params(p, params)) {
+    return json_rpc_error(-32602, result, allocator);
+  }
+
+  LOG_W ("Get a session id and push new session onto the stack");
+
+  int64_t next_session_id = server_state->get_next_session();
+  JSON_RPCSession * session = new JSON_RPC_community_subgraph(next_session_id); 
+  server_state->add_session(next_session_id, session);
+
+  rapidjson::Value session_id;
+  session_id.SetInt64(next_session_id);
+  result.AddMember("session_id", session_id, allocator);
+
+  LOG_W ("Check parameters for the session type");
+
+  rpc_params_t * session_params = session->get_params();
+  if (!contains_params(session_params, params)) {
+    return json_rpc_error(-32602, result, allocator);
+  }
+
+  LOG_W ("Call the onRegister method for the session");
+
+  session->onRegister(server_state, result, allocator);
+
+  LOG_W ("Return");
+  
+
+
+  rapidjson::Value test;
+  test.SetInt64(128);
+  result.AddMember("test", test, allocator);
+
+  return 0;
+}
 
 
 int64_t 
