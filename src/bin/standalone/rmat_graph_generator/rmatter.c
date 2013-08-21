@@ -290,7 +290,7 @@ int main(int argc, char *argv[]) {
 
   OMP("omp parallel for")
   for(uint64_t v = 0; v < nv; v++) {
-    qsort(off + v, off[v+1] - off[v], sizeof(uint64_t), i64_cmp); 
+    qsort(ind + off[v], off[v+1] - off[v], sizeof(uint64_t), i64_cmp); 
     int64_t cur = off[v];
     int64_t last = off[v];
 
