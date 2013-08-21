@@ -77,6 +77,11 @@ namespace gt {
 				rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
 	  LOG_W("This is a generic JSON_RPCSession object and should not be called");
 	}
+	virtual int64_t onRequest(JSON_RPCServerState * server_state,
+				rapidjson::Value & result,
+				rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
+	  LOG_W("This is a generic JSON_RPCSession object and should not be called");
+	}
 	bool is_timed_out();
 	int64_t reset_timeout();
 	int64_t get_session_id();

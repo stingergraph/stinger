@@ -63,9 +63,6 @@ JSON_RPC_register::operator()(rapidjson::Value * params, rapidjson::Value & resu
   
 
 
-  rapidjson::Value test;
-  test.SetInt64(128);
-  result.AddMember("test", test, allocator);
 
   return 0;
 }

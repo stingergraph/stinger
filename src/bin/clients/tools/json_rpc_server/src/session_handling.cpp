@@ -42,18 +42,38 @@ JSON_RPC_community_subgraph::onRequest(JSON_RPCServerState * server_state,
   rapidjson::Value src, dst, edge;
   std::set<std::pair<int64_t, int64_t> >::iterator it;
 
+  /* send insertions back */
   insertions.SetArray();
-/*
+
   for (it = _insertions.begin(); it != _insertions.end(); ++it) {
-    src.SetInt64(std::get<0>(*it));
-    dst.SetInt64(std::get<1>(*it));
+    src.SetInt64((*it).first);
+    dst.SetInt64((*it).second);
     edge.SetArray();
     edge.PushBack(src, allocator);
     edge.PushBack(dst, allocator);
     insertions.PushBack(edge, allocator);
   }
-*/
+
   result.AddMember("insertions", insertions, allocator);
+
+  /* send deletions back */
+
+  deletions.SetArray();
+
+  for (it = _deletions.begin(); it != _deletions.end(); ++it) {
+    src.SetInt64((*it).first);
+    dst.SetInt64((*it).second);
+    edge.SetArray();
+    edge.PushBack(src, allocator);
+    edge.PushBack(dst, allocator);
+    deletions.PushBack(edge, allocator);
+  }
+
+  result.AddMember("deletions", deletions, allocator);
+
+  /* clear both */
+  _insertions.clear();
+  _deletions.clear();
 
   return 0;
 }
