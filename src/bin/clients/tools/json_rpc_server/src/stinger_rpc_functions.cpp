@@ -41,7 +41,7 @@ JSON_RPC_register::operator()(rapidjson::Value * params, rapidjson::Value & resu
   LOG_W ("Get a session id and push new session onto the stack");
 
   int64_t next_session_id = server_state->get_next_session();
-  JSON_RPCSession * session = new JSON_RPC_community_subgraph(next_session_id); 
+  JSON_RPCSession * session = new JSON_RPC_community_subgraph(next_session_id, server_state); 
   server_state->add_session(next_session_id, session);
 
   rapidjson::Value session_id;
@@ -57,7 +57,7 @@ JSON_RPC_register::operator()(rapidjson::Value * params, rapidjson::Value & resu
 
   LOG_W ("Call the onRegister method for the session");
 
-  session->onRegister(server_state, result, allocator);
+  session->onRegister(result, allocator);
 
   LOG_W ("Return");
   

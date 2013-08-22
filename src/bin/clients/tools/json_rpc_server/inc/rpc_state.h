@@ -62,25 +62,25 @@ namespace gt {
 	int64_t the_lock;
 	int64_t session_id;
 	int64_t last_touched;
+      protected:
+	JSON_RPCServerState * server_state;
 
       public:
-	JSON_RPCSession(int64_t sess_id) : session_id(sess_id), the_lock(0) { }
+	JSON_RPCSession(int64_t sess_id, JSON_RPCServerState * state) : session_id(sess_id), the_lock(0), server_state(state) { }
 	void lock();
 	void unlock();
 	virtual rpc_params_t * get_params() {
 	  LOG_W("This is a generic JSON_RPCSession object and should not be called");
 	};
-	virtual int64_t update(StingerBatch & batch,
-			    rapidjson::Value & result,
-			    rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
+	virtual int64_t update(StingerBatch & batch) {
 	  LOG_W("This is a generic JSON_RPCSession object and should not be called");
 	}
-	virtual int64_t onRegister(JSON_RPCServerState * server_state,
+	virtual int64_t onRegister(
 				rapidjson::Value & result,
 				rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
 	  LOG_W("This is a generic JSON_RPCSession object and should not be called");
 	}
-	virtual int64_t onRequest(JSON_RPCServerState * server_state,
+	virtual int64_t onRequest(
 				rapidjson::Value & result,
 				rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
 	  LOG_W("This is a generic JSON_RPCSession object and should not be called");

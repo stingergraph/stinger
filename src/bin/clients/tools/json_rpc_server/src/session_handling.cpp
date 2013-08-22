@@ -26,15 +26,13 @@ JSON_RPC_community_subgraph::get_params()
 
 
 int64_t
-JSON_RPC_community_subgraph::update(StingerBatch & batch,
-		      rapidjson::Value & result,
-		      rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator)
+JSON_RPC_community_subgraph::update(StingerBatch & batch)
 {
 }
 
 
 int64_t
-JSON_RPC_community_subgraph::onRequest(JSON_RPCServerState * server_state,
+JSON_RPC_community_subgraph::onRequest(
 		      rapidjson::Value & result,
 		      rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator)
 {
@@ -80,7 +78,7 @@ JSON_RPC_community_subgraph::onRequest(JSON_RPCServerState * server_state,
 
 
 int64_t
-JSON_RPC_community_subgraph::onRegister(JSON_RPCServerState * server_state,
+JSON_RPC_community_subgraph::onRegister(
 		      rapidjson::Value & result,
 		      rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator)
 {

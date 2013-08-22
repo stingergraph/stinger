@@ -25,7 +25,7 @@ namespace gt {
 	std::set<std::pair<int64_t, int64_t> > _deletions;
 
       public:
-	JSON_RPC_community_subgraph(int64_t sess_id) : JSON_RPCSession(sess_id) {
+	JSON_RPC_community_subgraph(int64_t sess_id, JSON_RPCServerState * session) : JSON_RPCSession(sess_id, session) {
 	  p[0] = ((rpc_params_t) {"name", TYPE_STRING, &_algorithm_name, false, 0});
 	  p[1] = ((rpc_params_t) {"data", TYPE_STRING, &_data_array_name, false, 0});
 	  p[2] = ((rpc_params_t) {"source", TYPE_INT64, &_source, false, 0});
@@ -33,13 +33,11 @@ namespace gt {
 	  p[4] = ((rpc_params_t) {NULL, TYPE_NONE, NULL, false, 0});
 	}
 	virtual rpc_params_t * get_params();
-	virtual int64_t update(StingerBatch & batch,
+	virtual int64_t update(StingerBatch & batch);
+	virtual int64_t onRegister(
 		      rapidjson::Value & result,
 		      rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
-	virtual int64_t onRegister(JSON_RPCServerState * server_state,
-		      rapidjson::Value & result,
-		      rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
-	virtual int64_t onRequest(JSON_RPCServerState * server_state,
+	virtual int64_t onRequest(
 		      rapidjson::Value & result,
 		      rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
     };
