@@ -30,15 +30,13 @@ namespace gt {
       ~params_array_t();
     };
 
-    extern "C" {
-      typedef struct {
-	const char * name;
-	type_t type;
-	void * output;
-	bool optional;
-	int64_t def;
-      } rpc_params_t;
-    }
+    typedef struct {
+      const char * name;
+      type_t type;
+      void * output;
+      bool optional;
+      int64_t def;
+    } rpc_params_t;
 
     class JSON_RPCServerState;
 
@@ -147,6 +145,12 @@ namespace gt {
 
 	int64_t
 	add_session(int64_t session_id, JSON_RPCSession * session);
+
+	int64_t
+	destroy_session(int64_t session_id);
+
+	JSON_RPCSession *
+	get_session(int64_t sessin_id);
     };
 
   }

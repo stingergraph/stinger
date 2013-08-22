@@ -47,6 +47,11 @@ struct JSON_RPC_register: JSON_RPCFunction {
   virtual int64_t operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
 };
 
+struct JSON_RPC_request: JSON_RPCFunction {
+  JSON_RPC_request(JSON_RPCServerState * state) : JSON_RPCFunction(state) { }
+  virtual int64_t operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
+};
+
 struct JSON_RPC_get_graph_stats: JSON_RPCFunction {
   JSON_RPC_get_graph_stats(JSON_RPCServerState * state) : JSON_RPCFunction(state) { }
   virtual int64_t operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);

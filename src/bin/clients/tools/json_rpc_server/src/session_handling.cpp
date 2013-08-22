@@ -71,9 +71,10 @@ JSON_RPC_community_subgraph::onRequest(JSON_RPCServerState * server_state,
 
   result.AddMember("deletions", deletions, allocator);
 
-  /* clear both */
+  /* clear both and reset the clock */
   _insertions.clear();
   _deletions.clear();
+  reset_timeout();
 
   return 0;
 }
@@ -85,7 +86,17 @@ JSON_RPC_community_subgraph::onRegister(JSON_RPCServerState * server_state,
 		      rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator)
 {
   stinger_t * S = server_state->get_stinger();
+  if (!S) {
+    LOG_E ("STINGER pointer is invalid");
+    return json_rpc_error(-32603, result, allocator);
+  }
+
   StingerAlgState * alg_state = server_state->get_alg(_algorithm_name);
+  if (!alg_state) {
+    LOG_E ("Algorithm is not running");
+    return json_rpc_error(-32603, result, allocator);
+  }
+
   const char * description_string = alg_state -> data_description.c_str();
   int64_t nv = STINGER_MAX_LVERTICES;
   uint8_t * data = (uint8_t *) alg_state->data;

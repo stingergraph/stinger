@@ -220,9 +220,14 @@ json_rpc_error (int32_t error_code, rapidjson::Value& err_obj, rapidjson::Memory
       {
 	message.SetString("Unimplemented");
       } break;
+    
+    case (-32001):
+      {
+	message.SetString("Invalid session");
+      } break;
   }
 
-  if ( (error_code <= -32001) && (error_code >= -32099)) {
+  if ( (error_code <= -32002) && (error_code >= -32099)) {
     message.SetString("Server error");
   }
 

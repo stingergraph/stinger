@@ -7,6 +7,7 @@
 #include "rpc_state.h"
 #include "stinger_core/stinger.h"
 
+
 using namespace gt::stinger;
 
 
@@ -137,7 +138,25 @@ JSON_RPCFunction::contains_params(rpc_params_t * p, rapidjson::Value * params)
   while(p->name) {
     if(!params->HasMember(p->name)) {
       if(p->optional) {
-	*((int64_t *)p->output) = p->def;
+	switch(p->type) {
+	  case TYPE_INT64: {
+	    *((int64_t *)p->output) = p->def;
+	  } break;
+	  case TYPE_STRING: {
+	    *((char **)p->output) = (char *) p->def;
+	  } break;
+	  case TYPE_DOUBLE: {
+	    *((double *)p->output) = (double) p->def;
+	  } break;
+	  case TYPE_BOOL: {
+	    *((bool *)p->output) = (bool) p->def;
+	  } break;
+	  case TYPE_ARRAY: {
+	    params_array_t * ptr = (params_array_t *) p->output;
+	    ptr->len = 0;
+	    ptr->arr = NULL;
+	  } break;
+	}
       } else {
 	return false;
       }
@@ -252,4 +271,21 @@ JSON_RPCServerState::add_session(int64_t session_id, JSON_RPCSession * session)
 {
   session_map.insert( std::pair<int64_t, JSON_RPCSession *>(session_id, session) );
   return session_id;
+}
+
+int64_t
+JSON_RPCServerState::destroy_session(int64_t session_id)
+{
+  return session_map.erase (session_id);
+}
+
+JSON_RPCSession *
+JSON_RPCServerState::get_session(int64_t session_id)
+{
+  std::map<int64_t, JSON_RPCSession *>::iterator tmp = session_map.find(session_id);
+
+  if (tmp == session_map.end())
+    return NULL;
+  else
+    return tmp->second;
 }

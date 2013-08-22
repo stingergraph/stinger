@@ -103,3 +103,13 @@
     },
     "id": 9
 }
+
+{
+    "jsonrpc": "2.0",
+    "method": "request",
+    "params": {
+	"session_id": 46,
+        "strings": true
+    },
+    "id": 10
+}

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.2/jquery.min.js"></script>
+<meta charset=utf-8 />
+<title>JS Bin</title>
+</head>
+<body>
+<script>
+var whatever = null;
+
+data = {"jsonrpc": "2.0", "method": "request", "params": {"session_id": 2}, "id": 2};
+jQuery.ajax({
+url: "http://localhost:8088/jsonrpc",
+type: "POST",
+data: JSON.stringify(data),
+dataType: "json",
+success: function(data) {whatever = data; $(".request").append("<p>" + JSON.stringify(data) + "</p>");}
+});
+
+
+</script>
+<div class="request">request:&nbsp;</div>
+</body>
+</html>
