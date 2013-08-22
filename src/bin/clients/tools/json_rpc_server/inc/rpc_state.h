@@ -4,6 +4,7 @@
 #include <map>
 #include <string>
 #include <stdint.h>
+#include <semaphore.h>
 #include "stinger_net/stinger_alg_state.h"
 #include "stinger_core/stinger.h"
 #include "stinger_core/stinger_error.h"
@@ -91,6 +92,7 @@ namespace gt {
       private:
 	/* I'm a singleton */
 	JSON_RPCServerState();
+	~JSON_RPCServerState();
 
 	std::vector<StingerAlgState *> * algs;                     
 	std::map<std::string, StingerAlgState *> * alg_map;        
@@ -102,6 +104,10 @@ namespace gt {
 	std::string stinger_loc;
 	int64_t stinger_sz;
 	int64_t next_session_id;
+
+	int64_t waiting;
+	int64_t wait_lock;
+        sem_t sync_lock;
 
       public:
 	static JSON_RPCServerState & get_server_state();
@@ -151,6 +157,12 @@ namespace gt {
 
 	JSON_RPCSession *
 	get_session(int64_t sessin_id);
+
+        void
+	wait_for_sync();
+
+	void
+	sync();
     };
 
   }

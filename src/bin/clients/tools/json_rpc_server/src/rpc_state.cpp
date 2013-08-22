@@ -10,7 +10,6 @@
 
 using namespace gt::stinger;
 
-
 JSON_RPCServerState &
 JSON_RPCServerState::get_server_state() {
   static JSON_RPCServerState state;
@@ -19,9 +18,15 @@ JSON_RPCServerState::get_server_state() {
 
 JSON_RPCServerState::JSON_RPCServerState() : stinger(NULL), 
   stinger_loc(""), stinger_sz(0), algs(NULL), alg_map(NULL),
-  next_session_id(1)
+  next_session_id(1), waiting(0), wait_lock(0)
 {
   pthread_rwlock_init(&alg_lock, NULL);
+  sem_init(&sync_lock, 0, 0);
+}
+
+JSON_RPCServerState::~JSON_RPCServerState()
+{
+  sem_destroy(&sync_lock);
 }
 
 size_t
@@ -127,6 +132,26 @@ JSON_RPCServerState::update_algs(stinger_t * stinger_copy, std::string new_loc, 
   LOG_D("About to unlock");
   pthread_rwlock_unlock(&alg_lock);
   LOG_D("Unlocked.");
+}
+
+void
+JSON_RPCServerState::wait_for_sync()
+{
+  readfe((uint64_t *)&wait_lock);
+    waiting++;
+  writeef((uint64_t *)&wait_lock, 0);
+
+  sem_wait(&sync_lock);
+}
+
+void
+JSON_RPCServerState::sync()
+{
+  readfe((uint64_t *)&wait_lock);
+    for(int64_t i = 0; i < waiting; i++)
+      sem_post(&sync_lock);
+    waiting = 0;
+  writeef((uint64_t *)&wait_lock, 0);
 }
 
 bool

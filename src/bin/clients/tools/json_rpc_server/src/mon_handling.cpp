@@ -106,6 +106,11 @@ mon_handler(void * args)
       free(args);
       return NULL;
     } else {
+      stinger_t * new_stinger;
+      std::vector<StingerAlgState *> * algs = new std::vector<StingerAlgState *>();
+      std::map<std::string, StingerAlgState *> * alg_map = new std::map<std::string, StingerAlgState *>();
+      map_update(server_to_mon, &new_stinger, *algs, *alg_map);
+      server_state.update_algs(new_stinger, server_to_mon.stinger_loc(), server_to_mon.stinger_size(), algs, alg_map);
       while(1) {
 	LOG_V_A("%s : beginning update cycle", params->name);
 	mon_to_server.set_action(BEGIN_UPDATE);
@@ -119,6 +124,7 @@ mon_handler(void * args)
 	  std::vector<StingerAlgState *> * algs = new std::vector<StingerAlgState *>();
 	  std::map<std::string, StingerAlgState *> * alg_map = new std::map<std::string, StingerAlgState *>();
 	  map_update(server_to_mon, &new_stinger, *algs, *alg_map);
+	  server_state.sync();
 	  mon_to_server.set_action(END_UPDATE);
 	  if(!send_message(params->sock, mon_to_server)) {
 	    LOG_E("Error sending message to the server");

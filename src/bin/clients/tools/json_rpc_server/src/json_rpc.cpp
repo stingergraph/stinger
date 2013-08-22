@@ -168,6 +168,10 @@ json_rpc_process_request (rapidjson::Document& document, rapidjson::Document& re
   
   LOG_D_A("Parameters read (if applicable).", method_str);
 
+  if(params && params->HasMember("wait_for_update") && (*params)["wait_for_update"].GetBool()) {
+    server_state.wait_for_sync();
+  }
+
   server_state.get_alg_read_lock();
   /* call the function */
   response.AddMember("jsonrpc", "2.0", allocator);
