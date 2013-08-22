@@ -15,10 +15,10 @@ namespace gt {
       private:
 	rpc_params_t p[5];
 	int64_t _source;
-	uint8_t * _data;
 	char * _algorithm_name;
 	char * _data_array_name;
 	bool _strings;
+	AlgDataArray * _data;
 	std::set<int64_t> _vertices;
 
 	std::set<std::pair<int64_t, int64_t> > _insertions;

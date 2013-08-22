@@ -28,6 +28,75 @@ JSON_RPC_community_subgraph::get_params()
 int64_t
 JSON_RPC_community_subgraph::update(StingerBatch & batch)
 {
+  if (0 == batch.insertions_size () && 0 == batch.deletions_size ()) { 
+    return 0;
+  }
+
+  stinger_t * S = server_state->get_stinger();
+  if (!S) {
+    LOG_E ("STINGER pointer is invalid");
+    return -1;
+  }
+
+  for(size_t d = 0; d < batch.deletions_size(); d++) {
+    const EdgeDeletion & del = batch.deletions(d);
+
+    int64_t src = del.source();
+    int64_t dst = del.destination();
+
+    /* both source and destination vertices were previously tracked,
+       i.e. the edge that was deleted was previously on the screen */
+    if ( _vertices.find(src) != _vertices.end() && _vertices.find(dst) != _vertices.end() ) {
+      _deletions.insert(std::make_pair(src, dst));
+    }
+  }
+
+  /* edge insertions whose endpoints are within the same community get sent
+     to the client on the next request */
+  for (size_t i = 0; i < batch.insertions_size(); i++) {
+    const EdgeInsertion & in = batch.insertions(i);
+    
+    int64_t src = in.source();
+    int64_t dst = in.destination();
+
+    if (_data->equal(src,dst)) {
+      _insertions.insert(std::make_pair(src, dst));
+    }
+  }
+
+  std::set<int64_t>::iterator it;
+
+  for (it = _vertices.begin(); it != _vertices.end(); ++it) {
+    if (!(_data->equal(_source, *it))) {
+
+      STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, *it) {
+	/* edge used to be in the community */
+	if ( _vertices.find(STINGER_EDGE_DEST) != _vertices.end() ) {
+	  _deletions.insert(std::make_pair(*it, STINGER_EDGE_DEST));
+	}
+      } STINGER_FORALL_EDGES_OF_VTX_END();
+
+      _vertices.erase(*it);  /* remove it from the vertex set */
+
+    }
+  }
+
+  /* Add all vertices with the same label to the vertices[] set */
+  for (int64_t i = 0; i < _data->length(); i++) {
+    /* _source and i must be in the same community, and i must not be in the _vertices set */
+    if (_data->equal(_source, i) && _vertices.find(i) == _vertices.end()) {
+      _vertices.insert(i);
+
+      STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, i) {
+	/* if the edge is in the community */
+	if (_data->equal(i, STINGER_EDGE_DEST)) {
+	  _insertions.insert(std::make_pair(i, STINGER_EDGE_DEST));
+	}
+      } STINGER_FORALL_EDGES_OF_VTX_END();
+    }
+  }
+
+  return 0;
 }
 
 
@@ -100,7 +169,8 @@ JSON_RPC_community_subgraph::onRegister(
   uint8_t * data = (uint8_t *) alg_state->data;
   const char * search_string = _data_array_name;
 
-  AlgDataArray * df = description_string_to_pointer (description_string, data, nv, search_string);
+  _data = description_string_to_pointer (description_string, data, nv, search_string);
+  AlgDataArray * df = _data;
 
   if (df->type() != 'l') {
     return json_rpc_error(-32602, result, allocator);
