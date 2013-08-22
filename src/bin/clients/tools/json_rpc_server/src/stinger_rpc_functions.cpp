@@ -32,14 +32,18 @@ JSON_RPC_register::operator()(rapidjson::Value * params, rapidjson::Value & resu
     {NULL, TYPE_NONE, NULL, false, 0}
   };
 
-  LOG_W ("Checking for parameter \"type\"");
+  LOG_D ("Checking for parameter \"type:\"");
 
   if (!contains_params(p, params)) {
     return json_rpc_error(-32602, result, allocator);
   }
+  
+  LOG_D_A ("\"type:\" %s", type_name);
 
-  LOG_W ("Get a session id and push new session onto the stack");
+  LOG_D ("Get a session id and push new session onto the stack");
 
+  /* create a session id and a new session of the requested type */
+  /* add the session to the server state */
   int64_t next_session_id = server_state->get_next_session();
   JSON_RPCSession * session = new JSON_RPC_community_subgraph(next_session_id, server_state); 
   server_state->add_session(next_session_id, session);
@@ -48,21 +52,60 @@ JSON_RPC_register::operator()(rapidjson::Value * params, rapidjson::Value & resu
   session_id.SetInt64(next_session_id);
   result.AddMember("session_id", session_id, allocator);
 
-  LOG_W ("Check parameters for the session type");
+  LOG_D ("Check parameters for the session type");
 
   rpc_params_t * session_params = session->get_params();
+  /* if things don't go so well, we need to undo everything to this point */
   if (!contains_params(session_params, params)) {
+    server_state->destroy_session(next_session_id);
     return json_rpc_error(-32602, result, allocator);
   }
 
-  LOG_W ("Call the onRegister method for the session");
+  LOG_D ("Call the onRegister method for the session");
 
+  /* this will send back the edge list to the client */
   session->onRegister(result, allocator);
 
-  LOG_W ("Return");
-  
+  LOG_D ("Return");
+
+  return 0;
+}
 
 
+int64_t 
+JSON_RPC_request::operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator)
+{
+  int64_t session_id;
+  bool strings;
+  rpc_params_t p[] = {
+    {"session_id", TYPE_INT64, &session_id, false, 0},
+    {"strings", TYPE_BOOL, &strings, true, 0},
+    {NULL, TYPE_NONE, NULL, false, 0}
+  };
+
+  LOG_D ("Checking for parameters");
+
+  if (!contains_params(p, params)) {
+    return json_rpc_error(-32602, result, allocator);
+  }
+
+  LOG_D_A ("Check if session id %ld is valid", session_id);
+  JSON_RPCSession * session = server_state->get_session(session_id);
+
+  if (!session) {
+    return json_rpc_error(-32001, result, allocator);
+  }
+
+  rapidjson::Value json_session_id;
+  json_session_id.SetInt64(session_id);
+  result.AddMember("session_id", json_session_id, allocator);
+
+  LOG_D ("Call the onRequest method for the session");
+
+  /* this will send back the edge list to the client */
+  session->onRequest(server_state, result, allocator);
+
+  LOG_D ("Return");
 
   return 0;
 }
