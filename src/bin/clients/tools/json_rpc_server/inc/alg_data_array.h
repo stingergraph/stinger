@@ -4,6 +4,7 @@
 #include <cstdio>
 #include "stinger_core/stinger_error.h"
 #include "rapidjson/document.h"
+#include "stinger_net/stinger_alg_state.h"
 
 namespace gt {
   namespace stinger {
@@ -13,10 +14,12 @@ namespace gt {
 	char t;
 	void * d;
 	int64_t len;
+	StingerAlgState * state;
+	int64_t offset;
 
       public:
-	AlgDataArray(void * data, char type, int64_t length) : t(type), d(data), len(length) { }
-	
+	AlgDataArray(StingerAlgState * alg_state, void * data, char type, int64_t length);
+
 	int64_t length();
 	char    type();
 	int32_t get_int32(int64_t index);

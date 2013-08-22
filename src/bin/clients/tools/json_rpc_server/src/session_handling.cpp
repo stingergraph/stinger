@@ -169,7 +169,7 @@ JSON_RPC_community_subgraph::onRegister(
   uint8_t * data = (uint8_t *) alg_state->data;
   const char * search_string = _data_array_name;
 
-  _data = description_string_to_pointer (description_string, data, nv, search_string);
+  _data = description_string_to_pointer (alg_state, description_string, data, nv, search_string);
   AlgDataArray * df = _data;
 
   if (df->type() != 'l') {
@@ -212,7 +212,7 @@ JSON_RPC_community_subgraph::onRegister(
 
 
 AlgDataArray *
-description_string_to_pointer (const char * description_string,
+description_string_to_pointer (gt::stinger::StingerAlgState * alg_state, const char * description_string,
 				uint8_t * data,
 				int64_t nv,
 				const char * search_string)
@@ -231,7 +231,7 @@ description_string_to_pointer (const char * description_string,
   while (pch != NULL)
   {
     if (strcmp(pch, search_string) == 0) {
-      AlgDataArray * rtn = new AlgDataArray(data, description_string[off], nv);
+      AlgDataArray * rtn = new AlgDataArray(alg_state, data, description_string[off], nv);
       free (tmp);
       return rtn;
 

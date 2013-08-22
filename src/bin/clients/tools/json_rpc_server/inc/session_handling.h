@@ -6,7 +6,9 @@
 
 #include "rpc_state.h"
 #include "alg_data_array.h"
+#include "stinger_net/stinger_alg_state.h"
 
+using namespace gt::stinger;
 
 namespace gt {
   namespace stinger {
@@ -42,16 +44,14 @@ namespace gt {
 		      rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
     };
 
-
   }
 }
 
 gt::stinger::AlgDataArray *
-description_string_to_pointer (const char * description_string,
+description_string_to_pointer (gt::stinger::StingerAlgState * alg_state, 
+				const char * description_string,
 				uint8_t * data,
 				int64_t nv,
 				const char * search_string);
-
-
 
 #endif /* _SESSION_HANDLING_H */
