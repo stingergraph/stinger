@@ -30,13 +30,15 @@ namespace gt {
       ~params_array_t();
     };
 
-    typedef struct {
-      const char * name;
-      type_t type;
-      void * output;
-      bool optional;
-      int64_t def;
-    } rpc_params_t;
+    extern "C" {
+      typedef struct {
+	const char * name;
+	type_t type;
+	void * output;
+	bool optional;
+	int64_t def;
+      } rpc_params_t;
+    }
 
     class JSON_RPCServerState;
 
