@@ -103,7 +103,7 @@ JSON_RPC_request::operator()(rapidjson::Value * params, rapidjson::Value & resul
   LOG_D ("Call the onRequest method for the session");
 
   /* this will send back the edge list to the client */
-  session->onRequest(server_state, result, allocator);
+  session->onRequest(result, allocator);
 
   LOG_D ("Return");
 
