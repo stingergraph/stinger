@@ -110,7 +110,7 @@ mon_handler(void * args)
       std::vector<StingerAlgState *> * algs = new std::vector<StingerAlgState *>();
       std::map<std::string, StingerAlgState *> * alg_map = new std::map<std::string, StingerAlgState *>();
       map_update(server_to_mon, &new_stinger, *algs, *alg_map);
-      server_state.update_algs(new_stinger, server_to_mon.stinger_loc(), server_to_mon.stinger_size(), algs, alg_map);
+      server_state.update_algs(new_stinger, server_to_mon.stinger_loc(), server_to_mon.stinger_size(), algs, alg_map, server_to_mon.batch());
       while(1) {
 	LOG_V_A("%s : beginning update cycle", params->name);
 	mon_to_server.set_action(BEGIN_UPDATE);
@@ -130,7 +130,7 @@ mon_handler(void * args)
 	    LOG_E("Error sending message to the server");
 	    exit(-1);
 	  }
-	  server_state.update_algs(new_stinger, server_to_mon.stinger_loc(), server_to_mon.stinger_size(), algs, alg_map);
+	  server_state.update_algs(new_stinger, server_to_mon.stinger_loc(), server_to_mon.stinger_size(), algs, alg_map, server_to_mon.batch());
 	  if(!recv_message(params->sock, server_to_mon) || server_to_mon.result() != MON_SUCCESS) {
 	    LOG_E("Error updating - communication to server failed");
 	  }

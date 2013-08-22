@@ -70,7 +70,7 @@ namespace gt {
 	virtual rpc_params_t * get_params() {
 	  LOG_W("This is a generic JSON_RPCSession object and should not be called");
 	};
-	virtual int64_t update(StingerBatch & batch) {
+	virtual int64_t update(const StingerBatch & batch) {
 	  LOG_W("This is a generic JSON_RPCSession object and should not be called");
 	}
 	virtual int64_t onRegister(
@@ -98,6 +98,7 @@ namespace gt {
 	std::map<std::string, StingerAlgState *> * alg_map;        
 	std::map<std::string, JSON_RPCFunction *> function_map;
 	std::map<int64_t, JSON_RPCSession *> session_map;
+	int64_t session_lock;
 	pthread_rwlock_t alg_lock;
 
 	stinger_t * stinger;
@@ -141,7 +142,8 @@ namespace gt {
 
 	void
 	update_algs(stinger_t * stinger_copy, std::string new_loc, int64_t new_sz, 
-	  std::vector<StingerAlgState *> * new_algs, std::map<std::string, StingerAlgState *> * new_alg_map);
+	  std::vector<StingerAlgState *> * new_algs, std::map<std::string, StingerAlgState *> * new_alg_map,
+	  const StingerBatch & batch);
 
 	stinger_t *
 	get_stinger();
@@ -154,6 +156,9 @@ namespace gt {
 
 	int64_t
 	destroy_session(int64_t session_id);
+
+	int64_t
+	get_num_sessions();
 
 	JSON_RPCSession *
 	get_session(int64_t sessin_id);
