@@ -35,7 +35,7 @@ namespace gt {
 	  p[4] = ((rpc_params_t) {NULL, TYPE_NONE, NULL, false, 0});
 	}
 	virtual rpc_params_t * get_params();
-	virtual int64_t update(StingerBatch & batch);
+	virtual int64_t update(const StingerBatch & batch);
 	virtual int64_t onRegister(
 		      rapidjson::Value & result,
 		      rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);

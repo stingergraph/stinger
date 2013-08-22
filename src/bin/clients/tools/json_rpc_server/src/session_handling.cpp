@@ -26,7 +26,7 @@ JSON_RPC_community_subgraph::get_params()
 
 
 int64_t
-JSON_RPC_community_subgraph::update(StingerBatch & batch)
+JSON_RPC_community_subgraph::update(const StingerBatch & batch)
 {
   if (0 == batch.insertions_size () && 0 == batch.deletions_size ()) { 
     return 0;
@@ -59,6 +59,7 @@ JSON_RPC_community_subgraph::update(StingerBatch & batch)
     int64_t src = in.source();
     int64_t dst = in.destination();
 
+    LOG_D_A("src: %ld, dst: %ld, size: %ld, i: %ld", (long) src, (long) dst, (long) batch.insertions_size(), (long) i);
     if (_data->equal(src,dst)) {
       _insertions.insert(std::make_pair(src, dst));
     }
@@ -82,6 +83,7 @@ JSON_RPC_community_subgraph::update(StingerBatch & batch)
   }
 
   /* Add all vertices with the same label to the vertices[] set */
+  LOG_D_A("_data->length() = %ld", (long) _data->length());
   for (int64_t i = 0; i < _data->length(); i++) {
     /* _source and i must be in the same community, and i must not be in the _vertices set */
     if (_data->equal(_source, i) && _vertices.find(i) == _vertices.end()) {

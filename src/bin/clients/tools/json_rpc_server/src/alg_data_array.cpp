@@ -84,6 +84,7 @@ namespace gt {
     AlgDataArray::equal(int64_t a, int64_t b)
     {
       d = (void *)(((uint8_t *)state->data) + offset);
+      LOG_D_A ("a: %ld, b: %ld, d: %p, offset: %ld", (long) a, (long) b, d, (long) offset);
       switch(t) {
 	case 'i':
 	return ((int32_t *)d)[a] == ((int32_t *)d)[b];
