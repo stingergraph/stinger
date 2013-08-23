@@ -154,7 +154,7 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	OMP("omp for")
 	  for (size_t i = 0; i < batch.insertions_size(); i++) {
 	    EdgeInsertion & in = *batch.mutable_insertions(i);
-	    int64_t u, v;
+	    int64_t u = -1, v = -1;
 	    TS(in);
 	    if (in.has_source()) {
 	      u = in.source();
@@ -167,6 +167,7 @@ process_batch(stinger_t * S, StingerBatch & batch)
 
 	    } else {
 	      src_string (in, src);
+	      if(src.length())
 	      stinger_mapping_create (S, src.c_str(), src.length(), &u);
 	      if(u != -1) in.set_source(u);
 	    }
@@ -180,7 +181,8 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	      else
 		in.set_destination_str("");
 	    } else {
-	      dest_string (in, src);
+	      dest_string (in, dest);
+	      if(dest.length())
 	      stinger_mapping_create(S, dest.c_str(), dest.length(), &v);
 	      if(v != -1) in.set_destination(v);
 	    }
