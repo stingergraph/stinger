@@ -207,7 +207,25 @@ JSON_RPCFunction::contains_params(rpc_params_t * p, rapidjson::Value * params)
     }
     else {
 
+      stinger_t * S = server_state->get_stinger();
       switch(p->type) {
+	case TYPE_VERTEX: {
+	  if((*params)[p->name].IsInt64()) {
+	    int64_t tmp = (*params)[p->name].GetInt64();
+	    if (tmp < 0 || tmp >= STINGER_MAX_LVERTICES)
+	      return false;
+	    *((int64_t *)p->output) = tmp;
+	  }
+	  else if((*params)[p->name].IsString()) {
+	    int64_t tmp = stinger_mapping_lookup(S, (*params)[p->name].GetString(), (*params)[p->name].GetStringLength());
+	    if (tmp == -1)
+	      return false;
+	    *((int64_t *)p->output) = tmp;
+	  }
+	  else {
+	    return false;
+	  }
+	} break;
 	case TYPE_INT64: {
 	  if(!(*params)[p->name].IsInt64()) {
 	    return false;
@@ -239,13 +257,22 @@ JSON_RPCFunction::contains_params(rpc_params_t * p, rapidjson::Value * params)
 	  params_array_t * ptr = (params_array_t *) p->output;
 	  ptr->len = (*params)[p->name].Size();
 	  ptr->arr = (int64_t *) xmalloc(sizeof(int64_t) * ptr->len);
-	  stinger_t * S = server_state->get_stinger();
 	  for (int64_t i = 0; i < ptr->len; i++) {
 	    if ((*params)[p->name][i].IsInt64()) {
-	      ptr->arr[i] = (*params)[p->name][i].GetInt64();
+	      int64_t tmp = (*params)[p->name][i].GetInt64();
+	      if (tmp < 0 || tmp >= STINGER_MAX_LVERTICES) {
+		free(ptr->arr);
+		return false;
+	      }
+	      ptr->arr[i] = tmp;
 	    }
 	    else if ((*params)[p->name][i].IsString()) {
-	      ptr->arr[i] = stinger_mapping_lookup(S, (*params)[p->name][i].GetString(), (*params)[p->name][i].GetStringLength());
+	      int64_t tmp = stinger_mapping_lookup(S, (*params)[p->name][i].GetString(), (*params)[p->name][i].GetStringLength());
+	      if (tmp == -1) {
+		free(ptr->arr);
+		return false;
+	      }
+	      ptr->arr[i] = tmp;
 	    }
 	  }
 	} break;
