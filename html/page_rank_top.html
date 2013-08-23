@@ -94,7 +94,7 @@ function List(tag) {
   this.colors = d3.scale.category20();
 
   this.x_space = function(d,i) {
-    spacing = [0, 80, 180, 400];
+    spacing = [0, 80, 300, 530];
     return spacing[i];
   }
 
@@ -368,8 +368,8 @@ chart_params = new Chart("#prchart");
 
 var t = 0;
 function update_page(data) {
-  list_params.update(_.zip(data.result.pagerank.vertex_id, data.result.pagerank.value));
-  chart_params.update(data.result.pagerank.value, data.result.pagerank.vertex_id, t);
+  list_params.update(_.zip(data.result.pagerank.vertex_str, data.result.pagerank.value));
+  chart_params.update(data.result.pagerank.value, data.result.pagerank.vertex_str, t);
   t += 1;
 
   $("#prdebug").append(JSON.stringify(data))
@@ -378,7 +378,7 @@ function update_page(data) {
 setInterval(
   function() {
     rpc("get_data_array_sorted_range", 
-      {"name": "pagerank", "data": "pagerank", "offset": 0, "count": list_params.count, "order":"DESC"}, 
+      {"name": "pagerank", "data": "pagerank", "strings":true, "offset": 0, "count": list_params.count, "order":"DESC"}, 
       1, 
       update_page, null);
   },
