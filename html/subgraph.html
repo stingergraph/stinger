@@ -171,7 +171,7 @@ function SubgraphConn(tag, source, dest) {
 
   this.call_remote = function() {
     rpc("breadth_first_search", 
-      {"source": this.source, "target": this.dest}, 
+      {"source": this.source, "target": this.dest, "strings": true}, 
       1, 
       (function(me) { return function(data) { return me.update(data); }; })(this), null);
   };
@@ -184,14 +184,16 @@ function SubgraphConn(tag, source, dest) {
   this.update = function(data) {
     $("#debug").append(JSON.stringify(data))
 
-    var graph = {'edges': [], 'vertices': []};
-    _.map(data.result.subgraph, function(d) {
+    var graph = {'edges': [], 'vertices': [], 'vertices_arr' : []};
+    _.map(data.result.subgraph_str, function(d) {
       add_v = function(s,d) {
 	if (!(s in graph.vertices)) {
 	  graph.vertices[s] = {'name': s, 'neighbors': [], 'level': -1, 'position': -1};
+	  graph.vertices_arr.push(graph.vertices[s]);
 	}
 	if (!(d in graph.vertices)) {
 	  graph.vertices[d] = {'name': d, 'neighbors': [], 'level': -1, 'position': -1};
+	  graph.vertices_arr.push(graph.vertices[d]);
 	}
 	graph.vertices[s].neighbors.push(d);
 	graph.edges.push([graph.vertices[s], graph.vertices[d]]);
@@ -199,6 +201,7 @@ function SubgraphConn(tag, source, dest) {
       add_v(d[0],d[1]);
     });
 
+    console.log(graph);
     var queue = [];
     
     function dfs (v, depth) {
@@ -206,6 +209,7 @@ function SubgraphConn(tag, source, dest) {
 	queue[depth] = [];
       }
       if (!(_.contains(queue[depth], v))) {
+	console.log("position of " + v);
 	graph.vertices[v].position = queue[depth].push(v)-1;
 	graph.vertices[v].level = depth;
 
@@ -307,7 +311,8 @@ function SubgraphConn(tag, source, dest) {
       .style("stroke-opacity",1e-6)
       .remove();
 
-    var node = this.svg.selectAll(".node").data(_.compact(graph.vertices), function(d) {return d.name;});
+    console.log(graph.vertices_arr);
+    var node = this.svg.selectAll(".node").data(_.compact(graph.vertices_arr), function(d) {console.log("HERE IS HERE"); return d.name;});
 
     node.transition()
       .duration(750)
@@ -337,7 +342,7 @@ function SubgraphConn(tag, source, dest) {
       .style("stroke-opacity",1e-6)
       .remove();
 
-    var nodelabel = this.svg.selectAll(".nodelabel").data(_.compact(graph.vertices), function(d) {return d.name;});
+    var nodelabel = this.svg.selectAll(".nodelabel").data(_.compact(graph.vertices_arr), function(d) {return d.name;});
 
     nodelabel.transition()
       .duration(750)
@@ -370,7 +375,7 @@ var next_id = 0;
 function add_tracker() {
   console.log("here");
   $("#graphconns").prepend('<div class="well" id="subgraphconn' + next_id + '"></div>');
-  subgraphconns.push(new SubgraphConn("#subgraphconn" + next_id, parseInt($("#inputsource").val()), parseInt($("#inputdest").val())));
+  subgraphconns.push(new SubgraphConn("#subgraphconn" + next_id, $("#inputsource").val(), $("#inputdest").val()));
   next_id += 1;
 
   return false;

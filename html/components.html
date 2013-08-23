@@ -6,6 +6,7 @@
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 <script src="lib/d3/d3.v3.js"></script>
 <script src="http://underscorejs.org/underscore-min.js"></script>
+<script src="lib/underscore/underscore.string.min.js"></script>
 
 <style type="text/css">
 .enter {
@@ -84,6 +85,8 @@
 </div>
 
 <script>
+
+_.mixin(_.str.exports());
 
 function rpc(method, params, id, success, error) {
   $.ajax({
@@ -275,14 +278,16 @@ var label_adj_mat = new LabelAdjMatrix("#labeladjmat");
 
 var member_list = [];
 function update_member_list() {
-  member_list = JSON.parse("[" + $("#inputMemberList")[0].value + "]");
+  member_list = $("#inputMemberList")[0].value.split(',');
+  console.log(member_list);
+  member_list = _.map(member_list, function(d) { return _.trim(d.toString()); });
   return false;
 }
 update_member_list();
 
 var t = 0;
 function update_page(data) {
-  labels = _.sortBy(_.zip(data.result.component_label.vertex_id, data.result.component_label.value), function(d) { return d[1] });
+  labels = _.sortBy(_.zip(data.result.component_label.vertex_str, data.result.component_label.value), function(d) { return d[1] });
   label_adj_mat.update(labels);
   t += 1;
 
@@ -292,7 +297,7 @@ function update_page(data) {
 var timing = setInterval(
   function() {
     rpc("get_data_array_set", 
-      {"name": "static_components", "data": "component_label", "set": member_list, "order":"DESC"}, 
+      {"name": "static_components", "data": "component_label", "strings":true, "set": member_list, "order":"DESC"}, 
       1, 
       update_page, null);
   },

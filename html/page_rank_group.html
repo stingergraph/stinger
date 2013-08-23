@@ -6,6 +6,7 @@
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 <script src="lib/d3/d3.v3.js"></script>
 <script src="http://underscorejs.org/underscore-min.js"></script>
+<script src="lib/underscore/underscore.string.min.js"></script>
 
 <style type="text/css">
 .enter {
@@ -88,6 +89,8 @@
 
 <script>
 
+_.mixin(_.str.exports());
+
 function rpc(method, params, id, success, error) {
   $.ajax({
     url: "http://localhost:8088/jsonrpc",
@@ -110,7 +113,7 @@ function List(tag) {
   this.colors = d3.scale.category20();
 
   this.x_space = function(d,i) {
-    spacing = [0, 0, 100, 320, 400];
+    spacing = [0, 0, 200, 420, 500];
     return spacing[i];
   }
 
@@ -380,9 +383,9 @@ chart_params = new Chart("#prchart");
 
 var member_list = [];
 function update_member_list() {
-  console.log($("#inputMemberList")[0].value);
-  member_list = JSON.parse("[" + $("#inputMemberList")[0].value + "]");
+  member_list = $("#inputMemberList")[0].value.split(',');
   console.log(member_list);
+  member_list = _.map(member_list, function(d) { return _.trim(d.toString()); });
   return false;
 }
 update_member_list();
@@ -390,7 +393,7 @@ update_member_list();
 
 var t = 0;
 function update_page(data) {
-  zipped = _.zip(data.result.pagerank.vertex_id, data.result.pagerank.value);
+  zipped = _.zip(data.result.pagerank.vertex_str, data.result.pagerank.value);
   zipped = _.sortBy(zipped, function(d) { return 1/d[1]; });
   list_params.update(zipped);
   unzipped = _.zip.apply(_, zipped);
@@ -403,7 +406,7 @@ function update_page(data) {
 setInterval(
   function() {
     rpc("get_data_array_set", 
-      {"name": "pagerank", "data": "pagerank", "set": member_list, "order":"DESC"}, 
+      {"name": "pagerank", "data": "pagerank", "strings":true, "set": member_list, "order":"DESC"}, 
       1, 
       update_page, null);
   },
