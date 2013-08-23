@@ -1,10 +1,21 @@
+
+#include "stinger_core/stinger_error.h"
 #include "alg_data_array.h"
 
 namespace gt {
   namespace stinger {
 
-    AlgDataArray::AlgDataArray(StingerAlgState * alg_state, void * data, char type, int64_t length) : t(type), d(data), len(length), state(alg_state)
+    AlgDataArray::AlgDataArray(
+		    JSON_RPCServerState * server_state,
+		    const char * algorithm_name,
+		    void * data, char type, int64_t length) : t(type), d(data), len(length), state(server_state)
     { 
+      strncpy(alg, algorithm_name, 128);
+      StingerAlgState * alg_state = server_state->get_alg(algorithm_name);
+      if (!alg_state) {
+	LOG_E ("StingerAlgState is invalid");
+	return;
+      }
       offset = ((uint8_t *)data) - ((uint8_t *)alg_state->data);
     }
 
@@ -20,10 +31,16 @@ namespace gt {
       return t;
     }
 
+    void
+    AlgDataArray::refresh()
+    {
+      StingerAlgState * alg_state = state->get_alg(alg);
+      d = (void *)(((uint8_t *)alg_state->data) + offset);
+    }
+
     int32_t
     AlgDataArray::get_int32(int64_t index)
     {
-      d = (void *)(((uint8_t *)state->data) + offset);
       if(t == 'i') {
 	return ((int32_t *)d)[index];
       } else {
@@ -35,7 +52,6 @@ namespace gt {
     int64_t
     AlgDataArray::get_int64(int64_t index)
     {
-      d = (void *)(((uint8_t *)state->data) + offset);
       if(t == 'l') {
 	return ((int64_t *)d)[index];
       } else {
@@ -47,7 +63,6 @@ namespace gt {
     float
     AlgDataArray::get_float(int64_t index)
     {
-      d = (void *)(((uint8_t *)state->data) + offset);
       if(t == 'f') {
 	return ((float *)d)[index];
       } else {
@@ -59,7 +74,6 @@ namespace gt {
     double
     AlgDataArray::get_double(int64_t index)
     {
-      d = (void *)(((uint8_t *)state->data) + offset);
       if(t == 'd') {
 	return ((double *)d)[index];
       } else {
@@ -71,7 +85,6 @@ namespace gt {
     uint8_t
     AlgDataArray::get_uint8(int64_t index)
     {
-      d = (void *)(((uint8_t *)state->data) + offset);
       if(t == 'b') {
 	return ((uint8_t *)d)[index];
       } else {
@@ -83,8 +96,6 @@ namespace gt {
     bool
     AlgDataArray::equal(int64_t a, int64_t b)
     {
-      d = (void *)(((uint8_t *)state->data) + offset);
-      LOG_D_A ("a: %ld, b: %ld, d: %p, offset: %ld", (long) a, (long) b, d, (long) offset);
       switch(t) {
 	case 'i':
 	return ((int32_t *)d)[a] == ((int32_t *)d)[b];
@@ -110,7 +121,6 @@ namespace gt {
     void
     AlgDataArray::to_value(int64_t index, rapidjson::Value & val, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator)
     {
-      d = (void *)(((uint8_t *)state->data) + offset);
     }
 
   }

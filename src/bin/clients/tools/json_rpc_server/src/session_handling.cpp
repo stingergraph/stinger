@@ -38,6 +38,9 @@ JSON_RPC_community_subgraph::update(const StingerBatch & batch)
     return -1;
   }
 
+  /* refresh the AlgDataArray object */
+  _data->refresh();
+
   for(size_t d = 0; d < batch.deletions_size(); d++) {
     const EdgeDeletion & del = batch.deletions(d);
 
@@ -47,6 +50,7 @@ JSON_RPC_community_subgraph::update(const StingerBatch & batch)
     /* both source and destination vertices were previously tracked,
        i.e. the edge that was deleted was previously on the screen */
     if ( _vertices.find(src) != _vertices.end() && _vertices.find(dst) != _vertices.end() ) {
+      LOG_D_A("Adding <%ld, %ld> to deletions", (long) src, (long) dst);
       _deletions.insert(std::make_pair(src, dst));
     }
   }
@@ -59,8 +63,8 @@ JSON_RPC_community_subgraph::update(const StingerBatch & batch)
     int64_t src = in.source();
     int64_t dst = in.destination();
 
-    LOG_D_A("src: %ld, dst: %ld, size: %ld, i: %ld", (long) src, (long) dst, (long) batch.insertions_size(), (long) i);
-    if (_data->equal(src,dst)) {
+    if (_data->equal(_source,src) && _data->equal(_source,dst)) {
+      LOG_D_A("Adding <%ld, %ld> to insertions", (long) src, (long) dst);
       _insertions.insert(std::make_pair(src, dst));
     }
   }
@@ -68,7 +72,9 @@ JSON_RPC_community_subgraph::update(const StingerBatch & batch)
   std::set<int64_t>::iterator it;
 
   for (it = _vertices.begin(); it != _vertices.end(); ++it) {
+    LOG_D_A("Vertex %ld is in the vertices list", (long) *it);
     if (!(_data->equal(_source, *it))) {
+      LOG_D("but is no longer in the group");
 
       STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, *it) {
 	/* edge used to be in the community */
@@ -83,15 +89,16 @@ JSON_RPC_community_subgraph::update(const StingerBatch & batch)
   }
 
   /* Add all vertices with the same label to the vertices[] set */
-  LOG_D_A("_data->length() = %ld", (long) _data->length());
   for (int64_t i = 0; i < _data->length(); i++) {
     /* _source and i must be in the same community, and i must not be in the _vertices set */
     if (_data->equal(_source, i) && _vertices.find(i) == _vertices.end()) {
+      LOG_D_A("Vertex %ld is in the community, but not in the vertices list", (long) i);
       _vertices.insert(i);
 
       STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, i) {
 	/* if the edge is in the community */
 	if (_data->equal(i, STINGER_EDGE_DEST)) {
+	  LOG_D_A("and it has an edge inside the community to %ld", (long) STINGER_EDGE_DEST);
 	  _insertions.insert(std::make_pair(i, STINGER_EDGE_DEST));
 	}
       } STINGER_FORALL_EDGES_OF_VTX_END();
@@ -143,7 +150,6 @@ JSON_RPC_community_subgraph::onRequest(
   /* clear both and reset the clock */
   _insertions.clear();
   _deletions.clear();
-  reset_timeout();
 
   return 0;
 }
@@ -171,19 +177,19 @@ JSON_RPC_community_subgraph::onRegister(
   uint8_t * data = (uint8_t *) alg_state->data;
   const char * search_string = _data_array_name;
 
-  _data = description_string_to_pointer (alg_state, description_string, data, nv, search_string);
-  AlgDataArray * df = _data;
+  _data = description_string_to_pointer (server_state, _algorithm_name, description_string, data, nv, search_string);
 
-  if (df->type() != 'l') {
+  if (_data->type() != 'l') {
     return json_rpc_error(-32602, result, allocator);
   }
 
   /* Get the community label of the source vertex */
-  int64_t community_id = df->get_int64(_source);
+  int64_t community_id = _data->get_int64(_source);
 
   /* Add all vertices with the same label to the vertices[] set */
-  for (int64_t i = 0; i < df->length(); i++) {
-    if (df->equal(_source, i)) {
+  for (int64_t i = 0; i < _data->length(); i++) {
+    if (_data->equal(_source, i)) {
+      LOG_D_A ("Inserting %ld into _vertices", (long) i);
       _vertices.insert(i);
     }
   }
@@ -214,7 +220,9 @@ JSON_RPC_community_subgraph::onRegister(
 
 
 AlgDataArray *
-description_string_to_pointer (gt::stinger::StingerAlgState * alg_state, const char * description_string,
+description_string_to_pointer (gt::stinger::JSON_RPCServerState * server_state,
+				const char * algorithm_name,
+				const char * description_string,
 				uint8_t * data,
 				int64_t nv,
 				const char * search_string)
@@ -233,7 +241,7 @@ description_string_to_pointer (gt::stinger::StingerAlgState * alg_state, const c
   while (pch != NULL)
   {
     if (strcmp(pch, search_string) == 0) {
-      AlgDataArray * rtn = new AlgDataArray(alg_state, data, description_string[off], nv);
+      AlgDataArray * rtn = new AlgDataArray(server_state, algorithm_name, data, description_string[off], nv);
       free (tmp);
       return rtn;
 

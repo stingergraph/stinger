@@ -48,7 +48,8 @@ namespace gt {
 }
 
 gt::stinger::AlgDataArray *
-description_string_to_pointer (gt::stinger::StingerAlgState * alg_state, 
+description_string_to_pointer (gt::stinger::JSON_RPCServerState * server_state,
+				const char * algorithm_name,
 				const char * description_string,
 				uint8_t * data,
 				int64_t nv,

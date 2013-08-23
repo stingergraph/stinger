@@ -285,6 +285,12 @@ JSON_RPCSession::get_session_id()
   return session_id;
 }
 
+int64_t
+JSON_RPCSession::get_time_since()
+{
+  return last_touched;
+}
+
 params_array_t::params_array_t():arr(NULL) {}
 
 params_array_t::~params_array_t()

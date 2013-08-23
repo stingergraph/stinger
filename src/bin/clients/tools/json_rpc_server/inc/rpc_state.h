@@ -86,6 +86,7 @@ namespace gt {
 	bool is_timed_out();
 	int64_t reset_timeout();
 	int64_t get_session_id();
+	int64_t get_time_since();
     };
 
     class JSON_RPCServerState {
