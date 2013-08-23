@@ -16,6 +16,7 @@ namespace gt {
   namespace stinger {
 
     typedef enum {
+      TYPE_VERTEX,
       TYPE_INT64,
       TYPE_STRING,
       TYPE_DOUBLE,

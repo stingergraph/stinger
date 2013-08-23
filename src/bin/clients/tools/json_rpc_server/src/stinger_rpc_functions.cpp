@@ -156,8 +156,8 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
   int64_t target;
   bool strings;
   rpc_params_t p[] = {
-    {"source", TYPE_INT64, &source, false, 0},
-    {"target", TYPE_INT64, &target, false, 0},
+    {"source", TYPE_VERTEX, &source, false, 0},
+    {"target", TYPE_VERTEX, &target, false, 0},
     {"strings", TYPE_BOOL, &strings, true, 0},
     {NULL, TYPE_NONE, NULL, false, 0}
   };
