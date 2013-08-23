@@ -58,6 +58,7 @@ JSON_RPC_register::operator()(rapidjson::Value * params, rapidjson::Value & resu
     return json_rpc_error(-32602, result, allocator);
   }
 
+  session->lock();  /* I wish I didn't have to do this */
   /* push the session onto the stack */
   int64_t rtn = server_state->add_session(next_session_id, session);
   if (rtn == -1) {
@@ -68,7 +69,7 @@ JSON_RPC_register::operator()(rapidjson::Value * params, rapidjson::Value & resu
   LOG_D ("Call the onRegister method for the session");
 
   /* this will send back the edge list to the client */
-  session->lock();
+  //session->lock();
   session->onRegister(result, allocator);
   session->unlock();
 
