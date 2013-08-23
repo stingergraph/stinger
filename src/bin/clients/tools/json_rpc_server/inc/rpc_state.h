@@ -105,6 +105,8 @@ namespace gt {
 	stinger_t * stinger;
 	std::string stinger_loc;
 	int64_t stinger_sz;
+
+	int64_t max_sessions;
 	int64_t next_session_id;
 
 	int64_t waiting;

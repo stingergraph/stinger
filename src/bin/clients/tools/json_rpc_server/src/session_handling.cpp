@@ -41,6 +41,9 @@ JSON_RPC_community_subgraph::update(const StingerBatch & batch)
   /* refresh the AlgDataArray object */
   _data->refresh();
 
+
+  /* TODO: this does not take "undirected batch" into account */
+
   for(size_t d = 0; d < batch.deletions_size(); d++) {
     const EdgeDeletion & del = batch.deletions(d);
 
@@ -214,6 +217,8 @@ JSON_RPC_community_subgraph::onRegister(
   }
 
   result.AddMember("subgraph", a, allocator);
+
+  reset_timeout();
 
   return 0;
 }

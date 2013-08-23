@@ -18,7 +18,8 @@ JSON_RPCServerState::get_server_state() {
 
 JSON_RPCServerState::JSON_RPCServerState() : stinger(NULL), 
   stinger_loc(""), stinger_sz(0), algs(NULL), alg_map(NULL),
-  next_session_id(1), waiting(0), wait_lock(0), session_lock(0)
+  next_session_id(1), waiting(0), wait_lock(0), session_lock(0),
+  max_sessions(20)
 {
   pthread_rwlock_init(&alg_lock, NULL);
   sem_init(&sync_lock, 0, 0);
@@ -136,9 +137,18 @@ JSON_RPCServerState::update_algs(stinger_t * stinger_copy, std::string new_loc, 
 
   readfe((uint64_t *)&session_lock);
   for(std::map<int64_t, JSON_RPCSession *>::iterator tmp = session_map.begin(); tmp != session_map.end(); tmp++) {
-    tmp->second->lock();
-    tmp->second->update(batch);
-    tmp->second->unlock();
+    JSON_RPCSession * session = tmp->second;
+    session->lock();
+    if (session->is_timed_out()) {
+      int64_t session_id = session->get_session_id();
+      LOG_D_A ("Session %ld timed out. Destroying...", (long) session_id);
+      delete session_map[session_id];
+      session_map.erase (session_id);
+    }
+    else {
+      session->update(batch);
+      session->unlock();
+    }
   }
   writeef((uint64_t *)&session_lock, 0);
 }
@@ -270,7 +280,7 @@ JSON_RPCSession::is_timed_out()
 {
   struct timeval tv;
   gettimeofday(&tv, NULL);
-  return tv.tv_sec < last_touched;
+  return tv.tv_sec > last_touched + 30;
 }
 
 int64_t
@@ -314,7 +324,11 @@ int64_t
 JSON_RPCServerState::add_session(int64_t session_id, JSON_RPCSession * session)
 {
   readfe((uint64_t *)&session_lock);
-  session_map.insert( std::pair<int64_t, JSON_RPCSession *>(session_id, session) );
+  if (session_map.size() < max_sessions) {
+    session_map.insert( std::pair<int64_t, JSON_RPCSession *>(session_id, session) );
+  } else {
+    session_id = -1;
+  }
   writeef((uint64_t *)&session_lock, 0);
   return session_id;
 }
@@ -323,6 +337,7 @@ int64_t
 JSON_RPCServerState::destroy_session(int64_t session_id)
 {
   readfe((uint64_t *)&session_lock);
+  delete session_map[session_id];
   int64_t rtn = session_map.erase (session_id);
   writeef((uint64_t *)&session_lock, 0);
   return rtn;

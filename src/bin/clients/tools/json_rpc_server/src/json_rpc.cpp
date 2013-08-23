@@ -229,9 +229,14 @@ json_rpc_error (int32_t error_code, rapidjson::Value& err_obj, rapidjson::Memory
       {
 	message.SetString("Invalid session");
       } break;
+    
+    case (-32002):
+      {
+	message.SetString("Too many sessions");
+      } break;
   }
 
-  if ( (error_code <= -32002) && (error_code >= -32099)) {
+  if ( (error_code <= -32003) && (error_code >= -32099)) {
     message.SetString("Server error");
   }
 

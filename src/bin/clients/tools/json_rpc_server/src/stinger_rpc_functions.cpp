@@ -38,15 +38,12 @@ JSON_RPC_register::operator()(rapidjson::Value * params, rapidjson::Value & resu
     return json_rpc_error(-32602, result, allocator);
   }
   
-  LOG_D_A ("\"type:\" %s", type_name);
-
-  LOG_D ("Get a session id and push new session onto the stack");
+  LOG_D ("Get a session id and create a session");
 
   /* create a session id and a new session of the requested type */
   /* add the session to the server state */
   int64_t next_session_id = server_state->get_next_session();
   JSON_RPCSession * session = new JSON_RPC_community_subgraph(next_session_id, server_state); 
-  server_state->add_session(next_session_id, session);
 
   rapidjson::Value session_id;
   session_id.SetInt64(next_session_id);
@@ -57,14 +54,23 @@ JSON_RPC_register::operator()(rapidjson::Value * params, rapidjson::Value & resu
   rpc_params_t * session_params = session->get_params();
   /* if things don't go so well, we need to undo everything to this point */
   if (!contains_params(session_params, params)) {
-    server_state->destroy_session(next_session_id);
+    delete session;
     return json_rpc_error(-32602, result, allocator);
+  }
+
+  /* push the session onto the stack */
+  int64_t rtn = server_state->add_session(next_session_id, session);
+  if (rtn == -1) {
+    delete session;
+    return json_rpc_error(-32002, result, allocator);
   }
 
   LOG_D ("Call the onRegister method for the session");
 
   /* this will send back the edge list to the client */
+  session->lock();
   session->onRegister(result, allocator);
+  session->unlock();
 
   LOG_D ("Return");
 
