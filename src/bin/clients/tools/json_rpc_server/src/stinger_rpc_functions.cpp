@@ -103,8 +103,10 @@ JSON_RPC_request::operator()(rapidjson::Value * params, rapidjson::Value & resul
   LOG_D ("Call the onRequest method for the session");
 
   /* this will send back the edge list to the client */
+  session->lock();
   session->onRequest(result, allocator);
   session->reset_timeout();
+  session->unlock();
 
   rapidjson::Value time_since;
   time_since.SetInt64(session->get_time_since());

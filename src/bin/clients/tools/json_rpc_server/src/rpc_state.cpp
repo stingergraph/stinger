@@ -136,7 +136,9 @@ JSON_RPCServerState::update_algs(stinger_t * stinger_copy, std::string new_loc, 
 
   readfe((uint64_t *)&session_lock);
   for(std::map<int64_t, JSON_RPCSession *>::iterator tmp = session_map.begin(); tmp != session_map.end(); tmp++) {
+    tmp->second->lock();
     tmp->second->update(batch);
+    tmp->second->unlock();
   }
   writeef((uint64_t *)&session_lock, 0);
 }
