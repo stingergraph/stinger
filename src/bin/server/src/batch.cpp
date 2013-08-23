@@ -118,8 +118,10 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	    int64_t u, v;
 
 	    TS(in);
-	    stinger_mapping_create(S, in.source_str().c_str(), in.source_str().length(), &u);
-	    stinger_mapping_create(S, in.destination_str().c_str(), in.destination_str().length(), &v);
+	    src_string (in, src);
+	    dest_string (in, dest);
+	    stinger_mapping_create(S, src.c_str(), src.length(), &u);
+	    stinger_mapping_create(S, dest.c_str(), dest.length(), &v);
 
 	    if(u != -1 && v != -1) {
 	      in.set_result(stinger_incr_edge_pair(S, in.type(), u, v, in.weight(), in.time()));
@@ -136,6 +138,8 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	    EdgeDeletion & del = *batch.mutable_deletions(d);
 	    int64_t u, v;
 
+	    src_string (del, src);
+	    dest_string (del, dest);
 	    u = stinger_mapping_lookup(S, src.c_str(), src.length());
 	    v = stinger_mapping_lookup(S, dest.c_str(), dest.length());
 
