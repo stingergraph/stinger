@@ -261,7 +261,6 @@ JSON_RPCFunction::contains_params(rpc_params_t * p, rapidjson::Value * params)
 	    if ((*params)[p->name][i].IsInt64()) {
 	      int64_t tmp = (*params)[p->name][i].GetInt64();
 	      if (tmp < 0 || tmp >= STINGER_MAX_LVERTICES) {
-		free(ptr->arr);
 		return false;
 	      }
 	      ptr->arr[i] = tmp;
@@ -269,7 +268,6 @@ JSON_RPCFunction::contains_params(rpc_params_t * p, rapidjson::Value * params)
 	    else if ((*params)[p->name][i].IsString()) {
 	      int64_t tmp = stinger_mapping_lookup(S, (*params)[p->name][i].GetString(), (*params)[p->name][i].GetStringLength());
 	      if (tmp == -1) {
-		free(ptr->arr);
 		return false;
 	      }
 	      ptr->arr[i] = tmp;
