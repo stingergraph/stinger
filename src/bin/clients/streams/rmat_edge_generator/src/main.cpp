@@ -16,6 +16,7 @@ extern "C" {
 }
 
 #include "rmat_edge_generator.h"
+#include "build_name.h"
 
 using namespace gt::stinger;
 
@@ -33,10 +34,11 @@ main(int argc, char *argv[])
   int batch_size = 100000;
   int num_batches = -1;
   int nv = 1024;
+  int is_int = 0;
   struct hostent * server = NULL;
 
   int opt = 0;
-  while(-1 != (opt = getopt(argc, argv, "p:a:x:y:n:"))) {
+  while(-1 != (opt = getopt(argc, argv, "p:a:x:y:n:i"))) {
     switch(opt) {
       case 'p': {
 	port = atoi(optarg);
@@ -58,14 +60,18 @@ main(int argc, char *argv[])
 	}
       } break;
 
+      case 'i': {
+	is_int = 1;
+      } break;
+
       case 'n': {
 	nv = atol(optarg);
       } break;
 
       case '?':
       case 'h': {
-	printf("Usage:    %s [-p port] [-a server_addr] [-n num_vertices] [-x batch_size] [-y num_batches]\n", argv[0]);
-	printf("Defaults:\n\tport: %d\n\tserver: localhost\n\tnum_vertices: %d\n", port, nv);
+	printf("Usage:    %s [-p port] [-a server_addr] [-n num_vertices] [-x batch_size] [-y num_batches] [-i]\n", argv[0]);
+	printf("Defaults:\n\tport: %d\n\tserver: localhost\n\tnum_vertices: %d\n-i forces the use of integers in place of strings\n", port, nv);
 	exit(0);
       } break;
     }
@@ -111,9 +117,13 @@ main(int argc, char *argv[])
   while(1) {
     StingerBatch batch;
     batch.set_make_undirected(true);
-    batch.set_type(NUMBERS_ONLY);
+    batch.set_type(is_int ? NUMBERS_ONLY : STRINGS_ONLY);
     batch.set_keep_alive(true);
 
+    std::string src, dest;
+
+    // IF YOU MAKE THIS LOOP PARALLEL, 
+    // MOVE THE SRC/DEST STRINGS ABOVE
     for(int e = 0; e < batch_size; e++) {
       line++;
 
@@ -128,8 +138,15 @@ main(int argc, char *argv[])
 
       /* is insert? */
       EdgeInsertion * insertion = batch.add_insertions();
-      insertion->set_source(u);
-      insertion->set_destination(v);
+
+      if(is_int) {
+	insertion->set_source(u);
+	insertion->set_destination(v);
+      } else {
+	insertion->set_source_str(build_name(src, u));
+	insertion->set_destination_str(build_name(dest, v));
+      }
+
       insertion->set_weight(1);
       insertion->set_time(line);
     }
@@ -148,7 +165,7 @@ main(int argc, char *argv[])
 
   StingerBatch batch;
   batch.set_make_undirected(true);
-  batch.set_type(NUMBERS_ONLY);
+  batch.set_type(is_int ? NUMBERS_ONLY : STRINGS_ONLY);
   batch.set_keep_alive(false);
   send_message(sock_handle, batch);
 

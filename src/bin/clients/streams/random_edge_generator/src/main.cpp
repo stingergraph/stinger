@@ -107,7 +107,7 @@ main(int argc, char *argv[])
 
     std::string src, dest;
 
-    // IF YOU MAKE THIS LOOK PARALLEL, 
+    // IF YOU MAKE THIS LOOP PARALLEL, 
     // MOVE THE SRC/DEST STRINGS ABOVE
     for(int e = 0; e < batch_size; e++) {
       line++;
