@@ -8,7 +8,7 @@
 <body>
 <script>
 var whatever = null;
-
+/*
 data = {"jsonrpc": "2.0", "method": "register", "params": {"type": "subgraph", "name": "static_components", "data": "component_label", "source": 10}, "id": 1};
 jQuery.ajax({
 url: "http://localhost:8088/jsonrpc",
@@ -17,7 +17,16 @@ data: JSON.stringify(data),
 dataType: "json",
 success: function(data) {whatever = data; $(".register").append("<p>" + JSON.stringify(data) + "</p>");}
 });
+*/
 
+data = {"jsonrpc": "2.0", "method": "register", "params": {"type": "vertex_event_notifier", "set": [2,6,4]}, "id": 2};
+jQuery.ajax({
+url: "http://localhost:8088/jsonrpc",
+type: "POST",
+data: JSON.stringify(data),
+dataType: "json",
+success: function(data) {whatever = data; $(".register").append("<p>" + JSON.stringify(data) + "</p>");}
+});
 
 </script>
 <div class="register">register:&nbsp;</div>

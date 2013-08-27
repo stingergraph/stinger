@@ -18,6 +18,8 @@ extern "C" {
 using namespace gt::stinger;
 
 
+/* stateful subgraph extraction */
+
 rpc_params_t *
 JSON_RPC_community_subgraph::get_params()
 {
@@ -288,3 +290,143 @@ description_string_to_pointer (gt::stinger::JSON_RPCServerState * server_state,
   return NULL;
 }
 
+/* vertex event notifier */
+rpc_params_t *
+JSON_RPC_vertex_event_notifier::get_params()
+{
+  return p;
+}
+
+int64_t
+JSON_RPC_vertex_event_notifier::update(const StingerBatch & batch)
+{
+  if (0 == batch.insertions_size () && 0 == batch.deletions_size ()) { 
+    return 0;
+  }
+
+  stinger_t * S = server_state->get_stinger();
+  if (!S) {
+    LOG_E ("STINGER pointer is invalid");
+    return -1;
+  }
+
+  /* TODO: this does not take "undirected batch" into account */
+
+  for(size_t d = 0; d < batch.deletions_size(); d++) {
+    const EdgeDeletion & del = batch.deletions(d);
+
+    int64_t src = del.source();
+    int64_t dst = del.destination();
+
+    /* either the source or the destination vertex is part of the subgraph,
+       i.e. the edge that was deleted was previously on the screen */
+    if ( _vertices.find(src) != _vertices.end() || _vertices.find(dst) != _vertices.end() ) {
+      LOG_D_A("Adding <%ld, %ld> to deletions", (long) src, (long) dst);
+      _deletions.insert(std::make_pair(src, dst));
+    }
+  }
+
+  for(size_t d = 0; d < batch.insertions_size(); d++) {
+    const EdgeInsertion & in = batch.insertions(d);
+
+    int64_t src = in.source();
+    int64_t dst = in.destination();
+
+    /* either the source or the destination vertex is part of the subgraph,
+       i.e. the edge should be sent to the client */
+    if ( _vertices.find(src) != _vertices.end() || _vertices.find(dst) != _vertices.end() ) {
+      LOG_D_A("Adding <%ld, %ld> to insertions", (long) src, (long) dst);
+      _insertions.insert(std::make_pair(src, dst));
+    }
+  }
+
+  return 0;
+}
+
+int64_t
+JSON_RPC_vertex_event_notifier::onRegister(
+	      rapidjson::Value & result,
+	      rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator)
+{
+  stinger_t * S = server_state->get_stinger();
+  if (!S) {
+    LOG_E ("STINGER pointer is invalid");
+    return json_rpc_error(-32603, result, allocator);
+  }
+
+  /* Add each vertex in the array to the vertices[] list */
+  int64_t * set = set_array.arr;
+  int64_t set_len = set_array.len;
+
+  for (int64_t i = 0; i < set_len; i++) {
+    int64_t vtx = set[i];
+    _vertices.insert(vtx);
+  }
+
+  /* Send back all edges incident on those vertices */
+  rapidjson::Value a (rapidjson::kArrayType);
+  rapidjson::Value src, dst, edge;
+
+  std::set<int64_t>::iterator it;
+  for (it = _vertices.begin(); it != _vertices.end(); ++it) {
+    STINGER_FORALL_EDGES_OF_VTX_BEGIN (S, *it) {
+      src.SetInt64(*it);
+      dst.SetInt64(STINGER_EDGE_DEST);
+      edge.SetArray();
+      edge.PushBack(src, allocator);
+      edge.PushBack(dst, allocator);
+      a.PushBack(edge, allocator);
+    } STINGER_FORALL_EDGES_OF_VTX_END();
+  }
+
+  result.AddMember("subgraph", a, allocator);
+
+  reset_timeout();
+
+  return 0;
+}
+
+int64_t
+JSON_RPC_vertex_event_notifier::onRequest(
+	      rapidjson::Value & result,
+	      rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator)
+{
+  rapidjson::Value insertions, deletions;
+  rapidjson::Value src, dst, edge;
+  std::set<std::pair<int64_t, int64_t> >::iterator it;
+
+  /* send insertions back */
+  insertions.SetArray();
+
+  for (it = _insertions.begin(); it != _insertions.end(); ++it) {
+    src.SetInt64((*it).first);
+    dst.SetInt64((*it).second);
+    edge.SetArray();
+    edge.PushBack(src, allocator);
+    edge.PushBack(dst, allocator);
+    insertions.PushBack(edge, allocator);
+  }
+
+  result.AddMember("insertions", insertions, allocator);
+
+  /* send deletions back */
+
+  deletions.SetArray();
+
+  for (it = _deletions.begin(); it != _deletions.end(); ++it) {
+    src.SetInt64((*it).first);
+    dst.SetInt64((*it).second);
+    edge.SetArray();
+    edge.PushBack(src, allocator);
+    edge.PushBack(dst, allocator);
+    deletions.PushBack(edge, allocator);
+  }
+
+  result.AddMember("deletions", deletions, allocator);
+
+  /* clear both and reset the clock */
+  _insertions.clear();
+  _deletions.clear();
+
+  return 0;
+}

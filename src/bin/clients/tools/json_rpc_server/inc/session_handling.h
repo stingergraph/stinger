@@ -44,6 +44,32 @@ namespace gt {
 		      rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
     };
 
+    class JSON_RPC_vertex_event_notifier: public JSON_RPCSession {
+      private:
+	rpc_params_t p[3];
+	params_array_t set_array;
+	bool _strings;
+	std::set<int64_t> _vertices;
+
+	std::set<std::pair<int64_t, int64_t> > _insertions;
+	std::set<std::pair<int64_t, int64_t> > _deletions;
+
+      public:
+	JSON_RPC_vertex_event_notifier(int64_t sess_id, JSON_RPCServerState * session) : JSON_RPCSession(sess_id, session) {
+	  p[0] = ((rpc_params_t) {"set", TYPE_ARRAY, &set_array, false, 0});
+	  p[1] = ((rpc_params_t) {"strings", TYPE_BOOL, &_strings, true, 0});
+	  p[2] = ((rpc_params_t) {NULL, TYPE_NONE, NULL, false, 0});
+	}
+	virtual rpc_params_t * get_params();
+	virtual int64_t update(const StingerBatch & batch);
+	virtual int64_t onRegister(
+		      rapidjson::Value & result,
+		      rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
+	virtual int64_t onRequest(
+		      rapidjson::Value & result,
+		      rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
+    };
+
   }
 }
 
