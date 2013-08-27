@@ -1,6 +1,7 @@
 #include "xmalloc.h"
 #include "x86_full_empty.h"
 #include "stinger_names.h"
+#include "stinger_error.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -242,6 +243,75 @@ stinger_names_print(stinger_names_t * sn) {
   for(int64_t i = 0; i < sn->max_types*2; i++) {
     printf("FROM_NAME %ld %s TO_INT %ld TO_NAME %ld\n", from_name[i], from_name[i] ? names + from_name[i] : "", to_int[i], to_int[i] ? to_name[to_int[i]] : 0);
   }
+}
+
+/**
+* @brief Save the strings stored in this names_t to a binary file.
+*
+* Format: [int64_t NAME_STR_MAX] [int64_t count(names)]
+*	  [int64_t len_0] [chars string_0]
+*	  [int64_t len_1] [chars string_1] 
+*	  ... [chars string_count(names)-1]
+*
+* Strings in the file are not NULL terminated.
+*
+* @param sn The names_t to be written.
+* @param fp The file to write into.
+*/
+void
+stinger_names_save(stinger_names_t * sn, FILE * fp) {
+  MAP_SN(sn)
+
+  int64_t max_len = NAME_STR_MAX;
+  fwrite(&max_len, sizeof(int64_t), 1, fp);
+  fwrite(&(sn->next_type), sizeof(int64_t), 1, fp);
+
+  for(int64_t i = 0; i < sn->next_type; i++) {
+    int64_t len = strlen(names + to_name[i]);
+    fwrite(&len, sizeof(int64_t), 1, fp);
+    fwrite(names + to_name[i], sizeof(char), len, fp);
+  }
+}
+
+/**
+* @brief Load strings from a binary file into a newly created names_t.
+*
+* Format follows stinger_names_save()
+*
+* @param sn The names_t to write into.
+* @param fp The file containing the data.
+*/
+void
+stinger_names_load(stinger_names_t * sn, FILE * fp) {
+  int64_t max_len = NAME_STR_MAX;
+  fread(&max_len, sizeof(int64_t), 1, fp);
+  
+  if(max_len > NAME_STR_MAX) {
+    LOG_W_A("Max names length in file (%ld) is greater than the library supports (%ld)."
+    " Names will be truncated\n", (long) max_len, (long) NAME_STR_MAX);
+  }
+
+  int64_t in_file = 0;
+  fread(&(in_file), sizeof(int64_t), 1, fp);
+
+  char * cur_name = xcalloc(sizeof(char), max_len);
+
+  for(int64_t i = 0; i < in_file; i++) {
+    int64_t len = 0;
+    fread(&len, sizeof(int64_t), 1, fp);
+    fread(cur_name, sizeof(char), len, fp);
+    cur_name[len] = '\0';
+
+    int64_t out = 0;
+    stinger_names_create_type(sn, cur_name, &out);
+
+    if(out != i) {
+      LOG_W_A("Mapping does not match expected when loading file (%ld != %ld).  Was the names_t "
+	"not empty?", (long) i, (long) out);
+    }
+  }
+
+  free(cur_name);
 }
 
 #if defined(STINGER_stinger_names_TEST)

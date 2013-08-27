@@ -44,6 +44,12 @@ stinger_names_lookup_name(stinger_names_t * sn, int64_t type);
 int64_t
 stinger_names_count(stinger_names_t * sn);
 
+void
+stinger_names_save(stinger_names_t * sn, FILE * fp);
+
+void
+stinger_names_load(stinger_names_t * sn, FILE * fp);
+
 #ifdef __cplusplus
 }
 #undef restrict
