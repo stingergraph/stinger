@@ -42,6 +42,9 @@ namespace gt {
 	virtual int64_t onRequest(
 		      rapidjson::Value & result,
 		      rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
+	virtual JSON_RPCSession * gimme(int64_t sess_id, JSON_RPCServerState * session) {
+	  return new JSON_RPC_community_subgraph(sess_id, session);
+	}
     };
 
     class JSON_RPC_vertex_event_notifier: public JSON_RPCSession {
@@ -68,6 +71,9 @@ namespace gt {
 	virtual int64_t onRequest(
 		      rapidjson::Value & result,
 		      rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
+	virtual JSON_RPCSession * gimme(int64_t sess_id, JSON_RPCServerState * session) {
+	  return new JSON_RPC_vertex_event_notifier(sess_id, session);
+	}
     };
 
   }

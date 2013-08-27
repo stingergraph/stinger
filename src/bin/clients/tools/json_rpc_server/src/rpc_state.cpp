@@ -87,6 +87,26 @@ JSON_RPCServerState::has_rpc_function(std::string name)
 }
 
 void
+JSON_RPCServerState::add_rpc_session(std::string name, JSON_RPCSession * func)
+{
+  LOG_D_A("Adding RPC session type %s", name.c_str());
+  if(func)
+    session_map[name] = func;
+}
+
+JSON_RPCSession *
+JSON_RPCServerState::get_rpc_session(std::string name)
+{
+  return session_map[name];
+}
+
+bool
+JSON_RPCServerState::has_rpc_session(std::string name)
+{
+  return session_map.count(name) > 0;
+}
+
+void
 JSON_RPCServerState::get_alg_read_lock()
 {
   pthread_rwlock_rdlock(&alg_lock);
@@ -136,14 +156,14 @@ JSON_RPCServerState::update_algs(stinger_t * stinger_copy, std::string new_loc, 
   LOG_D("Unlocked.");
 
   readfe((uint64_t *)&session_lock);
-  for(std::map<int64_t, JSON_RPCSession *>::iterator tmp = session_map.begin(); tmp != session_map.end(); tmp++) {
+  for(std::map<int64_t, JSON_RPCSession *>::iterator tmp = active_session_map.begin(); tmp != active_session_map.end(); tmp++) {
     JSON_RPCSession * session = tmp->second;
     session->lock();
     if (session->is_timed_out()) {
       int64_t session_id = session->get_session_id();
       LOG_D_A ("Session %ld timed out. Destroying...", (long) session_id);
-      delete session_map[session_id];
-      session_map.erase (session_id);
+      delete active_session_map[session_id];
+      active_session_map.erase (session_id);
     }
     else {
       session->update(batch);
@@ -349,8 +369,8 @@ int64_t
 JSON_RPCServerState::add_session(int64_t session_id, JSON_RPCSession * session)
 {
   readfe((uint64_t *)&session_lock);
-  if (session_map.size() < max_sessions) {
-    session_map.insert( std::pair<int64_t, JSON_RPCSession *>(session_id, session) );
+  if (active_session_map.size() < max_sessions) {
+    active_session_map.insert( std::pair<int64_t, JSON_RPCSession *>(session_id, session) );
   } else {
     session_id = -1;
   }
@@ -362,8 +382,8 @@ int64_t
 JSON_RPCServerState::destroy_session(int64_t session_id)
 {
   readfe((uint64_t *)&session_lock);
-  delete session_map[session_id];
-  int64_t rtn = session_map.erase (session_id);
+  delete active_session_map[session_id];
+  int64_t rtn = active_session_map.erase (session_id);
   writeef((uint64_t *)&session_lock, 0);
   return rtn;
 }
@@ -372,7 +392,7 @@ int64_t
 JSON_RPCServerState::get_num_sessions()
 {
   readfe((uint64_t *)&session_lock);
-  int64_t rtn = session_map.size();
+  int64_t rtn = active_session_map.size();
   writeef((uint64_t *)&session_lock, 0);
   return rtn;
 }
@@ -381,10 +401,10 @@ JSON_RPCSession *
 JSON_RPCServerState::get_session(int64_t session_id)
 {
   readfe((uint64_t *)&session_lock);
-  std::map<int64_t, JSON_RPCSession *>::iterator tmp = session_map.find(session_id);
+  std::map<int64_t, JSON_RPCSession *>::iterator tmp = active_session_map.find(session_id);
   writeef((uint64_t *)&session_lock, 0);
 
-  if (tmp == session_map.end())
+  if (tmp == active_session_map.end())
     return NULL;
   else
     return tmp->second;

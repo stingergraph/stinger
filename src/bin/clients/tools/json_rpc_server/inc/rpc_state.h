@@ -84,6 +84,10 @@ namespace gt {
 				rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
 	  LOG_W("This is a generic JSON_RPCSession object and should not be called");
 	}
+	virtual JSON_RPCSession * gimme(int64_t sess_id, JSON_RPCServerState * state) {
+	  LOG_W("This is a generic JSON_RPCSession object and should not be called");
+	  return NULL;
+	}
 	bool is_timed_out();
 	int64_t reset_timeout();
 	int64_t get_session_id();
@@ -99,7 +103,8 @@ namespace gt {
 	std::vector<StingerAlgState *> * algs;                     
 	std::map<std::string, StingerAlgState *> * alg_map;        
 	std::map<std::string, JSON_RPCFunction *> function_map;
-	std::map<int64_t, JSON_RPCSession *> session_map;
+	std::map<std::string, JSON_RPCSession *> session_map;
+	std::map<int64_t, JSON_RPCSession *> active_session_map;
 	int64_t session_lock;
 	pthread_rwlock_t alg_lock;
 
@@ -137,6 +142,15 @@ namespace gt {
 
 	bool
 	has_rpc_function(std::string name);
+
+	void
+	add_rpc_session(std::string name, JSON_RPCSession * func);
+
+	JSON_RPCSession *
+	get_rpc_session(std::string name);
+
+	bool
+	has_rpc_session(std::string name);
 
 	void
 	get_alg_read_lock();
