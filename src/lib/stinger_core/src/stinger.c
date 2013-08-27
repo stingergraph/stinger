@@ -30,13 +30,13 @@ stinger_physmap_get(const stinger_t * S) {
 inline stinger_names_t *
 stinger_vtype_names_get(const stinger_t * S) {
   MAP_STING(S);
-  return etype_names;
+  return vtype_names;
 }
 
 inline stinger_names_t *
 stinger_etype_names_get(const stinger_t * S) {
   MAP_STING(S);
-  return vtype_names;
+  return etype_names;
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
@@ -2034,6 +2034,10 @@ stinger_save_to_file (struct stinger * S, uint64_t maxVtx, const char * stingerf
     fwrite(vdata, sizeof(int64_t), 2, fp);
   }
 
+  stinger_names_save(stinger_physmap_get(S), fp);
+  stinger_names_save(stinger_vtype_names_get(S), fp);
+  stinger_names_save(stinger_etype_names_get(S), fp);
+
   fclose(fp);
 #else
   xmt_luc_io_init();
@@ -2185,6 +2189,10 @@ stinger_open_from_file (const char * stingerfile, struct stinger ** S, uint64_t 
     stinger_vweight_set(*S, v, vdata[1]);
   }
 
+  stinger_names_load(stinger_physmap_get(*S), fp);
+  stinger_names_load(stinger_vtype_names_get(*S), fp);
+  stinger_names_load(stinger_etype_names_get(*S), fp);
+
 #if !defined(__MTA__)
   fclose(fp);
   free(offsets); free(type_offsets); free(ind);
@@ -2194,3 +2202,104 @@ stinger_open_from_file (const char * stingerfile, struct stinger ** S, uint64_t 
   return 0;
 }
 
+#if defined(STINGER_TEST_SAVE_LOAD)
+
+int
+main(int argc, char *argv[]) 
+{
+  stinger_t * S = stinger_new();
+
+  for(int64_t i = 0; i < STINGER_NUMETYPES; i++) {
+    char name[128];
+    sprintf(name, "%ld", (long)i);
+
+    int64_t out = 0;
+    stinger_etype_names_create_type(S, name, &out);
+
+    if(i != out)
+      LOG_E("Etype doesn't have expected number");
+  }
+
+  for(int64_t i = 0; i < STINGER_NUMVTYPES; i++) {
+    char name[128];
+    sprintf(name, "%ld", (long)i);
+
+    int64_t out = 0;
+    stinger_vtype_names_create_type(S, name, &out);
+
+    if(i != out)
+      LOG_E("Vtype doesn't have expected number");
+  }
+
+  for(int64_t i = 0; i < 1024; i++) {
+    char name[128];
+    sprintf(name, "%ld", (long)i);
+
+    int64_t out = 0;
+    stinger_mapping_create(S, name, strlen(name), &out);
+
+    if(i != out)
+      LOG_E("Vertex doesn't have expected number");
+  }
+
+  for(int64_t i = 0; i < 1024; i++) {
+    stinger_insert_edge(S, 0, i, i+1, 1, i);
+  }
+
+  stinger_save_to_file(S, stinger_max_active_vertex(S) + 1, "test_stinger.bin");
+
+  stinger_free_all(S);
+
+  int64_t nv;
+  stinger_open_from_file("test_stinger.bin", &S, &nv);
+
+  for(int64_t i = 0; i < STINGER_NUMETYPES; i++) {
+    char name[128];
+    sprintf(name, "%ld", (long)i);
+
+    int64_t out = 0;
+    char * name_out = stinger_etype_names_lookup_name(S, i);
+
+    if(0 != strcmp(name_out, name))
+      LOG_E_A("Etype doesn't have expected number <%s vs %s>", name_out, name);
+
+    if(i != stinger_etype_names_lookup_type(S, name))
+      LOG_E("etype doesn't have expected number");
+  }
+
+  for(int64_t i = 0; i < STINGER_NUMVTYPES; i++) {
+    char name[128];
+    sprintf(name, "%ld", (long)i);
+
+    int64_t out = 0;
+    char * name_out = stinger_vtype_names_lookup_name(S, i);
+
+    if(0 != strcmp(name_out, name))
+      LOG_E("vtype doesn't have expected number");
+
+    if(i != stinger_vtype_names_lookup_type(S, name))
+      LOG_E("Vtype doesn't have expected number");
+  }
+
+  for(int64_t i = 0; i < 1024; i++) {
+    char name[128];
+    sprintf(name, "%ld", (long)i);
+
+    int64_t out = 0;
+    int64_t len;
+    char * name_out;
+    stinger_mapping_physid_direct(S, i, &name_out, &len);
+
+    if(0 != strncmp(name, name_out, len))
+      LOG_E("Vertex doesn't have expected number");
+  }
+
+  for(int64_t i = 0; i < 1024; i++) {
+    STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, i) {
+      if(STINGER_EDGE_DEST != i + 1) 
+	LOG_E("Vertex doesn't have expected number");
+    } STINGER_FORALL_EDGES_OF_VTX_END();
+  }
+}
+
+#endif
