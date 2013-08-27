@@ -124,3 +124,12 @@ stinger_physmap_nv(stinger_physmap_t * p) {
   return stinger_names_count(p);
 }
 
+void
+stinger_physmap_save(stinger_physmap_t * p, FILE * fp) {
+  return stinger_names_save(p, fp);
+}
+
+void
+stinger_physmap_load(stinger_physmap_t * p, FILE * fp) {
+  return stinger_names_load(p, fp);
+}

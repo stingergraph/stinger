@@ -44,6 +44,12 @@ stinger_physmap_id_direct(stinger_physmap_t * p, stinger_vertices_t * v, vindex_
 int64_t
 stinger_physmap_nv(stinger_physmap_t * p);
 
+void
+stinger_physmap_save(stinger_physmap_t * p, FILE * fp);
+
+void
+stinger_physmap_load(stinger_physmap_t * p, FILE * fp);
+
 
 #ifdef __cplusplus
 }
