@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+<link href="lib/bootstrap/css/bootstrap.min.css" rel="stylesheet"></link>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="lib/bootstrap/js/bootstrap.min.js"></script>
+<script src="lib/d3/d3.v3.js"></script>
+<script src="http://underscorejs.org/underscore-min.js"></script>
+
+<style type="text/css">
+.enter {
+    fill: green;
+}
+
+.update {
+    fill: #333;
+}
+
+.exit {
+    fill: brown;
+}
+
+.labels {
+    font-weight: bold;
+}
+
+.titles {
+    font-weight: bold;
+}
+.axis path, .axis line {
+  fill: none;
+  stroke: #555555;
+  shape-rendering: crispEdges;
+}
+.line {
+  fill: none;
+  stroke: red;
+  stroke-width: 1px;
+}
+</style>
+
+</head>
+<body>
+<div class="container">
+
+<div id="content">
+
+<div class="accordion" id="accordion2">
+<div class="accordion-group">
+<div class="accordion-heading">
+<a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion2" href="#collapseOne">
+Toolbox</a>
+</div>
+<div id="collapseOne" class="accordion-body collapse in">
+<div class="accordion-inner">
+
+<ul id="tabs" class="nav nav-tabs" data-tabs="tabs">
+<li class="active"><a href="#topscores" data-toggle="tab">Top Scores</a></li>
+<li><a href="#groupscores" data-toggle="tab">Group Scores</a></li>
+<li><a href="#connectivity" data-toggle="tab">Connectivity</a></li>
+<li><a href="#shortestpaths" data-toggle="tab">Shortest Paths</a></li>
+<li><a href="#labelgraph" data-toggle="tab">Label Graph</a></li>
+<li><a href="#groupgraph" data-toggle="tab">Group Graph</a></li>
+</ul>
+
+
+<div id="tabscontent" class="tab-content">
+<div class="tab-pane active" id="topscores">
+<h1>Top Scores</h1>
+<p></p>
+</div>
+<div class="tab-pane" id="groupscores">
+<h1>Group Scores</h1>
+<p></p>
+</div>
+<div class="tab-pane" id="connectivity">
+<h1>Connectivity</h1>
+<p></p>
+</div>
+<div class="tab-pane" id="shortestpaths">
+<h1>Shortest Paths</h1>
+<p></p>
+</div>
+<div class="tab-pane" id="labelgraph">
+<h1>Label Graph</h1>
+<p></p>
+</div>
+<div class="tab-pane" id="groupgraph">
+<h1>Group Graph</h1>
+<p></p>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+</div>  <!-- end of toolbox -->
+
+</div>
+
+
+<script type="text/javascript">
+jQuery(document).ready(function ($) {
+    $('#tabs').tab();
+    $(".collapse").collapse();
+});
+</script>    
+</div>																																      </div> 
+
+</body>
+</html>
