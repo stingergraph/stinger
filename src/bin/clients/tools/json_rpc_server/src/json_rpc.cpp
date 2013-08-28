@@ -168,7 +168,7 @@ json_rpc_process_request (rapidjson::Document& document, rapidjson::Document& re
   
   LOG_D_A("Parameters read (if applicable).", method_str);
 
-  if(params && params->HasMember("wait_for_update") && (*params)["wait_for_update"].GetBool()) {
+  if(params && params->IsObject() && params->HasMember("wait_for_update") && (*params)["wait_for_update"].GetBool()) {
     server_state.wait_for_sync();
   }
 
@@ -234,9 +234,14 @@ json_rpc_error (int32_t error_code, rapidjson::Value& err_obj, rapidjson::Memory
       {
 	message.SetString("Too many sessions");
       } break;
+    
+    case (-32003):
+      {
+	message.SetString("Unknown algorithm");
+      } break;
   }
 
-  if ( (error_code <= -32003) && (error_code >= -32099)) {
+  if ( (error_code <= -32004) && (error_code >= -32099)) {
     message.SetString("Server error");
   }
 

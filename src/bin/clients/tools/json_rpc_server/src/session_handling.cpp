@@ -174,7 +174,7 @@ JSON_RPC_community_subgraph::onRegister(
   StingerAlgState * alg_state = server_state->get_alg(_algorithm_name);
   if (!alg_state) {
     LOG_E ("Algorithm is not running");
-    return json_rpc_error(-32603, result, allocator);
+    return json_rpc_error(-32003, result, allocator);
   }
 
   const char * description_string = alg_state -> data_description.c_str();
