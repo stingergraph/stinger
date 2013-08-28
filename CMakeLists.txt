@@ -20,6 +20,18 @@ ELSE()
   LINK_LIBRARIES(rt)
 ENDIF()
 
+# Doxygen
+find_package(Doxygen)
+if (DOXYGEN_FOUND)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in
+    ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
+  add_custom_target(doc
+    ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    COMMENT "Generating API documentation with Doxygen" VERBATIM
+  )
+endif(DOXYGEN_FOUND)
+
 # Custom protobuf to use STINGER distributed version
 function(CUST_PROTOBUF_GENERATE_CPP SUBDIR SRCS HDRS)
   if(NOT ARGN)
