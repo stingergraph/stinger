@@ -7,6 +7,7 @@
 <script src="lib/bootstrap/js/bootstrap.min.js"></script>
 <script src="lib/d3/d3.v3.js"></script>
 <script src="http://underscorejs.org/underscore-min.js"></script>
+<script src="lib/underscore/underscore.string.min.js"></script>
 
 <style type="text/css">
 .enter {
@@ -46,6 +47,8 @@
 
 <div id="content">
 
+<h3 class="muted">STINGER Monitoring Tools</h3>
+
 <div class="accordion" id="accordion2">
 <div class="accordion-group">
 <div class="accordion-heading">
@@ -55,7 +58,10 @@ Toolbox</a>
 <div id="collapseOne" class="accordion-body collapse in">
 <div class="accordion-inner">
 
-<ul id="tabs" class="nav nav-tabs" data-tabs="tabs">
+<div class="row" style="padding: 12px 0;">
+
+<div class="span3">
+<ul id="tabs" class="nav nav-list nav-stacked" data-tabs="tabs">
 <li class="active"><a href="#topscores" data-toggle="tab">Top Scores</a></li>
 <li><a href="#groupscores" data-toggle="tab">Group Scores</a></li>
 <li><a href="#connectivity" data-toggle="tab">Connectivity</a></li>
@@ -63,11 +69,13 @@ Toolbox</a>
 <li><a href="#labelgraph" data-toggle="tab">Label Graph</a></li>
 <li><a href="#groupgraph" data-toggle="tab">Group Graph</a></li>
 </ul>
+</div>
 
 
+<div class="span8 well" style="height: 250px;">
 <div id="tabscontent" class="tab-content">
 <div class="tab-pane active" id="topscores">
-<h1>Top Scores</h1>
+<h3>Top Scores</h3>
 <p></p>
 </div>
 <div class="tab-pane" id="groupscores">
@@ -83,28 +91,243 @@ Toolbox</a>
 <p></p>
 </div>
 <div class="tab-pane" id="labelgraph">
-<h1>Label Graph</h1>
-<p></p>
+  <form action="#" class="form-horizontal" onSubmit="if($('#labelgraphalgorithm').val() && $('#labelgraphfield').val()) add_tool(new LabelGraph(tools, '#toolstream', $('#labelgraphalgorithm').val(), $('#labelgraphfield').val(), $('#labelgraphvertex').val()));">
+    <legend>Label Graph</legend>
+    <p>Select a label type and enter the name of a vertex.  The label graph will show the structure of all vertices with the same
+    label as the chosen vertex.</p>
+    <div class="control-group">
+      <label class="control-label" for="labelgraphalgorithm">Algorithm</label>
+      <div class="controls">
+	<select class="span5 algselector" id="labelgraphalgorithm">
+	</select>
+      </div>
+      <label class="control-label" for="labelgraphfield">Field</label>
+      <div class="controls">
+	<select class="span5 fieldselector" id="labelgraphfield">
+	</select>
+      </div>
+      <label class="control-label" for="labelgraphvertex">Vertex</label>
+      <div class="controls">
+	<input type="text" id="labelgraphvertex" class="span5" value="naomijones">
+      </div>
+      <div class="controls">
+	<br/>
+	<button type"submit" class="btn btn-success" >Add Tool</button>
+      </div>
+    </div>
+  </form>
 </div>
 <div class="tab-pane" id="groupgraph">
 <h1>Group Graph</h1>
 <p></p>
 </div>
 </div>
+</div>
+
+</div> <!-- end row -->
 
 </div>
 </div>
 </div>
 </div>  <!-- end of toolbox -->
 
-</div>
+<div id="toolstream"></div>
+
+</div> <!-- end of content-->
 
 
 <script type="text/javascript">
-jQuery(document).ready(function ($) {
-    $('#tabs').tab();
+/* startup code */
+  _.mixin(_.str.exports());
+
+  var tools = [];
+
+  function add_tool(tool) { 
+    tools.push(tool); 
+    return false;
+  }
+
+  jQuery(document).ready(function ($) {
+      $('#tabs').tab();
+      $(".collapse").collapse();
+      $(".algselector").click(function() {
+	$(".fieldselector").find('option').remove().end();
+
+	$(".fieldselector").each( (function(algname) { 
+	  return function() {
+	    _.each(algorithms[algname].fields, (function(item) { 
+	      return function(value) {
+		$(item).append(
+		  $("<option></option>")
+		  .attr("value", value)
+		  .text(value));
+	      }; })(this));
+	  }; 
+	})(this.value));
+      });
+      update_algorithms();
+  });
+
+/* request_id handling */
+  var request_id = 0;
+
+  function next_id() {
+    request_id += 1;
+    return request_id;
+  }
+
+/* running algorithms and data sources */
+  var algorithms = {'': {'fields':[]}};
+
+  function update_algorithms() {
+    rpc("get_algorithms", {}, next_id(),
+      function(data) {
+	for(d = 0; d <  data.result.algorithms.length; d++) {
+	  alg = data.result.algorithms[d];
+	  algorithms[alg] = {};
+
+	  rpc("get_data_description", {'name': data.result.algorithms[d]}, next_id(),
+	    (function(alg) { return function(data) {
+	      algorithms[alg] = {'fields': data.result.alg_data};
+	    }; })(alg),
+	    null);
+	}
+
+	$(".algselector").each(function() {
+	  _.each(algorithms, (function(item) { 
+	    return function(value, key) {
+	      $(item).append(
+		$("<option></option>")
+		.attr("value", key)
+		.text(key));
+	    }; })(this));
+	});
+      },
+      null);
+  }
+
+/* general purpose utility functions */
+  function rpc(method, params, id, success, error) {
+    $.ajax({
+      url: "http://localhost:8088/jsonrpc",
+      type: "POST",
+      data: JSON.stringify({"jsonrpc": "2.0", "method": method, "params": params, "id": id}),
+      dataType: "json",
+      success: success,
+      error: error
+    });
+  }
+
+  function add_tool_win(parent_id, child_id, title, obj) {
+    child_id = child_id.substring(1);
+    text = '<div class="accordion" id="' + child_id + 'accordion"><div class="accordion-group well"><div class="accordion-heading" id="' + child_id + 'accordion-heading">' +
+    '<a class="accordion-toggle" data-toggle="collapse" data-parent="#' + child_id  + 'accordion" href="#' + child_id+ 'collapse">' +
+    title + '</a></div><div id="' + child_id + 'collapse" class="accordion-body collapse in">' +
+    '<div class="accordion-inner"><div id="' + child_id + '"></div></div></div></div></div>';
+    $(parent_id).prepend(text);
+    $("#" + child_id + 'accordion-heading').prepend("<button aria-hidden='true' id='" + child_id + "closebtn' class='close' type='button'>×</button>");
+    $("#" + child_id + 'closebtn').click((function (me) { return function() { me.close(); }; })(obj));
     $(".collapse").collapse();
-});
+  }
+
+/***************************************************
+ * LABEL GRAPH
+ */
+  function LabelGraph(tools, id, alg, field, vtx) {
+    this.parent_id = id;
+    this.id = id + tools.length;
+    this.alg = alg;
+    this.field = field;
+    this.vtx = vtx;
+
+    this.width = "800";
+    this.height = "500";
+
+    this.nodes = [];
+    this.links = [];
+    this.graph = {vertices:{}, links: this.links, nodes:this.nodes};
+    this.color = d3.scale.category20();
+
+    this.force = d3.layout.force()
+      .nodes(this.nodes)
+      .links(this.links)
+      .charge(-400)
+      .linkDistance(120)
+      .size([this.width, this.height])
+      .on("tick", this.tick);
+
+    this.svg = d3.select(this.id).append("svg")
+      .attr("width", this.width)
+      .attr("height", this.height);
+
+    this.node = this.svg.selectAll(".node");
+    this.link = this.svg.selectAll(".link");
+
+    this.start = function() {
+      this.link = this.link.data(this.force.links(), function(d) { return d.source.id + "-" + d.target.id; });
+      this.link.enter().insert("line", ".node").attr("class", "link");
+      this.link.exit().remove();
+
+      this.node = this.node.data(this.force.nodes(), function(d) { return d.id;});
+      this.node.enter().append("circle").attr("class", function(d) { return "node " + d.id; }).attr("r", 8);
+      this.node.exit().remove();
+
+      this.force.start();
+    }
+
+    function tick() {
+      this.node.attr("cx", function(d) { return d.x; })
+	.attr("cy", function(d) { return d.y; })
+
+      this.link.attr("x1", function(d) { return d.source.x; })
+	.attr("y1", function(d) { return d.source.y; })
+	.attr("x2", function(d) { return d.target.x; })
+	.attr("y2", function(d) { return d.target.y; });
+    }
+
+    add_tool_win(this.parent_id, this.id, "Label Graph of " + vtx + " (" + alg + ", " + field + ")", this);
+    $(this.id).append("<h1>TESTING</h1>");
+
+    this.close = function() {
+      tools.splice(tools.indexOf(this),1);
+      $(this.id + 'accordion').fadeOut(300, function() { $(this).remove(); });
+    }
+
+    this.register = function(data, graph) {
+      console.log(data);
+      var subgraph = data.result.subgraph;
+
+      for(e = 0; e < subgraph.length; e++) {
+	src = subgraph[e][0];
+	dest = subgraph[e][1];
+
+	console.log(graph);
+	if(!(src in graph.vertices)) {
+	  graph.vertices[src] = {'id': src, 'neighbors': {}};
+	  graph.nodes.push(graph.vertices[src]);
+	}
+	if(!(dest in graph.vertices)) {
+	  graph.vertices[dest] = {'id': dest, 'neighbors': {}};
+	  graph.nodes.push(graph.vertices[dest]);
+	}
+
+	if(!(src in graph.vertices[dest].neighbors)) {
+	  graph.vertices[dest].neighbors[src] = graph.links.push(graph.vertices[dest], graph.vertices[src]);
+	}
+
+	if(!(dest in graph.vertices[src].neighbors)) {
+	  graph.vertices[src].neighbors[dest] = graph.links.push(graph.vertices[src], graph.vertices[dest]);
+	}
+      }
+
+      this.start();
+    }
+
+    <!--rpc("register", {"type": "subgraph", "name": this.alg, "data": this.field, "source": _.trim(this.vtx), "strings":true}, next_id(), this.register, null);-->
+    rpc("register", {"type": "subgraph", "name": this.alg, "data": this.field, "source": 10, "strings":true}, next_id(), 
+      (function(register, graph) { return function(data) { register(data, graph); }; })(this.register,this.graph), null);
+  }
+
 </script>    
 </div>																																      </div> 
 

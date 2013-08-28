@@ -29,6 +29,7 @@ int main(int argc, char *argv[])
   int port_names = 10101;
   int port_streams = port_names + 1;
   int port_algs = port_names + 2;
+  int unleash_daemon = 0;
 
   uint64_t buffer_size = 1ULL << 28ULL;
   char * graph_name = (char *) xmalloc (128*sizeof(char));
@@ -41,7 +42,7 @@ int main(int argc, char *argv[])
 
   /* parse command line configuration */
   int opt = 0;
-  while(-1 != (opt = getopt(argc, argv, "a:s:p:b:n:i:t:1h?"))) {
+  while(-1 != (opt = getopt(argc, argv, "a:s:p:b:n:i:t:1h?d"))) {
     switch(opt) {
       case 'p': {
 		  port_names = atoi(optarg);
@@ -73,11 +74,15 @@ int main(int argc, char *argv[])
       case '1': {
 		  use_numerics = 1;
 		} break;
+      case 'd': {
+		  unleash_daemon = 1;
+		} break;
 
       case '?':
       case 'h': {
-		  printf("Usage:    %s [-p port_names] [-a port_algs] [-s port_streams] [-b buffer_size] [-n graph_name] [-i input_file_path [-t file_type] -1 (for numeric IDs)]\n", argv[0]);
+		  printf("Usage:    %s [-p port_names] [-a port_algs] [-s port_streams] [-b buffer_size] [-n graph_name] [-i input_file_path [-t file_type] -1 (for numeric IDs)] [-d]\n", argv[0]);
 		  printf("Defaults:\n\tport_names: %d\n\tport_algs: %d\n\tport_streams: %d\n\tbuffer_size: %lu\n\tgraph_name: %s\n", port_names, port_algs, port_streams, (unsigned long) buffer_size, graph_name);
+		  printf("-d: daemon mode\n");
 		  exit(0);
 		} break;
 
@@ -161,8 +166,12 @@ int main(int argc, char *argv[])
     exit (0);
   }
 
-  printf("Press <q> to shut down the server...\n");
-  while (getchar() != 'q');
+  if(unleash_daemon) {
+    while(1) { sleep(10); }
+  } else {
+    printf("Press <q> to shut down the server...\n");
+    while (getchar() != 'q');
+  }
 
   printf("Shutting down the name server..."); fflush(stdout);
   int status;
