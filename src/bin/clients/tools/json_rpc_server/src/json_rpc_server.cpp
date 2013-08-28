@@ -20,6 +20,7 @@ extern "C" {
 #include "json_rpc.h"
 #include "rpc_state.h"
 #include "mon_handling.h"
+#include "session_handling.h"
 
 #include "mongoose/mongoose.h"
 
@@ -94,6 +95,9 @@ main (void)
   server_state.add_rpc_function("breadth_first_search", new JSON_RPC_breadth_first_search(&server_state));
   server_state.add_rpc_function("register", new JSON_RPC_register(&server_state));
   server_state.add_rpc_function("request", new JSON_RPC_request(&server_state));
+
+  server_state.add_rpc_session("subgraph", new JSON_RPC_community_subgraph(0, &server_state));
+  server_state.add_rpc_session("vertex_event_notifier", new JSON_RPC_vertex_event_notifier(0, &server_state));
 
   mon_connect(10103, "localhost", "json_rpc");
 

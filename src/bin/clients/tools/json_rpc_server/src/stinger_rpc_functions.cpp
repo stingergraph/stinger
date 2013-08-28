@@ -33,17 +33,21 @@ JSON_RPC_register::operator()(rapidjson::Value * params, rapidjson::Value & resu
   };
 
   LOG_D ("Checking for parameter \"type:\"");
-
   if (!contains_params(p, params)) {
     return json_rpc_error(-32602, result, allocator);
   }
   
-  LOG_D ("Get a session id and create a session");
+  /* Does the session type exist */
+  LOG_D_A ("Searching for session type: %s", type_name);
+  if (server_state->has_rpc_session(type_name) == false) {
+    return json_rpc_error (-32601, result, allocator);
+  }
 
+  LOG_D ("Get a session id and create a session");
   /* create a session id and a new session of the requested type */
   /* add the session to the server state */
   int64_t next_session_id = server_state->get_next_session();
-  JSON_RPCSession * session = new JSON_RPC_community_subgraph(next_session_id, server_state); 
+  JSON_RPCSession * session = server_state->get_rpc_session(type_name)->gimme(next_session_id, server_state);
 
   rapidjson::Value session_id;
   session_id.SetInt64(next_session_id);
