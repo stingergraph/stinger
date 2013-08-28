@@ -371,8 +371,8 @@ JSON_RPC_get_data_description::operator()(rapidjson::Value * params, rapidjson::
   if (contains_params(p, params)) {
     StingerAlgState * alg_state = server_state->get_alg(algorithm_name);
     if (!alg_state) {
-      LOG_E ("AlgState is totally invalid");
-      return json_rpc_error(-32603, result, allocator);
+      LOG_E ("Algorithm is not running");
+      return json_rpc_error(-32003, result, allocator);
     }
     return description_string_to_json(alg_state->data_description.c_str(), result, allocator);
   } else {
@@ -436,8 +436,8 @@ JSON_RPC_get_data_array_range::operator()(rapidjson::Value * params, rapidjson::
   if (contains_params(p, params)) {
     StingerAlgState * alg_state = server_state->get_alg(algorithm_name);
     if (!alg_state) {
-      LOG_E ("AlgState is totally invalid");
-      return json_rpc_error(-32603, result, allocator);
+      LOG_E ("Algorithm is not running");
+      return json_rpc_error(-32003, result, allocator);
     }
     if (nsamples) {
       stride = (count + nsamples - 1) / nsamples;
@@ -487,8 +487,8 @@ JSON_RPC_get_data_array_sorted_range::operator()(rapidjson::Value * params, rapi
   if (contains_params(p, params)) {
     StingerAlgState * alg_state = server_state->get_alg(algorithm_name);
     if (!alg_state) {
-      LOG_E ("AlgState is totally invalid");
-      return json_rpc_error(-32603, result, allocator);
+      LOG_E ("Algorithm is not running");
+      return json_rpc_error(-32003, result, allocator);
     }
     if (nsamples) {
       stride = (count + nsamples - 1) / nsamples;
@@ -532,8 +532,8 @@ JSON_RPC_get_data_array_set::operator()(rapidjson::Value * params, rapidjson::Va
   if (contains_params(p, params)) {
     StingerAlgState * alg_state = server_state->get_alg(algorithm_name);
     if (!alg_state) {
-      LOG_E ("AlgState is totally invalid");
-      return json_rpc_error(-32603, result, allocator);
+      LOG_E ("Algorithm is not running");
+      return json_rpc_error(-32003, result, allocator);
     }
     return array_to_json_monolithic (
 	SET,
@@ -578,8 +578,8 @@ JSON_RPC_get_data_array::operator()(rapidjson::Value * params, rapidjson::Value 
   if (contains_params(p, params)) {
     StingerAlgState * alg_state = server_state->get_alg(algorithm_name);
     if (!alg_state) {
-      LOG_E ("AlgState is totally invalid");
-      return json_rpc_error(-32603, result, allocator);
+      LOG_E ("Algorithm is not running");
+      return json_rpc_error(-32003, result, allocator);
     }
     if (nsamples) {
       stride = (STINGER_MAX_LVERTICES + nsamples - 1) / nsamples;
