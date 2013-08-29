@@ -119,12 +119,15 @@ JSON_RPC_community_subgraph::onRequest(
 		      rapidjson::Value & result,
 		      rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator)
 {
-  rapidjson::Value insertions, deletions;
-  rapidjson::Value src, dst, edge;
+  rapidjson::Value insertions, deletions, insertions_str, deletions_str;
+  rapidjson::Value src, src_str, dst, dst_str, edge, edge_str;
   std::set<std::pair<int64_t, int64_t> >::iterator it;
+
+  stinger_t * S = server_state->get_stinger();
 
   /* send insertions back */
   insertions.SetArray();
+  insertions_str.SetArray();
 
   for (it = _insertions.begin(); it != _insertions.end(); ++it) {
     src.SetInt64((*it).first);
@@ -133,13 +136,30 @@ JSON_RPC_community_subgraph::onRequest(
     edge.PushBack(src, allocator);
     edge.PushBack(dst, allocator);
     insertions.PushBack(edge, allocator);
+    if(_strings) {
+      char * physID;
+      uint64_t len;
+      stinger_mapping_physid_direct(S, (*it).first, &physID, &len);
+      src_str.SetString(physID);
+      stinger_mapping_physid_direct(S, (*it).second, &physID, &len);
+      dst_str.SetString(physID);
+      edge_str.SetArray();
+      edge_str.PushBack(src_str, allocator);
+      edge_str.PushBack(dst_str, allocator);
+      insertions_str.PushBack(edge_str, allocator);
+    }
   }
 
   result.AddMember("insertions", insertions, allocator);
+  if(_strings) {
+    result.AddMember("insertions_str", insertions_str, allocator);
+  }
 
   /* send deletions back */
 
   deletions.SetArray();
+  deletions_str.SetArray();
+
 
   for (it = _deletions.begin(); it != _deletions.end(); ++it) {
     src.SetInt64((*it).first);
@@ -148,9 +168,24 @@ JSON_RPC_community_subgraph::onRequest(
     edge.PushBack(src, allocator);
     edge.PushBack(dst, allocator);
     deletions.PushBack(edge, allocator);
+    if(_strings) {
+      char * physID;
+      uint64_t len;
+      stinger_mapping_physid_direct(S, (*it).first, &physID, &len);
+      src_str.SetString(physID);
+      stinger_mapping_physid_direct(S, (*it).second, &physID, &len);
+      dst_str.SetString(physID);
+      edge_str.SetArray();
+      edge_str.PushBack(src_str, allocator);
+      edge_str.PushBack(dst_str, allocator);
+      deletions_str.PushBack(edge_str, allocator);
+    }
   }
 
   result.AddMember("deletions", deletions, allocator);
+  if(_strings) {
+    result.AddMember("deletions_str", deletions_str, allocator);
+  }
 
   /* clear both and reset the clock */
   _insertions.clear();
@@ -200,7 +235,8 @@ JSON_RPC_community_subgraph::onRegister(
   }
 
   rapidjson::Value a (rapidjson::kArrayType);
-  rapidjson::Value src, dst, edge;
+  rapidjson::Value a_str (rapidjson::kArrayType);
+  rapidjson::Value src, src_str, dst, dst_str, edge, edge_str;
 
   /* Get all edges within the community */
   std::set<int64_t>::iterator it;
@@ -214,11 +250,26 @@ JSON_RPC_community_subgraph::onRegister(
 	edge.PushBack(src, allocator);
 	edge.PushBack(dst, allocator);
 	a.PushBack(edge, allocator);
+	if(_strings) {
+	  char * physID;
+	  uint64_t len;
+	  stinger_mapping_physid_direct(S, (*it), &physID, &len);
+	  src_str.SetString(physID);
+	  stinger_mapping_physid_direct(S, STINGER_EDGE_DEST, &physID, &len);
+	  dst_str.SetString(physID);
+	  edge_str.SetArray();
+	  edge_str.PushBack(src_str, allocator);
+	  edge_str.PushBack(dst_str, allocator);
+	  a_str.PushBack(edge_str, allocator);
+	}
       }
     } STINGER_FORALL_EDGES_OF_VTX_END();
   }
 
   result.AddMember("subgraph", a, allocator);
+  if(_strings) {
+    result.AddMember("subgraph_str", a_str, allocator);
+  }
 
   reset_timeout();
 
@@ -365,7 +416,8 @@ JSON_RPC_vertex_event_notifier::onRegister(
 
   /* Send back all edges incident on those vertices */
   rapidjson::Value a (rapidjson::kArrayType);
-  rapidjson::Value src, dst, edge;
+  rapidjson::Value a_str (rapidjson::kArrayType);
+  rapidjson::Value src, src_str, dst, dst_str, edge, edge_str;
 
   std::set<int64_t>::iterator it;
   for (it = _vertices.begin(); it != _vertices.end(); ++it) {
@@ -376,10 +428,25 @@ JSON_RPC_vertex_event_notifier::onRegister(
       edge.PushBack(src, allocator);
       edge.PushBack(dst, allocator);
       a.PushBack(edge, allocator);
+      if(_strings) {
+	char * physID;
+	uint64_t len;
+	stinger_mapping_physid_direct(S, (*it), &physID, &len);
+	src_str.SetString(physID);
+	stinger_mapping_physid_direct(S, STINGER_EDGE_DEST, &physID, &len);
+	dst_str.SetString(physID);
+	edge_str.SetArray();
+	edge_str.PushBack(src_str, allocator);
+	edge_str.PushBack(dst_str, allocator);
+	a_str.PushBack(edge_str, allocator);
+      }
     } STINGER_FORALL_EDGES_OF_VTX_END();
   }
 
   result.AddMember("subgraph", a, allocator);
+  if(_strings) {
+    result.AddMember("subgraph_str", a_str, allocator);
+  }
 
   reset_timeout();
 
@@ -391,12 +458,14 @@ JSON_RPC_vertex_event_notifier::onRequest(
 	      rapidjson::Value & result,
 	      rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator)
 {
-  rapidjson::Value insertions, deletions;
-  rapidjson::Value src, dst, edge;
+  stinger_t * S = server_state->get_stinger();
+  rapidjson::Value insertions, deletions, insertions_str, deletions_str;
+  rapidjson::Value src, src_str, dst, dst_str, edge, edge_str;
   std::set<std::pair<int64_t, int64_t> >::iterator it;
 
   /* send insertions back */
   insertions.SetArray();
+  insertions_str.SetArray();
 
   for (it = _insertions.begin(); it != _insertions.end(); ++it) {
     src.SetInt64((*it).first);
@@ -405,13 +474,29 @@ JSON_RPC_vertex_event_notifier::onRequest(
     edge.PushBack(src, allocator);
     edge.PushBack(dst, allocator);
     insertions.PushBack(edge, allocator);
+    if(_strings) {
+      char * physID;
+      uint64_t len;
+      stinger_mapping_physid_direct(S, (*it).first, &physID, &len);
+      src_str.SetString(physID);
+      stinger_mapping_physid_direct(S, (*it).second, &physID, &len);
+      dst_str.SetString(physID);
+      edge_str.SetArray();
+      edge_str.PushBack(src_str, allocator);
+      edge_str.PushBack(dst_str, allocator);
+      insertions_str.PushBack(edge_str, allocator);
+    }
   }
 
   result.AddMember("insertions", insertions, allocator);
+  if(_strings) {
+    result.AddMember("insertions_str", insertions_str, allocator);
+  }
 
   /* send deletions back */
 
   deletions.SetArray();
+  deletions_str.SetArray();
 
   for (it = _deletions.begin(); it != _deletions.end(); ++it) {
     src.SetInt64((*it).first);
@@ -420,9 +505,24 @@ JSON_RPC_vertex_event_notifier::onRequest(
     edge.PushBack(src, allocator);
     edge.PushBack(dst, allocator);
     deletions.PushBack(edge, allocator);
+    if(_strings) {
+      char * physID;
+      uint64_t len;
+      stinger_mapping_physid_direct(S, (*it).first, &physID, &len);
+      src_str.SetString(physID);
+      stinger_mapping_physid_direct(S, (*it).second, &physID, &len);
+      dst_str.SetString(physID);
+      edge_str.SetArray();
+      edge_str.PushBack(src_str, allocator);
+      edge_str.PushBack(dst_str, allocator);
+      deletions_str.PushBack(edge_str, allocator);
+    }
   }
 
   result.AddMember("deletions", deletions, allocator);
+  if(_strings) {
+    result.AddMember("deletions_str", deletions_str, allocator);
+  }
 
   /* clear both and reset the clock */
   _insertions.clear();

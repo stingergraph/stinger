@@ -30,7 +30,7 @@ namespace gt {
 	JSON_RPC_community_subgraph(int64_t sess_id, JSON_RPCServerState * session) : JSON_RPCSession(sess_id, session) {
 	  p[0] = ((rpc_params_t) {"name", TYPE_STRING, &_algorithm_name, false, 0});
 	  p[1] = ((rpc_params_t) {"data", TYPE_STRING, &_data_array_name, false, 0});
-	  p[2] = ((rpc_params_t) {"source", TYPE_INT64, &_source, false, 0});
+	  p[2] = ((rpc_params_t) {"source", TYPE_VERTEX, &_source, false, 0});
 	  p[3] = ((rpc_params_t) {"strings", TYPE_BOOL, &_strings, true, 0});
 	  p[4] = ((rpc_params_t) {NULL, TYPE_NONE, NULL, false, 0});
 	}
