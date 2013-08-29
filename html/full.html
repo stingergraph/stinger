@@ -306,15 +306,13 @@ Toolbox</a>
       $(this.id + 'accordion').fadeOut(300, function() { $(this).remove(); });
     }
 
-    this.register = function(data, graph, start) {
-      console.log(data);
+    this.register = function(data, graph, obj) {
       var subgraph = data.result.subgraph;
 
       for(e = 0; e < subgraph.length; e++) {
 	src = subgraph[e][0];
 	dest = subgraph[e][1];
 
-	console.log(graph);
 	if(!(src in graph.vertices)) {
 	  graph.vertices[src] = {'id': src, 'neighbors': {}, 'in_arr':''};
 	  graph.vertices[src]['in_arr'] = graph.nodes[graph.nodes.push(graph.vertices[src])];
@@ -333,57 +331,77 @@ Toolbox</a>
 	}
       }
 
-      start.start();
+      obj.start();
+
+      rpc("request", {"wait_for_update": true, "session_id": data.result.session_id, "strings":true}, next_id(), 
+	(function(update, graph, obj, session_id) { return function(data) { update(data, graph, obj, session_id); }; })(obj.update, obj.graph, obj, data.result.session_id), null);
     }
 
-    this.update = function(data, graph, start) {
-      console.log(data);
-      var insertions = data.result.subgraph.insertions;
-      var deletions = data.result.subgraph.deletions;
+    this.update = function(data, graph, obj, session_id) {
+      var insertions = data.result.insertions;
+      var deletions = data.result.deletions;
 
-      console.log(graph);
+      console.log("insertions is " + insertions.length);
 
       for(e = 0; e < deletions.length; e++) {
 	src = deletions[e][0];
-	dest = insertions[e][1];
+	dest = deletsion[e][1];
 
 	if(dest in graph.vertices) {
 	  if(src in graph.vertices[dest].neighbors) {
-	    graph.links.splice(graph.links.indexOf(graph.vertices[dest].neighbors[src]));
+	    graph.links.splice(graph.links.indexOf(graph.vertices[dest].neighbors[src]),1);
 	    delete graph.vertice[dest].neighbors[src];
+
+	    if(graph.vertices[dest].neighbors.length < 1) {
+	      graph.nodes.splice(graph.nodes.indexOf(graph.vertices[dest]['in_addr']),1);
+	      delete graph.vertices[dest];
+	    }
 	  }
 	}
 
 	if(src in graph.vertices) {
 	  if(dest in graph.vertices[src].neighbors) {
-	    graph.links.splice(graph.links.indexOf(graph.vertices[src].neighbors[dest]));
+	    graph.links.splice(graph.links.indexOf(graph.vertices[src].neighbors[dest]),1);
 	    delete graph.vertice[src].neighbors[dest];
+
+	    if(graph.vertices[src].neighbors.length < 1) {
+	      graph.nodes.splice(graph.nodes.indexOf(graph.vertices[src]['in_addr']),1);
+	      delete graph.vertices[src];
+	    }
 	  }
 	}
-
-	/* TODO delete empty vertices */
       }
 
-/*
+      for(e = 0; e < insertions.length; e++) {
+	src = insertions[e][0];
+	dest = insertions[e][1];
+
+	if(!(src in graph.vertices)) {
+	  graph.vertices[src] = {'id': src, 'neighbors': {}, 'in_arr':''};
+	  graph.vertices[src]['in_arr'] = graph.nodes[graph.nodes.push(graph.vertices[src])];
+	}
 	if(!(dest in graph.vertices)) {
-	  graph.vertices[dest] = {'id': dest, 'neighbors': {}};
-	  graph.nodes.push(graph.vertices[dest]);
+	  graph.vertices[dest] = {'id': dest, 'neighbors': {}, 'in_arr':''};
+	  graph.vertices[dest]['in_arr'] = graph.nodes[graph.nodes.push(graph.vertices[dest])];
 	}
 
 	if(!(src in graph.vertices[dest].neighbors)) {
-	  graph.vertices[dest].neighbors[src] = graph.links.push({source: graph.vertices[dest], target: graph.vertices[src], value: 1});
+	  graph.vertices[dest].neighbors[src] = graph.links[graph.links.push({source: graph.vertices[dest], target: graph.vertices[src], value: 1})];
 	}
 
 	if(!(dest in graph.vertices[src].neighbors)) {
-	  graph.vertices[src].neighbors[dest] = graph.links.push({source: graph.vertices[src], target: graph.vertices[dest], value: 1});
+	  graph.vertices[src].neighbors[dest] = graph.links[graph.links.push({source: graph.vertices[src], target: graph.vertices[dest], value: 1})];
 	}
-	*/
+      }
 
-      start.start();
+      obj.start();
+
+      rpc("request", {"wait_for_update": true, "session_id": session_id, "strings":true}, next_id(), 
+	(function(update, graph, obj, session_id) { return function(data) { update(data, graph, obj, session_id); }; })(obj.update, obj.graph, obj, session_id), null);
     }
 
     <!--rpc("register", {"type": "subgraph", "name": this.alg, "data": this.field, "source": _.trim(this.vtx), "strings":true}, next_id(), this.register, null);-->
-    rpc("register", {"type": "subgraph", "name": this.alg, "data": this.field, "source": 10, "strings":true}, next_id(), 
+    rpc("register", {"type": "subgraph", "name": this.alg, "data": this.field, "source": 0, "strings":true}, next_id(), 
       (function(register, graph, start) { return function(data) { register(data, graph, start); }; })(this.register,this.graph, this), null);
   }
 
