@@ -554,6 +554,7 @@ JSON_RPC_get_data_array_set::operator()(rapidjson::Value * params, rapidjson::Va
 	set_array.len
     );
   } else {
+    LOG_W ("didn't have the right params");
     return json_rpc_error(-32602, result, allocator);
   }
 }
@@ -1072,6 +1073,7 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
     rtn.AddMember(search_string, result, allocator);
   }
   else {
+    LOG_W ("shouldn't get here");
     return json_rpc_error(-32602, rtn, allocator);
   }
 
