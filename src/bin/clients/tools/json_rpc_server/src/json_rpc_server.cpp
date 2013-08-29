@@ -82,8 +82,29 @@ begin_request_handler(struct mg_connection *conn)
 
 
 int
-main (void)
+main (int argc, char ** argv)
 {
+  int unleash_daemon = 0;
+
+  int opt = 0;
+  while(-1 != (opt = getopt(argc, argv, "h?d"))) {
+    switch(opt) {
+      default: {
+	LOG_E_A("Unknwon option %c", opt);
+      } /* no break */
+      case '?':
+      case 'h': {
+	printf("Usage: %s [-d]\n", argv[0]);
+	printf("-d\tdaemon mode\n");
+	exit(-1);
+      } break;
+	
+      case 'd': {
+	unleash_daemon = 1;
+      } break;
+    }
+  }
+
   JSON_RPCServerState & server_state = JSON_RPCServerState::get_server_state();
   server_state.add_rpc_function("get_algorithms", new JSON_RPC_get_algorithms(&server_state));
   server_state.add_rpc_function("get_data_description", new JSON_RPC_get_data_description(&server_state));
@@ -116,7 +137,12 @@ main (void)
   ctx = mg_start(&callbacks, NULL, opts);
   
   /* infinite loop */
-  while (getchar() != 'q');
+  if(unleash_daemon) {
+    while(1) { sleep(10); }
+  } else {
+    printf("Press <q> to shut down the server...\n");
+    while (getchar() != 'q');
+  }
 
   return 0;
 }
