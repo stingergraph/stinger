@@ -10,6 +10,16 @@
 <script src="lib/underscore/underscore.string.min.js"></script>
 
 <style type="text/css">
+.link {
+    stroke: #000;
+    stroke-width: 1.5px;
+}
+
+.node {
+    fill: #000;
+    stroke: #fff;
+    stroke-width: 1.5px;
+}
 .enter {
     fill: green;
 }
@@ -240,21 +250,20 @@ Toolbox</a>
     this.field = field;
     this.vtx = vtx;
 
-    this.width = "800";
-    this.height = "500";
+    this.width = 960,
+    this.height = 400;
 
     this.nodes = [];
     this.links = [];
     this.graph = {vertices:{}, links: this.links, nodes:this.nodes};
     this.color = d3.scale.category20();
 
+    add_tool_win(this.parent_id, this.id, "Label Graph of " + vtx + " (" + alg + ", " + field + ")", this);
+
     this.force = d3.layout.force()
-      .nodes(this.nodes)
-      .links(this.links)
-      .charge(-400)
-      .linkDistance(120)
-      .size([this.width, this.height])
-      .on("tick", this.tick);
+      .charge(-120)
+      .linkDistance(30)
+      .size([this.width, this.height]);
 
     this.svg = d3.select(this.id).append("svg")
       .attr("width", this.width)
@@ -264,36 +273,40 @@ Toolbox</a>
     this.link = this.svg.selectAll(".link");
 
     this.start = function() {
-      this.link = this.link.data(this.force.links(), function(d) { return d.source.id + "-" + d.target.id; });
+      this.node = this.svg.selectAll(".node");
+      this.link = this.svg.selectAll(".link");
+
+      this.link = this.link.data(this.links, function(d) { return d.source.id + "-" + d.target.id; });
       this.link.enter().insert("line", ".node").attr("class", "link");
       this.link.exit().remove();
 
-      this.node = this.node.data(this.force.nodes(), function(d) { return d.id;});
-      this.node.enter().append("circle").attr("class", function(d) { return "node " + d.id; }).attr("r", 8);
+      this.node = this.node.data(this.nodes, function(d) { return d.id;});
+      this.node.enter().append("circle").attr("class", function(d) { return "node " + d.id; }).attr("r", 8).call(this.force.drag);
       this.node.exit().remove();
+
+      this.force
+	.nodes(this.nodes)
+	.links(this.links)
+	.on("tick", (function(obj) { return function() {
+	  obj.node.attr("cx", function(d) { return d.x; })
+	    .attr("cy", function(d) { return d.y; })
+
+	  obj.link.attr("x1", function(d) { return d.source.x; })
+	    .attr("y1", function(d) { return d.source.y; })
+	    .attr("x2", function(d) { return d.target.x; })
+	    .attr("y2", function(d) { return d.target.y; });
+	}; })(this));
 
       this.force.start();
     }
 
-    function tick() {
-      this.node.attr("cx", function(d) { return d.x; })
-	.attr("cy", function(d) { return d.y; })
-
-      this.link.attr("x1", function(d) { return d.source.x; })
-	.attr("y1", function(d) { return d.source.y; })
-	.attr("x2", function(d) { return d.target.x; })
-	.attr("y2", function(d) { return d.target.y; });
-    }
-
-    add_tool_win(this.parent_id, this.id, "Label Graph of " + vtx + " (" + alg + ", " + field + ")", this);
-    $(this.id).append("<h1>TESTING</h1>");
 
     this.close = function() {
       tools.splice(tools.indexOf(this),1);
       $(this.id + 'accordion').fadeOut(300, function() { $(this).remove(); });
     }
 
-    this.register = function(data, graph) {
+    this.register = function(data, graph, start) {
       console.log(data);
       var subgraph = data.result.subgraph;
 
@@ -303,29 +316,75 @@ Toolbox</a>
 
 	console.log(graph);
 	if(!(src in graph.vertices)) {
-	  graph.vertices[src] = {'id': src, 'neighbors': {}};
-	  graph.nodes.push(graph.vertices[src]);
+	  graph.vertices[src] = {'id': src, 'neighbors': {}, 'in_arr':''};
+	  graph.vertices[src]['in_arr'] = graph.nodes[graph.nodes.push(graph.vertices[src])];
 	}
+	if(!(dest in graph.vertices)) {
+	  graph.vertices[dest] = {'id': dest, 'neighbors': {}, 'in_arr':''};
+	  graph.vertices[dest]['in_arr'] = graph.nodes[graph.nodes.push(graph.vertices[dest])];
+	}
+
+	if(!(src in graph.vertices[dest].neighbors)) {
+	  graph.vertices[dest].neighbors[src] = graph.links[graph.links.push({source: graph.vertices[dest], target: graph.vertices[src], value: 1})];
+	}
+
+	if(!(dest in graph.vertices[src].neighbors)) {
+	  graph.vertices[src].neighbors[dest] = graph.links[graph.links.push({source: graph.vertices[src], target: graph.vertices[dest], value: 1})];
+	}
+      }
+
+      start.start();
+    }
+
+    this.update = function(data, graph, start) {
+      console.log(data);
+      var insertions = data.result.subgraph.insertions;
+      var deletions = data.result.subgraph.deletions;
+
+      console.log(graph);
+
+      for(e = 0; e < deletions.length; e++) {
+	src = deletions[e][0];
+	dest = insertions[e][1];
+
+	if(dest in graph.vertices) {
+	  if(src in graph.vertices[dest].neighbors) {
+	    graph.links.splice(graph.links.indexOf(graph.vertices[dest].neighbors[src]));
+	    delete graph.vertice[dest].neighbors[src];
+	  }
+	}
+
+	if(src in graph.vertices) {
+	  if(dest in graph.vertices[src].neighbors) {
+	    graph.links.splice(graph.links.indexOf(graph.vertices[src].neighbors[dest]));
+	    delete graph.vertice[src].neighbors[dest];
+	  }
+	}
+
+	/* TODO delete empty vertices */
+      }
+
+/*
 	if(!(dest in graph.vertices)) {
 	  graph.vertices[dest] = {'id': dest, 'neighbors': {}};
 	  graph.nodes.push(graph.vertices[dest]);
 	}
 
 	if(!(src in graph.vertices[dest].neighbors)) {
-	  graph.vertices[dest].neighbors[src] = graph.links.push(graph.vertices[dest], graph.vertices[src]);
+	  graph.vertices[dest].neighbors[src] = graph.links.push({source: graph.vertices[dest], target: graph.vertices[src], value: 1});
 	}
 
 	if(!(dest in graph.vertices[src].neighbors)) {
-	  graph.vertices[src].neighbors[dest] = graph.links.push(graph.vertices[src], graph.vertices[dest]);
+	  graph.vertices[src].neighbors[dest] = graph.links.push({source: graph.vertices[src], target: graph.vertices[dest], value: 1});
 	}
-      }
+	*/
 
-      this.start();
+      start.start();
     }
 
     <!--rpc("register", {"type": "subgraph", "name": this.alg, "data": this.field, "source": _.trim(this.vtx), "strings":true}, next_id(), this.register, null);-->
     rpc("register", {"type": "subgraph", "name": this.alg, "data": this.field, "source": 10, "strings":true}, next_id(), 
-      (function(register, graph) { return function(data) { register(data, graph); }; })(this.register,this.graph), null);
+      (function(register, graph, start) { return function(data) { register(data, graph, start); }; })(this.register,this.graph, this), null);
   }
 
 </script>    
