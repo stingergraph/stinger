@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+<link href="lib/bootstrap/css/bootstrap.min.css" rel="stylesheet"></link>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="lib/d3/d3.v3.js"></script>
+<script src="http://underscorejs.org/underscore-min.js"></script>
+
+<style type="text/css">
+.enter {
+    fill: green;
+}
+
+.update {
+    fill: #333;
+}
+
+.exit {
+    fill: brown;
+}
+
+.labels {
+    font-weight: bold;
+}
+
+.titles {
+    font-weight: bold;
+}
+.axis path, .axis line {
+  fill: none;
+  stroke: #555555;
+  shape-rendering: crispEdges;
+}
+.line {
+  fill: none;
+  stroke: red;
+  stroke-width: 1px;
+}
+</style>
+
+</head>
+<body>
+<div class="container">
+
+<div class="masthead">
+<h3 class="muted">STINGER Demo</h3>
+<div class="navbar">
+<div class="navbar-inner">
+<div class="container">
+<ul class="nav">
+<li class="active"><a href="page_rank_top.html">PageRank Top 25</a></li>
+<li><a href="page_rank_group.html">PageRank Group</a></li>
+<li><a href="components.html">Components</a></li>
+<li><a href="http://www.stingergraph.com">About</a></li>
+</ul>
+</div>
+</div>
+</div><!-- /.navbar -->
+</div>
+
+<div class="well">
+<div id="prlist"></div>
+</div>
+<div class="well">
+<div id="prchart"></div>
+</div>
+<div class="well">
+<div id="prdebug"></div>
+</div>
+</div>
+
+<script>
+
+function rpc(method, params, id, success, error) {
+  $.ajax({
+    url: "http://localhost:8088/jsonrpc",
+    type: "POST",
+    data: JSON.stringify({"jsonrpc": "2.0", "method": method, "params": params, "id": id}),
+    dataType: "json",
+    success: success,
+    error: error
+  });
+}
+
+function List(tag) {
+  this.count = 25;
+  this.width = 900;
+  this.height = (this.count + 3) * 18;
+  this.name_pos_x = 80;
+  this.label_pos_x = 0;
+  this.title_labels = ["Ranking", "Name", "Score", "Relative"];
+
+  this.colors = d3.scale.category20();
+
+  this.x_space = function(d,i) {
+    spacing = [0, 80, 180, 400];
+    return spacing[i];
+  }
+
+  this.bar_width = this.width - this.x_space(0,3);
+
+  /* create svg */
+  this.svg = d3.select(tag).append("svg")
+      .attr("width", this.width)
+      .attr("height", this.height);
+
+  /* create labels */
+  var labels = this.svg.selectAll(".labels").data(_.range(1,this.count+1))
+    .enter().append("text")
+    .attr("class","labels")
+    .attr("dx", ".35em")
+    .attr("x", this.label_pos_x)
+    .attr("y", function(d,i) { return (i+2)*18 + 5; })
+    .text(function(d) { return d; });
+
+  var titles = this.svg.selectAll(".titles").data(this.title_labels)
+    .enter().append("text")
+    .attr("class", "titles")
+    .attr("x", this.x_space)
+    .attr("y", 18)
+    .text(function(d) { return d; });
+
+  /* update and data handling */
+  this.update = function(data) {
+    var text = this.svg.selectAll(".names")
+      .data(data, function (d) { return d[0] });
+
+    text.attr("class","names")
+      .transition()
+      .delay(750)
+      .attr("y", function(d,i) { return (i+2)*18 + 5; });
+
+    text.enter().append("text")
+      .attr("class","names enter")
+      .attr("dx", ".35em")
+      .attr("x", this.x_space(0,1))
+      .attr("y", function(d,i) { return (i+2)*18 + 5; })
+      .style("fill-opacity",1e-6)
+      .text(function(d) { return d[0]; })
+      .transition()
+      .delay(750)
+      .duration(750)
+      .style("fill-opacity",1);
+
+    text.exit()
+      .attr("class", "names exit")
+      .transition()
+      .duration(750)
+      .style("fill-opacity",1e-6)
+      .remove();
+
+    var values = this.svg.selectAll(".values")
+      .data(data, function (d) { return d[0]});
+
+    values.attr("class","values update")
+      .transition()
+      .delay(750)
+      .attr("y", function(d,i) { return (i+2)*18 + 5; })
+      .text(function(d) { return d[1] });
+
+    values.enter().append("text")
+      .attr("class","values enter")
+      .attr("dx", ".35em")
+      .attr("x", this.x_space(0,2))
+      .attr("y", function(d,i) { return (i+2)*18 + 5; })
+      .style("fill-opacity",1e-6)
+      .text(function(d) { return d[1]; })
+      .transition()
+      .delay(750)
+      .duration(750)
+      .style("fill-opacity",1);
+
+    values.exit()
+      .attr("class", "values exit")
+      .transition()
+      .duration(750)
+      .style("fill-opacity",1e-6)
+      .remove();
+
+    var bars = this.svg.selectAll(".bars")
+      .data(data, function(d) { return d[0]; });
+
+    var maxval = _.max(data, function(d) { return d[1]; });
+    console.log(maxval[1]);
+    console.log(this.bar_width);
+
+    bars.attr("class", "bars update")
+      .transition()
+      .delay(750)
+      .attr("y", function(d,i) { return (i+1)*18 + 5; })
+      .attr("width", (function(max, width) { return function(d) { return max == 0 ? width : width * d[1] / max; }; })(maxval[1], this.bar_width));
+    
+    bars.enter().append("rect")
+      .attr("class", "bars enter")
+      .attr("x", this.x_space(0,3))
+      .attr("y", function(d,i) { return (i+1)*18 + 5; })
+      .attr("width", (function(max, width) { return function(d) { return max == 0 ? width : width * d[1] / max; }; })(maxval[1], this.bar_width))
+      .attr("height", 18)
+      .transition()
+      .delay(750)
+      .duration(750)
+      .style("fill", (function(colors) { return function(d) { return colors(d[0]);}; })(this.colors))
+      .style("fill-opacity",1);
+
+    bars.exit()
+      .attr("class", "bars exit")
+      .transition()
+      .duration(750)
+      .style("fill-opacity", 1e-6)
+      .remove();
+  }
+
+  return this;
+};
+
+list_params = new List("#prlist");
+
+function Chart(tag) {
+  this.t = 0;
+  this.n = 40;
+  this.duration = 750;
+
+  this.margin = {
+    top: 10,
+    right: 60,
+    bottom: 20,
+    left: 80
+  };
+
+  this.width = 900 - this.margin.left - this.margin.right;
+  this.height = 700 - this.margin.top - this.margin.bottom;
+
+  this.x = d3.scale.linear()
+    .domain([this.t - this.n + 1, this.t])
+    .range([0, this.width]);
+
+  this.y = d3.scale.linear()
+    .domain([0, 1])
+    .range([this.height, 0]);
+
+  this.line = d3.svg.line()
+    .interpolate("basis")
+    .x((function(x) { 
+      return function (d, i) {
+	return x(d.time);
+      };
+    })(this.x))
+    .y((function(y) { 
+      return function (d, i) {
+	return y(d.value);
+      };
+    })(this.y));
+
+  this.svg = d3.select(tag).append("svg")
+    .attr("width", this.width + this.margin.left + this.margin.right)
+    .attr("height", this.height + this.margin.top + this.margin.bottom);
+
+  this.g = this.svg.append("g")
+    .attr("transform", "translate(" + this.margin.left + "," + this.margin.top + ")");
+
+  // extra svg to clip the graph and x axis as they transition in and out
+  this.graph = this.g.append("svg")
+    .attr("width", this.width)
+    .attr("height", this.height + this.margin.top + this.margin.bottom);
+
+  this.xAxis = d3.svg.axis().scale(this.x).orient("bottom");
+  this.yAxis = d3.svg.axis().scale(this.y).orient("left");
+
+  this.xaxis = this.graph.append("g")
+    .attr("class", "x axis")
+    .attr("transform", "translate(0," + this.height + ")")
+    .call(this.x.axis = this.xAxis);
+
+  this.yaxis = this.g.append("g")
+    .attr("class", "y axis")
+    .call(this.y.axis = this.yAxis);
+
+  this.data = {};
+  this.paths = {};
+
+  this.colors = d3.scale.category20();
+
+  this.update = function(data, names, t) {
+    for(i = 0; i < data.length; i++) {
+      if(!(names[i] in this.data)) {
+	this.data[names[i]] = [{time:t-1, value:0}];
+	this.paths[names[i]] = this.graph.append("g")
+	    .append("path")
+	    .data([this.data[names[i]]])
+	    .attr("class", "line")
+	    .style("stroke", this.colors(names[i]));
+      } 
+      if(this.data[names[i]][0].time < t - this.n) {
+	this.data[names[i]].shift();
+	if(this.data[names[i]].length <= 0) {
+	  delete this.data[names[i]];
+	  delete this.paths[names[i]];
+	}
+      }
+      this.data[names[i]].push({time:t, value: data[i]});
+    }
+
+    this.x.domain([t - this.n + 2, t]);
+
+    maxy = _.reduce(this.data, 
+      function(memo, num) { 
+	local_max = _.max(num, function(d) { return d.value; });
+	return _.max([local_max.value, memo]);
+      }, 
+      0);
+
+    this.y.domain([0, maxy * 1.05]);
+
+    this.graph.selectAll(".line").attr("d", this.line).attr("transform", null);
+    this.graph.selectAll(".line").transition()
+      .duration(this.duration)
+      .ease("linear")
+      .attr("transform", "translate(" + this.x(t-this.n+1) + ")");
+
+    this.xaxis.transition()
+      .duration(this.duration)
+      .ease("linear")
+      .call(this.xAxis);
+
+    this.yaxis.transition()
+      .duration(this.duration)
+      .ease("linear")
+      .call(this.yAxis);
+
+    var text = this.svg.selectAll(".names").data(names, function(d) { return d; });
+
+    text.attr("class","names update")
+      .transition()
+      .delay(750)
+      .attr("y", function(d,i) { return (i+2)*18 })
+      .text(function(d) { return d; });
+
+    text.enter().append("text")
+      .attr("class","names enter")
+      .attr("dx", ".35em")
+      .attr("x", this.width + this.margin.left)
+      .attr("y", function(d,i) { return (i+2)*18; })
+      .style("fill-opacity",1e-6)
+      .text(function(d) { return d; })
+      .transition()
+      .delay(750)
+      .duration(750)
+      .style("fill-opacity",1)
+      .style("fill", 
+	(function(colors) { 
+	  return function(d) { 
+	    return colors(d);
+	  }; 
+	})(this.colors));
+
+    text.exit()
+      .attr("class", "names exit")
+      .transition()
+      .duration(750)
+      .style("fill-opacity",1e-6)
+      .remove();
+  }
+};
+
+chart_params = new Chart("#prchart");
+
+
+var t = 0;
+function update_page(data) {
+  list_params.update(_.zip(data.result.pagerank.vertex_id, data.result.pagerank.value));
+  chart_params.update(data.result.pagerank.value, data.result.pagerank.vertex_id, t);
+  t += 1;
+
+  $("#prdebug").append(JSON.stringify(data))
+}
+
+setInterval(
+  function() {
+    rpc("get_data_array_sorted_range", 
+      {"name": "pagerank", "data": "pagerank", "offset": 0, "count": list_params.count, "order":"DESC"}, 
+      1, 
+      update_page, null);
+  },
+  1500
+);
+
+</script>
+</body>
+</html>

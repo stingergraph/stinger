@@ -119,7 +119,6 @@ main(int argc, char *argv[])
 
       int64_t u, v;
       rmat_edge (&u, &v, scale, a, b, c, d, &env);
-      printf("%ld\t\t%ld\n", u, v);
 
       if(u == v) {
 	e--;

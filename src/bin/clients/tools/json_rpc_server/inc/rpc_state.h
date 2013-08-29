@@ -18,13 +18,24 @@ namespace gt {
       TYPE_INT64,
       TYPE_STRING,
       TYPE_DOUBLE,
+      TYPE_ARRAY,
+      TYPE_BOOL,
       TYPE_NONE
     } type_t;
 
+    struct params_array_t {
+      int64_t * arr;
+      int64_t len;
+      params_array_t();
+      ~params_array_t();
+    };
+
     typedef struct {
-      char * name;
+      const char * name;
       type_t type;
       void * output;
+      bool optional;
+      int64_t def;
     } rpc_params_t;
 
     class JSON_RPCServerState;
@@ -33,42 +44,14 @@ namespace gt {
       JSON_RPCServerState * server_state;
 
       JSON_RPCFunction(JSON_RPCServerState * state) : server_state(state) {
+      }
+
+      virtual int64_t operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
 	LOG_W("This is a generic JSON_RPCFunction object and should not be called");
       }
 
-      virtual int64_t operator()(rapidjson::Value & params, rapidjson::Value & result) {
-	LOG_W("This is a generic JSON_RPCFunction object and should not be called");
-      }
+      bool contains_params(rpc_params_t * p, rapidjson::Value * params);
 
-      bool contains_params(rpc_params_t * p, rapidjson::Value & params) {
-	while(p->name) {
-	  if(!params.HasMember(p->name)) {
-	    return false;
-	  }
-
-	  switch(p->type) {
-	    case TYPE_INT64: {
-	      if(!params[p->name].IsInt64()) {
-		return false;
-	      }
-	      *((int64_t *)p->output) = params[p->name].GetInt64();
-	    } break;
-	    case TYPE_STRING: {
-	      if(!params[p->name].IsString()) {
-		return false;
-	      }
-	      *((char **)p->output) = (char *) params[p->name].GetString();
-	    } break;
-	    case TYPE_DOUBLE: {
-	      if(!params[p->name].IsDouble()) {
-		return false;
-	      }
-	      *((double *)p->output) = params[p->name].GetDouble();
-	    } break;
-	  }
-	}
-	return true;
-      }
     };
 
 
@@ -119,6 +102,9 @@ namespace gt {
 	void
 	update_algs(stinger_t * stinger_copy, std::string new_loc, int64_t new_sz, 
 	  std::vector<StingerAlgState *> * new_algs, std::map<std::string, StingerAlgState *> * new_alg_map);
+
+	stinger_t *
+	get_stinger();
     };
 
   }

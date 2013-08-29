@@ -55,6 +55,11 @@ namespace gt {
 	int64_t batch_lock;
 	std::queue<StingerBatch *> batches;
 
+	int64_t alg_timeouts[ALG_STATE_MAX];
+	int64_t mon_timeouts[MON_STATE_MAX];
+	int64_t timeout_granularity;
+
+
 	int port;
 	int convert_num_to_string;
 
@@ -133,6 +138,9 @@ namespace gt {
 	bool
 	has_alg(const std::string & name);
 
+	bool
+	delete_alg(const std::string & name);
+
 	size_t
 	get_num_mons();
 
@@ -150,6 +158,9 @@ namespace gt {
 
 	void
 	set_mon_stinger(std::string loc, int64_t size);
+
+	bool
+	delete_mon(const std::string & name);
 
 	ServerToMon *
 	get_server_to_mon_copy();
@@ -171,6 +182,15 @@ namespace gt {
 
 	void
 	set_stinger_loc(const std::string & loc);
+
+	int64_t
+	time_granularity();
+
+	int64_t
+	alg_timeout(int64_t which);
+
+	int64_t
+	mon_timeout(int64_t which);
     };
 
   } /* gt */

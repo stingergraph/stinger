@@ -51,10 +51,11 @@ FOREACH(subdir ${subs})
 
       # Glob and compile and protobuf sources
       SET(realprotosrc "")
+      SET(protohead "")
       IF(EXISTS ${CMAKE_CURRENT_LIST_DIR}/${subdir}/proto)
 	IF(IS_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/${subdir}/proto)
 	  FILE(GLOB protos ABSOLUTE ${CMAKE_CURRENT_LIST_DIR}/${subdir}/proto/*.proto)
-	  CUST_PROTOBUF_GENERATE_CPP(protosrc protohead ${protos})
+	  CUST_PROTOBUF_GENERATE_CPP(${subdir} protosrc protohead ${protos})
 	  SET(realprotosrc)
 	  FOREACH(protoout ${protosrc})
 	    GET_FILENAME_COMPONENT(protofile ${protoout} NAME)
@@ -72,7 +73,7 @@ FOREACH(subdir ${subs})
 	INCLUDE_DIRECTORIES(${subdir}/inc)
 
 	# Build the shared library
-	ADD_LIBRARY(${subdir} SHARED ${srcs} ${realprotosrc} ${protohead})
+	ADD_LIBRARY(${subdir} SHARED ${srcs} ${realprotosrc})
       TARGET_LINK_LIBRARIES(${subdir} ${libdep_${subdir}})
       ADD_DEPENDENCIES(${subdir} ${tgtdep_default})
       FOREACH(dep_target ${tgtdep_${subdir}})
@@ -86,7 +87,7 @@ FOREACH(subdir ${subs})
 	  )
 
 	# Build the static library
-	ADD_LIBRARY(${subdir}_static STATIC ${srcs} ${realprotosrc} ${protohead})
+	ADD_LIBRARY(${subdir}_static STATIC ${srcs} ${realprotosrc})
       TARGET_LINK_LIBRARIES(${subdir}_static ${libdep_${subdir}})
       ADD_DEPENDENCIES(${subdir}_static ${tgtdep_default})
       FOREACH(dep_target ${tgtdep_${subdir}})

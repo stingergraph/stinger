@@ -507,7 +507,7 @@ struct ExploreJSONValue : public ExploreJSONGeneric {
   ExploreJSONValue(value_type_t type) : ExploreJSONGeneric(), value_type(type) {}
 
   virtual bool operator()(EdgeCollection & edges, rapidjson::Value & document) {
-    LOG_D_A("Value type %ld", value_type);
+    LOG_D_A("Value type %ld", (long) value_type);
     switch(value_type) {
       case VALUE_TYPE:
 	if(document.IsInt64())
@@ -595,7 +595,7 @@ struct ExploreJSONArray : public ExploreJSONGeneric {
     if(index == -1)
       printf("@.");
     else
-      printf("@.%ld.", index);
+      printf("@.%ld.", (long) index);
     child->print();
   }
 

@@ -6,15 +6,15 @@ SET(libdep_default stinger_core stinger_utils)
 SET(libdep_web_server string mongoose kv_store)
 
 IF(APPLE)
-  SET(libdep_alg_data_to_json ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib stinger_net pthread mongoose)
+  SET(libdep_json_rpc_server ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib stinger_net pthread mongoose)
 ELSE()
-  SET(libdep_alg_data_to_json ${CMAKE_BINARY_DIR}/lib/libprotobuf.so stinger_net pthread mongoose)
+  SET(libdep_json_rpc_server ${CMAKE_BINARY_DIR}/lib/libprotobuf.so stinger_net pthread mongoose)
 ENDIF()
 
 SET(tgtdep_default stinger_core stinger_utils rt)
 SET(tgtdep_alg_data_to_json protobuf stinger_net)
 SET(tgtdep_web_server string rapidjson mongoose kv_store)
-SET(tgtdep_alg_data_to_json rapidjson)
+SET(tgtdep_json_rpc_server rapidjson)
 
 #################################################################
 # Iterate over each library and build appropriately based on type

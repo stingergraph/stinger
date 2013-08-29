@@ -3,10 +3,10 @@
 #include "x86_full_empty.h"
 #include "xmalloc.h"
 
+#define _XOPEN_SOURCE 600
 #include <unistd.h>
+#include <sys/types.h>
 #include <sys/mman.h>
-
-
 
 /** @brief Wrapper function to open and map shared memory.  
  * 
@@ -44,6 +44,8 @@ shmmap (const char * name, int oflags, mode_t mode, int prot, size_t size, int m
 #else
   void * rtn = mmap(NULL, size, prot, MAP_ANON|map, fd, 0);
 #endif
+
+  close(fd);
 
   if(rtn == MAP_FAILED) {
     fprintf(stderr, "\nSHMMAP mmap ERROR %s\n", strerror(errno)); fflush(stdout);

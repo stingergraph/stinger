@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
       stinger_num_active_vertices(S), stinger_total_edges(S));
 
   /* consistency check */
-  printf("\tConsistency %ld\n", stinger_consistency_check(S, STINGER_MAX_LVERTICES));
+  printf("\tConsistency %ld\n", (long) stinger_consistency_check(S, STINGER_MAX_LVERTICES));
   printf("\tDone. %lf seconds\n", toc());
 
   /* we need a socket that can reply with the shmem name & size of the graph */
@@ -161,8 +161,8 @@ int main(int argc, char *argv[])
     exit (0);
   }
 
-  printf("Press <return> to shut down the server...\n");
-  getchar();
+  printf("Press <q> to shut down the server...\n");
+  while (getchar() != 'q');
 
   printf("Shutting down the name server..."); fflush(stdout);
   int status;

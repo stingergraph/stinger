@@ -25,6 +25,27 @@ StingerServerState::StingerServerState() : port(10101), convert_num_to_string(1)
 				    alg_lock(1), stream_lock(1), batch_lock(1), dep_lock(1), mon_lock(1)
 {
   LOG_D("Initializing server state.");
+
+
+  /* Setup timeout lengths (all in microsecs) */
+  for(int64_t i = 0; i < ALG_STATE_MAX; i++) {
+    alg_timeouts[i] = 0;
+  }
+  for(int64_t i = 0; i < MON_STATE_MAX; i++) {
+    mon_timeouts[i] = 0;
+  }
+
+  alg_timeouts[ALG_STATE_READY_INIT]        =  2000000;
+  alg_timeouts[ALG_STATE_PERFORMING_INIT]   = 10000000;
+  alg_timeouts[ALG_STATE_READY_PRE]         =  2000000;
+  alg_timeouts[ALG_STATE_PERFORMING_PRE]    =  5000000;
+  alg_timeouts[ALG_STATE_READY_POST]        =  2000000;
+  alg_timeouts[ALG_STATE_PERFORMING_POST]   =  5000000;
+
+  mon_timeouts[MON_STATE_READY_UPDATE]      =  2000000;
+  mon_timeouts[MON_STATE_PERFORMING_UPDATE] =  5000000;
+
+  timeout_granularity = 100;
 }
 
 StingerServerState::~StingerServerState()
@@ -54,7 +75,7 @@ StingerServerState::get_server_state()
 int
 StingerServerState::get_port() 
 {
-  LOG_D_A("returning %ld", port);
+  LOG_D_A("returning %ld", (long) port);
   return port;
 }
 
@@ -71,11 +92,11 @@ StingerServerState::get_port()
 int
 StingerServerState::set_port(int new_port)
 {
-  LOG_D_A("called with %ld", new_port);
+  LOG_D_A("called with %ld", (long) new_port);
   if(new_port > 0 && new_port < 65535) {
     port = new_port;
   } else {
-    LOG_W_A("New port number %ld is invalid. Keeping %ld", new_port, port);
+    LOG_W_A("New port number %ld is invalid. Keeping %ld", (long) new_port, (long) port);
   }
   return port;
 }
@@ -272,6 +293,27 @@ StingerServerState::has_alg(const std::string & name)
   return rtn;
 }
 
+bool
+StingerServerState::delete_alg(const std::string & name)
+{
+  if(has_alg(name)) {
+    readfe((uint64_t *)&alg_lock);
+    for(int64_t i = 0; i < alg_tree.size(); i++) {
+      for(int64_t j = 0; j < alg_tree[i].size(); j++) {
+	if(0 == strcmp(alg_tree[i][j]->name.c_str(), name.c_str())) {
+	  alg_tree[i].erase(alg_tree[i].begin() + j);
+	}
+      }
+    }
+    delete alg_map[name];
+    alg_map.erase(name);
+    writeef((uint64_t *)&alg_lock, 1);
+    return true;
+  } else {
+    return false;
+  }
+}
+
 size_t
 StingerServerState::get_num_mons()
 {
@@ -322,6 +364,26 @@ StingerServerState::has_mon(const std::string & name)
   rtn = monitor_map.count(name) > 0;
   writeef((uint64_t *)&mon_lock, 1);
   return rtn;
+}
+
+bool
+StingerServerState::delete_mon(const std::string & name)
+{
+  if(has_mon(name)) {
+    readfe((uint64_t *)&mon_lock);
+    for(int64_t i = 0; i < monitors.size(); i++) {
+      if(0 == strcmp(monitors[i]->name.c_str(), name.c_str())) {
+	monitors.erase(monitors.begin() + i);
+	break;
+      }
+    }
+    delete monitor_map[name];
+    monitor_map.erase(name);
+    writeef((uint64_t *)&mon_lock, 1);
+    return true;
+  } else {
+    return false;
+  }
 }
 
 void
@@ -376,4 +438,28 @@ void
 StingerServerState::set_stinger_loc(const std::string & loc)
 {
   stinger_loc = loc;
+}
+
+int64_t
+StingerServerState::time_granularity()
+{
+  return timeout_granularity;
+}
+
+int64_t
+StingerServerState::alg_timeout(int64_t which)
+{
+  if(which < ALG_STATE_MAX)
+    return alg_timeouts[which];
+  else
+    return 0;
+}
+
+int64_t
+StingerServerState::mon_timeout(int64_t which)
+{
+  if(which < MON_STATE_MAX)
+    return mon_timeouts[which];
+  else
+    return 0;
 }

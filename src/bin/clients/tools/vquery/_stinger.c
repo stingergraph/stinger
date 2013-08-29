@@ -51,7 +51,7 @@ static PyObject *stinger_connect(PyObject *self, PyObject *args)
 
   printf("hostname: %s\n", hostname);
   printf("port: %d\n", port);
-  get_shared_map_info (hostname, port, &name, 1024, &sz);
+  get_shared_map_info (hostname, port, (char **) &name, 1024, &sz);
   printf("map_name: %s\n", name);
   printf("size: %ld\n", sz);
 
@@ -121,7 +121,7 @@ static PyObject *stinger_vquery(PyObject *self, PyObject *args, PyObject *keywds
 			      "SourceType", stinger_vtype_names_lookup_name (S, stinger_vtype_get(S, vtx)),
 			      "DestinationType", stinger_vtype_names_lookup_name (S, stinger_vtype_get(S, STINGER_EDGE_DEST))
 			      );
-	PyList_Append(list, dict);
+	PyList_Append((struct PyObject *)list, dict);
       }
     } STINGER_FORALL_EDGES_OF_VTX_END();
   }

@@ -33,7 +33,16 @@ json_rpc_process_request (rapidjson::Document& document, rapidjson::Document& re
 
   rapidjson::Document::AllocatorType& allocator = response.GetAllocator();
 
+  rapidjson::StringBuffer out_buf;
+  rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(out_buf);
+  document.Accept(writer);
 
+  const char * out_ch = out_buf.GetString();
+  int out_len = out_buf.Size();
+
+  LOG_D_A("Sending back response:%d\n%s", out_len, out_ch);
+
+  LOG_D("In the json_rpc_process_request function.");
 
   /* Is the input a valid JSON object -- should also check when it's parsed */
   if (!document.IsObject()) {
@@ -44,19 +53,18 @@ json_rpc_process_request (rapidjson::Document& document, rapidjson::Document& re
     return;
   }
 
+  LOG_D("Request is a JSON object.");
+
   /* Does it have a jsonrpc field */
   if (!document.HasMember("jsonrpc")) {
-
     response.AddMember("jsonrpc", "2.0", allocator);
-
     json_rpc_error (-32600, result, allocator);
-
     response.AddMember("error", result, allocator);
-
     response.AddMember("id", is_null, allocator);
     return;
   }
 
+  LOG_D("Request has a JSON-RPC version.");
 
   /* Is the jsonrpc field a string */
   if (!document["jsonrpc"].IsString()) {
@@ -67,6 +75,8 @@ json_rpc_process_request (rapidjson::Document& document, rapidjson::Document& re
     return;
   }
 
+  LOG_D("Request JSON-RPC version is a string.");
+
   /* Is the jsonrpc field equal to 2.0 */
   if (strcmp(document["jsonrpc"].GetString(), "2.0") != 0) {
     response.AddMember("jsonrpc", "2.0", allocator);
@@ -76,6 +86,7 @@ json_rpc_process_request (rapidjson::Document& document, rapidjson::Document& re
     return;
   }
 
+  LOG_D("Request JSON-RPC version is valid.");
 
   /* Does it have an id field */
   /* TODO: notifications will change this */
@@ -87,9 +98,9 @@ json_rpc_process_request (rapidjson::Document& document, rapidjson::Document& re
     return;
   }
 
+  LOG_D("Request has an id field.");
 
-
-  /* Is the id field a number of a string */
+  /* Is the id field a number or a string */
   /* Get the id field */
   int64_t id_int;
   const char * id_str;
@@ -108,6 +119,7 @@ json_rpc_process_request (rapidjson::Document& document, rapidjson::Document& re
   }
   rapidjson::Value& id = document["id"];
 
+  LOG_D("Request id field is valid.");
 
   /* Does it have a method field */
   if (!document.HasMember("method")) {
@@ -118,6 +130,7 @@ json_rpc_process_request (rapidjson::Document& document, rapidjson::Document& re
     return;
   }
 
+  LOG_D("Request has a method field.");
 
   /* Is the method field a string */
   if (!document["method"].IsString()) {
@@ -128,39 +141,45 @@ json_rpc_process_request (rapidjson::Document& document, rapidjson::Document& re
     return;
   }
 
+  LOG_D("Method field is a string.");
 
   /* Parse the method field */
-
+  rapidjson::Value& method = document["method"];
+  const char * method_str = method.GetString();
 
   /* Does the method exist */
-  //server_state.has_rpc_function(/*method name*/);
+  if (server_state.has_rpc_function(method_str) == false) {
+    response.AddMember("jsonrpc", "2.0", allocator);
+    json_rpc_error (-32601, result, allocator);
+    response.AddMember("error", result, allocator);
+    response.AddMember("id", id, allocator);
+    return;
+  }
+
+  LOG_D_A("Method %s exists.", method_str);
 
   /* Does the params field exist */
+  rapidjson::Value * params = NULL;
   if (document.HasMember("params")) {
 
     /* Params is an array */
-    const rapidjson::Value& params = document["params"];
+    params = &document["params"];
   }
+  
+  LOG_D_A("Parameters read (if applicable).", method_str);
 
-
+  server_state.get_alg_read_lock();
   /* call the function */
-  /*error_code <- (params, response)
-  if (error_code)
-    response.AddMember("jsonrpc", "2.0", allocator);
-    json_rpc_error(response); 
+  response.AddMember("jsonrpc", "2.0", allocator);
+  if ((*server_state.get_rpc_function(method_str))(params, result, allocator)) {
     response.AddMember("error", result, allocator);
-    response.AddMember("id", id, allocator); */
+  }
+  else {
+    response.AddMember("result", result, allocator);
+  }
+  response.AddMember("id", id, allocator);
+  server_state.release_alg_read_lock();
 
-}
-
-void
-json_rpc_response (rapidjson::Document& document, rapidjson::Value& result, rapidjson::Value& id)
-{
-  rapidjson::Document::AllocatorType& allocator = document.GetAllocator();
-
-  document.AddMember("jsonrpc", "2.0", allocator);
-  document.AddMember("result", result, allocator);
-  document.AddMember("id", id, allocator);
 }
 
 
@@ -169,6 +188,7 @@ json_rpc_error (int32_t error_code, rapidjson::Value& err_obj, rapidjson::Memory
 {
   rapidjson::Value code, message;
   code.SetInt(error_code);
+  LOG_D ("Creating a JSON RPC error");
 
   switch (error_code) {
     case (-32700):
@@ -211,3 +231,4 @@ json_rpc_error (int32_t error_code, rapidjson::Value& err_obj, rapidjson::Memory
 
   return error_code;
 }
+
