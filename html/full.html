@@ -367,6 +367,213 @@ Toolbox</a>
     $(".collapse").collapse();
   }
 
+/***************************************************
+ * Label Grid
+ */
+function LabelGrid(tools, id, alg, field, member_list_str) {
+  this.parent_id = id;
+  this.id = id + tools.length;
+  this.alg = alg;
+  this.field = field;
+
+  this.member_list = [];
+  if(-1 != member_list_str.indexOf(",")) {
+    this.member_list = member_list_str.split(',');
+  } else {
+    this.member_list = member_list_str.split(' ');
+  }
+
+  add_tool_win(this.parent_id, this.id, "Label Grid (" + member_list_str + ")", this);
+
+  this.duration = 750;
+
+  this.margin = {
+    top: 100,
+    right: 100,
+    bottom: 60,
+    left: 100
+  };
+
+  this.width = 900 - this.margin.left - this.margin.right;
+  this.height = 900 - this.margin.top - this.margin.bottom;
+
+  this.colors = d3.scale.category20();
+
+  this.svg = d3.select(this.id).append("svg")
+    .attr("width", this.width + this.margin.left + this.margin.right)
+    .attr("height", this.height + this.margin.top + this.margin.bottom);
+
+  this.close = function() {
+    tools.splice(tools.indexOf(this),1);
+    $(this.id + 'accordion').fadeOut(300, function() { $(this).remove(); });
+  };
+
+  this.call_remote = function(wait, obj) {
+    rpc("get_data_array_set", 
+      {"wait_for_update": wait, "name": obj.alg, "data": obj.field, "strings":true, "set": obj.member_list, "order":"DESC"}, 
+      1, 
+      (function(me) { return function(data) { console.log(data); return me.update(data, me); }; })(obj), null);
+  };
+
+  this.update = function(data, obj) {
+    var labels = _.sortBy(_.zip(data.result.component_label.vertex_str, data.result.component_label.value), function(d) { return d[1] });
+
+    var row_titles = obj.svg.selectAll(".row_titles").data(labels, function(d) { return d[0] });
+
+    row_titles.attr("class","row_titles")
+      .transition()
+      .delay(750)
+      .text(function(d) { return d[0]; })
+      .style("fill", (function(colors) { return function(d) { return colors(d[1]);}; })(obj.colors))
+      .attr("y", 
+	(function(labels, height, offset) { 
+	  return function(d, i) {
+	    return offset + (i+0.5) * (height/labels);
+	  }
+	})(labels.length, obj.height, obj.margin.top));
+
+    row_titles.enter().append("text")
+      .attr("class", "row_titles")
+      .attr("text-anchor", "end")
+      .attr("x", obj.margin.left - 5)
+      .attr("y", 
+	(function(labels, height, offset) { 
+	  return function(d, i) {
+	    return offset + (i+0.5) * (height/labels);
+	  }
+	})(labels.length, obj.height, obj.margin.top))
+      .text(function(d) { return d[0]; })
+      .style("fill-opacity",1e-6)
+      .transition()
+      .delay(750)
+      .duration(750)
+      .style("fill", (function(colors) { return function(d) { return colors(d[1]);}; })(obj.colors))
+      .style("fill-opacity",1);
+
+    row_titles.exit()
+      .attr("class", "row_titles exit")
+      .transition()
+      .duration(750)
+      .style("fill-opacity",1e-6)
+      .remove();
+
+    var column_titles = obj.svg.selectAll(".column_titles").data(labels, function(d) { return d[0] });
+
+    column_titles.attr("class","column_titles")
+      .transition()
+      .delay(750)
+      .text(function(d) { return d[0]; })
+      .style("fill", (function(colors) { return function(d) { return colors(d[1]);}; })(obj.colors))
+      .attr("x", 
+	(function(labels, width, offset) { 
+	  return function(d, i) {
+	    return offset + (i+0.5) * (width/labels);
+	  }
+	})(labels.length, obj.width, obj.margin.left));
+
+    column_titles.enter().append("text")
+      .attr("class", "column_titles")
+      .attr("text-anchor", "end")
+      .attr("y", obj.margin.top - 5)
+      .attr("x", 
+	(function(labels, width, offset) { 
+	  return function(d, i) {
+	    return offset + (i+0.5) * (width/labels);
+	  }
+	})(labels.length, obj.width, obj.margin.left))
+      .text(function(d) { return d[0]; })
+      .style("fill-opacity",1e-6)
+      .style("writing-mode", "tb")
+      .transition()
+      .delay(750)
+      .duration(750)
+      .style("fill", (function(colors) { return function(d) { return colors(d[1]);}; })(obj.colors))
+      .style("fill-opacity",1);
+
+    column_titles.exit()
+      .attr("class", "column_titles exit")
+      .transition()
+      .duration(750)
+      .style("fill-opacity",1e-6)
+      .remove();
+
+    var matrix = []
+    for(i = 0; i < labels.length; i++) {
+      for(j = 0; j < labels.length; j++) {
+	matrix.push(
+	  {'v_x':i, 'v_y':j, 
+	  'row_v':labels[i][0], 'col_v':labels[j][0], 
+	  'label': (labels[i][1] == labels[j][1] ? labels[i][1] : -1)});
+      }
+    }
+    for(j in matrix) {
+      d = matrix[j];
+      console.log(d.v_x +","+ d.v_y);
+    }
+    console.log(matrix);
+
+    var rows = obj.svg.selectAll(".rows").data(matrix, function(d) { return d.col_v + " " +  d.row_v });
+
+    rows
+      .transition()
+      .duration(200)
+      .style("fill-opacity",0.5)
+      .transition()
+      .duration(550)
+      .attr("x", 
+	(function(labels, width, offset) { 
+	  return function(d, i) {
+	    return offset + (d.v_x) * (width/labels);
+	  }
+	})(labels.length, obj.width, obj.margin.left))
+      .attr("y", 
+	(function(labels, height, offset) { 
+	  return function(d, i) {
+	    return offset + (d.v_y) * (height/labels);
+	  }
+	})(labels.length, obj.height, obj.margin.top))
+      .attr("width", obj.width / labels.length)
+      .attr("height", obj.height / (labels.length))
+      .style("fill", (function(colors) { return function(d) { if(d.label != -1) return colors(d.label); else return "#fff";}; })(obj.colors))
+      .style("fill-opacity",1);
+    
+    rows.enter().append("rect")
+      .attr("class", "rows")
+      .attr("x", 
+	(function(labels, width, offset) { 
+	  return function(d, i) {
+	    return offset + (d.v_x) * (width/labels);
+	  }
+	})(labels.length, obj.width, obj.margin.left))
+      .attr("y", 
+	(function(labels, height, offset) { 
+	  return function(d, i) {
+	    return offset + (d.v_y) * (height/labels);
+	  }
+	})(labels.length, obj.height, obj.margin.top))
+      .attr("width", obj.width / labels.length)
+      .attr("height", obj.height / (labels.length))
+      .style("fill", (function(colors) { return function(d) { if(d.label != -1) return colors(d.label); else return "#fff";}; })(obj.colors))
+      .style("stroke", "#fff")
+      .style("fill-opacity",1e-6)
+      .style("stroke-opacity",1e-6)
+      .transition()
+      .delay(750)
+      .duration(750)
+      .style("stroke-opacity",1)
+      .style("fill-opacity",1);
+
+    rows.exit()
+      .transition()
+      .duration(750)
+      .style("fill-opacity",1e-6)
+      .remove();
+
+    obj.call_remote(true, obj);
+  }
+
+  this.call_remote(false, this);
+}
 
 /***************************************************
  * Shortest Paths
@@ -398,11 +605,11 @@ function ShortestPaths(tools, id, source, dest) {
     .attr("width", this.width + this.margin.left + this.margin.right)
     .attr("height", this.height + this.margin.top + this.margin.bottom);
 
-  this.call_remote = function(wait) {
+  this.call_remote = function(wait, obj) {
     rpc("breadth_first_search", 
-      {"wait_for_update": wait, "source": this.source, "target": this.dest, "strings": true}, 
+      {"wait_for_update": wait, "source": obj.source, "target": obj.dest, "strings": true}, 
       1, 
-      (function(me) { return function(data) { return me.update(data); }; })(this), null);
+      (function(me) { return function(data) { return me.update(data, me); }; })(obj), null);
   };
 
   this.close = function() {
@@ -410,7 +617,7 @@ function ShortestPaths(tools, id, source, dest) {
     $(this.id + 'accordion').fadeOut(300, function() { $(this).remove(); });
   };
 
-  this.update = function(data) {
+  this.update = function(data, obj) {
     var graph = {'edges': [], 'vertices': [], 'vertices_arr' : []};
     _.map(data.result.subgraph_str, function(d) {
       add_v = function(s,d) {
@@ -590,10 +797,10 @@ function ShortestPaths(tools, id, source, dest) {
       .style("stroke-opacity",1e-6)
       .remove();
 
-    this.call_remote(true);
+    this.call_remote(true, obj);
   }
 
-  this.call_remote(false);
+  this.call_remote(false, this);
 }
 
 /***************************************************
