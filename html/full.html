@@ -3,10 +3,10 @@
 <head>
 <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
 <link href="lib/bootstrap/css/bootstrap.min.css" rel="stylesheet"></link>
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="lib/jquery/jquery.min.js"></script>
 <script src="lib/bootstrap/js/bootstrap.min.js"></script>
 <script src="lib/d3/d3.v3.js"></script>
-<script src="http://underscorejs.org/underscore-min.js"></script>
+<script src="lib/underscore/underscore-min.js"></script>
 <script src="lib/underscore/underscore.string.min.js"></script>
 
 <style type="text/css">
@@ -49,6 +49,23 @@
   stroke: red;
   stroke-width: 1px;
 }
+.link {
+  stroke: black;
+  stroke-width: 2px;
+}
+
+.levellabel {
+  color: #fff;
+}
+
+.level {
+  stroke: #fff;
+  stroke-width: 2px;
+}
+
+.nodelabel {
+  text-shadow:1px 1px #bbb;
+}
 </style>
 
 </head>
@@ -74,7 +91,7 @@ Toolbox</a>
 <ul id="tabs" class="nav nav-list nav-stacked" data-tabs="tabs">
 <li class="active"><a href="#topscores" data-toggle="tab">Top Scores</a></li>
 <li><a href="#groupscores" data-toggle="tab">Group Scores</a></li>
-<li><a href="#connectivity" data-toggle="tab">Connectivity</a></li>
+<li><a href="#labelgrid" data-toggle="tab">Label Grid</a></li>
 <li><a href="#shortestpaths" data-toggle="tab">Shortest Paths</a></li>
 <li><a href="#labelgraph" data-toggle="tab">Label Graph</a></li>
 <li><a href="#groupgraph" data-toggle="tab">Group Graph</a></li>
@@ -82,23 +99,118 @@ Toolbox</a>
 </div>
 
 
-<div class="span8 well" style="height: 250px;">
+<div class="span8 well" style="height: 300px;">
 <div id="tabscontent" class="tab-content">
 <div class="tab-pane active" id="topscores">
-<h3>Top Scores</h3>
-<p></p>
+  <form action="#" class="form-horizontal" onSubmit="if($('#topscoresalgorithm').val() && $('#topscoresfield').val()) add_tool(new TopScores(tools, '#toolstream', $('#topscoresalgorithm').val(), $('#topscoresfield').val(), $('#topscoresvertex').val()));">
+    <legend>Top Scores</legend>
+    <p>Select a set of scores and enter the number of positions to track.  A table of the top scoring vertices will be shown along with
+    a bar chart representing the scores of each vertex relative to the highest.  This table is sorted by score.  It will rearrange, resize, add and remove
+    vertices as the scores change.  Additionally, a plot of the vertices's scores over time is shown along with a key.
+    </p>
+    <div class="control-group">
+      <label class="control-label" for="topscoresalgorithm">Algorithm</label>
+      <div class="controls">
+	<select class="span5 algselector" id="topscoresalgorithm">
+	</select>
+      </div>
+      <label class="control-label" for="topscoresfield">Field</label>
+      <div class="controls">
+	<select class="span5 fieldselector" id="topscoresfield">
+	</select>
+      </div>
+      <label class="control-label" for="topscoresvertex">Vertex</label>
+      <div class="controls">
+	<textarea id="topscoresvertex" class="span5" rows="2">joshuajones, norahjones</textarea>
+      </div>
+      <div class="controls">
+	<br/>
+	<button type"submit" class="btn btn-success" >Add Tool</button>
+      </div>
+    </div>
+  </form>
 </div>
 <div class="tab-pane" id="groupscores">
-<h1>Group Scores</h1>
-<p></p>
+  <form action="#" class="form-horizontal" onSubmit="if($('#groupscoresalgorithm').val() && $('#groupscoresfield').val()) add_tool(new GroupScores(tools, '#toolstream', $('#groupscoresalgorithm').val(), $('#groupscoresfield').val(), $('#groupscoresvertex').val()));">
+    <legend>Group Scores</legend>
+    <p>Select a set of scores and enter the names of one or more vertices.  A table of the scores of the vertices will be shown along with
+    a bar chart representing the scores of each vertex relative to the highest.  This table is sorted by score.  It will rearrange as 
+    the scores change and the bars will resize.  Additionally, a plot of the vertices's scores over time is shown along with a key.
+    </p>
+    <div class="control-group">
+      <label class="control-label" for="groupscoresalgorithm">Algorithm</label>
+      <div class="controls">
+	<select class="span5 algselector" id="groupscoresalgorithm">
+	</select>
+      </div>
+      <label class="control-label" for="groupscoresfield">Field</label>
+      <div class="controls">
+	<select class="span5 fieldselector" id="groupscoresfield">
+	</select>
+      </div>
+      <label class="control-label" for="groupscoresvertex">Vertex</label>
+      <div class="controls">
+	<textarea id="groupscoresvertex" class="span5" rows="2">joshuajones, norahjones</textarea>
+      </div>
+      <div class="controls">
+	<br/>
+	<button type"submit" class="btn btn-success" >Add Tool</button>
+      </div>
+    </div>
+  </form>
 </div>
-<div class="tab-pane" id="connectivity">
-<h1>Connectivity</h1>
-<p></p>
+<div class="tab-pane" id="labelgrid">
+  <form action="#" class="form-horizontal" onSubmit="if($('#labelgridalgorithm').val() && $('#labelgridfield').val()) add_tool(new LabelGrid(tools, '#toolstream', $('#labelgridalgorithm').val(), $('#labelgridfield').val(), $('#labelgridvertex').val()));">
+    <legend>Label Grid</legend>
+    <p>Select a label type and enter the names of one or more vertices.  The grid will display vertex names along the top and side of a 
+    grid.  Colors are used to represent the label of a vertex. Vertices with the same color are in the same group. As the labels change,
+    the colors will change. The grid will rearrange to place vertices with the same labels next to each other.
+    </p>
+    <div class="control-group">
+      <label class="control-label" for="labelgridalgorithm">Algorithm</label>
+      <div class="controls">
+	<select class="span5 algselector" id="labelgridalgorithm">
+	</select>
+      </div>
+      <label class="control-label" for="labelgridfield">Field</label>
+      <div class="controls">
+	<select class="span5 fieldselector" id="labelgridfield">
+	</select>
+      </div>
+      <label class="control-label" for="labelgridvertex">Vertex</label>
+      <div class="controls">
+	<textarea id="labelgridvertex" class="span5" rows="2">joshuajones, norahjones</textarea>
+      </div>
+      <div class="controls">
+	<br/>
+	<button type"submit" class="btn btn-success" >Add Tool</button>
+      </div>
+    </div>
+  </form>
 </div>
 <div class="tab-pane" id="shortestpaths">
-<h1>Shortest Paths</h1>
-<p></p>
+  <form action="#" class="form-horizontal" onSubmit="if($('#shortestsource').val() && $('#shortestdest').val()) add_tool(new ShortestPaths(tools, '#toolstream', $('#shortestsource').val(), $('#shortestdest').val()));">
+    <legend>Shortest Paths</legend>
+    <p>Enter the names of two vertices.  The shortest paths graph will show a display of all of the shortest paths between these vertices including
+    all of the intermediate nodes.  As
+    new edges are added and removed, the display will be updated with alternative paths of the same length.  If the displayed paths are
+    broken or shorter paths are created, the distance shown will expand or contract appropriately.
+    </p>
+    <div class="control-group">
+      <label class="control-label" for="shortestsource">Source Vertex</label>
+      <div class="controls">
+	<input type="text" id="shortestsource" class="span5" value="naomijones">
+      </div>
+      <label class="control-label" for="shortestdest">Destination Vertex</label>
+      <div class="controls">
+	<input type="text" id="shortestdest" class="span5" value="joshuajones">
+      </div>
+      <div class="controls">
+	<br/>
+	<button type"submit" class="btn btn-success" >Add Tool</button>
+      </div>
+    </div>
+  </form>
 </div>
 <div class="tab-pane" id="labelgraph">
   <form action="#" class="form-horizontal" onSubmit="if($('#labelgraphalgorithm').val() && $('#labelgraphfield').val()) add_tool(new LabelGraph(tools, '#toolstream', $('#labelgraphalgorithm').val(), $('#labelgraphfield').val(), $('#labelgraphvertex').val()));">
@@ -130,8 +242,10 @@ Toolbox</a>
 <div class="tab-pane" id="groupgraph">
   <form action="#" class="form-horizontal" onSubmit="add_tool(new GroupGraph(tools, '#toolstream', $('#groupgraphvertex').val()));">
     <legend>Group Graph</legend>
-    <p>Select a label type and enter the name of a vertex.  The group graph will show the structure of all vertices with the same
-    group as the chosen vertex.</p>
+    <p>Enter the names of one or more vertices.  The group graph will show each requested vertex and all of its neighbors.  If the 
+    vertices in the group are directly connected or share at least one neighbor, the connections between them will be shown.  Otherwise,
+    longer paths between the vertices are hidden.  As new neighbors connect to the vertices in the group, they are added to the display.
+    </p>
     <div class="control-group">
       <label class="control-label" for="groupgraphvertex">Vertices</label>
       <div class="controls">
@@ -252,6 +366,235 @@ Toolbox</a>
     $("#" + child_id + 'closebtn').click((function (me) { return function() { me.close(); }; })(obj));
     $(".collapse").collapse();
   }
+
+
+/***************************************************
+ * Shortest Paths
+ */
+function ShortestPaths(tools, id, source, dest) {
+
+  this.parent_id = id;
+  this.id = id + tools.length;
+  this.source = source;
+  this.dest = dest;
+  this.duration = 750;
+  this.radius = 10;
+
+  this.margin = {
+    top: 40,
+    right: 40,
+    bottom: 20,
+    left: 40
+  };
+
+  this.width = 900 - this.margin.left - this.margin.right;
+  this.height = 500 - this.margin.top - this.margin.bottom;
+
+  add_tool_win(this.parent_id, this.id, "Shortest Paths Between " + source + " " + dest, this);
+
+  this.colors = d3.scale.category20();
+
+  this.svg = d3.select(this.id).append("svg")
+    .attr("width", this.width + this.margin.left + this.margin.right)
+    .attr("height", this.height + this.margin.top + this.margin.bottom);
+
+  this.call_remote = function(wait) {
+    rpc("breadth_first_search", 
+      {"wait_for_update": wait, "source": this.source, "target": this.dest, "strings": true}, 
+      1, 
+      (function(me) { return function(data) { return me.update(data); }; })(this), null);
+  };
+
+  this.close = function() {
+    tools.splice(tools.indexOf(this),1);
+    $(this.id + 'accordion').fadeOut(300, function() { $(this).remove(); });
+  };
+
+  this.update = function(data) {
+    var graph = {'edges': [], 'vertices': [], 'vertices_arr' : []};
+    _.map(data.result.subgraph_str, function(d) {
+      add_v = function(s,d) {
+	if (!(s in graph.vertices)) {
+	  graph.vertices[s] = {'name': s, 'neighbors': [], 'level': -1, 'position': -1};
+	  graph.vertices_arr.push(graph.vertices[s]);
+	}
+	if (!(d in graph.vertices)) {
+	  graph.vertices[d] = {'name': d, 'neighbors': [], 'level': -1, 'position': -1};
+	  graph.vertices_arr.push(graph.vertices[d]);
+	}
+	graph.vertices[s].neighbors.push(d);
+	graph.edges.push([graph.vertices[s], graph.vertices[d]]);
+      };
+      add_v(d[0],d[1]);
+    });
+
+    var queue = [];
+    
+    function dfs (v, depth) {
+      if (!(depth in queue)) {
+	queue[depth] = [];
+      }
+      if (!(_.contains(queue[depth], v))) {
+	graph.vertices[v].position = queue[depth].push(v)-1;
+	graph.vertices[v].level = depth;
+
+
+	for (var i = 0; i < graph.vertices[v].neighbors.length; i++) {
+	  dfs (graph.vertices[v].neighbors[i], depth+1);
+	}
+      }
+    }
+
+    dfs(this.dest, 0);
+
+    var level = this.svg.selectAll(".level").data(queue, function(d,i) {return i; });
+
+    level.transition()
+      .duration(750)
+      .attr("x1", (function (width, offset) {return function(d,i) {return offset + i * width};}) (this.width / (queue.length-1), this.margin.left))
+      .attr("y1", this.margin.top)
+      .attr("x2", (function (width, offset) {return function(d,i) {return offset + i * width};}) (this.width / (queue.length-1), this.margin.left))
+      .attr("y2", this.height - this.margin.bottom);
+
+    level.enter().append("line")
+      .style("fill-opacity",1e-6)
+      .style("stroke-opacity",1e-6)
+      .transition()
+      .delay(750)
+      .duration(750)
+      .style("fill-opacity",1)
+      .style("stroke-opacity",1)
+      .attr("class", "level")
+      .attr("x1", (function (width, offset) {return function(d,i) {return offset + i * width};}) (this.width / (queue.length-1), this.margin.left))
+      .attr("y1", this.margin.top)
+      .attr("x2", (function (width, offset) {return function(d,i) {return offset + i * width};}) (this.width / (queue.length-1), this.margin.left))
+      .attr("y2", this.height - this.margin.bottom)
+      .style("stroke-width", function(d) { return 1; });
+
+    level.exit().transition()
+      .duration(750)
+      .style("fill-opacity",1e-6)
+      .style("stroke-opacity",1e-6)
+      .remove();
+
+    var levellabel = this.svg.selectAll(".levellabel").data(queue, function(d,i) {return i; });
+
+    levellabel.transition()
+      .duration(750)
+      .attr("x", (function (width, offset) {return function(d,i) {return offset + i * width};}) (this.width / (queue.length-1), this.margin.left));
+
+    levellabel.enter().append("text")
+      .text(function(d,i) { return i; })
+      .style("fill-opacity",1e-6)
+      .style("stroke-opacity",1e-6)
+      .attr("text-anchor", "middle")
+      .attr("class", "levellabel")
+      .attr("x", (function (width, offset) {return function(d,i) {return offset + i * width};}) (this.width / (queue.length-1), this.margin.left))
+      .attr("y", this.margin.top-3)
+      .transition()
+      .delay(750)
+      .duration(750)
+      .style("fill-opacity",1)
+      .style("stroke-opacity",1);
+
+    levellabel.exit().transition()
+      .duration(750)
+      .style("fill-opacity",1e-6)
+      .style("stroke-opacity",1e-6)
+      .remove();
+
+    var link = this.svg.selectAll(".link").data(graph.edges, function(d) {return d[0].name + " " + d[1].name;});
+
+    link.transition()
+      .duration(750)
+      .attr("x1", (function (width, offset) {return function(d) {return offset + d[0].level * width};}) (this.width / (queue.length-1), this.margin.left))
+      .attr("y1", (function (height, queue, offset) {return function(d) {return offset + (d[0].position + 0.5) * (height / (queue[d[0].level].length))};}) (this.height, queue, this.margin.top))
+      .attr("x2", (function (width, offset) {return function(d) {return offset + d[1].level * width};}) (this.width / (queue.length-1), this.margin.left))
+      .attr("y2", (function (height, queue, offset) {return function(d) {return offset + (d[1].position + 0.5) * (height / (queue[d[1].level].length))};}) (this.height, queue, this.margin.top));
+
+    link.enter().append("line")
+      .style("fill-opacity",1e-6)
+      .style("stroke-opacity",1e-6)
+      .transition()
+      .delay(750)
+      .duration(750)
+      .style("fill-opacity",1)
+      .style("stroke-opacity",1)
+      .attr("class", "link")
+      .attr("x1", (function (width, offset) {return function(d) {return offset + d[0].level * width};}) (this.width / (queue.length-1), this.margin.left))
+      .attr("y1", (function (height, queue, offset) {return function(d) {return offset + (d[0].position + 0.5) * (height / (queue[d[0].level].length))};}) (this.height, queue, this.margin.top))
+      .attr("x2", (function (width, offset) {return function(d) {return offset + d[1].level * width};}) (this.width / (queue.length-1), this.margin.left))
+      .attr("y2", (function (height, queue, offset) {return function(d) {return offset + (d[1].position + 0.5) * (height / (queue[d[1].level].length))};}) (this.height, queue, this.margin.top))
+      .style("stroke-width", function(d) { return 1; });
+
+    link.exit().transition()
+      .duration(750)
+      .style("fill-opacity",1e-6)
+      .style("stroke-opacity",1e-6)
+      .remove();
+
+    console.log(graph.vertices_arr);
+    var node = this.svg.selectAll(".node").data(_.compact(graph.vertices_arr), function(d) {console.log("HERE IS HERE"); return d.name;});
+
+    node.transition()
+      .duration(750)
+      .attr("cx", (function (width, offset) {return function(d) {return offset + d.level * width};}) (this.width / (queue.length-1), this.margin.left))
+      .attr("cy", (function (height, queue, offset) {return function(d) {return offset + (d.position + 0.5) * (height / (queue[d.level].length))};}) (this.height, queue, this.margin.top));
+
+    node.enter().append("circle")
+      .style("fill-opacity",1e-6)
+      .style("stroke-opacity",1e-6)
+      .transition()
+      .delay(750)
+      .duration(750)
+      .style("fill-opacity",1)
+      .style("stroke-opacity",1)
+      .attr("class", "node")
+      .attr("cx", (function (width, offset) {return function(d) {return offset + d.level * width};}) (this.width / (queue.length-1), this.margin.left))
+      .attr("cy", (function (height, queue, offset) {return function(d) {return offset + (d.position + 0.5) * (height / (queue[d.level].length))};}) (this.height, queue, this.margin.top))
+      .attr("r", this.radius)
+      .style("fill", (function(colors) {return function(d) { return colors(d.group); }}) (this.colors));
+
+
+    node.append("title")
+      .text(function(d) { return d.name; });
+
+    node.exit().transition().delay(750)
+      .style("fill-opacity",1e-6)
+      .style("stroke-opacity",1e-6)
+      .remove();
+
+    var nodelabel = this.svg.selectAll(".nodelabel").data(_.compact(graph.vertices_arr), function(d) {return d.name;});
+
+    nodelabel.transition()
+      .duration(750)
+      .attr("x", (function (width, offset) {return function(d) {return offset + d.level * width};}) (this.width / (queue.length-1), this.margin.left))
+      .attr("y", (function (height, queue, offset) {return function(d) {return offset + (d.position + 0.5) * (height / (queue[d.level].length))};}) (this.height, queue, this.margin.top - this.radius - 3));
+
+    nodelabel.enter().append("text")
+      .style("fill-opacity",1e-6)
+      .style("stroke-opacity",1e-6)
+      .transition()
+      .delay(750)
+      .duration(750)
+      .style("fill-opacity",1)
+      .style("stroke-opacity",1)
+      .attr("class", "nodelabel")
+      .text(function(d) { return d.name; })
+      .attr("x", (function (width, offset) {return function(d) {return offset + d.level * width};}) (this.width / (queue.length-1), this.margin.left))
+      .attr("y", (function (height, queue, offset) {return function(d) {return offset + (d.position + 0.5) * (height / (queue[d.level].length))};}) (this.height, queue, this.margin.top - this.radius - 3))
+      .attr("text-anchor", "middle");
+
+    nodelabel.exit().transition().delay(750)
+      .style("fill-opacity",1e-6)
+      .style("stroke-opacity",1e-6)
+      .remove();
+
+    this.call_remote(true);
+  }
+
+  this.call_remote(false);
+}
 
 /***************************************************
  * LABEL GRAPH
