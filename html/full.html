@@ -102,7 +102,10 @@ Toolbox</a>
 <div class="span8 well" style="height: 300px;">
 <div id="tabscontent" class="tab-content">
 <div class="tab-pane active" id="topscores">
-  <form action="#" class="form-horizontal" onSubmit="if($('#topscoresalgorithm').val() && $('#topscoresfield').val()) add_tool(new TopScores(tools, '#toolstream', $('#topscoresalgorithm').val(), $('#topscoresfield').val(), $('#topscoresvertex').val()));">
+  <form action="#" class="form-horizontal" onSubmit="if($('#topscoresalgorithm').val() && $('#topscoresfield').val()) {
+    add_tool(new GroupChart(tools, '#toolstream', $('#topscoresalgorithm').val(), $('#topscoresfield').val(), $('#topscorescount').val(), [], false));
+    add_tool(new GroupList(tools, '#toolstream', $('#topscoresalgorithm').val(), $('#topscoresfield').val(), $('#topscorescount').val(), [], false));
+  }">
     <legend>Top Scores</legend>
     <p>Select a set of scores and enter the number of positions to track.  A table of the top scoring vertices will be shown along with
     a bar chart representing the scores of each vertex relative to the highest.  This table is sorted by score.  It will rearrange, resize, add and remove
@@ -119,9 +122,9 @@ Toolbox</a>
 	<select class="span5 fieldselector" id="topscoresfield">
 	</select>
       </div>
-      <label class="control-label" for="topscoresvertex">Vertex</label>
+      <label class="control-label" for="topscorescount">Count</label>
       <div class="controls">
-	<textarea id="topscoresvertex" class="span5" rows="2">joshuajones, norahjones</textarea>
+	<input type="text" id="topscorescount" class="span5" rows="2" value="25"/>
       </div>
       <div class="controls">
 	<br/>
@@ -131,7 +134,10 @@ Toolbox</a>
   </form>
 </div>
 <div class="tab-pane" id="groupscores">
-  <form action="#" class="form-horizontal" onSubmit="if($('#groupscoresalgorithm').val() && $('#groupscoresfield').val()) add_tool(new GroupScores(tools, '#toolstream', $('#groupscoresalgorithm').val(), $('#groupscoresfield').val(), $('#groupscoresvertex').val()));">
+  <form action="#" class="form-horizontal" onSubmit="if($('#groupscoresalgorithm').val() && $('#groupscoresfield').val()) {
+    add_tool(new GroupChart(tools, '#toolstream', $('#groupscoresalgorithm').val(), $('#groupscoresfield').val(), 0, $('#groupscoresgroup').val(), true));
+    add_tool(new GroupList(tools, '#toolstream', $('#groupscoresalgorithm').val(), $('#groupscoresfield').val(), 0, $('#groupscoresgroup').val(), true));
+  }">
     <legend>Group Scores</legend>
     <p>Select a set of scores and enter the names of one or more vertices.  A table of the scores of the vertices will be shown along with
     a bar chart representing the scores of each vertex relative to the highest.  This table is sorted by score.  It will rearrange as 
@@ -148,9 +154,9 @@ Toolbox</a>
 	<select class="span5 fieldselector" id="groupscoresfield">
 	</select>
       </div>
-      <label class="control-label" for="groupscoresvertex">Vertex</label>
+      <label class="control-label" for="groupscoresgroup">Vertex</label>
       <div class="controls">
-	<textarea id="groupscoresvertex" class="span5" rows="2">joshuajones, norahjones</textarea>
+	<textarea id="groupscoresgroup" class="span5" rows="2">joshuajones,norahjones</textarea>
       </div>
       <div class="controls">
 	<br/>
@@ -366,6 +372,384 @@ Toolbox</a>
     $("#" + child_id + 'closebtn').click((function (me) { return function() { me.close(); }; })(obj));
     $(".collapse").collapse();
   }
+
+  var ts = 0;
+  function notify_ts(t) {
+    if(t > ts)
+      ts = t;
+    return ts;
+  }
+
+/***************************************************
+ * Top / Group Scores
+ */
+
+function GroupList(tools, id, alg, field, count, member_list_str, is_group) {
+  this.is_group = is_group;
+  this.parent_id = id;
+  this.id = id + tools.length;
+  this.alg = alg;
+  this.field = field;
+
+  this.member_list = [];
+
+  if(is_group) {
+    if(-1 != member_list_str.indexOf(",")) {
+      this.member_list = member_list_str.split(',');
+    } else {
+      this.member_list = member_list_str.split(' ');
+    }
+    this.count = this.member_list.length;
+  } else {
+    this.count = parseInt(_.trim(count));
+  }
+
+  add_tool_win(this.parent_id, this.id, "Label Grid (" + member_list_str + ")", this);
+
+  this.width = 860;
+  this.height = (this.count + 3) * 18;
+  this.name_pos_x = 80;
+  this.label_pos_x = 0;
+  this.title_labels = ["", "Name", "Score", "Relative"];
+
+  this.colors = d3.scale.category20();
+
+  this.x_space = function(d,i) {
+    spacing = [0, 0, 200, 420, 500];
+    return spacing[i];
+  }
+
+  this.bar_width = this.width - this.x_space(0,3);
+
+  /* create svg */
+  this.svg = d3.select(this.id).append("svg")
+      .attr("width", this.width)
+      .attr("height", this.height);
+
+  /* create labels */
+  var titles = this.svg.selectAll(".titles").data(this.title_labels)
+    .enter().append("text")
+    .attr("class", "titles")
+    .attr("x", this.x_space)
+    .attr("y", 18)
+    .text(function(d) { return d; });
+
+  this.close = function() {
+    tools.splice(tools.indexOf(this),1);
+    $(this.id + 'accordion').fadeOut(300, function() { $(this).remove(); });
+  };
+
+  this.call_remote = function(wait, obj) {
+    if(obj.is_group) {
+      rpc("get_data_array_set", 
+	{"wait_for_update": wait, "name": obj.alg, "data": obj.field, "strings":true, "set": obj.member_list, "order":"DESC"}, 
+	1, 
+	(function(me) { return function(data) { console.log(data); return me.update(_.zip(data.result.pagerank.vertex_str, data.result.pagerank.value), me); }; })(obj), null);
+    } else {
+      rpc("get_data_array_sorted_range", 
+	{"wait_for_update": wait, "name": obj.alg, "data": obj.field, "strings":true, "offset": 0, "count":obj.count, "order":"DESC"}, 
+	1, 
+	(function(me) { return function(data) { console.log(data); return me.update(_.zip(data.result.pagerank.vertex_str, data.result.pagerank.value), me); }; })(obj), null);
+    }
+  };
+
+  /* update and data handling */
+  this.update = function(data, obj) {
+    var text = obj.svg.selectAll(".names")
+      .data(data, function (d) { return d[0] });
+
+    text.attr("class","names")
+      .transition()
+      .delay(750)
+      .attr("y", function(d,i) { return (i+2)*18 + 5; });
+
+    text.enter().append("text")
+      .attr("class","names enter")
+      .attr("dx", ".35em")
+      .attr("x", obj.x_space(0,1))
+      .attr("y", function(d,i) { return (i+2)*18 + 5; })
+      .style("fill-opacity",1e-6)
+      .text(function(d) { return d[0]; })
+      .transition()
+      .delay(750)
+      .duration(750)
+      .style("fill-opacity",1);
+
+    text.exit()
+      .attr("class", "names exit")
+      .transition()
+      .duration(750)
+      .style("fill-opacity",1e-6)
+      .remove();
+
+    var values = obj.svg.selectAll(".values")
+      .data(data, function (d) { return d[0]});
+
+    values.attr("class","values update")
+      .transition()
+      .delay(750)
+      .attr("y", function(d,i) { return (i+2)*18 + 5; })
+      .text(function(d) { return d[1] });
+
+    values.enter().append("text")
+      .attr("class","values enter")
+      .attr("dx", ".35em")
+      .attr("x", obj.x_space(0,2))
+      .attr("y", function(d,i) { return (i+2)*18 + 5; })
+      .style("fill-opacity",1e-6)
+      .text(function(d) { return d[1]; })
+      .transition()
+      .delay(750)
+      .duration(750)
+      .style("fill-opacity",1);
+
+    values.exit()
+      .attr("class", "values exit")
+      .transition()
+      .duration(750)
+      .style("fill-opacity",1e-6)
+      .remove();
+
+    obj.svg
+      .transition()
+      .delay(750)
+      .attr("height", (data.length + 2) * 18 + 15);
+
+    var bars = obj.svg.selectAll(".bars")
+      .data(data, function(d) { return d[0]; });
+
+    var maxval = _.max(data, function(d) { return d[1]; });
+    console.log(maxval[1]);
+    console.log(obj.bar_width);
+
+    bars.attr("class", "bars update")
+      .transition()
+      .delay(750)
+      .attr("y", function(d,i) { return (i+1)*18 + 5; })
+      .attr("width", (function(max, width) { return function(d) { return max == 0 ? width : width * d[1] / max; }; })(maxval[1], obj.bar_width));
+    
+    bars.enter().append("rect")
+      .attr("class", "bars enter")
+      .attr("x", obj.x_space(0,3))
+      .attr("y", function(d,i) { return (i+1)*18 + 5; })
+      .attr("width", (function(max, width) { return function(d) { return max == 0 ? width : width * d[1] / max; }; })(maxval[1], obj.bar_width))
+      .attr("height", 18)
+      .transition()
+      .delay(750)
+      .duration(750)
+      .style("fill", (function(colors) { return function(d) { return colors(d[0]);}; })(obj.colors))
+      .style("fill-opacity",1);
+
+    bars.exit()
+      .attr("class", "bars exit")
+      .transition()
+      .duration(750)
+      .style("fill-opacity", 1e-6)
+      .remove();
+
+    obj.call_remote(true, obj);
+  }
+
+  this.call_remote(false, this);
+
+  return this;
+};
+
+function GroupChart(tools, id, alg, field, count, member_list_str, is_group) {
+  this.is_group = is_group;
+  this.parent_id = id;
+  this.id = id + tools.length;
+  this.alg = alg;
+  this.field = field;
+
+  this.member_list = [];
+
+  if(is_group) {
+    if(-1 != member_list_str.indexOf(",")) {
+      this.member_list = member_list_str.split(',');
+    } else {
+      this.member_list = member_list_str.split(' ');
+    }
+    this.count = this.member_list.length;
+  } else {
+    this.count = parseInt(_.trim(count));
+  }
+
+  add_tool_win(this.parent_id, this.id, "Label Grid (" + member_list_str + ")", this);
+  this.t = 0;
+  this.n = 40;
+  this.duration = 750;
+
+  this.margin = {
+    top: 10,
+    right: 120,
+    bottom: 20,
+    left: 80
+  };
+
+  this.width = 860 - this.margin.left - this.margin.right;
+  this.height = 700 - this.margin.top - this.margin.bottom;
+
+  this.x = d3.scale.linear()
+    .domain([this.t - this.n + 1, this.t])
+    .range([0, this.width]);
+
+  this.y = d3.scale.linear()
+    .domain([0, 1])
+    .range([this.height, 0]);
+
+  this.line = d3.svg.line()
+    .interpolate("basis")
+    .x((function(x) { 
+      return function (d, i) {
+	return x(d.time);
+      };
+    })(this.x))
+    .y((function(y) { 
+      return function (d, i) {
+	return y(d.value);
+      };
+    })(this.y));
+
+  this.svg = d3.select(this.id).append("svg")
+    .attr("width", this.width + this.margin.left + this.margin.right)
+    .attr("height", this.height + this.margin.top + this.margin.bottom);
+
+  this.g = this.svg.append("g")
+    .attr("transform", "translate(" + this.margin.left + "," + this.margin.top + ")");
+
+  // extra svg to clip the graph and x axis as they transition in and out
+  this.graph = this.g.append("svg")
+    .attr("width", this.width)
+    .attr("height", this.height + this.margin.top + this.margin.bottom);
+
+  this.xAxis = d3.svg.axis().scale(this.x).orient("bottom");
+  this.yAxis = d3.svg.axis().scale(this.y).orient("left");
+
+  this.xaxis = this.graph.append("g")
+    .attr("class", "x axis")
+    .attr("transform", "translate(0," + this.height + ")")
+    .call(this.x.axis = this.xAxis);
+
+  this.yaxis = this.g.append("g")
+    .attr("class", "y axis")
+    .call(this.y.axis = this.yAxis);
+
+  this.data = {};
+  this.paths = {};
+
+  this.colors = d3.scale.category20();
+
+  this.close = function() {
+    tools.splice(tools.indexOf(this),1);
+    $(this.id + 'accordion').fadeOut(300, function() { $(this).remove(); });
+  };
+
+  this.call_remote = function(wait, t, obj) {
+    if(obj.is_group) {
+      rpc("get_data_array_set", 
+	{"wait_for_update": wait, "name": obj.alg, "data": obj.field, "strings":true, "set": obj.member_list, "order":"DESC"}, 
+	1, 
+	(function(t, me) { return function(data) { console.log(data); return me.update(data, t, me); }; })(t, obj), null);
+    } else {
+      rpc("get_data_array_sorted_range", 
+	{"wait_for_update": wait, "name": obj.alg, "data": obj.field, "strings":true, "offset": 0, "count":obj.count, "order":"DESC"}, 
+	1, 
+	(function(t, me) { return function(data) { console.log(data); return me.update(data, t, me); }; })(t, obj), null);
+    }
+  };
+
+
+  this.update = function(data_in, t, obj) {
+    t = notify_ts(t);
+
+    data = data_in.result[obj.field].value;
+    names = data_in.result[obj.field].vertex_str;
+
+    for(i = 0; i < data.length; i++) {
+      if(!(names[i] in obj.data)) {
+	obj.data[names[i]] = [{time:t-1, value:0}];
+	obj.paths[names[i]] = obj.graph.append("g")
+	    .append("path")
+	    .data([obj.data[names[i]]])
+	    .attr("class", "line")
+	    .style("stroke", obj.colors(names[i]));
+      } 
+      if(obj.data[names[i]][0].time < t - obj.n) {
+	obj.data[names[i]].shift();
+	if(obj.data[names[i]].length <= 0) {
+	  delete obj.data[names[i]];
+	  delete obj.paths[names[i]];
+	}
+      }
+      obj.data[names[i]].push({time:t, value: data[i]});
+    }
+
+    obj.x.domain([t - obj.n + 2, t]);
+
+    maxy = _.reduce(obj.data, 
+      function(memo, num) { 
+	local_max = _.max(num, function(d) { return d.value; });
+	return _.max([local_max.value, memo]);
+      }, 
+      0);
+
+    obj.y.domain([0, maxy * 1.05]);
+
+    obj.graph.selectAll(".line").attr("d", obj.line).attr("transform", null);
+    obj.graph.selectAll(".line").transition()
+      .duration(obj.duration)
+      .ease("linear")
+      .attr("transform", "translate(" + obj.x(t-obj.n+1) + ")");
+
+    obj.xaxis.transition()
+      .duration(obj.duration)
+      .ease("linear")
+      .call(obj.xAxis);
+
+    obj.yaxis.transition()
+      .duration(obj.duration)
+      .ease("linear")
+      .call(obj.yAxis);
+
+    var text = obj.svg.selectAll(".names").data(names, function(d) { return d; });
+
+    text.attr("class","names update")
+      .transition()
+      .delay(750)
+      .attr("y", function(d,i) { return (i+2)*18 })
+      .text(function(d) { return d; });
+
+    text.enter().append("text")
+      .attr("class","names enter")
+      .attr("dx", ".35em")
+      .attr("x", obj.width + obj.margin.left)
+      .attr("y", function(d,i) { return (i+2)*18; })
+      .style("fill-opacity",1e-6)
+      .text(function(d) { return d; })
+      .transition()
+      .delay(750)
+      .duration(750)
+      .style("fill-opacity",1)
+      .style("fill", 
+	(function(colors) { 
+	  return function(d) { 
+	    return colors(d);
+	  }; 
+	})(obj.colors));
+
+    text.exit()
+      .attr("class", "names exit")
+      .transition()
+      .duration(750)
+      .style("fill-opacity",1e-6)
+      .remove();
+
+    obj.call_remote(true, t+1, obj);
+  }
+
+  this.call_remote(false, ts+1, this);
+};
 
 /***************************************************
  * Label Grid
@@ -589,7 +973,7 @@ function ShortestPaths(tools, id, source, dest) {
 
   this.margin = {
     top: 40,
-    right: 40,
+    right: 100,
     bottom: 20,
     left: 40
   };
