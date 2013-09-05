@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+<title>STINGER Monitoring Tools</title>
 <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
 <link href="lib/bootstrap/css/bootstrap.min.css" rel="stylesheet"></link>
 <script src="lib/jquery/jquery.min.js"></script>
@@ -185,7 +186,7 @@ Toolbox</a>
       </div>
       <label class="control-label" for="labelgridvertex">Vertex</label>
       <div class="controls">
-	<textarea id="labelgridvertex" class="span5" rows="2">joshuajones, norahjones</textarea>
+	<textarea id="labelgridvertex" class="span5" rows="2">joshuajones,norahjones</textarea>
       </div>
       <div class="controls">
 	<br/>
@@ -255,7 +256,7 @@ Toolbox</a>
     <div class="control-group">
       <label class="control-label" for="groupgraphvertex">Vertices</label>
       <div class="controls">
-	<textarea id="groupgraphvertex" class="span5" rows="3">joshuajones, norahjones</textarea>
+	<textarea id="groupgraphvertex" class="span5" rows="3">joshuajones,norahjones</textarea>
       </div>
       <div class="controls">
 	<br/>
@@ -390,6 +391,7 @@ function GroupList(tools, id, alg, field, count, member_list_str, is_group) {
   this.id = id + tools.length;
   this.alg = alg;
   this.field = field;
+  this.time_to_die = false;
 
   this.member_list = [];
 
@@ -404,7 +406,7 @@ function GroupList(tools, id, alg, field, count, member_list_str, is_group) {
     this.count = parseInt(_.trim(count));
   }
 
-  add_tool_win(this.parent_id, this.id, "Label Grid (" + member_list_str + ")", this);
+  add_tool_win(this.parent_id, this.id, (is_group ? "Group" : "Top") + " Scores (" + alg + "," + field + ": " + (is_group ? member_list_str : this.count)+ " )", this);
 
   this.width = 860;
   this.height = (this.count + 3) * 18;
@@ -437,6 +439,7 @@ function GroupList(tools, id, alg, field, count, member_list_str, is_group) {
   this.close = function() {
     tools.splice(tools.indexOf(this),1);
     $(this.id + 'accordion').fadeOut(300, function() { $(this).remove(); });
+    this.time_to_die = true;
   };
 
   this.call_remote = function(wait, obj) {
@@ -547,7 +550,8 @@ function GroupList(tools, id, alg, field, count, member_list_str, is_group) {
       .style("fill-opacity", 1e-6)
       .remove();
 
-    obj.call_remote(true, obj);
+    if(!obj.time_to_die)
+      obj.call_remote(true, obj);
   }
 
   this.call_remote(false, this);
@@ -561,6 +565,7 @@ function GroupChart(tools, id, alg, field, count, member_list_str, is_group) {
   this.id = id + tools.length;
   this.alg = alg;
   this.field = field;
+  this.time_to_die = false;
 
   this.member_list = [];
 
@@ -575,7 +580,7 @@ function GroupChart(tools, id, alg, field, count, member_list_str, is_group) {
     this.count = parseInt(_.trim(count));
   }
 
-  add_tool_win(this.parent_id, this.id, "Label Grid (" + member_list_str + ")", this);
+  add_tool_win(this.parent_id, this.id, (is_group ? "Group" : "Top") + " Scores Over Time (" + alg + "," + field + ": " + (is_group ? member_list_str : this.count)+ " )", this);
   this.t = 0;
   this.n = 40;
   this.duration = 750;
@@ -643,6 +648,7 @@ function GroupChart(tools, id, alg, field, count, member_list_str, is_group) {
   this.close = function() {
     tools.splice(tools.indexOf(this),1);
     $(this.id + 'accordion').fadeOut(300, function() { $(this).remove(); });
+    this.time_to_die = true;
   };
 
   this.call_remote = function(wait, t, obj) {
@@ -745,7 +751,8 @@ function GroupChart(tools, id, alg, field, count, member_list_str, is_group) {
       .style("fill-opacity",1e-6)
       .remove();
 
-    obj.call_remote(true, t+1, obj);
+    if(!obj.time_to_die)
+      obj.call_remote(true, t+1, obj);
   }
 
   this.call_remote(false, ts+1, this);
@@ -759,6 +766,7 @@ function LabelGrid(tools, id, alg, field, member_list_str) {
   this.id = id + tools.length;
   this.alg = alg;
   this.field = field;
+  this.time_to_die = false;
 
   this.member_list = [];
   if(-1 != member_list_str.indexOf(",")) {
@@ -790,6 +798,7 @@ function LabelGrid(tools, id, alg, field, member_list_str) {
   this.close = function() {
     tools.splice(tools.indexOf(this),1);
     $(this.id + 'accordion').fadeOut(300, function() { $(this).remove(); });
+    this.time_to_die = true;
   };
 
   this.call_remote = function(wait, obj) {
@@ -953,7 +962,8 @@ function LabelGrid(tools, id, alg, field, member_list_str) {
       .style("fill-opacity",1e-6)
       .remove();
 
-    obj.call_remote(true, obj);
+    if(!obj.time_to_die)
+      obj.call_remote(true, obj);
   }
 
   this.call_remote(false, this);
@@ -970,6 +980,7 @@ function ShortestPaths(tools, id, source, dest) {
   this.dest = dest;
   this.duration = 750;
   this.radius = 10;
+  this.time_to_die = false;
 
   this.margin = {
     top: 40,
@@ -999,6 +1010,7 @@ function ShortestPaths(tools, id, source, dest) {
   this.close = function() {
     tools.splice(tools.indexOf(this),1);
     $(this.id + 'accordion').fadeOut(300, function() { $(this).remove(); });
+    this.time_to_die = true;
   };
 
   this.update = function(data, obj) {
@@ -1181,7 +1193,8 @@ function ShortestPaths(tools, id, source, dest) {
       .style("stroke-opacity",1e-6)
       .remove();
 
-    this.call_remote(true, obj);
+    if(!this.time_to_die)
+      this.call_remote(true, obj);
   }
 
   this.call_remote(false, this);
@@ -1196,6 +1209,7 @@ function ShortestPaths(tools, id, source, dest) {
     this.alg = alg;
     this.field = field;
     this.vtx = vtx;
+    this.time_to_die = false;
 
     this.width = 960,
     this.height = 400;
@@ -1254,6 +1268,8 @@ function ShortestPaths(tools, id, source, dest) {
     this.close = function() {
       tools.splice(tools.indexOf(this),1);
       $(this.id + 'accordion').fadeOut(300, function() { $(this).remove(); });
+      this.time_to_die = true;
+      this.force.stop();
     }
 
     this.register = function(data, graph, obj) {
@@ -1346,8 +1362,9 @@ function ShortestPaths(tools, id, source, dest) {
 
       obj.start();
 
-      rpc("request", {"wait_for_update": true, "session_id": session_id, "strings":true}, next_id(), 
-	(function(update, graph, obj, session_id) { return function(data) { update(data, graph, obj, session_id); }; })(obj.update, obj.graph, obj, session_id), null);
+      if(!obj.time_to_die)
+	rpc("request", {"wait_for_update": true, "session_id": session_id, "strings":true}, next_id(), 
+	  (function(update, graph, obj, session_id) { return function(data) { update(data, graph, obj, session_id); }; })(obj.update, obj.graph, obj, session_id), null);
     }
 
     <!--rpc("register", {"type": "subgraph", "name": this.alg, "data": this.field, "source": _.trim(this.vtx), "strings":true}, next_id(), this.register, null);-->
@@ -1362,6 +1379,7 @@ function ShortestPaths(tools, id, source, dest) {
     this.parent_id = id;
     this.id = id + tools.length;
     this.vtx = vtx;
+    this.time_to_die = false;
 
     this.width = 960,
     this.height = 400;
@@ -1420,6 +1438,8 @@ function ShortestPaths(tools, id, source, dest) {
     this.close = function() {
       tools.splice(tools.indexOf(this),1);
       $(this.id + 'accordion').fadeOut(300, function() { $(this).remove(); });
+      this.time_to_die = true;
+      this.force.stop();
     }
 
     this.register = function(data, graph, obj) {
@@ -1512,8 +1532,9 @@ function ShortestPaths(tools, id, source, dest) {
 
       obj.start();
 
-      rpc("request", {"wait_for_update": true, "session_id": session_id, "strings":true}, next_id(), 
-	(function(update, graph, obj, session_id) { return function(data) { update(data, graph, obj, session_id); }; })(obj.update, obj.graph, obj, session_id), null);
+      if(!obj.time_to_die)
+	rpc("request", {"wait_for_update": true, "session_id": session_id, "strings":true}, next_id(), 
+	  (function(update, graph, obj, session_id) { return function(data) { update(data, graph, obj, session_id); }; })(obj.update, obj.graph, obj, session_id), null);
     }
 
     var source_str = _.trim(this.vtx);
