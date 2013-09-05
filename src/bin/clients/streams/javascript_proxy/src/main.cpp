@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
   struct mg_callbacks callbacks;
   const char *options[] = {
     "listening_ports", "8080",
-    "document_root", "websocket_html_root",
+    "document_root", "data/websockets",
     NULL
   };
 
