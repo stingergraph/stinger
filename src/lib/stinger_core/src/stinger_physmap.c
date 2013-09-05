@@ -115,8 +115,11 @@ stinger_physmap_id_direct(stinger_physmap_t * p, stinger_vertices_t * v, vindex_
     *out_len = strlen(name);
     *out_ptr = name;
     return 0;
+  } else {
+    *out_ptr = NULL;
+    *out_len = 0;
+    return -1;
   }
-  return -1;
 }
 
 int64_t
