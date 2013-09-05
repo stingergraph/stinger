@@ -139,10 +139,16 @@ JSON_RPC_community_subgraph::onRequest(
     if(_strings) {
       char * physID;
       uint64_t len;
-      stinger_mapping_physid_direct(S, (*it).first, &physID, &len);
-      src_str.SetString(physID);
-      stinger_mapping_physid_direct(S, (*it).second, &physID, &len);
-      dst_str.SetString(physID);
+      if(-1 == stinger_mapping_physid_direct(S, (*it).first, &physID, &len)) {
+        physID = "";
+        len = 0;
+      }
+      src_str.SetString(physID, len, allocator);
+      if(-1 == stinger_mapping_physid_direct(S, (*it).second, &physID, &len)) {
+        physID = "";
+        len = 0;
+      }
+      dst_str.SetString(physID, len, allocator);
       edge_str.SetArray();
       edge_str.PushBack(src_str, allocator);
       edge_str.PushBack(dst_str, allocator);
@@ -171,10 +177,16 @@ JSON_RPC_community_subgraph::onRequest(
     if(_strings) {
       char * physID;
       uint64_t len;
-      stinger_mapping_physid_direct(S, (*it).first, &physID, &len);
-      src_str.SetString(physID);
-      stinger_mapping_physid_direct(S, (*it).second, &physID, &len);
-      dst_str.SetString(physID);
+      if(-1 == stinger_mapping_physid_direct(S, (*it).first, &physID, &len)) {
+        physID = "";
+        len = 0;
+      }
+      src_str.SetString(physID, len, allocator);
+      if(-1 == stinger_mapping_physid_direct(S, (*it).second, &physID, &len)) {
+        physID = "";
+        len = 0;
+      }
+      dst_str.SetString(physID, len, allocator);
       edge_str.SetArray();
       edge_str.PushBack(src_str, allocator);
       edge_str.PushBack(dst_str, allocator);
@@ -253,10 +265,16 @@ JSON_RPC_community_subgraph::onRegister(
 	if(_strings) {
 	  char * physID;
 	  uint64_t len;
-	  stinger_mapping_physid_direct(S, (*it), &physID, &len);
-	  src_str.SetString(physID);
-	  stinger_mapping_physid_direct(S, STINGER_EDGE_DEST, &physID, &len);
-	  dst_str.SetString(physID);
+	  if(-1 == stinger_mapping_physid_direct(S, (*it), &physID, &len)) {
+	    physID = "";
+	    len = 0;
+	  }
+	  src_str.SetString(physID, len, allocator);
+	  if(-1 == stinger_mapping_physid_direct(S, STINGER_EDGE_DEST, &physID, &len)) {
+	    physID = "";
+	    len = 0;
+	  }
+	  dst_str.SetString(physID, len, allocator);
 	  edge_str.SetArray();
 	  edge_str.PushBack(src_str, allocator);
 	  edge_str.PushBack(dst_str, allocator);
@@ -431,10 +449,16 @@ JSON_RPC_vertex_event_notifier::onRegister(
       if(_strings) {
 	char * physID;
 	uint64_t len;
-	stinger_mapping_physid_direct(S, (*it), &physID, &len);
-	src_str.SetString(physID);
-	stinger_mapping_physid_direct(S, STINGER_EDGE_DEST, &physID, &len);
-	dst_str.SetString(physID);
+	if(-1 == stinger_mapping_physid_direct(S, (*it), &physID, &len)) {
+	  physID = "";
+	  len = 0;
+	}
+	src_str.SetString(physID, len, allocator);
+	if(-1 == stinger_mapping_physid_direct(S, STINGER_EDGE_DEST, &physID, &len)) {
+	  physID = "";
+	  len = 0;
+	}
+	dst_str.SetString(physID, len, allocator);
 	edge_str.SetArray();
 	edge_str.PushBack(src_str, allocator);
 	edge_str.PushBack(dst_str, allocator);
@@ -477,10 +501,16 @@ JSON_RPC_vertex_event_notifier::onRequest(
     if(_strings) {
       char * physID;
       uint64_t len;
-      stinger_mapping_physid_direct(S, (*it).first, &physID, &len);
-      src_str.SetString(physID);
-      stinger_mapping_physid_direct(S, (*it).second, &physID, &len);
-      dst_str.SetString(physID);
+      if(-1 == stinger_mapping_physid_direct(S, (*it).first, &physID, &len)) {
+        physID = "";
+        len = 0;
+      }
+      src_str.SetString(physID, len, allocator);
+      if(-1 == stinger_mapping_physid_direct(S, (*it).second, &physID, &len)) {
+        physID = "";
+        len = 0;
+      }
+      dst_str.SetString(physID, len, allocator);
       edge_str.SetArray();
       edge_str.PushBack(src_str, allocator);
       edge_str.PushBack(dst_str, allocator);
@@ -508,10 +538,16 @@ JSON_RPC_vertex_event_notifier::onRequest(
     if(_strings) {
       char * physID;
       uint64_t len;
-      stinger_mapping_physid_direct(S, (*it).first, &physID, &len);
-      src_str.SetString(physID);
-      stinger_mapping_physid_direct(S, (*it).second, &physID, &len);
-      dst_str.SetString(physID);
+      if(-1 == stinger_mapping_physid_direct(S, (*it).first, &physID, &len)) {
+        physID = "";
+        len = 0;
+      }
+      src_str.SetString(physID, len, allocator);
+      if(-1 == stinger_mapping_physid_direct(S, (*it).second, &physID, &len)) {
+        physID = "";
+        len = 0;
+      }
+      dst_str.SetString(physID, len, allocator);
       edge_str.SetArray();
       edge_str.PushBack(src_str, allocator);
       edge_str.PushBack(dst_str, allocator);

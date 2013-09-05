@@ -127,7 +127,7 @@ main (int argc, char ** argv)
   struct mg_callbacks callbacks;
 
   // List of options. Last element must be NULL.
-  const char *opts[] = {"listening_ports", "8088", NULL};
+  const char *opts[] = {"listening_ports", "8088", "document_root", "data", NULL};
 
   // Prepare callbacks structure. We have only one callback, the rest are NULL.
   memset(&callbacks, 0, sizeof(callbacks));

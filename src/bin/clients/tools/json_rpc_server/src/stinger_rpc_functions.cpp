@@ -260,10 +260,16 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
       if (strings) {
 	char * physID;
 	uint64_t len;
-	stinger_mapping_physid_direct(S, target, &physID, &len);
-	src_str.SetString(physID);
-	stinger_mapping_physid_direct(S, STINGER_EDGE_DEST, &physID, &len);
-	dst_str.SetString(physID);
+	if(-1 == stinger_mapping_physid_direct(S, target, &physID, &len)) {
+	  src_str.SetString("", 0, allocator);
+	} else {
+	  src_str.SetString(physID, len, allocator);
+	}
+	if(-1 == stinger_mapping_physid_direct(S, STINGER_EDGE_DEST, &physID, &len)) {
+	  dst_str.SetString("", 0, allocator);
+	} else {
+	  dst_str.SetString(physID, len, allocator);
+	}
 	val.SetArray();
 	val.PushBack(src_str, allocator);
 	val.PushBack(dst_str, allocator);
@@ -296,10 +302,16 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
 	  if (strings) {
 	    char * physID;
 	    uint64_t len;
-	    stinger_mapping_physid_direct(S, v, &physID, &len);
-	    src_str.SetString(physID);
-	    stinger_mapping_physid_direct(S, STINGER_EDGE_DEST, &physID, &len);
-	    dst_str.SetString(physID);
+	    if(-1 == stinger_mapping_physid_direct(S, v, &physID, &len)) {
+	      src_str.SetString("", 0, allocator);
+	    } else {
+	      src_str.SetString(physID, len, allocator);
+	    }
+	    if(-1 == stinger_mapping_physid_direct(S, STINGER_EDGE_DEST, &physID, &len)) {
+	      dst_str.SetString("", 0, allocator);
+	    } else {
+	      dst_str.SetString(physID, len, allocator);
+	    }
 	    val.SetArray();
 	    val.PushBack(src_str, allocator);
 	    val.PushBack(dst_str, allocator);
@@ -744,8 +756,11 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
 	      if (strings) {
 		char * physID;
 		uint64_t len;
-		stinger_mapping_physid_direct(S, vtx, &physID, &len);
-		vtx_phys.SetString(physID);
+		if(-1 == stinger_mapping_physid_direct(S, vtx, &physID, &len)) {
+		  physID = "";
+		  len = 0;
+		}
+		vtx_phys.SetString(physID, len, allocator);
 		vtx_str.PushBack(vtx_phys, allocator);
 	      }
 	    }
@@ -807,8 +822,11 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
 	      if (strings) {
 		char * physID;
 		uint64_t len;
-		stinger_mapping_physid_direct(S, vtx, &physID, &len);
-		vtx_phys.SetString(physID);
+		if(-1 == stinger_mapping_physid_direct(S, vtx, &physID, &len)) {
+		  physID = "";
+		  len = 0;
+		}
+		vtx_phys.SetString(physID, len, allocator);
 		vtx_str.PushBack(vtx_phys, allocator);
 	      }
 	    }
@@ -870,8 +888,11 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
 	      if (strings) {
 		char * physID;
 		uint64_t len;
-		stinger_mapping_physid_direct(S, vtx, &physID, &len);
-		vtx_phys.SetString(physID);
+		if(-1 == stinger_mapping_physid_direct(S, vtx, &physID, &len)) {
+		  physID = "";
+		  len = 0;
+		}
+		vtx_phys.SetString(physID, len, allocator);
 		vtx_str.PushBack(vtx_phys, allocator);
 	      }
 	    }
@@ -933,8 +954,11 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
 	      if (strings) {
 		char * physID;
 		uint64_t len;
-		stinger_mapping_physid_direct(S, vtx, &physID, &len);
-		vtx_phys.SetString(physID);
+		if(-1 == stinger_mapping_physid_direct(S, vtx, &physID, &len)) {
+		  physID = "";
+		  len = 0;
+		}
+		vtx_phys.SetString(physID, len, allocator);
 		vtx_str.PushBack(vtx_phys, allocator);
 	      }
 	    }
@@ -996,8 +1020,11 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
 	      if (strings) {
 		char * physID;
 		uint64_t len;
-		stinger_mapping_physid_direct(S, vtx, &physID, &len);
-		vtx_phys.SetString(physID);
+		if(-1 == stinger_mapping_physid_direct(S, vtx, &physID, &len)) {
+		  physID = "";
+		  len = 0;
+		}
+		vtx_phys.SetString(physID, len, allocator);
 		vtx_str.PushBack(vtx_phys, allocator);
 	      }
 	    }
@@ -1062,7 +1089,7 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
       result.AddMember("count", count, allocator);
     }
     if (method == SORTED) {
-      order.SetString(order_str);
+      order.SetString(order_str, strlen(order_str), allocator);
       result.AddMember("order", order, allocator);
     }
     result.AddMember("vertex_id", vtx_id, allocator);
