@@ -29,8 +29,34 @@ var source = document.getElementById("source");
 var destination = document.getElementById("destination");
 
 // Connect to our server: node server.js
-var socket = new WebSocket("ws://localhost:8080/ws");
-socket.binaryType = "arraybuffer"; // We are talking binary
+function rebuild_socket() {
+  socket = new WebSocket("ws://localhost:8080/ws");
+  socket.binaryType = "arraybuffer"; // We are talking binary
+  build_socket(socket);
+}
+
+function build_socket(socket) {
+  socket.onopen = function() {
+    log.value += "Connected\n";
+  };
+
+  socket.onclose = function() {
+    log.value += "Disconnected\nReconnecting...\n";
+    rebuild_socket();
+  };
+
+  socket.onmessage = function(evt) {
+    try {
+      // Decode the Message
+      var msg = StingerBatch.decode(evt.data);
+      log.value += "Received: "+msg.type+"\n";
+    } catch (err) {
+      log.value += "Error: "+err+"\n";
+    }
+  };
+}
+
+rebuild_socket();
 
 function send() {
   if (socket.readyState == WebSocket.OPEN) {
@@ -57,7 +83,7 @@ function send() {
 
     var msg = new StingerBatch();
     msg.insertions = insertions;
-    msg.type = 2;
+    msg.type = 1;
 
 
     console.log(msg);
@@ -68,23 +94,6 @@ function send() {
   }
 }
 
-socket.onopen = function() {
-  log.value += "Connected\n";
-};
-
-socket.onclose = function() {
-  log.value += "Disconnected\n";
-};
-
-socket.onmessage = function(evt) {
-  try {
-    // Decode the Message
-    var msg = StingerBatch.decode(evt.data);
-    log.value += "Received: "+msg.type+"\n";
-  } catch (err) {
-    log.value += "Error: "+err+"\n";
-  }
-};
 
 </script>
 </body>
