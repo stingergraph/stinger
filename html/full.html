@@ -447,12 +447,12 @@ function GroupList(tools, id, alg, field, count, member_list_str, is_group) {
       rpc("get_data_array_set", 
 	{"wait_for_update": wait, "name": obj.alg, "data": obj.field, "strings":true, "set": obj.member_list, "order":"DESC"}, 
 	1, 
-	(function(me) { return function(data) { console.log(data); return me.update(_.zip(data.result.pagerank.vertex_str, data.result.pagerank.value), me); }; })(obj), null);
+	(function(me) { return function(data) { console.log(data); return me.update(_.zip(data.result[obj.field].vertex_str, data.result[obj.field].value), me); }; })(obj), null);
     } else {
       rpc("get_data_array_sorted_range", 
 	{"wait_for_update": wait, "name": obj.alg, "data": obj.field, "strings":true, "offset": 0, "count":obj.count, "order":"DESC"}, 
 	1, 
-	(function(me) { return function(data) { console.log(data); return me.update(_.zip(data.result.pagerank.vertex_str, data.result.pagerank.value), me); }; })(obj), null);
+	(function(me) { return function(data) { console.log(data); return me.update(_.zip(data.result[obj.field].vertex_str, data.result[obj.field].value), me); }; })(obj), null);
     }
   };
 
