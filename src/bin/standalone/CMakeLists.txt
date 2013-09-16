@@ -1,7 +1,8 @@
 
 ###############################################
 # Add library dependencies here as dep_<folder>
-SET(libdep_default string int_hm_seq stinger_core stinger_utils)
+SET(libdep_default int_hm_seq int_ht_seq stinger_core stinger_utils string)
+SET(libdep_depold_community int_hm_seq int_ht_seq)
 
 IF(APPLE)
   SET(libdep_protobuf_test ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib)
@@ -9,8 +10,9 @@ ELSE()
   SET(libdep_protobuf_test ${CMAKE_BINARY_DIR}/lib/libprotobuf.so)
 ENDIF()
 
-SET(tgtdep_default string int_hm_seq stinger_core stinger_utils rt)
+SET(tgtdep_default int_hm_seq int_ht_seq stinger_core stinger_utils rt string)
 SET(tgtdep_protobuf_test protobuf)
+SET(tgtdep_depold_community int_hm_seq int_ht_seq)
 
 #################################################################
 # Iterate over each project and build appropriately based on type
@@ -24,9 +26,10 @@ FOREACH(subdir ${subs})
       MESSAGE("BIN/STANDALONE: DEFAULT SUBDIR FOUND ${subdir}")
       FILE(GLOB srcs ${CMAKE_CURRENT_LIST_DIR}/${subdir}/*.c)
       FILE(GLOB cxx_srcs ${CMAKE_CURRENT_LIST_DIR}/${subdir}/*.cc)
+      FILE(GLOB src ${CMAKE_CURRENT_LIST_DIR}/${subdir}/src/*)
       INCLUDE_DIRECTORIES(${subdir})
-      MESSAGE("source files:${srcs}")
-      ADD_EXECUTABLE(${subdir} ${srcs} ${cxx_srcs})
+      MESSAGE("source files:${srcs} ${cxx_srcs} ${src}")
+      ADD_EXECUTABLE(${subdir} ${srcs} ${cxx_srcs} ${src})
 
       ADD_DEPENDENCIES(${subdir} ${tgtdep_default})
       TARGET_LINK_LIBRARIES(${subdir} ${libdep_default})

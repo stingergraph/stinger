@@ -1,6 +1,11 @@
 #ifndef  INT_HT_SEQ_H
 #define  INT_HT_SEQ_H
 
+#ifdef __cplusplus
+#define restrict
+extern "C" {
+#endif
+
 #include <stdint.h>
 
 typedef struct int_ht_seq {
@@ -37,5 +42,10 @@ int_ht_seq_insert(int_ht_seq_t * ht, int64_t k);
 
 int
 int_ht_seq_exists(int_ht_seq_t * ht, int64_t k);
+
+#ifdef __cplusplus
+}
+#undef restrict
+#endif
 
 #endif  /*INT-HT-SEQ_H*/
