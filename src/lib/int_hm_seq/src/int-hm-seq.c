@@ -1,4 +1,4 @@
-#include "int-hm-seq.h"
+#include "int_hm_seq.h"
 #include "timer.h"
 
 #include <stdlib.h>

@@ -2,7 +2,7 @@
 
 #include "stinger_core/xmalloc.h"
 #include "fmemopen/fmemopen.h"
-#include "int_hm_seq/int-hm-seq.h"
+#include "int_hm_seq/int_hm_seq.h"
 
 #define VTX(v) stinger_vertices_vertex_get(vertices, v)
 
