@@ -81,7 +81,9 @@
 <div class="accordion-group">
 <div class="accordion-heading">
 <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion2" href="#collapseOne">
-Toolbox</a>
+Toolbox
+<div class="pull-right" style="margin-left: 20px" id="global_nv">nv</div>
+<div class="pull-right" id="global_ne">ne</div></a>
 </div>
 <div id="collapseOne" class="accordion-body collapse in">
 <div class="accordion-inner">
@@ -323,6 +325,7 @@ Toolbox</a>
 	})(this.value));
       });
       update_algorithms();
+      get_graph_stats();
   });
 
 /* request_id handling */
@@ -361,6 +364,18 @@ Toolbox</a>
 	});
       },
       null);
+  }
+
+  function get_graph_stats() {
+    rpc("get_graph_stats", {wait_for_update: true}, next_id(),
+      function(data) {
+	  global_nv = data.result.vertices;
+	  global_ne = data.result.edges;
+	  $('#global_nv').text("Total Vertices: " + global_nv);
+	  $('#global_ne').text("Total Edges: " + global_ne);
+	  get_graph_stats();
+	},
+	null, null, this);
   }
 
 /* general purpose utility functions */
@@ -690,7 +705,8 @@ function GroupChart(tools, id, alg, field, count, member_list_str, is_group) {
 	    .append("path")
 	    .data([obj.data[names[i]]])
 	    .attr("class", "line")
-	    .style("stroke", obj.colors(names[i]));
+	    .style("stroke", obj.colors(names[i]))
+	    .style("stroke-width", "3px");
       } 
       if(obj.data[names[i]][0].time < t - obj.n) {
 	obj.data[names[i]].shift();
