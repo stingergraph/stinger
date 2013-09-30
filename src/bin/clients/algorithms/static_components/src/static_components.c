@@ -76,7 +76,7 @@ main(int argc, char *argv[])
    * Initial static computation
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
   stinger_alg_begin_init(alg); {
-    parallel_shiloach_vishkin_components(alg->stinger, STINGER_MAX_LVERTICES, components);
+    parallel_shiloach_vishkin_components(alg->stinger, stinger_mapping_nv(alg->stinger), components);
   } stinger_alg_end_init(alg);
 
   /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
@@ -91,7 +91,7 @@ main(int argc, char *argv[])
 
     /* Post processing */
     if(stinger_alg_begin_post(alg)) {
-      parallel_shiloach_vishkin_components(alg->stinger, STINGER_MAX_LVERTICES, components);
+      parallel_shiloach_vishkin_components(alg->stinger, stinger_mapping_nv(alg->stinger), components);
       stinger_alg_end_post(alg);
     }
   }

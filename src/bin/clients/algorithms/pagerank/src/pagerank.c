@@ -84,7 +84,7 @@ main(int argc, char *argv[])
    * Initial static computation
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
   stinger_alg_begin_init(alg); {
-    page_rank(alg->stinger, STINGER_MAX_LVERTICES, pr, tmp_pr, 1e-8, 0.85, 100);
+    page_rank(alg->stinger, stinger_mapping_nv(alg->stinger), pr, tmp_pr, 1e-8, 0.85, 100);
   } stinger_alg_end_init(alg);
 
   /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
@@ -99,7 +99,7 @@ main(int argc, char *argv[])
 
     /* Post processing */
     if(stinger_alg_begin_post(alg)) {
-      page_rank(alg->stinger, STINGER_MAX_LVERTICES, pr, tmp_pr, 1e-8, 0.85, 100);
+      page_rank(alg->stinger, stinger_mapping_nv(alg->stinger), pr, tmp_pr, 1e-8, 0.85, 100);
       stinger_alg_end_post(alg);
     }
   }
