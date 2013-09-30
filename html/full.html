@@ -279,6 +279,19 @@ Toolbox</a>
 
 </div> <!-- end of content-->
 
+<!-- Error Modal -->
+<div id="modalError" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="modalErrorLabel" aria-hidden="true">
+<div class="modal-header">
+<button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+<h3 id="modalErrorLabel">Request Cannot Be Satisfied</h3>
+</div>
+<div class="modal-body">
+<p>The requested data is not present in the graph.<p>
+</div>
+<div class="modal-footer">
+<button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
+</div>
+</div>
 
 <script type="text/javascript">
 /* startup code */
@@ -351,13 +364,13 @@ Toolbox</a>
   }
 
 /* general purpose utility functions */
-  function rpc(method, params, id, success, error) {
+  function rpc(method, params, id, success, error, close, scope) {
     $.ajax({
       url: "/jsonrpc",
       type: "POST",
       data: JSON.stringify({"jsonrpc": "2.0", "method": method, "params": params, "id": id}),
       dataType: "json",
-      success: success,
+      success: (function(success, close, scope) { return function(data) { if('error' in data) { $("#modalError").modal(); close.apply(scope); } else { success(data); } }; })(success, close, scope),
       error: error
     });
   }
@@ -447,12 +460,12 @@ function GroupList(tools, id, alg, field, count, member_list_str, is_group) {
       rpc("get_data_array_set", 
 	{"wait_for_update": wait, "name": obj.alg, "data": obj.field, "strings":true, "set": obj.member_list, "order":"DESC"}, 
 	1, 
-	(function(me) { return function(data) { return me.update(_.zip(data.result[obj.field].vertex_str, data.result[obj.field].value), me); }; })(obj), null);
+	(function(me) { return function(data) { return me.update(_.zip(data.result[obj.field].vertex_str, data.result[obj.field].value), me); }; })(obj), null, obj.close, obj);
     } else {
       rpc("get_data_array_sorted_range", 
 	{"wait_for_update": wait, "name": obj.alg, "data": obj.field, "strings":true, "offset": 0, "count":obj.count, "order":"DESC"}, 
 	1, 
-	(function(me) { return function(data) { return me.update(_.zip(data.result[obj.field].vertex_str, data.result[obj.field].value), me); }; })(obj), null);
+	(function(me) { return function(data) { return me.update(_.zip(data.result[obj.field].vertex_str, data.result[obj.field].value), me); }; })(obj), null, obj.close, obj);
     }
   };
 
@@ -654,12 +667,12 @@ function GroupChart(tools, id, alg, field, count, member_list_str, is_group) {
       rpc("get_data_array_set", 
 	{"wait_for_update": wait, "name": obj.alg, "data": obj.field, "strings":true, "set": obj.member_list, "order":"DESC"}, 
 	1, 
-	(function(t, me) { return function(data) { return me.update(data, t, me); }; })(t, obj), null);
+	(function(t, me) { return function(data) { return me.update(data, t, me); }; })(t, obj), null, obj.close, obj);
     } else {
       rpc("get_data_array_sorted_range", 
 	{"wait_for_update": wait, "name": obj.alg, "data": obj.field, "strings":true, "offset": 0, "count":obj.count, "order":"DESC"}, 
 	1, 
-	(function(t, me) { return function(data) { return me.update(data, t, me); }; })(t, obj), null);
+	(function(t, me) { return function(data) { return me.update(data, t, me); }; })(t, obj), null, obj.close, obj);
     }
   };
 
@@ -803,7 +816,7 @@ function LabelGrid(tools, id, alg, field, member_list_str) {
     rpc("get_data_array_set", 
       {"wait_for_update": wait, "name": obj.alg, "data": obj.field, "strings":true, "set": obj.member_list, "order":"DESC"}, 
       1, 
-      (function(me) { return function(data) { return me.update(data, me); }; })(obj), null);
+      (function(me) { return function(data) { return me.update(data, me); }; })(obj), null, obj.close, obj);
   };
 
   this.update = function(data, obj) {
@@ -1000,7 +1013,7 @@ function ShortestPaths(tools, id, source, dest) {
     rpc("breadth_first_search", 
       {"wait_for_update": wait, "source": obj.source, "target": obj.dest, "strings": true}, 
       1, 
-      (function(me) { return function(data) { return me.update(data, me); }; })(obj), null);
+      (function(me) { return function(data) { return me.update(data, me); }; })(obj), null, obj.close, obj);
   };
 
   this.close = function() {
@@ -1264,7 +1277,9 @@ function ShortestPaths(tools, id, source, dest) {
       tools.splice(tools.indexOf(this),1);
       $(this.id + 'accordion').fadeOut(300, function() { $(this).remove(); });
       this.time_to_die = true;
-      this.force.stop();
+      if('force' in this) {
+	this.force.stop();
+      }
     }
 
     this.register = function(data, graph, obj) {
@@ -1295,7 +1310,7 @@ function ShortestPaths(tools, id, source, dest) {
       obj.start();
 
       rpc("request", {"wait_for_update": true, "session_id": data.result.session_id, "strings":true}, next_id(), 
-	(function(update, graph, obj, session_id) { return function(data) { update(data, graph, obj, session_id); }; })(obj.update, obj.graph, obj, data.result.session_id), null);
+	(function(update, graph, obj, session_id) { return function(data) { update(data, graph, obj, session_id); }; })(obj.update, obj.graph, obj, data.result.session_id), null, obj.close, obj);
     }
 
     this.update = function(data, graph, obj, session_id) {
@@ -1357,12 +1372,11 @@ function ShortestPaths(tools, id, source, dest) {
 
       if(!obj.time_to_die)
 	rpc("request", {"wait_for_update": true, "session_id": session_id, "strings":true}, next_id(), 
-	  (function(update, graph, obj, session_id) { return function(data) { update(data, graph, obj, session_id); }; })(obj.update, obj.graph, obj, session_id), null);
+	  (function(update, graph, obj, session_id) { return function(data) { update(data, graph, obj, session_id); }; })(obj.update, obj.graph, obj, session_id), null, obj.close, obj);
     }
 
-    <!--rpc("register", {"type": "subgraph", "name": this.alg, "data": this.field, "source": _.trim(this.vtx), "strings":true}, next_id(), this.register, null);-->
     rpc("register", {"type": "subgraph", "name": this.alg, "data": this.field, "source": _.trim(this.vtx), "strings":true}, next_id(), 
-      (function(register, graph, start) { return function(data) { register(data, graph, start); }; })(this.register,this.graph, this), null);
+      (function(register, graph, start) { return function(data) { register(data, graph, start); }; })(this.register,this.graph, this), null, this.close, this);
   }
 
 /***************************************************
@@ -1463,7 +1477,7 @@ function ShortestPaths(tools, id, source, dest) {
       obj.start();
 
       rpc("request", {"wait_for_update": true, "session_id": data.result.session_id, "strings":true}, next_id(), 
-	(function(update, graph, obj, session_id) { return function(data) { update(data, graph, obj, session_id); }; })(obj.update, obj.graph, obj, data.result.session_id), null);
+	(function(update, graph, obj, session_id) { return function(data) { update(data, graph, obj, session_id); }; })(obj.update, obj.graph, obj, data.result.session_id), null, obj.close, obj);
     }
 
     this.update = function(data, graph, obj, session_id) {
@@ -1525,7 +1539,7 @@ function ShortestPaths(tools, id, source, dest) {
 
       if(!obj.time_to_die)
 	rpc("request", {"wait_for_update": true, "session_id": session_id, "strings":true}, next_id(), 
-	  (function(update, graph, obj, session_id) { return function(data) { update(data, graph, obj, session_id); }; })(obj.update, obj.graph, obj, session_id), null);
+	  (function(update, graph, obj, session_id) { return function(data) { update(data, graph, obj, session_id); }; })(obj.update, obj.graph, obj, session_id), null, obj.close, obj);
     }
 
     var source_str = _.trim(this.vtx);
@@ -1537,7 +1551,7 @@ function ShortestPaths(tools, id, source, dest) {
     }
 
     rpc("register", {"type": "vertex_event_notifier", "set": source, "strings":true}, next_id(), 
-      (function(register, graph, start) { return function(data) { register(data, graph, start); }; })(this.register,this.graph, this), null);
+      (function(register, graph, start) { return function(data) { register(data, graph, start); }; })(this.register,this.graph, this), null, this.close, this);
   }
 
 </script>    
