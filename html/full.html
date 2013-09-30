@@ -100,7 +100,7 @@ Toolbox</a>
 </div>
 
 
-<div class="span8 well" style="height: 300px;">
+<div class="span8 well" style="height: 320px;">
 <div id="tabscontent" class="tab-content">
 <div class="tab-pane active" id="topscores">
   <form action="#" class="form-horizontal" onSubmit="if($('#topscoresalgorithm').val() && $('#topscoresfield').val()) {
@@ -353,7 +353,7 @@ Toolbox</a>
 /* general purpose utility functions */
   function rpc(method, params, id, success, error) {
     $.ajax({
-      url: "http://localhost:8088/jsonrpc",
+      url: "/jsonrpc",
       type: "POST",
       data: JSON.stringify({"jsonrpc": "2.0", "method": method, "params": params, "id": id}),
       dataType: "json",
@@ -447,12 +447,12 @@ function GroupList(tools, id, alg, field, count, member_list_str, is_group) {
       rpc("get_data_array_set", 
 	{"wait_for_update": wait, "name": obj.alg, "data": obj.field, "strings":true, "set": obj.member_list, "order":"DESC"}, 
 	1, 
-	(function(me) { return function(data) { console.log(data); return me.update(_.zip(data.result[obj.field].vertex_str, data.result[obj.field].value), me); }; })(obj), null);
+	(function(me) { return function(data) { return me.update(_.zip(data.result[obj.field].vertex_str, data.result[obj.field].value), me); }; })(obj), null);
     } else {
       rpc("get_data_array_sorted_range", 
 	{"wait_for_update": wait, "name": obj.alg, "data": obj.field, "strings":true, "offset": 0, "count":obj.count, "order":"DESC"}, 
 	1, 
-	(function(me) { return function(data) { console.log(data); return me.update(_.zip(data.result[obj.field].vertex_str, data.result[obj.field].value), me); }; })(obj), null);
+	(function(me) { return function(data) { return me.update(_.zip(data.result[obj.field].vertex_str, data.result[obj.field].value), me); }; })(obj), null);
     }
   };
 
@@ -522,8 +522,6 @@ function GroupList(tools, id, alg, field, count, member_list_str, is_group) {
       .data(data, function(d) { return d[0]; });
 
     var maxval = _.max(data, function(d) { return d[1]; });
-    console.log(maxval[1]);
-    console.log(obj.bar_width);
 
     bars.attr("class", "bars update")
       .transition()
@@ -656,12 +654,12 @@ function GroupChart(tools, id, alg, field, count, member_list_str, is_group) {
       rpc("get_data_array_set", 
 	{"wait_for_update": wait, "name": obj.alg, "data": obj.field, "strings":true, "set": obj.member_list, "order":"DESC"}, 
 	1, 
-	(function(t, me) { return function(data) { console.log(data); return me.update(data, t, me); }; })(t, obj), null);
+	(function(t, me) { return function(data) { return me.update(data, t, me); }; })(t, obj), null);
     } else {
       rpc("get_data_array_sorted_range", 
 	{"wait_for_update": wait, "name": obj.alg, "data": obj.field, "strings":true, "offset": 0, "count":obj.count, "order":"DESC"}, 
 	1, 
-	(function(t, me) { return function(data) { console.log(data); return me.update(data, t, me); }; })(t, obj), null);
+	(function(t, me) { return function(data) { return me.update(data, t, me); }; })(t, obj), null);
     }
   };
 
@@ -805,7 +803,7 @@ function LabelGrid(tools, id, alg, field, member_list_str) {
     rpc("get_data_array_set", 
       {"wait_for_update": wait, "name": obj.alg, "data": obj.field, "strings":true, "set": obj.member_list, "order":"DESC"}, 
       1, 
-      (function(me) { return function(data) { console.log(data); return me.update(data, me); }; })(obj), null);
+      (function(me) { return function(data) { return me.update(data, me); }; })(obj), null);
   };
 
   this.update = function(data, obj) {
@@ -901,9 +899,7 @@ function LabelGrid(tools, id, alg, field, member_list_str) {
     }
     for(j in matrix) {
       d = matrix[j];
-      console.log(d.v_x +","+ d.v_y);
     }
-    console.log(matrix);
 
     var rows = obj.svg.selectAll(".rows").data(matrix, function(d) { return d.col_v + " " +  d.row_v });
 
@@ -1136,8 +1132,7 @@ function ShortestPaths(tools, id, source, dest) {
       .style("stroke-opacity",1e-6)
       .remove();
 
-    console.log(graph.vertices_arr);
-    var node = this.svg.selectAll(".node").data(_.compact(graph.vertices_arr), function(d) {console.log("HERE IS HERE"); return d.name;});
+    var node = this.svg.selectAll(".node").data(_.compact(graph.vertices_arr), function(d) {return d.name;});
 
     node.transition()
       .duration(750)
@@ -1307,8 +1302,6 @@ function ShortestPaths(tools, id, source, dest) {
       var insertions = data.result.insertions_str;
       var deletions = data.result.deletions_str;
 
-      console.log("insertions is " + insertions.length);
-
       for(e = 0; e < deletions.length; e++) {
 	src = deletions[e][0];
 	dest = deletsion[e][1];
@@ -1476,8 +1469,6 @@ function ShortestPaths(tools, id, source, dest) {
     this.update = function(data, graph, obj, session_id) {
       var insertions = data.result.insertions_str;
       var deletions = data.result.deletions_str;
-
-      console.log("insertions is " + insertions.length);
 
       for(e = 0; e < deletions.length; e++) {
 	src = deletions[e][0];
