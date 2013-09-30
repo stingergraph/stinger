@@ -353,6 +353,24 @@ stinger_total_edges (const struct stinger * S)
 }
 
 /**
+* @brief Count the number of edges in STINGER up to nv.
+*
+* @param S The STINGER data structure
+* @param nv The maximum vertex ID to count.
+*
+* @return The number of edges in STINGER held by vertices 0 through nv-1
+*/
+int64_t
+stinger_edges_up_to(const struct stinger * S, int64_t nv)
+{
+  uint64_t rtn = 0;
+  for (uint64_t i = 0; i < nv; i++) {
+    rtn += stinger_outdegree_get(S, i);
+  }
+  return rtn;
+}
+
+/**
 * @brief Calculate the total size of the active STINGER graph in memory.
 *
 * @param S The STINGER data structure

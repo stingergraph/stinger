@@ -268,6 +268,8 @@ int64_t stinger_sort_actions (int64_t nactions,
 /* Global Queries */
 int64_t stinger_total_edges (const struct stinger *);
 
+int64_t stinger_edges_up_to(const struct stinger * S, int64_t nv);
+
 size_t stinger_graph_size (const struct stinger *);
 
 /* Graph traversal macros *
