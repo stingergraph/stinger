@@ -1436,7 +1436,7 @@ function ShortestPaths(tools, id, source, dest) {
 
       this.node = this.node.data(this.nodes, function(d) { return d.id;});
       this.node.enter().append("circle").attr("class", function(d) { return "node " + d.id; }).attr("r", 8).call(this.force.drag)
-	.style("fill", (function(colors) {return function(d) { return colors(d.group); }}) (this.color))
+	.style("fill", (function(colors) {return function(d) { if (_.indexOf(source, d.id) != -1) return "#ff7f0e"; else return colors(d.group); }}) (this.color))
 	.append("title")
 	.text(function(d) { return d.id; });
       this.node.exit().remove();
