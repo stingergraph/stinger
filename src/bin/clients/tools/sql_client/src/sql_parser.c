@@ -6,25 +6,6 @@
 #include "sql_parser.h"
 
 
-typedef enum { ID, NAME, TYPE, WEIGHT } field_t;
-
-typedef enum { 
-  SELECT,
-  FIELDS,
-  FROM,
-  TABLES,
-  WHERE,
-  WHERE_COL,
-  WHERE_OPER,
-  WHERE_VAL,
-  ORDERBY,
-  ORDERBY_DIR,
-  LIMIT,
-  OFFSET,
-  DONE,
-  ERROR
-} state_t;
-
 int main (int argc, char *argv[])
 {
 
