@@ -1,0 +1,32 @@
+SELECT
+    select_expr [, select_expr ...]
+    [FROM table_references
+    [WHERE where_condition]
+#    [GROUP BY {col_name | expr | position}
+#      [ASC | DESC], ... [WITH ROLLUP]]
+#    [HAVING where_condition]
+    [ORDER BY {col_name | expr | position}
+      [ASC | DESC], ...]
+    [LIMIT {[offset,] row_count | row_count OFFSET offset}]
+#    [INTO OUTFILE 'file_name' export_options]]
+
+
+STINGER:
+
+table Vertices
+  id (int)
+  name (string)
+  type (string)
+  weight (int)
+  properties (enum)??
+
+table Edges
+  id (int)
+  source_vertex (string)
+  target_vertex (string)
+  type (string)
+  weight (int)
+  first (timestamp)
+  last (timestamp)
+
+
