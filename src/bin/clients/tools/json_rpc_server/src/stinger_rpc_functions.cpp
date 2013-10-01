@@ -166,8 +166,6 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
     {NULL, TYPE_NONE, NULL, false, 0}
   };
 
-  LOG_D ("BFS: Parameters");
-
   if (!contains_params(p, params)) {
     return json_rpc_error(-32602, result, allocator);
   }
@@ -184,18 +182,15 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
   rapidjson::Value a_str(rapidjson::kArrayType);
   rapidjson::Value src_str, dst_str;
 
-  LOG_D ("BFS: Outdegree");
-
   /* vertex has no edges -- this is easy */
   if (stinger_outdegree (S, source) == 0 || stinger_outdegree (S, target) == 0) {
     result.AddMember("subgraph", a, allocator);
     return 0;
   }
 
-  LOG_D ("BFS: Max Active");
-
   /* breadth-first search */
-  int64_t nv = stinger_max_active_vertex (S);
+  //int64_t nv = stinger_max_active_vertex (S);
+  int64_t nv = STINGER_MAX_LVERTICES;
 
   int64_t * found   = (int64_t *) xmalloc (nv * sizeof(int64_t));
   for (int64_t i = 0; i < nv; i++) {
@@ -210,15 +205,12 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
 
   std::set<int64_t>::iterator it;
 
-  LOG_D ("BFS: Starting forward");
-
   while (!found[target] && !levels.back().empty()) {
     frontier.clear();
     std::set<int64_t>& cur = levels.back();
 
     for (it = cur.begin(); it != cur.end(); it++) {
       int64_t v = *it;
-      LOG_D_A ("BFS: Processing %ld", (long) v);
 
       STINGER_FORALL_EDGES_OF_VTX_BEGIN (S, v) {
 	if (!found[STINGER_EDGE_DEST]) {
@@ -229,7 +221,6 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
 
     }
 
-    LOG_D ("BFS: New Level");
     levels.push_back(frontier);
   }
 
@@ -237,8 +228,6 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
     result.AddMember("subgraph", a, allocator);
     return 0;
   }
-
-  LOG_D ("BFS: Starting reverse");
 
   std::queue<int64_t> * Q = new std::queue<int64_t>();
   std::queue<int64_t> * Qnext = new std::queue<int64_t>();
@@ -279,8 +268,6 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
   } STINGER_FORALL_EDGES_OF_VTX_END();
 
   levels.pop_back();
-
-  LOG_D ("BFS: Target finished");
 
   while (!levels.empty()) {
     std::set<int64_t>& cur = levels.back();
@@ -328,8 +315,6 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
     Qnext = tempQ;
 
   }
-
-  LOG_D ("BFS: Done");
 
   result.AddMember("subgraph", a, allocator);
   if (strings)
@@ -405,10 +390,11 @@ description_string_to_json (const char * description_string,
   rapidjson::Value a(rapidjson::kArrayType);
 
   /* the description string is space-delimited */
-  char * ptr = strtok (tmp, " ");
+  char * placeholder;
+  char * ptr = strtok_r (tmp, " ", &placeholder);
 
   /* skip the formatting */
-  char * pch = strtok (NULL, " ");
+  char * pch = strtok_r (NULL, " ", &placeholder);
 
   while (pch != NULL)
   {
@@ -416,7 +402,7 @@ description_string_to_json (const char * description_string,
     v.SetString(pch, strlen(pch), allocator);
     a.PushBack(v, allocator);
 
-    pch = strtok (NULL, " ");
+    pch = strtok_r (NULL, " ", &placeholder);
   }
 
   rtn.AddMember("alg_data", a, allocator);
@@ -694,19 +680,28 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
   rapidjson::Value vtx_str (rapidjson::kArrayType);
 
   /* the description string is space-delimited */
-  char * ptr = strtok (tmp, " ");
+  char * placeholder;
+  char * ptr = strtok_r (tmp, " ", &placeholder);
 
   /* skip the formatting */
-  char * pch = strtok (NULL, " ");
+  char * pch = strtok_r (NULL, " ", &placeholder);
 
   int64_t done = 0;
 
+  LOG_D_A ("%s :: %s", description_string, search_string);
+  if (pch == NULL) {
+    LOG_W_A ("pch is null :: %s :: %s", description_string, search_string);
+  }
+
   while (pch != NULL)
   {
+    LOG_D_A ("%s: begin while :: %s", search_string, pch);
     if (strcmp(pch, search_string) == 0) {
+      LOG_D_A ("%s: matches", search_string);
       switch (description_string[off]) {
 	case 'f':
 	  {
+	    LOG_D_A ("%s: case f", search_string);
 	    int64_t * idx;
 	    if (method == SORTED) {
 	      idx = (int64_t *) xmalloc (nv * sizeof(int64_t));
@@ -773,6 +768,7 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
 
 	case 'd':
 	  {
+	    LOG_D_A ("%s: case d", search_string);
 	    int64_t * idx;
 	    if (method == SORTED) {
 	      idx = (int64_t *) xmalloc (nv * sizeof(int64_t));
@@ -839,6 +835,7 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
 
 	case 'i':
 	  {
+	    LOG_D_A ("%s: case i", search_string);
 	    int64_t * idx;
 	    if (method == SORTED) {
 	      idx = (int64_t *) xmalloc (nv * sizeof(int64_t));
@@ -905,6 +902,7 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
 
 	case 'l':
 	  {
+	    LOG_D_A ("%s: case l", search_string);
 	    int64_t * idx;
 	    if (method == SORTED) {
 	      idx = (int64_t *) xmalloc (nv * sizeof(int64_t));
@@ -971,6 +969,7 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
 
 	case 'b':
 	  {
+	    LOG_D_A ("%s: case b", search_string);
 	    int64_t * idx;
 	    if (method == SORTED) {
 	      idx = (int64_t *) xmalloc (nv * sizeof(int64_t));
@@ -1044,6 +1043,7 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
 
 
     } else {
+      LOG_D_A ("%s: does not match %d", search_string, nv);
       switch (description_string[off]) {
 	case 'f':
 	  data += (nv * sizeof(float));
@@ -1072,11 +1072,13 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
       }
       off++;
     }
+
+    LOG_D_A ("%s: done: %d", search_string, done);
     
     if (done)
       break;
 
-    pch = strtok (NULL, " ");
+    pch = strtok_r (NULL, " ", &placeholder);
   }
 
   free(tmp);
@@ -1100,7 +1102,7 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
     rtn.AddMember(search_string, result, allocator);
   }
   else {
-    LOG_W ("shouldn't get here");
+    LOG_W_A ("%s: shouldn't get here", search_string);
     return json_rpc_error(-32602, rtn, allocator);
   }
 
