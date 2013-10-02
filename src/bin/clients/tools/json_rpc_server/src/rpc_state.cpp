@@ -16,54 +16,14 @@ JSON_RPCServerState::get_server_state() {
   return state;
 }
 
-JSON_RPCServerState::JSON_RPCServerState() : stinger(NULL), 
-  stinger_loc(""), stinger_sz(0), algs(NULL), alg_map(NULL),
-  next_session_id(1), waiting(0), wait_lock(0), session_lock(0),
+JSON_RPCServerState::JSON_RPCServerState() : 
+  next_session_id(1), session_lock(0),
   max_sessions(20)
 {
-  pthread_rwlock_init(&alg_lock, NULL);
-  sem_init(&sync_lock, 0, 0);
 }
 
 JSON_RPCServerState::~JSON_RPCServerState()
 {
-  sem_destroy(&sync_lock);
-}
-
-size_t
-JSON_RPCServerState::get_num_algs()
-{
-  if(algs)
-    return algs->size();
-  else
-    return 0;
-}
-
-StingerAlgState *
-JSON_RPCServerState::get_alg(size_t num)
-{
-  if(algs)
-    return (*algs)[num];
-  else
-    return NULL;
-}
-
-StingerAlgState *
-JSON_RPCServerState::get_alg(const std::string & name)
-{
-  if(alg_map)
-    return (*alg_map)[name];
-  else
-    return NULL;
-}
-
-bool
-JSON_RPCServerState::has_alg(const std::string & name)
-{
-  if(alg_map)
-    return alg_map->count(name) > 0;
-  else
-    return false;
 }
 
 void
@@ -107,53 +67,11 @@ JSON_RPCServerState::has_rpc_session(std::string name)
 }
 
 void
-JSON_RPCServerState::get_alg_read_lock()
-{
-  pthread_rwlock_rdlock(&alg_lock);
-}
-
-void
-JSON_RPCServerState::release_alg_read_lock()
-{
-  pthread_rwlock_unlock(&alg_lock);
-}
-
-void
 JSON_RPCServerState::update_algs(stinger_t * stinger_copy, std::string new_loc, int64_t new_sz, 
   std::vector<StingerAlgState *> * new_algs, std::map<std::string, StingerAlgState *> * new_alg_map,
   const StingerBatch & batch)
 {
-  LOG_D_A("Called with %s, %ld", new_loc.c_str(), (long)new_sz);
-  pthread_rwlock_wrlock(&alg_lock);
-  /* remap stinger */
-  if(stinger) {
-    stinger_shared_free(stinger, stinger_loc.c_str(), stinger_sz);
-  }
-  stinger = stinger_copy;
-  stinger_loc = new_loc;
-  stinger_sz = new_sz;
-
-  /* unmap / delete existing algs */
-  if(algs) {
-    for(int64_t i = 0; i < algs->size(); i++) {
-      StingerAlgState * cur_alg = (*algs)[i];
-      if(cur_alg) {
-	shmunmap(cur_alg->data_loc.c_str(), cur_alg->data, cur_alg->data_per_vertex * STINGER_MAX_LVERTICES);
-	delete cur_alg;
-      }
-    }
-
-    delete algs;
-  }
-  if(alg_map)
-    delete alg_map;
-
-  algs = new_algs;
-  alg_map = new_alg_map;
-
-  LOG_D("About to unlock");
-  pthread_rwlock_unlock(&alg_lock);
-  LOG_D("Unlocked.");
+  StingerMon::update_algs(stinger_copy, new_loc, new_sz, new_algs, new_alg_map, batch);
 
   readfe((uint64_t *)&session_lock);
   for(std::map<int64_t, JSON_RPCSession *>::iterator tmp = active_session_map.begin(); tmp != active_session_map.end(); tmp++) {
@@ -171,26 +89,6 @@ JSON_RPCServerState::update_algs(stinger_t * stinger_copy, std::string new_loc, 
     }
   }
   writeef((uint64_t *)&session_lock, 0);
-}
-
-void
-JSON_RPCServerState::wait_for_sync()
-{
-  readfe((uint64_t *)&wait_lock);
-    waiting++;
-  writeef((uint64_t *)&wait_lock, 0);
-
-  sem_wait(&sync_lock);
-}
-
-void
-JSON_RPCServerState::sync()
-{
-  readfe((uint64_t *)&wait_lock);
-    for(int64_t i = 0; i < waiting; i++)
-      sem_post(&sync_lock);
-    waiting = 0;
-  writeef((uint64_t *)&wait_lock, 0);
 }
 
 bool
@@ -300,13 +198,6 @@ JSON_RPCFunction::contains_params(rpc_params_t * p, rapidjson::Value * params)
   }
   return true;
 }
-
-stinger_t *
-JSON_RPCServerState::get_stinger()
-{
-  return stinger;
-}
-
 
 void
 JSON_RPCSession::lock()

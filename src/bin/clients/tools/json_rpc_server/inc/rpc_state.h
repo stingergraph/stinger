@@ -11,6 +11,7 @@
 #include "rapidjson/document.h"
 
 #include "stinger_net/proto/stinger-monitor.pb.h"
+#include "stinger_net/stinger_mon.h"
 
 namespace gt {
   namespace stinger {
@@ -94,45 +95,22 @@ namespace gt {
 	int64_t get_time_since();
     };
 
-    class JSON_RPCServerState {
+    class JSON_RPCServerState : public StingerMon {
       private:
 	/* I'm a singleton */
 	JSON_RPCServerState();
 	~JSON_RPCServerState();
 
-	std::vector<StingerAlgState *> * algs;                     
-	std::map<std::string, StingerAlgState *> * alg_map;        
 	std::map<std::string, JSON_RPCFunction *> function_map;
 	std::map<std::string, JSON_RPCSession *> session_map;
 	std::map<int64_t, JSON_RPCSession *> active_session_map;
 	int64_t session_lock;
-	pthread_rwlock_t alg_lock;
-
-	stinger_t * stinger;
-	std::string stinger_loc;
-	int64_t stinger_sz;
 
 	int64_t max_sessions;
 	int64_t next_session_id;
 
-	int64_t waiting;
-	int64_t wait_lock;
-        sem_t sync_lock;
-
       public:
 	static JSON_RPCServerState & get_server_state();
-
-	size_t
-	get_num_algs();
-
-	StingerAlgState *
-	get_alg(size_t num);
-
-	StingerAlgState *
-	get_alg(const std::string & name);
-
-	bool
-	has_alg(const std::string & name);
 
 	void
 	add_rpc_function(std::string name, JSON_RPCFunction * func);
@@ -152,25 +130,16 @@ namespace gt {
 	bool
 	has_rpc_session(std::string name);
 
-	void
-	get_alg_read_lock();
-
-	void
-	release_alg_read_lock();
-
-	void
-	update_algs(stinger_t * stinger_copy, std::string new_loc, int64_t new_sz, 
-	  std::vector<StingerAlgState *> * new_algs, std::map<std::string, StingerAlgState *> * new_alg_map,
-	  const StingerBatch & batch);
-
-	stinger_t *
-	get_stinger();
-
 	int64_t
 	get_next_session();
 
 	int64_t
 	add_session(int64_t session_id, JSON_RPCSession * session);
+
+	void
+	update_algs(stinger_t * stinger_copy, std::string new_loc, int64_t new_sz, 
+	  std::vector<StingerAlgState *> * new_algs, std::map<std::string, StingerAlgState *> * new_alg_map,
+	  const StingerBatch & batch);
 
 	int64_t
 	destroy_session(int64_t session_id);
@@ -180,12 +149,6 @@ namespace gt {
 
 	JSON_RPCSession *
 	get_session(int64_t sessin_id);
-
-        void
-	wait_for_sync();
-
-	void
-	sync();
     };
 
   }
