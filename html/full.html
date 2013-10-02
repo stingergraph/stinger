@@ -295,6 +295,21 @@ Toolbox
 </div>
 </div>
 
+<!-- Save Modal -->
+<div id="modalSave" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="modalSaveLabel" aria-hidden="true">
+<div class="modal-header">
+<button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+<h3 id="modalSaveLabel">Save SVG Image</h3>
+</div>
+<div class="modal-body">
+<p>To save the image, right click the link below and choose "Save As".<p>
+<div id="savelink"></div>
+</div>
+<div class="modal-footer">
+<button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
+</div>
+</div>
+
 <script type="text/javascript">
 /* startup code */
   _.mixin(_.str.exports());
@@ -325,7 +340,7 @@ Toolbox
 	})(this.value));
       });
       update_algorithms();
-      get_graph_stats();
+      get_graph_stats(false);
   });
 
 /* request_id handling */
@@ -366,14 +381,14 @@ Toolbox
       null);
   }
 
-  function get_graph_stats() {
-    rpc("get_graph_stats", {wait_for_update: true}, next_id(),
+  function get_graph_stats(wait) {
+    rpc("get_graph_stats", {wait_for_update: wait}, next_id(),
       function(data) {
 	  global_nv = data.result.vertices;
 	  global_ne = data.result.edges;
 	  $('#global_nv').text("Total Vertices: " + global_nv);
 	  $('#global_ne').text("Total Edges: " + global_ne);
-	  get_graph_stats();
+	  get_graph_stats(true);
 	},
 	null, null, this);
   }
@@ -397,7 +412,16 @@ Toolbox
     title + '</a></div><div id="' + child_id + 'collapse" class="accordion-body collapse in">' +
     '<div class="accordion-inner"><div id="' + child_id + '"></div></div></div></div></div>';
     $(parent_id).prepend(text);
-    $("#" + child_id + 'accordion-heading').prepend("<button aria-hidden='true' id='" + child_id + "closebtn' class='close' type='button'>×</button>");
+    $("#" + child_id + 'accordion-heading').prepend("<button aria-hidden='true' id='" + child_id + "savebtn' class='close pull-right' type='button'>&#x25bc;</button>");
+    $("#" + child_id + 'savebtn').click((function (child_id) { return function() { 
+      $('#' + child_id + 'accordion').find('svg').attr({ version: '1.1' , xmlns:"http://www.w3.org/2000/svg"});
+      var b64data = window.btoa($('#' + child_id + 'accordion').find('svg').parent().html());
+      console.log(b64data);
+      $("#savelink").empty();
+      $("#savelink").append($("<a href-lang='image/svg+xml' href='data:image/svg+xml;base64,\n" + b64data +"' title='image.svg'>Download</a>")); 
+      $("#modalSave").modal();
+    }; })(child_id));
+    $("#" + child_id + 'accordion-heading').prepend("<button aria-hidden='true' id='" + child_id + "closebtn' class='close pull-right' type='button'>X</button>");
     $("#" + child_id + 'closebtn').click((function (me) { return function() { me.close(); }; })(obj));
     $(".collapse").collapse();
   }
@@ -488,6 +512,9 @@ function GroupList(tools, id, alg, field, count, member_list_str, is_group) {
   this.update = function(data, obj) {
     var text = obj.svg.selectAll(".names")
       .data(data, function (d) { return d[0] });
+
+    text
+      .on("click", function(d) { window.open("http://twitter.com/" + d[0], "_blank"); })
 
     text.attr("class","names")
       .transition()
@@ -746,6 +773,9 @@ function GroupChart(tools, id, alg, field, count, member_list_str, is_group) {
       .call(obj.yAxis);
 
     var text = obj.svg.selectAll(".names").data(names, function(d) { return d; });
+
+    text
+      .on("click", function(d) { window.open("http://twitter.com/" + d, "_blank"); })
 
     text.attr("class","names update")
       .transition()
@@ -1163,6 +1193,9 @@ function ShortestPaths(tools, id, source, dest) {
 
     var node = this.svg.selectAll(".node").data(_.compact(graph.vertices_arr), function(d) {return d.name;});
 
+    node
+      .on("click", function(d) { window.open("http://twitter.com/" + d.name, "_blank"); })
+
     node.transition()
       .duration(750)
       .attr("cx", (function (width, offset) {return function(d) {return offset + d.level * width};}) (this.width / (queue.length-1), this.margin.left))
@@ -1335,7 +1368,7 @@ function ShortestPaths(tools, id, source, dest) {
 
       for(e = 0; e < deletions.length; e++) {
 	src = deletions[e][0];
-	dest = deletsion[e][1];
+	dest = deletion[e][1];
 
 	if(dest in graph.vertices) {
 	  if(src in graph.vertices[dest].neighbors) {
