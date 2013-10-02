@@ -6,16 +6,16 @@ SET(libdep_stinger_utils stinger_core int_hm_seq string fmemopen compat)
 SET(libdep_kv_store string)
 SET(libdep_mongoose dl pthread)
 IF(APPLE)
-  SET(libdep_stinger_net ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib stinger_core)
+  SET(libdep_stinger_net ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib stinger_core stinger_utils)
 ELSE()
-  SET(libdep_stinger_net ${CMAKE_BINARY_DIR}/lib/libprotobuf.so stinger_core)
+  SET(libdep_stinger_net ${CMAKE_BINARY_DIR}/lib/libprotobuf.so stinger_core stinger_utils)
 ENDIF()
 
 #################################################
 # Add target dependencies here as tgtdep_<folder>
 SET(tgtdep_default protobuf)
 SET(tgtdep_stinger_utils rapidjson)
-SET(tgtdep_stinger_net stinger_core)
+SET(tgtdep_stinger_net stinger_core stinger_utils)
 
 ################################################
 # make sure full-empty emulation isn't optimized
