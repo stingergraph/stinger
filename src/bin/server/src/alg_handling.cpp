@@ -317,7 +317,7 @@ process_loop_handler(void * data)
 	  int64_t timeout = 0;
 	  while(!can_be_read(cur_alg->sock_handle) && timeout < server_state.alg_timeout(ALG_STATE_READY_INIT)) {
 	    usleep(server_state.time_granularity());
-	    timeout += server_state.time_granularity();
+	    //timeout += server_state.time_granularity();
 	  }
 
 	  if(!can_be_read(cur_alg->sock_handle)) {
@@ -346,7 +346,7 @@ process_loop_handler(void * data)
 	      while(!can_be_read(cur_alg->sock_handle) && timeout < server_state.alg_timeout(ALG_STATE_PERFORMING_INIT)) {
 		LOG_V_A("Waiting on Algorithm <%s> for an END INIT message", cur_alg->name.c_str());
 		usleep(server_state.time_granularity());
-		timeout += server_state.time_granularity();
+		//timeout += server_state.time_granularity();
 	      }
 
 	      if(!can_be_read(cur_alg->sock_handle)) {
@@ -402,7 +402,7 @@ process_loop_handler(void * data)
 
 	  while(!can_be_read(cur_alg->sock_handle) && timeout < server_state.alg_timeout(ALG_STATE_READY_PRE)) {
 	    usleep(server_state.time_granularity());
-	    timeout += server_state.time_granularity();
+	    //timeout += server_state.time_granularity();
 	  }
 
 	  if(!can_be_read(cur_alg->sock_handle)) {
@@ -449,7 +449,7 @@ process_loop_handler(void * data)
 
 	  while(!can_be_read(cur_alg->sock_handle) && timeout < server_state.alg_timeout(ALG_STATE_PERFORMING_PRE)) {
 	    usleep(server_state.time_granularity());
-	    timeout += server_state.time_granularity();
+	    //timeout += server_state.time_granularity();
 	  }
 
 	  if(!can_be_read(cur_alg->sock_handle)) {
@@ -500,7 +500,7 @@ process_loop_handler(void * data)
 
 	  while(!can_be_read(cur_alg->sock_handle) && timeout < server_state.alg_timeout(ALG_STATE_READY_POST)) {
 	    usleep(server_state.time_granularity());
-	    timeout += server_state.time_granularity();
+	    //timeout += server_state.time_granularity();
 	  }
 
 	  if(!can_be_read(cur_alg->sock_handle)) {
@@ -548,7 +548,7 @@ process_loop_handler(void * data)
 
 	  while(!can_be_read(cur_alg->sock_handle) && timeout < server_state.alg_timeout(ALG_STATE_PERFORMING_POST)) {
 	    usleep(server_state.time_granularity());
-	    timeout += server_state.time_granularity();
+	    //timeout += server_state.time_granularity();
 	  }
 
 	  if(!can_be_read(cur_alg->sock_handle)) {
@@ -595,7 +595,7 @@ process_loop_handler(void * data)
 
 	  while(!can_be_read(cur_mon->sock_handle) && timeout < server_state.mon_timeout(MON_STATE_READY_UPDATE)) {
 	    usleep(server_state.time_granularity());
-	    timeout += server_state.time_granularity();
+	    //timeout += server_state.time_granularity();
 	  }
 
 	  if(!can_be_read(cur_mon->sock_handle)) {
@@ -645,7 +645,7 @@ process_loop_handler(void * data)
 
 	while(!can_be_read(cur_mon->sock_handle) && timeout < server_state.mon_timeout(MON_STATE_PERFORMING_UPDATE)) {
 	  usleep(server_state.time_granularity());
-	  timeout += server_state.time_granularity();
+	  //timeout += server_state.time_granularity();
 	}
 
 	if(!can_be_read(cur_mon->sock_handle)) {

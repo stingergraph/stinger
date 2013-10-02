@@ -35,15 +35,15 @@ StingerServerState::StingerServerState() : port(10101), convert_num_to_string(1)
     mon_timeouts[i] = 0;
   }
 
-  alg_timeouts[ALG_STATE_READY_INIT]        =  2000000;
+  alg_timeouts[ALG_STATE_READY_INIT]        =  5000000;
   alg_timeouts[ALG_STATE_PERFORMING_INIT]   = 10000000;
-  alg_timeouts[ALG_STATE_READY_PRE]         =  2000000;
-  alg_timeouts[ALG_STATE_PERFORMING_PRE]    =  5000000;
-  alg_timeouts[ALG_STATE_READY_POST]        =  2000000;
-  alg_timeouts[ALG_STATE_PERFORMING_POST]   =  5000000;
+  alg_timeouts[ALG_STATE_READY_PRE]         =  5000000;
+  alg_timeouts[ALG_STATE_PERFORMING_PRE]    =  9000000;
+  alg_timeouts[ALG_STATE_READY_POST]        =  5000000;
+  alg_timeouts[ALG_STATE_PERFORMING_POST]   =  9000000;
 
-  mon_timeouts[MON_STATE_READY_UPDATE]      =  2000000;
-  mon_timeouts[MON_STATE_PERFORMING_UPDATE] =  5000000;
+  mon_timeouts[MON_STATE_READY_UPDATE]      = 10000000;
+  mon_timeouts[MON_STATE_PERFORMING_UPDATE] =  9000000;
 
   timeout_granularity = 100;
 }
