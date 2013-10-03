@@ -41,6 +41,40 @@ private:
   T * _vals;
 };
 
+template <typename T>
+struct compare_pair_off_desc {
+  compare_pair_off_desc (T * vals, int64_t offset) : _vals(vals), _off(offset) {}
+  bool operator()(int64_t a, int64_t b) {
+    T a_t = *((T *)( ((uint8_t *)_vals) + (_off * a) ));
+    T b_t = *((T *)( ((uint8_t *)_vals) + (_off * b) ));
+    if (a_t > b_t)
+      return true;
+    else
+      return false;
+  }
+
+private:
+  T * _vals;
+  int64_t _off;
+};
+
+template <typename T>
+struct compare_pair_off_asc {
+  compare_pair_off_asc (T * vals, int64_t offset) : _vals(vals), _off(offset) {}
+  bool operator()(int64_t a, int64_t b) {
+    T a_t = *((T *)( ((uint8_t *)_vals) + (_off * a) ));
+    T b_t = *((T *)( ((uint8_t *)_vals) + (_off * b) ));
+    if (a_t < b_t)
+      return true;
+    else
+      return false;
+  }
+
+private:
+  T * _vals;
+  int64_t _off;
+};
+
 
 struct JSON_RPC_register: JSON_RPCFunction {
   JSON_RPC_register(JSON_RPCServerState * state) : JSON_RPCFunction(state) { }
@@ -110,6 +144,20 @@ description_string_to_json (const char * description_string,
 
 int
 array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
+			    rapidjson::Value& rtn,
+			    rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator,
+			    const char * description_string, int64_t nv, uint8_t * data,
+			    bool strings,
+			    const char * search_string,
+			    int64_t stride,
+			    bool logscale,
+			    int64_t start, int64_t end,
+			    const char * order_str = NULL,
+			    int64_t * set = NULL, int64_t set_len = 0
+			    );
+
+int
+array_to_json_monolithic_stinger   (json_rpc_array_meth_t method, stinger_t * S,
 			    rapidjson::Value& rtn,
 			    rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator,
 			    const char * description_string, int64_t nv, uint8_t * data,
