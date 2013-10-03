@@ -132,14 +132,14 @@ For example, the simplest template for Twitter mentions and retweets would be (w
 
     {
       "user": {
-	"screen_name": "$source_str1"
+        "screen_name": "$source_str1"
       },
       "entities": {
-	"user_mentions": [
-	  {
-	    "screen_name": "$destination_str1"
-	  }
-	]
+        "user_mentions": [
+          {
+            "screen_name": "$destination_str1"
+          }
+        ]
       }
     }
 
