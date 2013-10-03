@@ -624,7 +624,7 @@ process_loop_handler(void * data)
 	      server_to_mon->set_mon_name(mon_to_server.mon_name());
 	      server_to_mon->set_action(mon_to_server.action());
 	      server_to_mon->set_result(MON_FAILURE_UNEXPECTED_MESSAGE);
-	      send_message(cur_mon->sock_handle, *server_to_mon);
+	      //send_message(cur_mon->sock_handle, *server_to_mon);
 	    }
 	  }
 	}
@@ -731,5 +731,6 @@ start_alg_handling(void *)
     pthread_t new_thread;
     pthread_create(&new_thread, NULL, &new_connection_handler, (void *)accepted_sock);
     server_state.push_thread(new_thread);
+//    close(accepted_sock->handle);
   }
 }

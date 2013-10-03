@@ -15,10 +15,15 @@ int main (int argc, char *argv[])
 {
   query_plan_t query;
 
-  char input[100] = "SELECT name,type,weight FROM vertices WHERE weight > 2 ORDER BY name LIMIT 10";
+  char input[100] = "SELECT id,name,type,weight FROM vertices WHERE weight > 2 ORDER BY name LIMIT 10";
   printf("input string is:[%s]\n", input);
 
-  mon_connect(10103, "localhost", "sql_client");
+  //if (-1 == mon_connect(10103, "localhost", "sql_client")) {
+  if (-1 == mon_connect(10103, "localhost", argv[1])) {
+    LOG_E ("failed");
+    return -1;
+  }
+
   StingerMon & mon = StingerMon::get_mon();
 
   int64_t num_algs = mon.get_num_algs();
@@ -31,9 +36,14 @@ int main (int argc, char *argv[])
   print_query_plan (&query);
 
   /* Get the STINGER pointer and prepare to execute the plan */
+  mon.wait_for_sync();
   mon.get_alg_read_lock();
 
   stinger_t * S = mon.get_stinger();
+  if (!S) {
+    LOG_E ("bad stinger pointer");
+    return -1;
+  }
 
   /* Execute the plan */
   execute_query (&query, S);

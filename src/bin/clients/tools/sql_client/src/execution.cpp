@@ -56,6 +56,7 @@ execute_query (query_plan_t * query, stinger_t * S)
       
       if (j != ncolumns-1) SEPARATOR();
     }
+    printf("\n");
   }
 
 
