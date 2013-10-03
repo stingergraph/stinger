@@ -15,7 +15,7 @@ int main (int argc, char *argv[])
 {
   query_plan_t query;
 
-  char input[100] = "SELECT id,name,type,weight FROM vertices WHERE weight > 2 ORDER BY name LIMIT 10";
+  char input[200] = "SELECT id,name,outdegree,type,weight FROM vertices WHERE weight > 2 ORDER BY name LIMIT 10 OFFSET 50";
   printf("input string is:[%s]\n", input);
 
   //if (-1 == mon_connect(10103, "localhost", "sql_client")) {
