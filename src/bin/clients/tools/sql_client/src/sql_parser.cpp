@@ -36,7 +36,7 @@ int main (int argc, char *argv[])
   stinger_t * S = mon.get_stinger();
 
   /* Execute the plan */
-
+  execute_query (&query, S);
 
   /* Release the lock */
   mon.release_alg_read_lock();
