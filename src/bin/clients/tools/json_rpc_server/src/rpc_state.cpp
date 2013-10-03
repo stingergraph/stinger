@@ -18,7 +18,7 @@ JSON_RPCServerState::get_server_state() {
 
 JSON_RPCServerState::JSON_RPCServerState() : 
   next_session_id(1), session_lock(0),
-  max_sessions(20)
+  max_sessions(20), StingerMon()
 {
 }
 

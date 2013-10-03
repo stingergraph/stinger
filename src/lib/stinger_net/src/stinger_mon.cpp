@@ -7,6 +7,8 @@
 #include "stinger_core/stinger.h"
 #include "stinger_mon.h"
 
+#define LOG_AT_W
+#include "stinger_core/stinger_error.h"
 
 using namespace gt::stinger;
 
@@ -50,7 +52,7 @@ StingerMon::get_alg(size_t num)
 StingerAlgState *
 StingerMon::get_alg(const std::string & name)
 {
-  if(alg_map)
+  if(alg_map && has_alg(name))
     return (*alg_map)[name];
   else
     return NULL;
@@ -68,13 +70,17 @@ StingerMon::has_alg(const std::string & name)
 void
 StingerMon::get_alg_read_lock()
 {
+  LOG_D("read lock get");
   pthread_rwlock_rdlock(&alg_lock);
+  LOG_D("read lock received");
 }
 
 void
 StingerMon::release_alg_read_lock()
 {
+  LOG_D("read lock release");
   pthread_rwlock_unlock(&alg_lock);
+  LOG_D("read lock released");
 }
 
 void
@@ -83,7 +89,9 @@ StingerMon::update_algs(stinger_t * stinger_copy, std::string new_loc, int64_t n
   const StingerBatch & batch)
 {
   LOG_D_A("Called with %s, %ld", new_loc.c_str(), (long)new_sz);
+  LOG_D("write lock get");
   pthread_rwlock_wrlock(&alg_lock);
+  LOG_D("write lock received");
   /* remap stinger */
   if(stinger) {
     stinger_shared_free(stinger, stinger_loc.c_str(), stinger_sz);
@@ -110,9 +118,9 @@ StingerMon::update_algs(stinger_t * stinger_copy, std::string new_loc, int64_t n
   algs = new_algs;
   alg_map = new_alg_map;
 
-  LOG_D("About to unlock");
+  LOG_D("write lock release");
   pthread_rwlock_unlock(&alg_lock);
-  LOG_D("Unlocked.");
+  LOG_D("write lock released");
 }
 
 void
