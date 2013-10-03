@@ -106,8 +106,47 @@ To run an example using the server and five terminals:
 
 This will start a stream of R-MAT edges over 100,000 vertices in batches of 10,000 edges.  A connected component labeling
 and PageRank scoring will be maintained.  The JSON RPC server will host interactive web pages at 
-http://localhost:8088/data/page\_rank\_top.html, page\_rank\_group.html, and components.html that are powered by
-the live streaming analysis.
+http://localhost:8088/full.html are powered by the live streaming analysis.
+
+Example: Parsing Twitter
+------------------------
+
+Given a stream of Tweets in Twitter's default format (a stream of JSON objects, one per line), it is fairly easy to pipe
+the user mentions / retweets graph into STINGER using the json\_stream.  The json\_stream is a templated JSON stream parser
+designed to consume one object per line like the Twitter stream and to produce edges from this stream based on a template.
+
+The templates can use the following variables (where one of the two source and one of the two destination variables 
+must be used):
+
+    $source_str      - The source vertex name
+    $source          - The source of the edge as a number (must be able to parse as an integer less than the maximum 
+                       vertex ID in the STINGER server).
+    $destination_str - The destination vertex name
+    $destination     - The source of the edge as a number (must be able to parse as an integer less than the maximum 
+                       vertex ID in the STINGER server).
+    $type_str        - The edge type as a string
+    $weight          - The weight of the edge (must be able to parse as an integer).
+    $time            - The time of the edge (must be able to parse as an integer).
+
+For example, the simplest template for Twitter mentions and retweets would be (we'll call this template.json):
+    {
+      "user": {
+	"screen_name": "$source_str1"
+      },
+      "entities": {
+	"user_mentions": [
+	  {
+	    "screen_name": "$destination_str1"
+	  }
+	]
+      }
+    }
+
+To parse a Twitter stream into STINGER using this template:
+    cat twitter_sample.json | ./bin/json_stream template.json
+
+You can replace the 'cat twitter\_sample.json' command with one of the curl commands from the Twitter developer
+API page to directly inject a live Twitter stream.
 
 Using a Standalone Client
 -------------------------
