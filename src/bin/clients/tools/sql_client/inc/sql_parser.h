@@ -1,14 +1,18 @@
 #ifndef _SQL_PARSER_H_
 #define _SQL_PARSER_H_
 
-#define ID       0
-#define NAME     1
-#define TYPE     2
-#define WEIGHT   3
-#define SRC_VTX  4
-#define TGT_VTX  5
-#define FIRST    6
-#define LAST     7
+#include "stinger_core/stinger.h"
+
+#define ID        0
+#define NAME      1
+#define TYPE      2
+#define WEIGHT    3
+#define INDEGREE  4
+#define OUTDEGREE 5
+#define SRC_VTX   6
+#define TGT_VTX   7
+#define FIRST     8
+#define LAST      9
 
 #define FIELD_LEN 128
 #define MAX_COLUMNS 30
@@ -108,5 +112,9 @@ add_column_to_query (query_plan_t * query, char * column);
 
 void
 print_query_plan (query_plan_t * query);
+
+int64_t
+execute_query (query_plan_t * query, stinger_t * S);
+
 
 #endif /* _SQL_PARSER_H_ */
