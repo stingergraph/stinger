@@ -619,12 +619,12 @@ process_loop_handler(void * data)
 	      server_to_mon->release_batch();
 	      cur_mon->state = MON_STATE_PERFORMING_UPDATE;
 	    } else {
-	      LOG_E_A("Monitor <%s> sent invalid message. Expected begin postprocess", mon_to_server.mon_name().c_str());
+	      LOG_E_A("Monitor <%s> sent invalid message. Expected begin postprocess", cur_mon->name.c_str());
 	      cur_mon->state = MON_STATE_ERROR;
 	      server_to_mon->set_mon_name(mon_to_server.mon_name());
 	      server_to_mon->set_action(mon_to_server.action());
 	      server_to_mon->set_result(MON_FAILURE_UNEXPECTED_MESSAGE);
-	      //send_message(cur_mon->sock_handle, *server_to_mon);
+	      send_message(cur_mon->sock_handle, *server_to_mon);
 	    }
 	  }
 	}

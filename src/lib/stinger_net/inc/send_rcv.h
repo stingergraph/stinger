@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <signal.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -23,12 +24,22 @@ send_message(int socket, T & message) {
 
   message.SerializeToCodedStream(&coded_output);
 
+  /* ignore sigpipe temporarily to keep from getting killed */
+  struct sigaction new_actn, old_actn;
+  new_actn.sa_handler = SIG_IGN;
+  sigemptyset (&new_actn.sa_mask);
+  new_actn.sa_flags = 0;
+  sigaction (SIGPIPE, &new_actn, &old_actn);
+
   int32_t nl_message_length = htonl(message_length);
   int sent_bytes = write(socket, &nl_message_length, sizeof(nl_message_length));
 
   if(sent_bytes > 0) {
     sent_bytes += write(socket, buffer, message_length);
   }
+
+  /* put back the sigpipe handling  */
+  sigaction (SIGPIPE, &old_actn, NULL);
 
   delete [] buffer;
 
@@ -43,6 +54,13 @@ template<typename T>
 bool
 recv_message(int socket, T & message) {
   int32_t message_length = 0;
+
+  /* ignore sigpipe temporarily to keep from getting killed */
+  struct sigaction new_actn, old_actn;
+  new_actn.sa_handler = SIG_IGN;
+  sigemptyset (&new_actn.sa_mask);
+  new_actn.sa_flags = 0;
+  sigaction (SIGPIPE, &new_actn, &old_actn);
 
   if (sizeof(message_length) != read(socket, &message_length, sizeof(message_length))) {
     return false;
@@ -61,10 +79,17 @@ recv_message(int socket, T & message) {
     usleep(100);
     if(bytes_read == last_read) {
       delete [] buffer;
+
+      /* put back the sigpipe handling  */
+      sigaction (SIGPIPE, &old_actn, NULL);
+
       return false;
     }
     last_read = bytes_read;
   }
+
+  /* put back the sigpipe handling  */
+  sigaction (SIGPIPE, &old_actn, NULL);
 
   tv.tv_sec = 0;
   tv.tv_usec = 0;
