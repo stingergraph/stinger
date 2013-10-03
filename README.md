@@ -119,11 +119,11 @@ The templates can use the following variables (where one of the two source and o
 must be used):
 
     $source_str      - The source vertex name
-    $source          - The source of the edge as a number (must be able to parse as an integer less than the maximum 
-                       vertex ID in the STINGER server).
+    $source          - The source of the edge as a number (must be able to parse as an integer less 
+                       than the maximum vertex ID in the STINGER server).
     $destination_str - The destination vertex name
-    $destination     - The source of the edge as a number (must be able to parse as an integer less than the maximum 
-                       vertex ID in the STINGER server).
+    $destination     - The source of the edge as a number (must be able to parse as an integer less 
+                       than the maximum vertex ID in the STINGER server).
     $type_str        - The edge type as a string
     $weight          - The weight of the edge (must be able to parse as an integer).
     $time            - The time of the edge (must be able to parse as an integer).
