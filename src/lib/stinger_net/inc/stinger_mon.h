@@ -5,7 +5,7 @@
 #include <string>
 #include <stdint.h>
 #include <semaphore.h>
-#include "stinger_net/stinger_alg_state.h"
+#include "stinger_alg_state.h"
 #include "stinger_core/stinger.h"
 #include "stinger_core/stinger_error.h"
 #include "rapidjson/document.h"

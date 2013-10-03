@@ -8,11 +8,11 @@ extern "C" {
 
 #include "stinger_net/proto/stinger-batch.pb.h"
 #include "stinger_net/proto/stinger-connect.pb.h"
-#include "stinger_net/stinger_alg_state.h"
+#include "stinger_alg_state.h"
 #include "stinger_mon.h"
 
-#include "stinger_net/send_rcv.h"
-#include "stinger_net/stinger_server_state.h"
+#include "send_rcv.h"
+#include "stinger_server_state.h"
 
 #if !defined(MTA)
 #define MTA(x)
