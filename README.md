@@ -129,6 +129,7 @@ must be used):
     $time            - The time of the edge (must be able to parse as an integer).
 
 For example, the simplest template for Twitter mentions and retweets would be (we'll call this template.json):
+
     {
       "user": {
 	"screen_name": "$source_str1"
@@ -143,6 +144,7 @@ For example, the simplest template for Twitter mentions and retweets would be (w
     }
 
 To parse a Twitter stream into STINGER using this template:
+
     cat twitter_sample.json | ./bin/json_stream template.json
 
 You can replace the 'cat twitter\_sample.json' command with one of the curl commands from the Twitter developer
