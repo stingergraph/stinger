@@ -6,21 +6,19 @@
 #include "sql_parser.h"
 
 
-int main (int argc, char *argv[])
+int64_t
+parse_query (char * input, query_plan_t * query)
 {
-
   state_t cur_state = SELECT;
   state_t next_state;
   int where_and = 0;
   int where_or = 0;
-
-  char input[100] = "SELECT name,type,weight FROM vertices WHERE weight > 2 ORDER BY name LIMIT 10";
   char buf[30];
-  printf("input string is:[%s]\n", input);
-
   char * token;
 
   token = strtok (input, " ,");
+
+  memset(query, 0, sizeof(query_plan_t));
 
   while (1) {
     switch (cur_state)
@@ -49,7 +47,10 @@ int main (int argc, char *argv[])
 			next_state = TABLES;
 		      }
 		      else {
-			next_state = FIELDS;
+			if (add_column_to_query (query, buf) == 0)
+			  next_state = FIELDS;
+			else
+			  next_state = ERROR;
 		      }
 		    } break;
       case FROM:
@@ -61,11 +62,13 @@ int main (int argc, char *argv[])
 		      int valid = 0;
 		      if (token && strncmp(token, "vertices", 8) == 0) {
 			valid = 1;
+			query->table = VERTEX_TBL;
 			printf("%s\n", token);
 			token = strtok (NULL, " ,");
 		      }
 		      else if (token && strncmp(token, "edges", 5) == 0) {
 			valid = 1;
+			query->table = EDGE_TBL;
 			printf("%s\n", token);
 			token = strtok (NULL, " ,");
 		      }
@@ -92,16 +95,22 @@ int main (int argc, char *argv[])
       case WHERE:
 		    {
 		      printf(":: WHERE\n");
+		      query->activate_where = 1;
 		      next_state = WHERE_COL;
 		    } break;
 
       case WHERE_COL:
 		    {
 		      printf(":: WHERE_COL\n");
-		      /* Process here */
 		      printf("%s\n", token);
-		      token = strtok (NULL, " ,");
-		      next_state = WHERE_OPER;
+		      int64_t offset = query->nwhere_ops;
+		      if (offset < MAX_WHERE) {
+			strncpy(query->where_ops[offset].field_name, token, FIELD_LEN);
+			token = strtok (NULL, " ,");
+			next_state = WHERE_OPER;
+		      } else {
+			next_state = ERROR;
+		      }
 		    } break;
 
       case WHERE_OPER:
@@ -109,6 +118,8 @@ int main (int argc, char *argv[])
 		      printf(":: WHERE_OPER\n");
 		      printf("%s\n", token);
 		      operator_t op = select_operator (token);
+		      int64_t offset = query->nwhere_ops;
+		      query->where_ops[offset].op = op;
 		      printf("op %d\n", op);
 		      token = strtok (NULL, " ,");
 		      next_state = WHERE_VAL;
@@ -117,9 +128,12 @@ int main (int argc, char *argv[])
       case WHERE_VAL:
 		    {
 		      printf(":: WHERE_VAL\n");
-		      int val;
-		      sscanf(token, "%d", &val);
-		      printf("%d\n", val);
+		      int64_t val;
+		      sscanf(token, "%lld", &val);
+		      int64_t offset = query->nwhere_ops;
+		      query->where_ops[offset].value = val;
+		      query->nwhere_ops++;
+		      printf("%ld\n", (long) val);
 
 		      token = strtok (NULL, " ,");
 		      if (token && strncasecmp(token, "ORDER", 5) == 0) {
@@ -132,10 +146,12 @@ int main (int argc, char *argv[])
 		      }
 		      else if (token && strncasecmp(token, "AND", 3) == 0) {
 			token = strtok (NULL, " ,");
+			query->where_ops[offset].conditional = 1;
 			next_state = WHERE_COL;
 		      }
 		      else if (token && strncasecmp(token, "OR", 2) == 0) {
 			token = strtok (NULL, " ,");
+			query->where_ops[offset].conditional = 2;
 			next_state = WHERE_COL;
 		      }
 		    } break;
@@ -146,6 +162,7 @@ int main (int argc, char *argv[])
 		      printf(":: ORDERBY\n");
 		      if (token && strncasecmp(token, "BY", 2) == 0) {
 			valid = 1;
+			query->activate_orderby = 1;
 			token = strtok (NULL, " ,");
 		      }
 		      else {
@@ -155,6 +172,7 @@ int main (int argc, char *argv[])
 		      if (valid) {
 			sscanf(token, "%s", buf);
 			printf("%s\n", buf);
+			strncpy(query->orderby_column, buf, FIELD_LEN);
 			token = strtok (NULL, " ,");
 			next_state = ORDERBY_DIR;
 		      }
@@ -165,10 +183,12 @@ int main (int argc, char *argv[])
 		      printf(":: ORDERBY_DIR\n");
 		      if (token && strncasecmp(token, "ASC", 3) == 0) {
 			printf("%s\n", token);
+			query->asc = 0;
 			token = strtok (NULL, " ,");
 		      }
 		      else if (token && strncasecmp(token, "DESC", 4) == 0) {
 			printf("%s\n", token);
+			query->asc = 1;
 			token = strtok (NULL, " ,");
 		      }
 		      
@@ -183,10 +203,12 @@ int main (int argc, char *argv[])
 
       case LIMIT:
 		    {
-		      int limit_number;
+		      int64_t limit_number;
 		      printf(":: LIMIT\n");
-		      sscanf(token, "%d", &limit_number);
-		      printf("%d\n", limit_number);
+		      query->activate_limit = 1;
+		      sscanf(token, "%lld", &limit_number);
+		      query->limit = limit_number;
+		      printf("%ld\n", (long) limit_number);
 
 		      token = strtok (NULL, " ,");
 
@@ -202,11 +224,12 @@ int main (int argc, char *argv[])
 
       case OFFSET:
 		    {
-		      int offset_number;
+		      int64_t offset_number;
 		      printf(":: OFFSET\n");
 		      if (token) {
-			sscanf(token, "%d", &offset_number);
-			printf("%d\n", offset_number);
+			sscanf(token, "%lld", &offset_number);
+			query->offset = offset_number;
+			printf("%ld\n", (long) offset_number);
 			next_state = DONE;
 		      }
 		      else {
@@ -237,8 +260,8 @@ int main (int argc, char *argv[])
 
     cur_state = next_state;
   }
-  
 
+  return 0;
 }
 
 
@@ -275,3 +298,16 @@ select_operator (char * token)
 
   return OP_ERROR;
 }
+
+int64_t
+add_column_to_query (query_plan_t * query, char * column)
+{
+  int64_t offset = query->ncolumns;
+  if (offset < MAX_COLUMNS) {
+    strncpy (query->columns[offset].field_name, column, FIELD_LEN);
+    query->ncolumns++;
+    return 0;
+  }
+  return -1;
+}
+
