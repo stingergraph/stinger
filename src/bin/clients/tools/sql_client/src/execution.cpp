@@ -20,7 +20,14 @@ execute_query (query_plan_t * query, stinger_t * S)
   }
   printf("\n");
 
+  int64_t limit = query->limit;
+  int64_t offset = query->offset;
+  int64_t rows = 0;
+  int64_t valid = 0;
   int64_t nv = STINGER_MAX_LVERTICES;
+
+  if (limit == 0)
+    limit = nv;
 
   for (int64_t i = 0; i < nv; i++) {
     int64_t outdegree = stinger_outdegree (S, i);
@@ -29,34 +36,50 @@ execute_query (query_plan_t * query, stinger_t * S)
     if (!outdegree && !indegree)
       continue;
 
-    for (int64_t j = 0; j < ncolumns; j++) {
-      if (strncmp(query->columns[j].field_name, "outdegree", 9) == 0) {
-	printf("%ld", (long) outdegree);
+    /* this column meets the criteria */
+    valid++;
+    if (valid > query->offset) {
+      rows++;
+
+      for (int64_t j = 0; j < ncolumns; j++) {
+	if (strncmp(query->columns[j].field_name, "outdegree", 9) == 0) {
+	  printf("%ld", (long) outdegree);
+	}
+	else
+	if (strncmp(query->columns[j].field_name, "indegree", 8) == 0) {
+	  printf("%ld", (long) indegree);
+	}
+	else
+	if (strncmp(query->columns[j].field_name, "weight", 5) == 0) {
+	  printf("%ld", (long) stinger_vweight_get (S, i));
+	}
+	else
+	if (strncmp(query->columns[j].field_name, "type", 4) == 0) {
+	  printf("%ld", (long) stinger_vtype (S, i));
+	}
+	else
+	if (strncmp(query->columns[j].field_name, "name", 4) == 0) {
+	  char * physID;
+	  uint64_t len;
+	  if (-1 == stinger_mapping_physid_direct(S, i, &physID, &len)) {
+	    printf("NULL");
+	  }
+	  else {
+	    printf("%s", physID);
+	  }
+	}
+	else
+	if (strncmp(query->columns[j].field_name, "id", 2) == 0) {
+	  printf("%ld", (long) i);
+	}
+	
+	if (j != ncolumns-1) SEPARATOR();
       }
-      else
-      if (strncmp(query->columns[j].field_name, "indegree", 8) == 0) {
-	printf("%ld", (long) indegree);
-      }
-      else
-      if (strncmp(query->columns[j].field_name, "weight", 5) == 0) {
-	printf("%ld", (long) stinger_vweight_get (S, i));
-      }
-      else
-      if (strncmp(query->columns[j].field_name, "type", 4) == 0) {
-	printf("%ld", (long) stinger_vtype (S, i));
-      }
-      else
-      if (strncmp(query->columns[j].field_name, "name", 4) == 0) {
-	printf("TODO");
-      }
-      else
-      if (strncmp(query->columns[j].field_name, "id", 2) == 0) {
-	printf("%ld", (long) i);
-      }
-      
-      if (j != ncolumns-1) SEPARATOR();
+      printf("\n");
     }
-    printf("\n");
+
+    if (rows == query->limit)
+      break;
   }
 
 
@@ -84,10 +107,6 @@ execute_query (query_plan_t * query, stinger_t * S)
       printf("DESC ");
   }
 
-  /* is there a limit clause */
-  if (query->activate_limit) {
-    printf("LIMIT %ld OFFSET %ld ", (long) query->limit, (long) query->offset);
-  }
 
   return 0;
 }
