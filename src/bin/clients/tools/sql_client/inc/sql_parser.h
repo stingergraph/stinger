@@ -116,5 +116,7 @@ print_query_plan (query_plan_t * query);
 int64_t
 execute_query (query_plan_t * query, stinger_t * S);
 
+int64_t
+evaluate_where_operator (int64_t a, operator_t op, int64_t b);
 
 #endif /* _SQL_PARSER_H_ */
