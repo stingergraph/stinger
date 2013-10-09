@@ -59,6 +59,8 @@ typedef enum {
   ADD,		      /* + */
   RIGHT_SHIFT,	      /* >> */
   MULTIPLY,	      /* * */
+  LEFT_PAREN,	      /* ( */
+  RIGHT_PAREN,	      /* ) */
   OP_ERROR
 } operator_t;
 
@@ -72,6 +74,8 @@ typedef struct {
   char field_name[FIELD_LEN];
   operator_t op;
   int64_t value;   /* TODO float, string */
+  double dbl_val;
+  int64_t result;
 } where_op_t;
 
 typedef struct {
@@ -118,5 +122,11 @@ execute_query (query_plan_t * query, stinger_t * S);
 
 int64_t
 evaluate_where_operator (int64_t a, operator_t op, int64_t b);
+
+int64_t
+parse_where_expr (char * expr, query_plan_t * query);
+
+int64_t
+resolve_predicates (query_plan_t * query);
 
 #endif /* _SQL_PARSER_H_ */
