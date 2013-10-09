@@ -12,6 +12,9 @@
 #ifndef  SEND_RCV_H
 #define  SEND_RCV_H
 
+#define LOG_AT_W 1
+#include "stinger_core/stinger_error.h"
+
 
 template<typename T>
 bool
@@ -23,6 +26,8 @@ send_message(int socket, T & message) {
   google::protobuf::io::CodedOutputStream coded_output(&array_output);
 
   message.SerializeToCodedStream(&coded_output);
+
+  LOG_D_A("*** Sending ***\n%s\n*********\n", message.DebugString().c_str());
 
   /* ignore sigpipe temporarily to keep from getting killed */
   struct sigaction new_actn, old_actn;
@@ -106,5 +111,7 @@ recv_message(int socket, T & message) {
   delete [] buffer;
   return true;
 }
+
+#undef LOG_AT_W
 
 #endif  /*SEND_RCV_H*/
