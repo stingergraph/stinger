@@ -105,7 +105,9 @@ main(int argc, char *argv[])
       edge_finder.apply(batch, document);
     }
     timesince += toc();
-    if(batch.insertions_size() + batch.deletions_size() >= batch_size || (timeout > 0 && timesince >= timeout)) {
+    int64_t total_actions = batch.insertions_size() + batch.deletions_size();
+    if(total_actions >= batch_size || (timeout > 0 && timesince >= timeout)) {
+      LOG_I_A("Sending a batch of %ld actions", total_actions);
       send_message(sock_handle, batch);
       timesince = 0;
       batch.Clear();
@@ -116,9 +118,10 @@ main(int argc, char *argv[])
     }
   }
 
-  if(batch.insertions_size() + batch.deletions_size()) {
+  int64_t total_actions = batch.insertions_size() + batch.deletions_size();
+  if(total_actions) {
+    LOG_I_A("Sending a batch of %ld actions", total_actions);
     send_message(sock_handle, batch);
-    sleep(1);
   }
 
   return 0;
