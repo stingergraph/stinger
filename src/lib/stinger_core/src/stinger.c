@@ -182,6 +182,11 @@ stinger_vtype_names_lookup_name(const stinger_t * S, int64_t type) {
   return stinger_names_lookup_name(stinger_vtype_names_get(S), type);
 }
 
+int64_t
+stinger_vtype_names_count(const stinger_t * S) {
+  return stinger_names_count(stinger_vtype_names_get(S));
+}
+
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
  * EXTERNAL INTERFACE FOR ETYPE NAMES
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
@@ -199,6 +204,11 @@ stinger_etype_names_lookup_type(const stinger_t * S, const char * name) {
 char *
 stinger_etype_names_lookup_name(const stinger_t * S, int64_t type) {
   return stinger_names_lookup_name(stinger_etype_names_get(S), type);
+}
+
+int64_t
+stinger_etype_names_count(const stinger_t * S) {
+  return stinger_names_count(stinger_etype_names_get(S));
 }
 
 

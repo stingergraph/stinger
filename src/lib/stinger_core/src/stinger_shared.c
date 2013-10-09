@@ -156,10 +156,13 @@ stinger_shared_new (char ** out)
 
   MAP_STING(G);
 
+  int64_t zero = 0;
   stinger_vertices_init(vertices, STINGER_MAX_LVERTICES);
   stinger_physmap_init(physmap, STINGER_MAX_LVERTICES);
   stinger_names_init(etype_names, STINGER_NUMETYPES);
+  stinger_names_create_type(etype_names, "None", &zero);
   stinger_names_init(vtype_names, STINGER_NUMVTYPES);
+  stinger_names_create_type(vtype_names, "None", &zero);
 
   ebpool->ebpool_tail = 1;
   ebpool->is_shared = 0;
