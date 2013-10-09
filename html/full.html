@@ -382,10 +382,12 @@ Toolbox
   }
 
   function get_graph_stats(wait) {
-    rpc("get_graph_stats", {wait_for_update: wait}, next_id(),
+    rpc("get_graph_stats", {wait_for_update: wait, get_types: true}, next_id(),
       function(data) {
 	  global_nv = data.result.vertices;
 	  global_ne = data.result.edges;
+	  global_vtype_str = data.result.vertex_types;
+	  global_etype_str = data.result.edge_types;
 	  $('#global_nv').text("Total Vertices: " + global_nv);
 	  $('#global_ne').text("Total Edges: " + global_ne);
 	  get_graph_stats(true);
@@ -1038,7 +1040,7 @@ function ShortestPaths(tools, id, source, dest) {
   this.time_to_die = false;
 
   this.margin = {
-    top: 40,
+    top: 50,
     right: 100,
     bottom: 20,
     left: 40
@@ -1049,7 +1051,8 @@ function ShortestPaths(tools, id, source, dest) {
 
   add_tool_win(this.parent_id, this.id, "Shortest Paths Between " + source + " " + dest, this);
 
-  this.colors = d3.scale.category20();
+  this.vcolors = d3.scale.category20().domain(global_vtype_str);
+  this.ecolors = d3.scale.category20().domain(global_etype_str);
 
   this.svg = d3.select(this.id).append("svg")
     .attr("width", this.width + this.margin.left + this.margin.right)
@@ -1057,7 +1060,7 @@ function ShortestPaths(tools, id, source, dest) {
 
   this.call_remote = function(wait, obj) {
     rpc("breadth_first_search", 
-      {"wait_for_update": wait, "source": obj.source, "target": obj.dest, "strings": true}, 
+      {"wait_for_update": wait, "source": obj.source, "target": obj.dest, "strings": true, "get_types": true}, 
       next_id(), 
       (function(me) { return function(data) { return me.update(data, me); }; })(obj), null, obj.close, obj);
   };
@@ -1071,20 +1074,22 @@ function ShortestPaths(tools, id, source, dest) {
   this.update = function(data, obj) {
     var graph = {'edges': [], 'vertices': [], 'vertices_arr' : []};
     _.map(data.result.subgraph_str, function(d) {
-      add_v = function(s,d) {
+      add_v = function(s,d,t) {
 	if (!(s in graph.vertices)) {
-	  graph.vertices[s] = {'name': s, 'neighbors': [], 'level': -1, 'position': -1};
+	  graph.vertices[s] = {'name': s, 'neighbors': [], 'level': -1, 'position': -1, 'type': ''};
 	  graph.vertices_arr.push(graph.vertices[s]);
 	}
 	if (!(d in graph.vertices)) {
-	  graph.vertices[d] = {'name': d, 'neighbors': [], 'level': -1, 'position': -1};
+	  graph.vertices[d] = {'name': d, 'neighbors': [], 'level': -1, 'position': -1, 'type': ''};
 	  graph.vertices_arr.push(graph.vertices[d]);
 	}
 	graph.vertices[s].neighbors.push(d);
-	graph.edges.push([graph.vertices[s], graph.vertices[d]]);
+	graph.edges.push([graph.vertices[s], graph.vertices[d], t]);
       };
-      add_v(d[0],d[1]);
+      add_v(d[0],d[1],d[2]);
     });
+    
+    _.each(data.result.vtypes_str, function(v,k) { graph.vertices[k].type = v; });
 
     var queue = [];
     
@@ -1104,6 +1109,40 @@ function ShortestPaths(tools, id, source, dest) {
     }
 
     dfs(this.dest, 0);
+
+    var vertex_key = this.svg.selectAll(".vertex_key").data(global_vtype_str);
+
+    vertex_key.enter().append("text")
+      .text(function(d,i) { if(i) return d; else return "Vertex Key:"; })
+      .style("fill-opacity",1e-6)
+      .style("stroke-opacity",1e-6)
+      .style("fill", (function(d) { return this.vcolors(d); }).bind(this))
+      .attr("text-anchor", "middle")
+      .attr("class", "vertex_key")
+      .attr("x", (function(d, i) { return this.margin.left + i * this.width / global_vtype_str.length; }).bind(this))
+      .attr("y", this.margin.top - 20)
+      .transition()
+      .delay(750)
+      .duration(750)
+      .style("fill-opacity",1)
+      .style("stroke-opacity",1);
+
+    var edge_key = this.svg.selectAll(".edge_key").data(global_etype_str);
+
+    edge_key.enter().append("text")
+      .text(function(d,i) { if(i) return d; else return "Edge Key:"; })
+      .style("fill-opacity",1e-6)
+      .style("stroke-opacity",1e-6)
+      .style("fill", (function(d) { return this.ecolors(d); }).bind(this))
+      .attr("text-anchor", "middle")
+      .attr("class", "edge_key")
+      .attr("x", (function(d, i) { return this.margin.left + i * this.width / global_vtype_str.length; }).bind(this))
+      .attr("y", this.margin.top - 35)
+      .transition()
+      .delay(750)
+      .duration(750)
+      .style("fill-opacity",1)
+      .style("stroke-opacity",1);
 
     var level = this.svg.selectAll(".level").data(queue, function(d,i) {return i; });
 
@@ -1178,12 +1217,16 @@ function ShortestPaths(tools, id, source, dest) {
       .duration(750)
       .style("fill-opacity",1)
       .style("stroke-opacity",1)
+      .style("stroke", (function(d) { return this.ecolors(d[2]); }).bind(this))
       .attr("class", "link")
       .attr("x1", (function (width, offset) {return function(d) {return offset + d[0].level * width};}) (this.width / (queue.length-1), this.margin.left))
       .attr("y1", (function (height, queue, offset) {return function(d) {return offset + (d[0].position + 0.5) * (height / (queue[d[0].level].length))};}) (this.height, queue, this.margin.top))
       .attr("x2", (function (width, offset) {return function(d) {return offset + d[1].level * width};}) (this.width / (queue.length-1), this.margin.left))
       .attr("y2", (function (height, queue, offset) {return function(d) {return offset + (d[1].position + 0.5) * (height / (queue[d[1].level].length))};}) (this.height, queue, this.margin.top))
-      .style("stroke-width", function(d) { return 1; });
+      .style("stroke-width", function(d) { return 3; });
+
+    link.append("title")
+      .text(function(d) { return d[0].name + ', ' + d[1].name + ' (' + d[2] + ')'; });
 
     link.exit().transition()
       .duration(750)
@@ -1213,11 +1256,11 @@ function ShortestPaths(tools, id, source, dest) {
       .attr("cx", (function (width, offset) {return function(d) {return offset + d.level * width};}) (this.width / (queue.length-1), this.margin.left))
       .attr("cy", (function (height, queue, offset) {return function(d) {return offset + (d.position + 0.5) * (height / (queue[d.level].length))};}) (this.height, queue, this.margin.top))
       .attr("r", this.radius)
-      .style("fill", (function(colors) {return function(d) { return colors(d.group); }}) (this.colors));
+      .style("fill", (function(d) { return this.vcolors(d.type); }).bind(this));
 
 
     node.append("title")
-      .text(function(d) { return d.name; });
+      .text(function(d) { return d.name + ' (' + d.type + ')'; });
 
     node.exit().transition().delay(750)
       .style("fill-opacity",1e-6)
