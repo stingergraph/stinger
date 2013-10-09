@@ -16,9 +16,9 @@ int main (int argc, char *argv[])
   query_plan_t query;
 
   //char input[200] = "SELECT id,name,outdegree,type,weight FROM vertices WHERE weight > 2 ORDER BY name LIMIT 10 OFFSET 50";
-  char input[200] = "SELECT id,name,outdegree,type,weight FROM vertices LIMIT 10 OFFSET 50";
-  //char input[200] = "SELECT id,name,outdegree,type,weight FROM vertices WHERE outdegree > 5";
-  printf("input string is:[%s]\n", input);
+  //char input[200] = "SELECT id,name,outdegree,type,weight FROM vertices LIMIT 10 OFFSET 50";
+  char input[200] = "SELECT id,name,indegree,outdegree,type FROM vertices WHERE outdegree > 3 AND (indegree > 3 OR weight < 10) AND type = 0";
+  //printf("input string is:[%s]\n", input);
 
   if (-1 == mon_connect(10103, "localhost", "sql_client")) {
   //if (-1 == mon_connect(10103, "localhost", argv[1])) {
@@ -29,13 +29,13 @@ int main (int argc, char *argv[])
   StingerMon & mon = StingerMon::get_mon();
 
   int64_t num_algs = mon.get_num_algs();
-  printf("num_algs = %ld\n", (long) num_algs);
+  //printf("num_algs = %ld\n", (long) num_algs);
   
   /* Parse the query and form a plan */
   parse_query (input, &query);
 
-  printf("*** testing ***\n");
-  print_query_plan (&query);
+  //printf("*** testing ***\n");
+  //print_query_plan (&query);
 
   /* Get the STINGER pointer and prepare to execute the plan */
   mon.wait_for_sync();
