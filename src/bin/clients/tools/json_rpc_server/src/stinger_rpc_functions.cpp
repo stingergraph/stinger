@@ -197,15 +197,27 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
   int64_t source;
   int64_t target;
   bool strings;
+  bool get_types;
+  bool get_etypes;
+  bool get_vtypes; /* XXX TODO - vtypes */
+
   rpc_params_t p[] = {
     {"source", TYPE_VERTEX, &source, false, 0},
     {"target", TYPE_VERTEX, &target, false, 0},
     {"strings", TYPE_BOOL, &strings, true, 0},
+    {"get_types", TYPE_BOOL, &get_types, true, 0},
+    {"get_etypes", TYPE_BOOL, &get_etypes, true, 0},
+    {"get_vtypes", TYPE_BOOL, &get_vtypes, true, 0},
     {NULL, TYPE_NONE, NULL, false, 0}
   };
 
   if (!contains_params(p, params)) {
     return json_rpc_error(-32602, result, allocator);
+  }
+
+  if(get_types) {
+    get_etypes = true;
+    get_vtypes = true;
   }
 
   stinger_t * S = server_state->get_stinger();
@@ -214,11 +226,13 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
     return json_rpc_error(-32603, result, allocator);
   }
 
+  rapidjson::Value vtypes(rapidjson::kObjectType);
+  rapidjson::Value vtypes_str(rapidjson::kObjectType);
   rapidjson::Value a(rapidjson::kArrayType);
   rapidjson::Value val(rapidjson::kArrayType);
   rapidjson::Value src, dst;
   rapidjson::Value a_str(rapidjson::kArrayType);
-  rapidjson::Value src_str, dst_str;
+  rapidjson::Value src_str, dst_str, etype, vtype;
 
   /* vertex has no edges -- this is easy */
   if (stinger_outdegree (S, source) == 0 || stinger_outdegree (S, target) == 0) {
@@ -234,6 +248,22 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
     found[i] = 0;
   }
   found[source] = 1;
+
+  if(get_vtypes) {
+    char intstr[20];
+    sprintf(intstr, "%ld", (long)target);
+    vtype.SetInt64(stinger_vtype_get(S, target));
+    vtypes.AddMember(intstr, vtype, allocator);
+    if(strings) {
+      char * name = NULL;
+      uint64_t len = 0;
+      stinger_mapping_physid_direct(S, target, &name, &len);
+      char * vtype_name = stinger_vtype_names_lookup_name(S,stinger_vtype_get(S, target));
+      vtype.SetString(vtype_name, strlen(vtype_name), allocator);
+      vtypes_str.AddMember(name, vtype, allocator);
+    }
+  }
+
   std::vector<std::set<int64_t> > levels;
   std::set<int64_t> frontier;
 
@@ -282,6 +312,24 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
       val.SetArray();
       val.PushBack(src, allocator);
       val.PushBack(dst, allocator);
+      if(get_etypes) {
+	etype.SetInt64(STINGER_EDGE_TYPE);
+	val.PushBack(etype, allocator);
+      }
+      if(get_vtypes) {
+	char intstr[20];
+	sprintf(intstr, "%ld", (long)STINGER_EDGE_DEST);
+	vtype.SetInt64(stinger_vtype_get(S, STINGER_EDGE_DEST));
+	vtypes.AddMember(intstr, vtype, allocator);
+	if(strings) {
+	  char * name = NULL;
+	  uint64_t len = 0;
+	  stinger_mapping_physid_direct(S, STINGER_EDGE_DEST, &name, &len);
+	  char * vtype_name = stinger_vtype_names_lookup_name(S,stinger_vtype_get(S, STINGER_EDGE_DEST));
+	  vtype.SetString(vtype_name, strlen(vtype_name), allocator);
+	  vtypes_str.AddMember(name, vtype, allocator);
+	}
+      }
       a.PushBack(val, allocator);
       if (strings) {
 	char * physID;
@@ -299,6 +347,11 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
 	val.SetArray();
 	val.PushBack(src_str, allocator);
 	val.PushBack(dst_str, allocator);
+	if(get_etypes) {
+	  char * etype_str = stinger_etype_names_lookup_name(S, STINGER_EDGE_TYPE);
+	  etype.SetString(etype_str, strlen(etype_str), allocator);
+	  val.PushBack(etype, allocator);
+	}
 	a_str.PushBack(val, allocator);
       }
     }
@@ -322,6 +375,24 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
 	  val.SetArray();
 	  val.PushBack(src, allocator);
 	  val.PushBack(dst, allocator);
+	  if(get_etypes) {
+	    etype.SetInt64(STINGER_EDGE_TYPE);
+	    val.PushBack(etype, allocator);
+	  }
+	  if(get_vtypes) {
+	    char intstr[20];
+	    sprintf(intstr, "%ld", (long)STINGER_EDGE_DEST);
+	    vtype.SetInt64(stinger_vtype_get(S, STINGER_EDGE_DEST));
+	    vtypes.AddMember(intstr, vtype, allocator);
+	    if(strings) {
+	      char * name = NULL;
+	      uint64_t len = 0;
+	      stinger_mapping_physid_direct(S, STINGER_EDGE_DEST, &name, &len);
+	      char * vtype_name = stinger_vtype_names_lookup_name(S,stinger_vtype_get(S, STINGER_EDGE_DEST));
+	      vtype.SetString(vtype_name, strlen(vtype_name), allocator);
+	      vtypes_str.AddMember(name, vtype, allocator);
+	    }
+	  }
 	  a.PushBack(val, allocator);
 	  if (strings) {
 	    char * physID;
@@ -339,6 +410,11 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
 	    val.SetArray();
 	    val.PushBack(src_str, allocator);
 	    val.PushBack(dst_str, allocator);
+	    if(get_etypes) {
+	      char * etype_str = stinger_etype_names_lookup_name(S, STINGER_EDGE_TYPE);
+	      etype.SetString(etype_str, strlen(etype_str), allocator);
+	      val.PushBack(etype, allocator);
+	    }
 	    a_str.PushBack(val, allocator);
 	  }
 	}
@@ -356,6 +432,13 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
   result.AddMember("subgraph", a, allocator);
   if (strings)
     result.AddMember("subgraph_str", a_str, allocator);
+
+  if(get_vtypes) {
+    result.AddMember("vtypes", vtypes, allocator);
+    if(strings) {
+      result.AddMember("vtypes_str", vtypes_str, allocator);
+    }
+  }
 
   delete Q;
   delete Qnext;
