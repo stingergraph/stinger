@@ -154,6 +154,9 @@ parse_query (char * input, query_plan_t * query)
 			query->where_ops[offset].conditional = 2;
 			next_state = WHERE_COL;
 		      }
+		      else {
+			next_state = DONE;
+		      }
 		    } break;
 
       case ORDERBY:

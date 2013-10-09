@@ -15,11 +15,13 @@ int main (int argc, char *argv[])
 {
   query_plan_t query;
 
-  char input[200] = "SELECT id,name,outdegree,type,weight FROM vertices WHERE weight > 2 ORDER BY name LIMIT 10 OFFSET 50";
+  //char input[200] = "SELECT id,name,outdegree,type,weight FROM vertices WHERE weight > 2 ORDER BY name LIMIT 10 OFFSET 50";
+  char input[200] = "SELECT id,name,outdegree,type,weight FROM vertices LIMIT 10 OFFSET 50";
+  //char input[200] = "SELECT id,name,outdegree,type,weight FROM vertices WHERE outdegree > 5";
   printf("input string is:[%s]\n", input);
 
-  //if (-1 == mon_connect(10103, "localhost", "sql_client")) {
-  if (-1 == mon_connect(10103, "localhost", argv[1])) {
+  if (-1 == mon_connect(10103, "localhost", "sql_client")) {
+  //if (-1 == mon_connect(10103, "localhost", argv[1])) {
     LOG_E ("failed");
     return -1;
   }

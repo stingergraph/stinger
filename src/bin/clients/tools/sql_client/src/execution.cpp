@@ -32,12 +32,52 @@ execute_query (query_plan_t * query, stinger_t * S)
   for (int64_t i = 0; i < nv; i++) {
     int64_t outdegree = stinger_outdegree (S, i);
     int64_t indegree = stinger_indegree (S, i);
+    int64_t flag = 0;
 
     if (!outdegree && !indegree)
       continue;
 
+    if (query->activate_where) {
+      for (int64_t j = 0; j < query->nwhere_ops; j++) {
+	//int64_t conditional;    /* 0: nothing, 1: AND, 2: OR */
+	//char field_name[FIELD_LEN];
+	//operator_t op;
+	//int64_t value;
+	if (strncmp(query->where_ops[j].field_name, "outdegree", 9) == 0) {
+	  flag = evaluate_where_operator (outdegree, query->where_ops[j].op, query->where_ops[j].value);
+	}
+	else
+	if (strncmp(query->where_ops[j].field_name, "indegree", 8) == 0) {
+	  flag = evaluate_where_operator (indegree, query->where_ops[j].op, query->where_ops[j].value);
+	}
+	else
+	if (strncmp(query->where_ops[j].field_name, "weight", 5) == 0) {
+	  flag = evaluate_where_operator (stinger_vweight_get (S, i), query->where_ops[j].op, query->where_ops[j].value);
+	}
+	else
+	if (strncmp(query->where_ops[j].field_name, "type", 4) == 0) {
+	  flag = evaluate_where_operator (stinger_vtype_get (S, i), query->where_ops[j].op, query->where_ops[j].value);
+	}
+	else
+	if (strncmp(query->where_ops[j].field_name, "id", 2) == 0) {
+	  flag = evaluate_where_operator (i, query->where_ops[j].op, query->where_ops[j].value);
+	}
+
+
+
+
+      }
+
+      if (flag)
+	valid++;
+    }
+    else {
+      valid++;
+    }
+
     /* this column meets the criteria */
-    valid++;
+    if (query->activate_where && !flag)
+      continue;
     if (valid > query->offset) {
       rows++;
 
@@ -85,28 +125,24 @@ execute_query (query_plan_t * query, stinger_t * S)
 
 
 
-  /* is there a where clause? */
-  if (query->activate_where) {
-    printf("WHERE ");
-    for (int64_t i = 0; i < query->nwhere_ops; i++) {
-      printf("%s %d %ld ", query->where_ops[i].field_name, query->where_ops[i].op, (long) query->where_ops[i].value);
-      if (query->where_ops[i].conditional == 1)
-	printf("AND ");
-      if (query->where_ops[i].conditional == 2)
-	printf("OR ");
-    }
-  }
 
-  /* is there an order by clause? */
-  if (query->activate_orderby) {
-    printf("ORDER BY ");
-    printf("%s ", query->orderby_column);
-    if (query->asc == 0)
-      printf("ASC ");
-    if (query->asc == 1)
-      printf("DESC ");
-  }
 
+  return 0;
+}
+
+
+int64_t
+evaluate_where_operator (int64_t a, operator_t op, int64_t b) 
+{
+  switch (op)
+  {
+    case EQUAL:	  return a == b;
+    case GTE:	  return a >= b;
+    case GREATER: return a > b;
+    case LTE:	  return a <= b;
+    case LESS:	  return a < b;
+    case NOT_EQUAL: return a != b;
+  }
 
   return 0;
 }

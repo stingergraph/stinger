@@ -400,7 +400,7 @@ Toolbox
       type: "POST",
       data: JSON.stringify({"jsonrpc": "2.0", "method": method, "params": params, "id": id}),
       dataType: "json",
-      success: (function(success, close, scope) { return function(data) { if('error' in data) { $("#modalError").modal(); close.apply(scope); } else { success(data); } }; })(success, close, scope),
+      success: (function(success, close, scope) { return function(data) { if('error' in data) { console.log(data); $("#modalError").modal(); close.apply(scope); } else { success(data); } }; })(success, close, scope),
       error: error
     });
   }
@@ -498,12 +498,12 @@ function GroupList(tools, id, alg, field, count, member_list_str, is_group) {
     if(obj.is_group) {
       rpc("get_data_array_set", 
 	{"wait_for_update": wait, "name": obj.alg, "data": obj.field, "strings":true, "set": obj.member_list, "order":"DESC"}, 
-	1, 
+	next_id(), 
 	(function(me) { return function(data) { return me.update(_.zip(data.result[obj.field].vertex_str, data.result[obj.field].value), me); }; })(obj), null, obj.close, obj);
     } else {
       rpc("get_data_array_sorted_range", 
 	{"wait_for_update": wait, "name": obj.alg, "data": obj.field, "strings":true, "offset": 0, "count":obj.count, "order":"DESC"}, 
-	1, 
+	next_id(), 
 	(function(me) { return function(data) { return me.update(_.zip(data.result[obj.field].vertex_str, data.result[obj.field].value), me); }; })(obj), null, obj.close, obj);
     }
   };
@@ -708,12 +708,12 @@ function GroupChart(tools, id, alg, field, count, member_list_str, is_group) {
     if(obj.is_group) {
       rpc("get_data_array_set", 
 	{"wait_for_update": wait, "name": obj.alg, "data": obj.field, "strings":true, "set": obj.member_list, "order":"DESC"}, 
-	1, 
+	next_id(), 
 	(function(t, me) { return function(data) { return me.update(data, t, me); }; })(t, obj), null, obj.close, obj);
     } else {
       rpc("get_data_array_sorted_range", 
 	{"wait_for_update": wait, "name": obj.alg, "data": obj.field, "strings":true, "offset": 0, "count":obj.count, "order":"DESC"}, 
-	1, 
+	next_id(), 
 	(function(t, me) { return function(data) { return me.update(data, t, me); }; })(t, obj), null, obj.close, obj);
     }
   };
@@ -861,7 +861,7 @@ function LabelGrid(tools, id, alg, field, member_list_str) {
   this.call_remote = function(wait, obj) {
     rpc("get_data_array_set", 
       {"wait_for_update": wait, "name": obj.alg, "data": obj.field, "strings":true, "set": obj.member_list, "order":"DESC"}, 
-      1, 
+      next_id(), 
       (function(me) { return function(data) { return me.update(data, me); }; })(obj), null, obj.close, obj);
   };
 
@@ -1058,7 +1058,7 @@ function ShortestPaths(tools, id, source, dest) {
   this.call_remote = function(wait, obj) {
     rpc("breadth_first_search", 
       {"wait_for_update": wait, "source": obj.source, "target": obj.dest, "strings": true}, 
-      1, 
+      next_id(), 
       (function(me) { return function(data) { return me.update(data, me); }; })(obj), null, obj.close, obj);
   };
 
