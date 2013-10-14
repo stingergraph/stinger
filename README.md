@@ -118,15 +118,21 @@ designed to consume one object per line like the Twitter stream and to produce e
 The templates can use the following variables (where one of the two source and one of the two destination variables 
 must be used):
 
-    $source_str      - The source vertex name
-    $source          - The source of the edge as a number (must be able to parse as an integer less 
-                       than the maximum vertex ID in the STINGER server).
-    $destination_str - The destination vertex name
-    $destination     - The source of the edge as a number (must be able to parse as an integer less 
-                       than the maximum vertex ID in the STINGER server).
-    $type_str        - The edge type as a string
-    $weight          - The weight of the edge (must be able to parse as an integer).
-    $time            - The time of the edge (must be able to parse as an integer).
+    $source_str         - The source vertex name
+    $source             - The source of the edge as a number (must be able to parse as an integer 
+                          less than the maximum vertex ID in the STINGER server).
+    $source_type        - A string representing the type of the source vertex
+    $source_weight      - A number to be added to the weight of the source vertex (vertex weights
+                          start at zero).
+    $destination_str    - The destination vertex name
+    $destination        - The destination of the edge as a number (must be able to parse as an 
+                          integer less than the maximum vertex ID in the STINGER server).
+    $destination_type   - A string representing the type of the destination vertex
+    $destination_weight - A number to be added to the weight of the destination vertex (vertex 
+                          weights start at zero).
+    $type_str           - The edge type as a string
+    $weight             - The weight of the edge (must be able to parse as an integer).
+    $time               - The time of the edge (must be able to parse as an integer).
 
 For example, the simplest template for Twitter mentions and retweets would be (we'll call this template.json):
 
@@ -140,7 +146,10 @@ For example, the simplest template for Twitter mentions and retweets would be (w
             "screen_name": "$destination_str1"
           }
         ]
-      }
+      },
+      "this_doesnt_matter": "$source_type=user",
+      "same_here": "$destination_type=user",
+      "and_here": "$type=mention"
     }
 
 To parse a Twitter stream into STINGER using this template:
@@ -148,7 +157,13 @@ To parse a Twitter stream into STINGER using this template:
     cat twitter_sample.json | ./bin/json_stream template.json
 
 You can replace the 'cat twitter\_sample.json' command with one of the curl commands from the Twitter developer
-API page to directly inject a live Twitter stream.
+API page to directly inject a live Twitter stream (obviously you should go to dev.twitter.com to get your 
+own OAuth data):
+
+    curl --request 'POST' 'https://stream.twitter.com/1.1/statuses/sample.json' --header 
+    'Authorization: OAuth oauth_consumer_key="KEYKEYKEY", oauth_nonce="NONCENONCENONCE", 
+    oauth_signature="SIGSIGSIG", oauth_signature_method="HMAC-SHA1", oauth_timestamp="ts", 
+    oauth_token="TOKENTOKENTOKEN", oauth_version="1.0"' --verbose | ./bin/json_stream template.json
 
 Using a Standalone Client
 -------------------------
