@@ -7,10 +7,13 @@
 #include "stinger_core/xmalloc.h"
 #include "stinger_net/mon_handling.h"
 #include "stinger_net/stinger_mon.h"
+#include "stinger_utils/timer.h"
 
 #define MONGO_HAVE_STDINT
 #include "mongo_c_driver/mongo.h"
 #include "alg_to_mongo.h"
+
+#define BSON_BLOCKSIZE 2000
 
 using namespace gt::stinger;
 
@@ -22,6 +25,8 @@ int main (int argc, char *argv[])
   char mongo_server[256];
   mongo_server[0] = '\0';
   char collection_name[256];
+
+  init_timer();
 
   int opt = 0;
   while (-1 != (opt = getopt(argc, argv, "m:n:"))) {
@@ -84,6 +89,12 @@ int main (int argc, char *argv[])
   //int64_t num_algs = mon.get_num_algs();
   //printf("num_algs = %ld\n", (long) num_algs);
   /* End STINGER connect */
+    
+  /* initialize BSON objects */
+  bson ** ps = (bson **) xmalloc (BSON_BLOCKSIZE * sizeof(bson *));
+  for (int64_t i = 0; i < BSON_BLOCKSIZE; i++) {
+    ps[i] = (bson *) xmalloc (sizeof(bson));
+  }
 
   while (1)
   {
@@ -91,6 +102,7 @@ int main (int argc, char *argv[])
     
     mon.wait_for_sync();
     LOG_D_A ("Processing timestamp %ld", cur_time);
+    tic();
 
     /* Get the STINGER pointer -- critical section */
     mon.get_alg_read_lock();
@@ -101,15 +113,6 @@ int main (int argc, char *argv[])
       return -1;
     }
 
-    /* initialize BSON objects */
-    bson *p, **ps;
-    int64_t nv = stinger_mapping_nv(S);
-    ps = (bson **) xmalloc (nv * sizeof(bson *));
-    for (int64_t i = 0; i < nv; i++) {
-      p = (bson *) xmalloc (sizeof(bson));
-      ps[i] = p;
-    }
-
     /* Get a pointer to the AlgState */
     StingerAlgState * alg_state = mon.get_alg(argv[algorithm_name_index]);
 
@@ -118,25 +121,44 @@ int main (int argc, char *argv[])
       LOG_E_A ("Algorithm %s does not exist", argv[algorithm_name_index]);
       exit(-1);
     }
+	  
+    int64_t nv = stinger_mapping_nv(S);
 
-    /* Convert the algorithm data array to BSON */
-    array_to_bson   (ps, S, alg_state, cur_time);
+    for (int64_t block = 0; block < nv; block += BSON_BLOCKSIZE)
+    {
+      int64_t end = block + BSON_BLOCKSIZE;
+      if (end > nv)
+	end = nv;
+	  
+      /* Convert the algorithm data array to BSON */
+      int64_t count = array_to_bson   (ps, S, nv, alg_state, cur_time, block, end);
+	  
+      /* Mongo send batch */
+      if (MONGO_ERROR == mongo_insert_batch (&conn, collection_name, (const bson **)ps, count, 0, 0)) {
+	LOG_E ("MongoDB insert failed");
+	LOG_E_A ("conn->err: %ld", conn.err);
+      }
+    }
+
+
 
     /* Release the lock */
     mon.release_alg_read_lock();
+  
+    double time = toc();
+    LOG_I_A ("elapsed: %20.15e sec", time);
+    LOG_I_A ("nv: %ld", nv);
+    LOG_I_A ("rate: %20.15e vtx/sec", (double) nv / time);
 
-    /* Mongo send batch */
-    if (MONGO_ERROR == mongo_insert_batch (&conn, collection_name, (const bson **)ps, nv, 0, 0)) {
-      LOG_E ("MongoDB insert failed");
-    }
-
-    /* Cleanup */
-    for (int64_t i = 0; i < nv; i++) {
-      bson_destroy (ps[i]);
-      free (ps[i]);
-    }
 
   } /* end infinite loop */
+	  
+  
+  /* Cleanup */
+  for (int64_t i = 0; i < BSON_BLOCKSIZE; i++) {
+    bson_destroy (ps[i]);
+    free (ps[i]);
+  }
 
   return 0;
 }

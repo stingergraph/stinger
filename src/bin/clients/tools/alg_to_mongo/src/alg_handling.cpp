@@ -20,8 +20,11 @@ int
 array_to_bson   (
 			    bson ** documents,
 			    stinger_t * S,
+			    int64_t nv,
 			    StingerAlgState * alg_state,
-			    uint64_t timestamp
+			    uint64_t timestamp,
+			    int64_t start,
+			    int64_t end
 			    )
 {
   if (!S) {
@@ -34,19 +37,19 @@ array_to_bson   (
     return -1;
   }
 
-  int64_t nv = stinger_mapping_nv(S);
   const char * description_string = alg_state->data_description.c_str();
 
   /* Temporary storage for description string to parse */
   size_t len = strlen(description_string);
   char * tmp = (char *) xmalloc ((len+1) * sizeof(char));
 
-  //LOG_D_A ("There are %ld vertices in the graph", nv);
-  /* for all vertices in the graph */
-  for (int64_t vtx = 0; vtx < nv; vtx++)
+
+  int64_t item_count = 0;
+
+  for (int64_t vtx = start; vtx < end && vtx < nv; vtx++, item_count++)
   {
     size_t off = 0;
-    bson * bson_ptr = documents[vtx];
+    bson * bson_ptr = documents[item_count];
     char * physID;
     size_t len;
 
@@ -153,11 +156,10 @@ array_to_bson   (
     } /* pch */
 
     bson_finish (bson_ptr);
-    documents[vtx] = bson_ptr;
 
   } /* vtx */
 
   free(tmp);
 
-  return 0;
+  return item_count;
 }

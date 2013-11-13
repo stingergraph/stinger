@@ -15,8 +15,11 @@ int
 array_to_bson   (
 			    bson ** documents,
 			    stinger_t * S,
+			    int64_t nv,
 			    StingerAlgState * alg_state,
-			    uint64_t timestamp
+			    uint64_t timestamp,
+			    int64_t start,
+			    int64_t end
 			    );
 
 int64_t
