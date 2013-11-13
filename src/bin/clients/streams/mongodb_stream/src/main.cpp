@@ -31,9 +31,11 @@ main(int argc, char *argv[])
   int batch_size = 100000;
   int num_batches = -1;
   struct hostent * server = NULL;
+  char mongo_server[256];
+  mongo_server[0] = '\0';
 
   int opt = 0;
-  while(-1 != (opt = getopt(argc, argv, "p:x:y:a:m:"))) {
+  while(-1 != (opt = getopt(argc, argv, "p:x:y:a:m:n:"))) {
     switch(opt) {
       case 'p': {
 	stinger_port = atoi(optarg);
@@ -56,12 +58,16 @@ main(int argc, char *argv[])
       } break;
 
       case 'm': {
+	strncpy (mongo_server, optarg, 255);
+      } break;
+
+      case 'n': {
 	mongo_port = atoi(optarg);
       } break;
 
       case '?':
       case 'h': {
-	printf("Usage:    %s [-p stinger_port] [-a stinger_addr] [-x batch_size] [-y num_batches] [-m mongo_port] db_name.collection_name\n", argv[0]);
+	printf("Usage:    %s [-a stinger_addr] [-p stinger_port] [-x batch_size] [-y num_batches] [-m mongo_addr] [-n mongo_port] db_name.collection_name\n", argv[0]);
 	printf("Defaults:\n\tstinger_port: %d\n\tstinger_server: localhost\n\tmongo_port: %d\n\tmongo_server: localhost\n", stinger_port, mongo_port);
 	exit(0);
       } break;
@@ -76,10 +82,16 @@ main(int argc, char *argv[])
     exit(-1);
   }
 
-
   /* Begin Mongo Server Connect */
   mongo conn[1];
-  int status = mongo_client (conn, "127.0.0.1", mongo_port);  /* TODO: make Mongo hostname an input */
+
+  /* Default to localhost if unspecified */
+  if ('\0' == mongo_server[0]) {
+    strncpy (mongo_server, "127.0.0.1\0", 10);
+  }
+
+  LOG_D_A ("Mongo Server Address: %s", mongo_server);
+  int status = mongo_client (conn, mongo_server, mongo_port);
 
   if (status != MONGO_OK) {
     switch (conn->err) {
