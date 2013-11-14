@@ -13,7 +13,7 @@
 #include "mongo_c_driver/mongo.h"
 #include "alg_to_mongo.h"
 
-#define BSON_BLOCKSIZE 2000
+#define BSON_BLOCKSIZE 10000
 
 using namespace gt::stinger;
 
@@ -98,9 +98,9 @@ int main (int argc, char *argv[])
 
   while (1)
   {
-    int64_t cur_time = get_current_timestamp();
-    
     mon.wait_for_sync();
+
+    int64_t cur_time = get_current_timestamp();
     LOG_D_A ("Processing timestamp %ld", cur_time);
     tic();
 
