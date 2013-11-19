@@ -5,6 +5,7 @@ include(ExternalProject)
 SET(libdep_default stinger_core stinger_utils)
 SET(libdep_web_server string mongoose kv_store)
 SET(libdep_sql_client stinger_net)
+SET(libdep_alg_to_mongo stinger_net mongo_c_driver)
 
 IF(APPLE)
   SET(libdep_json_rpc_server ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib stinger_net pthread mongoose)
