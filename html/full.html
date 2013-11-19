@@ -97,6 +97,7 @@ Toolbox
 <li><a href="#labelgrid" data-toggle="tab">Label Grid</a></li>
 <li><a href="#shortestpaths" data-toggle="tab">Shortest Paths</a></li>
 <li><a href="#labelgraph" data-toggle="tab">Label Graph</a></li>
+<li><a href="#labelsubgraph" data-toggle="tab">Label Subgraph</a></li>
 <li><a href="#groupgraph" data-toggle="tab">Group Graph</a></li>
 </ul>
 </div>
@@ -213,6 +214,37 @@ Toolbox
       <label class="control-label" for="shortestdest">Destination Vertex</label>
       <div class="controls">
 	<input type="text" id="shortestdest" class="span5" value="joshuajones">
+      </div>
+      <div class="controls">
+	<br/>
+	<button type"submit" class="btn btn-success" >Add Tool</button>
+      </div>
+    </div>
+  </form>
+</div>
+<div class="tab-pane" id="labelsubgraph">
+  <form action="#" class="form-horizontal" onSubmit="if($('#labelsubgraphalgorithm').val() && $('#labelsubgraphfield').val()) add_tool(new LabelSubgraph(tools, '#toolstream', $('#labelsubgraphalgorithm').val(), $('#labelsubgraphfield').val(), $('#labelsubgraphvertex').val(), $('#labelsubgraphlimit').val()));">
+    <legend>Label Subgraph</legend>
+    <p>Select a label type and enter the name of a vertex.  The label graph will show the structure of all vertices with the same
+    label as the chosen vertex. This version limits the graph to a certain number of vertices.</p>
+    <div class="control-group">
+      <label class="control-label" for="labelsubgraphalgorithm">Algorithm</label>
+      <div class="controls">
+	<select class="span5 algselector" id="labelsubgraphalgorithm">
+	</select>
+      </div>
+      <label class="control-label" for="labelsubgraphfield">Field</label>
+      <div class="controls">
+	<select class="span5 fieldselector" id="labelsubgraphfield">
+	</select>
+      </div>
+      <label class="control-label" for="labelsubgraphvertex">Vertex</label>
+      <div class="controls">
+	<input type="text" id="labelsubgraphvertex" class="span5" value="naomijones">
+      </div>
+      <label class="control-label" for="labelsubgraphlimit">Vertex Limit</label>
+      <div class="controls">
+	<input type="text" id="labelsubgraphlimit" class="span5" value="200">
       </div>
       <div class="controls">
 	<br/>
@@ -1376,6 +1408,7 @@ function ShortestPaths(tools, id, source, dest) {
 
     this.register = function(data, graph, obj) {
       var subgraph = data.result.subgraph_str;
+      obj.graph = {vertices:{}, links: this.links, nodes:this.nodes};
 
       for(e = 0; e < subgraph.length; e++) {
 	src = subgraph[e][0];
@@ -1405,7 +1438,117 @@ function ShortestPaths(tools, id, source, dest) {
 	(function(update, graph, obj, session_id) { return function(data) { update(data, graph, obj, session_id); }; })(obj.update, obj.graph, obj, data.result.session_id), null, obj.close, obj);
     }
 
-    this.update = function(data, graph, obj, session_id) {
+    rpc("register", {"type": "subgraph", "name": this.alg, "data": this.field, "source": _.trim(this.vtx), "strings":true}, next_id(), 
+      (function(register, graph, start) { return function(data) { register(data, graph, start); }; })(this.register,this.graph, this), null, this.close, this);
+  }
+
+/***************************************************
+ * LABEL SUBGRAPH
+ */
+  function LabelSubgraph(tools, id, alg, field, vtx, limit) {
+    this.parent_id = id;
+    this.id = id + tools.length;
+    this.alg = alg;
+    this.field = field;
+    this.vtx = vtx;
+    this.limit = parseInt(_.trim(limit));
+    this.time_to_die = false;
+
+    this.width = 960,
+    this.height = 400;
+
+    this.nodes = [];
+    this.links = [];
+    this.graph = {vertices:{}, links: this.links, nodes:this.nodes};
+    this.color = d3.scale.category20();
+
+    add_tool_win(this.parent_id, this.id, "Label Subgraph of " + vtx + " (" + alg + ", " + field + ", " + limit + ")", this);
+
+    this.force = d3.layout.force()
+      .charge(-120)
+      .linkDistance(30)
+      .size([this.width, this.height]);
+
+    this.svg = d3.select(this.id).append("svg")
+      .attr("width", this.width)
+      .attr("height", this.height);
+
+    this.node = this.svg.selectAll(".node");
+    this.link = this.svg.selectAll(".link");
+
+    this.start = function() {
+      this.node = this.svg.selectAll(".node");
+      this.link = this.svg.selectAll(".link");
+
+      this.link = this.link.data(this.links, function(d) { return d.source.id + "-" + d.target.id; });
+      this.link.enter().insert("line", ".node").attr("class", "link");
+      this.link.exit().remove();
+
+      this.node = this.node.data(this.nodes, function(d) { return d.id;});
+      this.node.enter().append("circle").attr("class", function(d) { return "node " + d.id; }).attr("r", 8).call(this.force.drag)
+	.style("fill", (function(colors) {return function(d) { return colors(d.group); }}) (this.color))
+	.append("title")
+	.text(function(d) { return d.id; });
+      this.node.exit().remove();
+
+      this.force
+	.nodes(this.nodes)
+	.links(this.links)
+	.on("tick", (function(obj) { return function() {
+	  obj.node.attr("cx", function(d) { return d.x; })
+	    .attr("cy", function(d) { return d.y; })
+
+	  obj.link.attr("x1", function(d) { return d.source.x; })
+	    .attr("y1", function(d) { return d.source.y; })
+	    .attr("x2", function(d) { return d.target.x; })
+	    .attr("y2", function(d) { return d.target.y; });
+	}; })(this));
+
+      this.force.start();
+    }
+
+
+    this.close = function() {
+      tools.splice(tools.indexOf(this),1);
+      $(this.id + 'accordion').fadeOut(300, function() { $(this).remove(); });
+      this.time_to_die = true;
+      if('force' in this) {
+	this.force.stop();
+      }
+    }
+
+    this.register = function(data, graph, obj) {
+      var subgraph = data.result.subgraph_str;
+
+      for(e = 0; e < subgraph.length; e++) {
+	src = subgraph[e][0];
+	dest = subgraph[e][1];
+
+	if(!(src in graph.vertices)) {
+	  graph.vertices[src] = {'id': src, 'neighbors': {}, 'in_arr':''};
+	  graph.vertices[src]['in_arr'] = graph.nodes[graph.nodes.push(graph.vertices[src])];
+	}
+	if(!(dest in graph.vertices)) {
+	  graph.vertices[dest] = {'id': dest, 'neighbors': {}, 'in_arr':''};
+	  graph.vertices[dest]['in_arr'] = graph.nodes[graph.nodes.push(graph.vertices[dest])];
+	}
+
+	if(!(src in graph.vertices[dest].neighbors)) {
+	  graph.vertices[dest].neighbors[src] = graph.links[graph.links.push({source: graph.vertices[dest], target: graph.vertices[src], value: 1})];
+	}
+
+	if(!(dest in graph.vertices[src].neighbors)) {
+	  graph.vertices[src].neighbors[dest] = graph.links[graph.links.push({source: graph.vertices[src], target: graph.vertices[dest], value: 1})];
+	}
+      }
+
+      obj.start();
+
+      rpc("label_breadth_first_search", {"wait_for_update": true, "source": obj.vtx, "name": obj.alg, "data": obj.field, "limit": obj.limit, "get_types": true, "strings":true}, next_id(), 
+	(function(update, graph, obj) { return function(data) { update(data, graph, obj); }; })(obj.register, obj.graph, obj), null, obj.close, obj);
+    }
+
+    this.update = function(data, graph, obj) {
       var insertions = data.result.insertions_str;
       var deletions = data.result.deletions_str;
 
@@ -1463,11 +1606,11 @@ function ShortestPaths(tools, id, source, dest) {
       obj.start();
 
       if(!obj.time_to_die)
-	rpc("request", {"wait_for_update": true, "session_id": session_id, "strings":true}, next_id(), 
-	  (function(update, graph, obj, session_id) { return function(data) { update(data, graph, obj, session_id); }; })(obj.update, obj.graph, obj, session_id), null, obj.close, obj);
+	rpc("label_breadth_first_search", {"wait_for_update": true, "source": obj.vtx, "name": obj.alg, "data": obj.field, "limit": obj.limit, "get_types": true, "strings":true}, next_id(), 
+	  (function(update, graph, obj) { return function(data) { update(data, graph, obj); }; })(obj.update, obj.graph, obj), null, obj.close, obj);
     }
 
-    rpc("register", {"type": "subgraph", "name": this.alg, "data": this.field, "source": _.trim(this.vtx), "strings":true}, next_id(), 
+    rpc("label_breadth_first_search", {"wait_for_update": true, "source": this.vtx, "name": this.alg, "data": this.field, "limit": this.limit, "get_types": true, "strings":true}, next_id(), 
       (function(register, graph, start) { return function(data) { register(data, graph, start); }; })(this.register,this.graph, this), null, this.close, this);
   }
 

@@ -1,5 +1,6 @@
 
 #include "stinger_core/stinger_error.h"
+#include "stinger_core/xmalloc.h"
 #include "alg_data_array.h"
 
 namespace gt {
@@ -17,6 +18,77 @@ namespace gt {
 	return;
       }
       offset = ((uint8_t *)data) - ((uint8_t *)alg_state->data);
+    }
+
+    AlgDataArray::AlgDataArray(
+		    JSON_RPCServerState * server_state,
+		    const char * algorithm_name,
+		    const char * field) : state(server_state)
+    { 
+      len = STINGER_MAX_LVERTICES;
+      strncpy(alg, algorithm_name, 128);
+      StingerAlgState * alg_state = server_state->get_alg(algorithm_name);
+      if (!alg_state) {
+	LOG_E ("StingerAlgState is invalid");
+	return;
+      }
+
+      /* Temporary storage for description string to parse */
+      char * tmp = (char *) xmalloc ((alg_state->data_description.length()+10) * sizeof(char));
+      strcpy(tmp, alg_state->data_description.c_str());
+
+      /* get a fresh copy of the alg data pointer */
+      uint8_t * data = (uint8_t *) alg_state->data;
+
+
+      LOG_D_A("TMP is %s", tmp);
+
+      /* the description string is space-delimited */
+      char * placeholder = NULL;
+      char * ptr = strtok_r (tmp, " ", &placeholder);
+
+      /* skip the formatting */
+      char * pch = strtok_r (NULL, " ", &placeholder);
+
+      int64_t off = 0;
+
+      LOG_D_A("Field is %s pch is %s ptr is %s and desc is %s", field, pch, ptr, alg_state->data_description.c_str());
+      while (0 != strcmp(field, pch)) {
+	switch (ptr[off]) {
+	  case 'f':
+	    data += (len * sizeof(float));
+	    break;
+
+	  case 'd':
+	    data += (len * sizeof(double));
+	    break;
+
+	  case 'i':
+	    data += (len * sizeof(int32_t));
+	    break;
+
+	  case 'l':
+	    data += (len * sizeof(int64_t));
+	    break;
+
+	  case 'b':
+	    data += (len * sizeof(uint8_t));
+	    break;
+
+	  default:
+	    LOG_W_A("Umm...what letter was that?\ndescription_string: %s", alg_state->data_description.c_str());
+	    return;
+	}
+	off++;
+
+	pch = strtok_r (NULL, " ", &placeholder);
+	LOG_D_A("Field is %s pch is %s", field, pch);
+      } /* pch */
+
+      offset = ((uint8_t *)data) - ((uint8_t *)alg_state->data);
+      t = ptr[off];
+      d = data;
+      free(tmp);
     }
 
     int64_t
@@ -113,7 +185,7 @@ namespace gt {
 	return ((int8_t *)d)[a] == ((int8_t *)d)[b];
 	break;
 	default:
-	LOG_W("Array has non-standard type!");
+	LOG_W_A("Array has non-standard type [%c]", t);
 	return false;
       }
     }

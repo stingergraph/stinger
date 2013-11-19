@@ -26,6 +26,11 @@ namespace gt {
 		    const char * algorithm_name,
 		    void * data, char type, int64_t length);
 
+	AlgDataArray(
+		    JSON_RPCServerState * server_state,
+		    const char * algorithm_name,
+		    const char * field);
+
 	int64_t length();
 	char    type();
 	void	refresh();
