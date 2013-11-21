@@ -31,6 +31,7 @@ typedef struct {
 
 typedef struct {
   int enabled;
+  int map_private;
   int sock;
   stinger_t * stinger;
   char stinger_loc[256];
@@ -62,6 +63,7 @@ typedef struct {
   const char * host;
   int port;
   int is_remote;
+  int map_private;
   int64_t data_per_vertex;
   char * data_description;
   char ** dependencies;
@@ -95,7 +97,7 @@ typedef struct {
 * double and one int64_t per vertex, the storage should contain an NV-length array of 
 * doubles and an NV-length array of int64_ts.
 * 
-* params.data_description - [Recommended if data_per_vertex is used | Default: NULL]
+* params.data_description - [Required if data_per_vertex is used | Default: NULL]
 * A description of the kind of data stored per each vertex (assuming the contiguous C-array
 * data layout listed above).  This is used to enable automated parsing and printing of the 
 * data.  The first word should contain an automated description following this convention:

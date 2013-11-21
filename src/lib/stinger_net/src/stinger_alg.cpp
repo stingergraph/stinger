@@ -27,14 +27,14 @@ using namespace gt::stinger;
 extern "C" stinger_registered_alg *
 stinger_register_alg_impl(stinger_register_alg_params params)
 {
-  LOG_D("Registering alg");
+  LOG_D_A("Registering alg %s", params.name);
 
   struct sockaddr_in sock_addr;
   memset(&sock_addr, 0, sizeof(struct sockaddr_in));
   struct hostent * hp = gethostbyname(params.host);
 
   if(!hp) {
-    LOG_E_A("Error resolving host %s", params.host);
+    LOG_E_A("Error resolving host [%s]", params.host);
     return NULL;
   }
 
@@ -56,7 +56,7 @@ stinger_register_alg_impl(stinger_register_alg_params params)
   }
 
   if(-1 == connect(sock, (sockaddr *)&sock_addr, sizeof(struct sockaddr_in))) {
-    LOG_E("Error connecting socket");
+    LOG_E_A("Error connecting socket [%d]", params.port);
     return NULL;
   }
 
@@ -66,7 +66,10 @@ stinger_register_alg_impl(stinger_register_alg_params params)
   alg_to_server.set_alg_name(params.name);
   alg_to_server.set_action(REGISTER_ALG);
 
+  LOG_D("Alg message built");
+
   if(params.data_per_vertex) {
+    LOG_D("Setting data per vertex");
     alg_to_server.set_data_per_vertex(params.data_per_vertex);
     if(!params.data_description) {
       LOG_E("Missing data description")
@@ -75,6 +78,8 @@ stinger_register_alg_impl(stinger_register_alg_params params)
     alg_to_server.set_data_description(params.data_description);
   }
 
+  LOG_D("About to set dependencies");
+  LOG_D_A("Count is [%d]", params.num_dependencies);
   for(int64_t i = 0; i < params.num_dependencies; i++) {
     alg_to_server.add_req_dep_name(params.dependencies[i]);
   }
@@ -110,7 +115,13 @@ stinger_register_alg_impl(stinger_register_alg_params params)
   if(!params.is_remote) {
     LOG_D_A("Mapping STINGER %s", server_to_alg.stinger_loc().c_str());
     rtn->sock = sock;
-    rtn->stinger = stinger_shared_map(server_to_alg.stinger_loc().c_str(), server_to_alg.stinger_size());
+    if(params.map_private) {
+      rtn->stinger = stinger_shared_private(server_to_alg.stinger_loc().c_str(), server_to_alg.stinger_size());
+      rtn->map_private = 1;
+    } else {
+      rtn->stinger = stinger_shared_map(server_to_alg.stinger_loc().c_str(), server_to_alg.stinger_size());
+      rtn->map_private = 0;
+    }
 
     if(!rtn) {
       LOG_E("Failed to connect to stinger");
