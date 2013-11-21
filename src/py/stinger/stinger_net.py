@@ -81,3 +81,75 @@ class StingerAlg():
 
   def stinger(self):
     return Stinger(s=self.alg.stinger)
+
+
+class StingerAlgState():
+  def __init__(self, alg):
+    self.alg = alg
+
+  def get_name(self):
+    dd = lib['stinger_alg_state_get_name']
+    dd.restype = c_char_p
+    return str(dd(self.alg))
+
+  def get_data_description(self):
+    dd = lib['stinger_alg_state_get_data_description']
+    dd.restype = c_char_p
+    return str(dd(self.alg))
+
+  def get_data_ptr(self):
+    dp = lib['stinger_alg_state_get_data_ptr']
+    dp.restype = c_void_p
+    return c_void_p(dp(self.alg))
+
+  def get_data_per_vertex(self):
+    return lib['stinger_alg_state_data_per_vertex'](self.alg)
+
+  def get_level(self):
+    return lib['stinger_alg_state_level'](self.alg)
+
+  def number_of_dependencies(self):
+    return lib['stinger_alg_state_number_dependencies'](self.alg)
+
+  def get_dependency(self, i):
+    dep = lib['stinger_alg_state_depencency']
+    dep.restype = c_char_p
+    return dep(self.alg, c_int64(i))
+
+
+class StingerMon():
+  def __init__(self, name, host='localhost', port=10103):
+    lib['mon_connect'](c_int(port), c_char_p(host), c_char_p(name))
+    get_mon = lib['get_stinger_mon']
+    get_mon.restype = c_void_p
+    self.mon = c_void_p(get_mon())
+
+  def num_algs(self):
+    return lib['stinger_mon_num_algs'](self.mon)
+
+  def get_alg_state(self, name_or_int):
+    if isinstance(name_or_int, basestring):
+      get_alg = lib['stinger_mon_get_alg_state_by_name']
+      get_alg.restype = c_void_p
+      return StingerAlgState(c_void_p(get_alg(self.mon, c_char_p(name_or_int))))
+    else:
+      get_alg = lib['stinger_mon_get_alg_state']
+      get_alg.restype = c_void_p
+      return StingerAlgState(c_void_p(get_alg(self.mon, c_int64(name_or_int))))
+
+  def has_alg(self, name):
+    return lib['stinger_mon_has_alg'](self.mon, c_char_p(name))
+
+  def get_read_lock(self):
+    lib['stinger_mon_get_read_lock'](self.mon)
+
+  def release_read_lock(self):
+    lib['stinger_mon_release_read_lock'](self.mon)
+      
+  def stinger(self):
+    get_stinger = lib['stinger_mon_get_stinger']
+    get_stinger.restype = c_void_p
+    return Stinger(s=c_void_p(get_stinger(self.mon)))
+
+  def wait_for_sync(self):
+    lib['stinger_mon_wait_for_sync'](self.mon)
