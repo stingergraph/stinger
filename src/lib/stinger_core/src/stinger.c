@@ -922,9 +922,6 @@ stinger_insert_edge (struct stinger *G,
                      int64_t type, int64_t from, int64_t to,
                      int64_t weight, int64_t timestamp)
 {
-  if(from == to)
-    return -1;
-
   /* Do *NOT* call this concurrently with different edge types. */
   STINGERASSERTS ();
   MAP_STING(G);
@@ -1056,9 +1053,6 @@ stinger_incr_edge (struct stinger *G,
                    int64_t type, int64_t from, int64_t to,
                    int64_t weight, int64_t timestamp)
 {
-  if(from == to)
-    return -1;
-
   /* Do *NOT* call this concurrently with different edge types. */
   STINGERASSERTS ();
   MAP_STING(G);
@@ -1225,9 +1219,6 @@ int
 stinger_remove_edge (struct stinger *G,
                      int64_t type, int64_t from, int64_t to)
 {
-  if(from == to)
-    return -1;
-
   /* Do *NOT* call this concurrently with different edge types. */
   STINGERASSERTS ();
   MAP_STING(G);
