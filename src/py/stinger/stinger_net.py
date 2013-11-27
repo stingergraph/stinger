@@ -1,7 +1,7 @@
 from ctypes import *
 from stinger_core import Stinger
 
-lib = cdll.LoadLibrary('libstinger_net.so')
+libstinger_net = cdll.LoadLibrary('libstinger_net.so')
 
 class StingerAlgParams(Structure):
   _fields_ = [("name", c_char_p),
@@ -20,8 +20,8 @@ class StingerAlgParams(Structure):
       self.dependencies[i] = c_char_p(deps[i])
 
 class StingerEdgeUpdate(Structure):
-  _fields_ = [("type", c_int64),
-	      ("type_str", c_char_p),
+  _fields_ = [("etype", c_int64),
+	      ("etype_str", c_char_p),
 	      ("source", c_int64),
 	      ("source_str", c_char_p),
 	      ("destination", c_int64),
@@ -60,30 +60,93 @@ class StingerRegisteredAlg(Structure):
   def stinger():
     return Stinger(s=self.stinger)
 
+class StingerStream():
+  def __init__(self, host, port, strings=True):
+    self.sock_handle = libstinger_net['stream_connect'](c_char_p(host), c_int(port))
+    self.insertions = (StingerEdgeUpdate * 100)()
+    self.insertions_size = 100
+    self.insertions_count = 0
+    self.deletions = (StingerEdgeUpdate * 100)()
+    self.deletions_size = 100
+    self.deletions_count = 0
+    self.only_strings = strings
+
+  def add_insert(self, vfrom, vto, etype=0, weight=0, ts=0):
+    if(self.insertions_count >= self.insertions_size):
+      self.insertions_size *= 2
+      resize(self.insertions, sizeof(self.insertions._type_) * self.insertions_size)
+
+    if(self.only_strings):
+      self.insertions[self.insertions_count].source_str = c_char_p(vfrom)
+      self.insertions[self.insertions_count].destination_str = c_char_p(vto)
+    else:
+      self.insertions[self.insertions_count].source_str = 0
+      self.insertions[self.insertions_count].destination_str = 0
+      self.insertions[self.insertions_count].source = c_int64(vfrom)
+      self.insertions[self.insertions_count].destination= c_int64(vto)
+
+    if isinstance(etype, basestring):
+      self.insertions[self.insertions_count].etype_str = c_char_p(etype)
+    else:
+      self.insertions[self.insertions_count].etype = c_int64(etype)
+
+    self.insertions[self.insertions_count].weight = c_int64(weight)
+    self.insertions[self.insertions_count].time = c_int64(ts)
+
+    self.insertions_count += 1
+
+  def add_delete(self, vfrom, vto, etype=0):
+    if(self.deletions_count >= self.deletions_size):
+      self.deletions_size *= 2
+      resize(self.deletions, sizeof(self.deletions._type_) * self.deletions_size)
+
+    if(self.only_strings):
+      self.deletions[self.deletions_count].source_str = c_char_p(vfrom)
+      self.deletions[self.deletions_count].destination_str = c_char_p(vto)
+    else:
+      self.deletions[self.deletions_count].source_str = 0
+      self.deletions[self.deletions_count].destination_str = 0
+      self.deletions[self.deletions_count].source = c_int64(vfrom)
+      self.deletions[self.deletions_count].destination= c_int64(vto)
+
+    if isinstance(etype, basestring):
+      self.deletions[self.deletions_count].etype_str = c_char_p(etype)
+    else:
+      self.deletions[self.deletions_count].etype = c_int64(etype)
+
+    self.deletions_count += 1
+
+  def send_batch(self):
+    libstinger_net['stream_send_batch'](self.sock_handle, c_int(self.only_strings), 
+	self.insertions, self.insertions_count, self.deletions, self.deletions_count)
+    self.insertions_count = 0
+    self.deletions_count = 0
+
+
 class StingerAlg():
   def __init__(self, params):
-    register = lib['stinger_register_alg_impl']
+    register = libstinger_net['stinger_register_alg_impl']
     register.argtypes = [StingerAlgParams]
     register.restype = POINTER(StingerRegisteredAlg)
     self.alg = register(params)
 
   def begin_init(self):
-    lib['stinger_alg_begin_init'](self.alg)
+    libstinger_net['stinger_alg_begin_init'](self.alg)
 
   def end_init(self):
-    lib['stinger_alg_end_init'](self.alg)
+    libstinger_net['stinger_alg_end_init'](self.alg)
 
   def begin_pre(self):
-    lib['stinger_alg_begin_pre'](self.alg)
+    libstinger_net['stinger_alg_begin_pre'](self.alg)
 
   def end_pre(self):
-    lib['stinger_alg_end_pre'](self.alg)
+    libstinger_net['stinger_alg_end_pre'](self.alg)
 
   def begin_post(self):
-    lib['stinger_alg_begin_post'](self.alg)
+    libstinger_net['stinger_alg_begin_post'](self.alg)
 
   def end_port(self):
-    lib['stinger_alg_end_post'](self.alg)
+    libstinger_net['stinger_alg_end_post'](self.alg)
 
   def stinger(self):
     return Stinger(s=self.alg.stinger)
@@ -97,7 +160,7 @@ class StingerDataArray():
 
     self.field_name = field_name
     self.data_type = data_desc[0][field_index]
-    self.nv = lib['stinger_mon_get_max_nv']()
+    self.nv = libstinger_net['stinger_mon_get_max_nv']()
     self.s = s
 
     offset = reduce(
@@ -142,17 +205,17 @@ class StingerAlgState():
     self.s = stinger
 
   def get_name(self):
-    dd = lib['stinger_alg_state_get_name']
+    dd = libstinger_net['stinger_alg_state_get_name']
     dd.restype = c_char_p
     return str(dd(self.alg))
 
   def get_data_description(self):
-    dd = lib['stinger_alg_state_get_data_description']
+    dd = libstinger_net['stinger_alg_state_get_data_description']
     dd.restype = c_char_p
     return str(dd(self.alg))
 
   def get_data_ptr(self):
-    dp = lib['stinger_alg_state_get_data_ptr']
+    dp = libstinger_net['stinger_alg_state_get_data_ptr']
     dp.restype = c_void_p
     return c_void_p(dp(self.alg))
 
@@ -160,53 +223,53 @@ class StingerAlgState():
     return StingerDataArray(self.get_data_ptr(), self.get_data_description(), name, self.s)
 
   def get_data_per_vertex(self):
-    return lib['stinger_alg_state_data_per_vertex'](self.alg)
+    return libstinger_net['stinger_alg_state_data_per_vertex'](self.alg)
 
   def get_level(self):
-    return lib['stinger_alg_state_level'](self.alg)
+    return libstinger_net['stinger_alg_state_level'](self.alg)
 
   def number_of_dependencies(self):
-    return lib['stinger_alg_state_number_dependencies'](self.alg)
+    return libstinger_net['stinger_alg_state_number_dependencies'](self.alg)
 
   def get_dependency(self, i):
-    dep = lib['stinger_alg_state_depencency']
+    dep = libstinger_net['stinger_alg_state_depencency']
     dep.restype = c_char_p
     return dep(self.alg, c_int64(i))
 
 
 class StingerMon():
   def __init__(self, name, host='localhost', port=10103):
-    lib['mon_connect'](c_int(port), c_char_p(host), c_char_p(name))
-    get_mon = lib['get_stinger_mon']
+    libstinger_net['mon_connect'](c_int(port), c_char_p(host), c_char_p(name))
+    get_mon = libstinger_net['get_stinger_mon']
     get_mon.restype = c_void_p
     self.mon = c_void_p(get_mon())
 
   def num_algs(self):
-    return lib['stinger_mon_num_algs'](self.mon)
+    return libstinger_net['stinger_mon_num_algs'](self.mon)
 
   def get_alg_state(self, name_or_int):
     if isinstance(name_or_int, basestring):
-      get_alg = lib['stinger_mon_get_alg_state_by_name']
+      get_alg = libstinger_net['stinger_mon_get_alg_state_by_name']
       get_alg.restype = c_void_p
       return StingerAlgState(c_void_p(get_alg(self.mon, c_char_p(name_or_int))), self.stinger())
     else:
-      get_alg = lib['stinger_mon_get_alg_state']
+      get_alg = libstinger_net['stinger_mon_get_alg_state']
       get_alg.restype = c_void_p
       return StingerAlgState(c_void_p(get_alg(self.mon, c_int64(name_or_int))), self.stinger())
 
   def has_alg(self, name):
-    return lib['stinger_mon_has_alg'](self.mon, c_char_p(name))
+    return libstinger_net['stinger_mon_has_alg'](self.mon, c_char_p(name))
 
   def get_read_lock(self):
-    lib['stinger_mon_get_read_lock'](self.mon)
+    libstinger_net['stinger_mon_get_read_lock'](self.mon)
 
   def release_read_lock(self):
-    lib['stinger_mon_release_read_lock'](self.mon)
+    libstinger_net['stinger_mon_release_read_lock'](self.mon)
       
   def stinger(self):
-    get_stinger = lib['stinger_mon_get_stinger']
+    get_stinger = libstinger_net['stinger_mon_get_stinger']
     get_stinger.restype = c_void_p
     return Stinger(s=c_void_p(get_stinger(self.mon)))
 
   def wait_for_sync(self):
-    lib['stinger_mon_wait_for_sync'](self.mon)
+    libstinger_net['stinger_mon_wait_for_sync'](self.mon)
