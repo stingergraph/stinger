@@ -11,12 +11,6 @@
 
 using namespace gt::stinger;
 
-#define E_A(X,...) fprintf(stderr, "%s %s %d:\n\t" #X "\n", __FILE__, __func__, __LINE__, __VA_ARGS__);
-#define E(X) E_A(X,NULL)
-#define V_A(X,...) fprintf(stdout, "%s %s %d:\n\t" #X "\n", __FILE__, __func__, __LINE__, __VA_ARGS__);
-#define V(X) V_A(X,NULL)
-
-
 int
 main(int argc, char *argv[])
 {
@@ -28,7 +22,7 @@ main(int argc, char *argv[])
   char * filename = NULL;
 
   int opt = 0;
-  while(-1 != (opt = getopt(argc, argv, "p:a:xt:"))) {
+  while(-1 != (opt = getopt(argc, argv, "p:a:x:t:"))) {
     switch(opt) {
       case 'p': {
 		  port = atoi(optarg);
@@ -36,12 +30,13 @@ main(int argc, char *argv[])
 
       case 'x': {
 		  batch_size = atol(optarg);
+		  LOG_I_A("Batch size changed to %d", batch_size);
 		} break;
 
       case 'a': {
 		  server = gethostbyname(optarg);
 		  if(NULL == server) {
-		    E_A("ERROR: server %s could not be resolved.", optarg);
+		    LOG_E_A("ERROR: server %s could not be resolved.", optarg);
 		    exit(-1);
 		  }
 		} break;
@@ -58,16 +53,20 @@ main(int argc, char *argv[])
     }
   }
 
-  if (optind < argc && 0 != strcmp (argv[optind], "-"))
+  if (optind < argc && 0 != strcmp (argv[optind], "-")) {
     filename = argv[optind];
+  } else {
+    LOG_E("No filename given.");
+    return -1;
+  }
 
-  V_A("Running with: port: %d\n", port);
+  LOG_V_A("Running with: port: %d\n", port);
 
   /* connect to localhost if server is unspecified */
   if(NULL == server) {
     server = gethostbyname("localhost");
     if(NULL == server) {
-      E_A("ERROR: server %s could not be resolved.", "localhost");
+      LOG_E_A("ERROR: server %s could not be resolved.", "localhost");
       exit(-1);
     }
   }
