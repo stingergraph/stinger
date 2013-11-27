@@ -54,6 +54,12 @@ class StingerRegisteredAlg(Structure):
 	      ("batch_storage", c_void_p),
 	      ("batch_type", c_int)]
 
+  def get_alg_data(self, name, desc):
+    return StingerDataArray(self.alg_data, desc, name, Stinger(s=self.stinger))
+
+  def stinger():
+    return Stinger(s=self.stinger)
+
 class StingerAlg():
   def __init__(self, params):
     register = lib['stinger_register_alg_impl']
@@ -82,10 +88,58 @@ class StingerAlg():
   def stinger(self):
     return Stinger(s=self.alg.stinger)
 
+class StingerDataArray():
+  def __init__(self, data_ptr, data_desc, field_name, s):
+    data_desc = data_desc.split(" ")
+    data_ptr = data_ptr.value
+
+    field_index = data_desc[1:].index(field_name)
+
+    self.field_name = field_name
+    self.data_type = data_desc[0][field_index]
+    self.nv = lib['stinger_mon_get_max_nv']()
+    self.s = s
+
+    offset = reduce(
+	lambda x,y: x+y,
+	[8 if c == 'd' or c == 'l' else 
+	 4 if c == 'f' or c == 'i' else 
+	 1 
+	   for c in data_desc[0][:field_index]], 
+	0)
+
+    self.data = data_ptr + (offset * self.nv)
+
+    if self.data_type == 'd':
+      self.data = cast(self.data, POINTER(c_double))
+    elif self.data_type == 'f':
+      self.data = cast(self.data, POINTER(c_float))
+    elif self.data_type == 'l':
+      self.data = cast(self.data, POINTER(c_int64))
+    elif self.data_type == 'i':
+      self.data = cast(self.data, POINTER(c_int32))
+    else: #self.data_type == 'b'
+      self.data = cast(self.data, POINTER(c_int8))
+
+  def __getitem__(self, i):
+    if isinstance(i, basestring):
+      i = self.s.get_mapping(i)
+    return self.data[i] if i >= 0 else 0
+
+  def __setitem__(self, i, k):
+    if isinstance(i, basestring):
+      i = self.s.get_mapping(i)
+    if i >= 0:
+      self.data[i] = k
+      return k
+    else:
+      return 0
+
 
 class StingerAlgState():
-  def __init__(self, alg):
+  def __init__(self, alg, stinger):
     self.alg = alg
+    self.s = stinger
 
   def get_name(self):
     dd = lib['stinger_alg_state_get_name']
@@ -101,6 +155,9 @@ class StingerAlgState():
     dp = lib['stinger_alg_state_get_data_ptr']
     dp.restype = c_void_p
     return c_void_p(dp(self.alg))
+
+  def get_data_array(self, name):
+    return StingerDataArray(self.get_data_ptr(), self.get_data_description(), name, self.s)
 
   def get_data_per_vertex(self):
     return lib['stinger_alg_state_data_per_vertex'](self.alg)
@@ -131,11 +188,11 @@ class StingerMon():
     if isinstance(name_or_int, basestring):
       get_alg = lib['stinger_mon_get_alg_state_by_name']
       get_alg.restype = c_void_p
-      return StingerAlgState(c_void_p(get_alg(self.mon, c_char_p(name_or_int))))
+      return StingerAlgState(c_void_p(get_alg(self.mon, c_char_p(name_or_int))), self.stinger())
     else:
       get_alg = lib['stinger_mon_get_alg_state']
       get_alg.restype = c_void_p
-      return StingerAlgState(c_void_p(get_alg(self.mon, c_int64(name_or_int))))
+      return StingerAlgState(c_void_p(get_alg(self.mon, c_int64(name_or_int))), self.stinger())
 
   def has_alg(self, name):
     return lib['stinger_mon_has_alg'](self.mon, c_char_p(name))

@@ -48,4 +48,9 @@ extern "C" {
   stinger_mon_wait_for_sync(void * self) {
     ((StingerMon *)self)->wait_for_sync();
   }
+
+  int64_t
+  stinger_mon_get_max_nv() {
+    return STINGER_MAX_LVERTICES;
+  }
 }
