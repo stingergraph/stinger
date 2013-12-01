@@ -1,6 +1,10 @@
 from ctypes import *
+import os
 
-libstinger_core = cdll.LoadLibrary('libstinger_core.so')
+if(os.getenv('STINGER_LIB_PATH')):
+  libstinger_core = cdll.LoadLibrary(os.getenv('STINGER_LIB_PATH') + '/libstinger_core.so')
+else:
+  libstinger_core = cdll.LoadLibrary('libstinger_core.so')
 
 class Stinger:
   def __init__(self, s=None, filename=None):
@@ -161,6 +165,8 @@ class Stinger:
   def set_vtype(self, vtx, vtype):
     if isinstance(vtx, basestring):
       vtx = self.get_mapping(vtx)
+    if isinstance(vtype, basestring):
+      vtype = self.create_vtype(vtype)
     return libstinger_core['stinger_vtype_set'](self.s, c_int64(vtx), c_int64(vtype))
 
   def get_vweight(self, vtx):
@@ -210,7 +216,7 @@ class Stinger:
       outlen = (c_int64 * 1)()
       arr_type = c_int64 * deg
 
-      source = (vtx) * deg
+      source = [vtx] * deg
       neighbor = arr_type()
       weight = arr_type()
       timefirst = arr_type()

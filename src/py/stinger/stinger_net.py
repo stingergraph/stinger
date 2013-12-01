@@ -1,7 +1,11 @@
 from ctypes import *
+import os
 from stinger_core import Stinger
 
-libstinger_net = cdll.LoadLibrary('libstinger_net.so')
+if(os.getenv('STINGER_LIB_PATH')):
+  libstinger_net = cdll.LoadLibrary(os.getenv('STINGER_LIB_PATH') + '/libstinger_net.so')
+else:
+  libstinger_net = cdll.LoadLibrary('libstinger_net.so')
 
 class StingerAlgParams(Structure):
   _fields_ = [("name", c_char_p),
@@ -145,7 +149,7 @@ class StingerAlg():
   def begin_post(self):
     libstinger_net['stinger_alg_begin_post'](self.alg)
 
-  def end_port(self):
+  def end_post(self):
     libstinger_net['stinger_alg_end_post'](self.alg)
 
   def stinger(self):
