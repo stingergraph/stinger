@@ -171,3 +171,6 @@ To create a toy R-MAT graph (256K vertices and 2M undirected edges) and run the 
 
     term1:build$ rmat_graph_generator -s 18 -e 8
     term1:build$ insert_remove_benchmark -n 1 -b 100000 g.18.8.bin a.18.8.100000.bin
+    
+    
+[![githalytics.com alpha](https://cruel-carlota.pagodabox.com/a7d82e7aa670122314238336dbbd7c89 "githalytics.com")](http://githalytics.com/robmccoll/stinger)
