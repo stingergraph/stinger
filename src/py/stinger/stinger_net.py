@@ -158,34 +158,38 @@ class StingerAlg():
     register = libstinger_net['stinger_register_alg_impl']
     register.argtypes = [StingerAlgParams]
     register.restype = POINTER(StingerRegisteredAlg)
-    self.alg = register(params)
+    self.alg_ptr = register(params)
+    self.alg = self.alg_ptr[0]
 
   def begin_init(self):
-    libstinger_net['stinger_alg_begin_init'](self.alg)
+    libstinger_net['stinger_alg_begin_init'](self.alg_ptr)
 
   def end_init(self):
-    libstinger_net['stinger_alg_end_init'](self.alg)
+    libstinger_net['stinger_alg_end_init'](self.alg_ptr)
 
   def begin_pre(self):
-    libstinger_net['stinger_alg_begin_pre'](self.alg)
+    libstinger_net['stinger_alg_begin_pre'](self.alg_ptr)
 
   def end_pre(self):
-    libstinger_net['stinger_alg_end_pre'](self.alg)
+    libstinger_net['stinger_alg_end_pre'](self.alg_ptr)
 
   def begin_post(self):
-    libstinger_net['stinger_alg_begin_post'](self.alg)
+    libstinger_net['stinger_alg_begin_post'](self.alg_ptr)
 
   def end_post(self):
-    libstinger_net['stinger_alg_end_post'](self.alg)
+    libstinger_net['stinger_alg_end_post'](self.alg_ptr)
 
   def stinger(self):
     return Stinger(s=self.alg.stinger)
 
 class StingerDataArray():
   def __init__(self, data_ptr, data_desc, field_name, s):
-    data_desc = data_desc.split(" ")
-    data_ptr = data_ptr.value
+    data_desc = data_desc.split()
 
+    if not isinstance(data_ptr, int):
+      data_ptr = data_ptr.value
+
+    print data_desc
     field_index = data_desc[1:].index(field_name)
 
     self.field_name = field_name
