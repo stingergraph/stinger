@@ -9,6 +9,9 @@
 #include "stinger_net/send_rcv.h"
 #include "explore_json.h"
 
+#undef LOG_AT_W
+#include "stinger_core/stinger_error.h"
+
 using namespace gt::stinger;
 
 int
@@ -99,9 +102,12 @@ main(int argc, char *argv[])
   tic(); 
   double timesince = 0;
   while ((linelen = getdelim(&line, &linecap, '\r', stdin)) > 0) {
-    document.ParseInsitu<0>(line);
+    document.Parse<0>(line);
     if(document.IsObject()) {
-      edge_finder.apply(batch, document);
+      if(edge_finder.apply(batch, document, batch.metadata_size())) {
+	LOG_V("Adding metadata...")
+	batch.add_metadata(line);
+      }
     }
     timesince += toc();
     int64_t total_actions = batch.insertions_size() + batch.deletions_size();

@@ -27,7 +27,21 @@ typedef struct {
 
   int64_t weight;
   int64_t time;
+  int64_t result;
+  int64_t meta_index;
 } stinger_edge_update;
+
+typedef struct {
+  int64_t vertex;
+  const char * vertex_str;
+
+  int64_t type;
+  const char * type_str;
+
+  int64_t set_weight;
+  int64_t incr_weight;
+  int64_t meta_index;
+} stinger_vertex_update;
 
 typedef struct {
   int enabled;
@@ -54,6 +68,11 @@ typedef struct {
   stinger_edge_update * insertions;
   int64_t num_deletions;
   stinger_edge_update * deletions;
+  int64_t num_vertex_updates;
+  stinger_vertex_update * vertex_updates;
+  int64_t num_metadata;
+  uint8_t ** metadata;
+  uint64_t * metadata_lengths;
   void * batch_storage;
   batch_type_t batch_type;
 } stinger_registered_alg;

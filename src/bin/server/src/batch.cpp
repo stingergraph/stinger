@@ -18,7 +18,44 @@ using namespace gt::stinger;
 
 template<int64_t type>
 inline void
-handle_names_types_and_vweight(EdgeInsertion & in, stinger_t * S, std::string & src, std::string & dest, int64_t & u, int64_t & v)
+handle_vertex_names_types(VertexUpdate & vup, stinger_t * S)
+{
+  std::string src;
+  int64_t u;
+
+  if(type == STRINGS_ONLY || (type == MIXED && vup.has_vertex_str())) {
+    vertex_string(vup, src);
+    stinger_mapping_create(S, src.c_str(), src.length(), &u);
+    vup.set_vertex(u);
+  } else {
+    u = vup.vertex();
+  }
+
+  if(vup.has_type_str()) {
+    int64_t vtype = 0;
+    if(-1 == stinger_vtype_names_create_type(S, vup.type_str().c_str(), &vtype)) {
+      LOG_E_A("Error creating vertex type %s", vup.type_str().c_str());
+      vtype = 0;
+    }
+    vup.set_type(vtype);
+  }
+
+  if(vup.has_type()) {
+    stinger_vtype_set(S, vup.vertex(), vup.type());
+  }
+
+  if(vup.has_set_weight()) {
+    stinger_vweight_set(S, vup.vertex(), vup.set_weight());
+  }
+
+  if(vup.has_incr_weight()) {
+    stinger_vweight_increment_atomic(S, vup.vertex(), vup.incr_weight());
+  }
+}
+
+template<int64_t type>
+inline void
+handle_edge_names_types(EdgeInsertion & in, stinger_t * S, std::string & src, std::string & dest, int64_t & u, int64_t & v)
 {
   if(type == STRINGS_ONLY) {
     src_string (in, src);
@@ -62,22 +99,6 @@ handle_names_types_and_vweight(EdgeInsertion & in, stinger_t * S, std::string & 
     }
   }
 
-  if(in.has_source_type()) {
-    int64_t vtype = 0;
-    if(-1 != stinger_vtype_names_create_type(S, in.source_type().c_str(), &vtype)) {
-      stinger_vtype_set(S, in.source(), vtype);
-    } else {
-      LOG_E_A("Error creating vertex type %s", in.source_type().c_str());
-    }
-  }
-  if(in.has_destination_type()) {
-    int64_t vtype = 0;
-    if(-1 != stinger_vtype_names_create_type(S, in.destination_type().c_str(), &vtype)) {
-      stinger_vtype_set(S, in.destination(), vtype);
-    } else {
-      LOG_E_A("Error creating vertex type %s", in.destination_type().c_str());
-    }
-  }
   if(in.has_type_str()) {
     int64_t etype = 0;
     if(-1 == stinger_etype_names_create_type(S, in.type_str().c_str(), &etype)) {
@@ -85,12 +106,6 @@ handle_names_types_and_vweight(EdgeInsertion & in, stinger_t * S, std::string & 
       etype = 0;
     }
     in.set_type(etype);
-  }
-  if(in.has_source_weight()) {
-    stinger_vweight_increment_atomic(S, in.source(), in.source_weight());
-  }
-  if(in.has_destination_weight()) {
-    stinger_vweight_increment_atomic(S, in.destination(), in.destination_weight());
   }
 }
 
@@ -126,7 +141,7 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	      EdgeInsertion & in = *batch.mutable_insertions(i);
 	      int64_t u, v;
 	      TS(in);
-	      handle_names_types_and_vweight<NUMBERS_ONLY>(in, S, src, dest, u, v);
+	      handle_edge_names_types<NUMBERS_ONLY>(in, S, src, dest, u, v);
 	      in.set_result(stinger_incr_edge_pair(S, in.type(), in.source(), in.destination(), in.weight(), in.time()));
 	      if(in.result() == -1) {
 		LOG_E_A("Error inserting edge <%ld, %ld>", in.source(), in.destination());
@@ -175,7 +190,7 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	      EdgeInsertion & in = *batch.mutable_insertions(i);
 	      int64_t u, v;
 	      TS(in);
-	      handle_names_types_and_vweight<NUMBERS_ONLY>(in, S, src, dest, u, v);
+	      handle_edge_names_types<NUMBERS_ONLY>(in, S, src, dest, u, v);
 	      in.set_result(stinger_incr_edge_pair(S, in.type(), in.source(), in.destination(), in.weight(), in.time()));
 	      if(in.result() == -1) {
 		LOG_E_A("Error inserting edge <%ld, %ld>", in.source(), in.destination());
@@ -191,6 +206,12 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	      }
 	    }
 	}
+
+	OMP("omp for")
+	  for(size_t d = 0; d < batch.vertex_updates_size(); d++) {
+	    VertexUpdate & vup = *batch.mutable_vertex_updates(d);
+	    handle_vertex_names_types<NUMBERS_ONLY>(vup, S);
+	  }
       } break;
 
       case STRINGS_ONLY:
@@ -200,7 +221,7 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	    int64_t u, v;
 
 	    TS(in);
-	    handle_names_types_and_vweight<STRINGS_ONLY>(in, S, src, dest, u, v);
+	    handle_edge_names_types<STRINGS_ONLY>(in, S, src, dest, u, v);
 
 	    if(u != -1 && v != -1) {
 	      in.set_result(stinger_incr_edge_pair(S, in.type(), u, v, in.weight(), in.time()));
@@ -231,6 +252,12 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	      }
 	    }
 	  }
+
+	OMP("omp for")
+	  for(size_t d = 0; d < batch.vertex_updates_size(); d++) {
+	    VertexUpdate & vup = *batch.mutable_vertex_updates(d);
+	    handle_vertex_names_types<STRINGS_ONLY>(vup, S);
+	  }
 	break;
 
       case MIXED:
@@ -239,7 +266,7 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	    EdgeInsertion & in = *batch.mutable_insertions(i);
 	    int64_t u = -1, v = -1;
 	    TS(in);
-	    handle_names_types_and_vweight<MIXED>(in, S, src, dest, u, v);
+	    handle_edge_names_types<MIXED>(in, S, src, dest, u, v);
 	    if(u != -1 && v != -1) {
 	      in.set_result(stinger_incr_edge_pair(S, in.type(), u, v, in.weight(), in.time()));
 	      if(in.result() == -1) {
@@ -289,6 +316,12 @@ process_batch(stinger_t * S, StingerBatch & batch)
 			del.destination_str().c_str());
 	      }
 	    }
+	  }
+
+	OMP("omp for")
+	  for(size_t d = 0; d < batch.vertex_updates_size(); d++) {
+	    VertexUpdate & vup = *batch.mutable_vertex_updates(d);
+	    handle_vertex_names_types<MIXED>(vup, S);
 	  }
 	break;
 

@@ -56,6 +56,14 @@ dest_string (const T& in, std::string& out)
   std::transform(out.begin(), out.end(), out.begin(), ascii_tolower);
 }
 
+template <class T>
+void
+vertex_string (const T& in, std::string& out)
+{
+  out = in.vertex_str();
+  std::transform(out.begin(), out.end(), out.begin(), ascii_tolower);
+}
+
 #define V_A(X,...) do { fprintf(stdout, "%s %s %d:\n\t" #X "\n", __FILE__, __func__, __LINE__, __VA_ARGS__); fflush (stdout); } while (0)
 #define V(X) V_A(X,NULL)
 

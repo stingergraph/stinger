@@ -293,6 +293,28 @@ stinger_alg_begin_pre(stinger_registered_alg * alg)
 
   alg->deletions = (stinger_edge_update *)xcalloc(alg->num_deletions, sizeof(stinger_edge_update));
 
+  alg->num_vertex_updates  = server_to_alg->batch().vertex_updates_size();
+
+  if(alg->vertex_updates) {
+    free(alg->vertex_updates);
+  }
+
+  alg->vertex_updates = (stinger_vertex_update *)xcalloc(alg->num_vertex_updates, sizeof(stinger_vertex_update));
+
+  alg->num_metadata  = server_to_alg->batch().metadata_size();
+
+  if(alg->metadata) {
+    free(alg->metadata);
+  }
+
+  alg->metadata = (uint8_t **)xcalloc(alg->num_metadata, sizeof(uint8_t *));
+
+  if(alg->metadata_lengths) {
+    free(alg->metadata_lengths);
+  }
+
+  alg->metadata_lengths = (uint64_t *)xcalloc(alg->num_metadata, sizeof(uint64_t));
+
   switch(server_to_alg->batch().type()) {
     case NUMBERS_ONLY: {
       alg->batch_type = BATCH_NUMBERS_ONLY;
@@ -304,6 +326,8 @@ stinger_alg_begin_pre(stinger_registered_alg * alg)
 	  alg->insertions[i].destination  = in.destination();
 	  alg->insertions[i].weight	  = in.weight();
 	  alg->insertions[i].time	  = in.time();
+	  alg->insertions[i].result	  = in.result();
+	  alg->insertions[i].meta_index	  = in.meta_index();
 	}
 
       OMP("omp for")
@@ -312,6 +336,8 @@ stinger_alg_begin_pre(stinger_registered_alg * alg)
 	  alg->deletions[d].type	= del.type();
 	  alg->deletions[d].source	= del.source();
 	  alg->deletions[d].destination	= del.destination();
+	  alg->deletions[d].result	= del.result();
+	  alg->deletions[d].meta_index	= del.meta_index();
 	}
     } break;
 
@@ -325,6 +351,8 @@ stinger_alg_begin_pre(stinger_registered_alg * alg)
 	  alg->insertions[i].destination_str  = in.destination_str().c_str();
 	  alg->insertions[i].weight	      = in.weight();
 	  alg->insertions[i].time	      = in.time();
+	  alg->insertions[i].result	      = in.result();
+	  alg->insertions[i].meta_index	      = in.meta_index();
 	}
 
       OMP("omp for")
@@ -333,6 +361,8 @@ stinger_alg_begin_pre(stinger_registered_alg * alg)
 	  alg->deletions[d].type_str	      = del.type_str().c_str();
 	  alg->deletions[d].source_str	      = del.source_str().c_str();
 	  alg->deletions[d].destination_str   = del.destination_str().c_str();
+	  alg->deletions[d].result	      = del.result();
+	  alg->deletions[d].meta_index	      = del.meta_index();
 	}
     } break;
 
@@ -361,6 +391,8 @@ stinger_alg_begin_pre(stinger_registered_alg * alg)
 
 	  alg->insertions[i].weight	      = in.weight();
 	  alg->insertions[i].time	      = in.time();
+	  alg->insertions[i].result	      = in.result();
+	  alg->insertions[i].meta_index	      = in.meta_index();
 	}
 
       OMP("omp for")
@@ -383,8 +415,38 @@ stinger_alg_begin_pre(stinger_registered_alg * alg)
 	  } else {
 	    alg->deletions[d].destination      = del.destination();
 	  }
+
+	  alg->deletions[d].result	      = del.result();
+	  alg->deletions[d].meta_index	      = del.meta_index();
 	}
     } break;
+  }
+
+  OMP("omp for")
+  for(size_t v = 0; v < server_to_alg->batch().vertex_updates_size(); v++) {
+    const VertexUpdate & up = server_to_alg->batch().vertex_updates(v);
+    if(up.has_type_str()) {
+      alg->vertex_updates[v].type_str		= up.type_str().c_str();
+    } else {
+      alg->vertex_updates[v].type		= up.type();
+    }
+
+    if(up.has_vertex_str()) {
+      alg->vertex_updates[v].vertex_str	        = up.vertex_str().c_str();
+    } else {
+      alg->vertex_updates[v].vertex		= up.vertex();
+    }
+
+    alg->vertex_updates[v].set_weight           = up.set_weight();
+    alg->vertex_updates[v].incr_weight          = up.incr_weight();
+    alg->vertex_updates[v].meta_index	        = up.meta_index();
+  }
+
+  OMP("omp for")
+  for(size_t m = 0; m < server_to_alg->batch().metadata_size(); m++) {
+    const std::string & meta = server_to_alg->batch().metadata(m);
+    alg->metadata[m]         = (uint8_t *)meta.c_str();
+    alg->metadata_lengths[m] = meta.size();
   }
 
   LOG_D_A("Algorithm %s ready for pre", alg->alg_name);
@@ -469,6 +531,7 @@ stinger_alg_begin_post(stinger_registered_alg * alg)
 	  alg->insertions[i].type_str	      = in.type_str().c_str();
 	  alg->insertions[i].source_str	      = in.source_str().c_str();
 	  alg->insertions[i].destination_str  = in.destination_str().c_str();
+	  alg->insertions[i].result	      = in.result();
 	}
 
       OMP("omp for")
@@ -477,24 +540,33 @@ stinger_alg_begin_post(stinger_registered_alg * alg)
 	  alg->deletions[d].type_str	      = del.type_str().c_str();
 	  alg->deletions[d].source_str	      = del.source_str().c_str();
 	  alg->deletions[d].destination_str   = del.destination_str().c_str();
+	  alg->deletions[d].result	      = del.result();
 	}
     } break;
 
     case STRINGS_ONLY: {
       OMP("omp for")
 	for (size_t i = 0; i < server_to_alg->batch().insertions_size(); i++) {
-	  const EdgeInsertion & in	  = server_to_alg->batch().insertions(i);
-	  alg->insertions[i].type	  = in.type();
-	  alg->insertions[i].source	  = in.source();
-	  alg->insertions[i].destination  = in.destination();
+	  const EdgeInsertion & in	      = server_to_alg->batch().insertions(i);
+	  alg->insertions[i].type	      = in.type();
+	  alg->insertions[i].source	      = in.source();
+	  alg->insertions[i].destination      = in.destination();
+	  alg->insertions[i].type_str	      = in.type_str().c_str();
+	  alg->insertions[i].source_str	      = in.source_str().c_str();
+	  alg->insertions[i].destination_str  = in.destination_str().c_str();
+	  alg->insertions[i].result	      = in.result();
 	}
 
       OMP("omp for")
 	for(size_t d = 0; d < server_to_alg->batch().deletions_size(); d++) {
-	  const EdgeDeletion & del	= server_to_alg->batch().deletions(d);
-	  alg->deletions[d].type	= del.type();
-	  alg->deletions[d].source	= del.source();
-	  alg->deletions[d].destination	= del.destination();
+	  const EdgeDeletion & del	      = server_to_alg->batch().deletions(d);
+	  alg->deletions[d].type	      = del.type();
+	  alg->deletions[d].source	      = del.source();
+	  alg->deletions[d].destination	      = del.destination();
+	  alg->deletions[d].type_str	      = del.type_str().c_str();
+	  alg->deletions[d].source_str	      = del.source_str().c_str();
+	  alg->deletions[d].destination_str   = del.destination_str().c_str();
+	  alg->deletions[d].result	      = del.result();
 	}
     } break;
 
@@ -510,6 +582,7 @@ stinger_alg_begin_post(stinger_registered_alg * alg)
 
 	  alg->insertions[i].destination_str	= in.destination_str().c_str();
 	  alg->insertions[i].destination	= in.destination();
+	  alg->insertions[i].result	        = in.result();
 	}
 
       OMP("omp for")
@@ -522,9 +595,30 @@ stinger_alg_begin_post(stinger_registered_alg * alg)
 	  alg->deletions[d].source		= del.source();
 
 	  alg->deletions[d].destination_str	= del.destination_str().c_str();
-	  alg->deletions[d].destination	= del.destination();
+	  alg->deletions[d].destination	        = del.destination();
+	  alg->deletions[d].result	        = del.result();
 	}
     } break;
+  }
+
+  OMP("omp for")
+  for(size_t v = 0; v < server_to_alg->batch().vertex_updates_size(); v++) {
+    const VertexUpdate & up = server_to_alg->batch().vertex_updates(v);
+    if(up.has_type_str()) {
+      alg->vertex_updates[v].type_str		= up.type_str().c_str();
+    } else {
+      alg->vertex_updates[v].type		= up.type();
+    }
+
+    if(up.has_vertex_str()) {
+      alg->vertex_updates[v].vertex_str	        = up.vertex_str().c_str();
+    } else {
+      alg->vertex_updates[v].vertex		= up.vertex();
+    }
+
+    alg->vertex_updates[v].set_weight           = up.set_weight();
+    alg->vertex_updates[v].incr_weight          = up.incr_weight();
+    alg->vertex_updates[v].meta_index	        = up.meta_index();
   }
 
   LOG_D_A("Algorithm %s ready for post", alg->alg_name);

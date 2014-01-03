@@ -11,15 +11,12 @@ message EdgeInsertion {
   optional string type_str = 8 [default = ""];
   optional int64 source = 1 [default = 0];
   optional string source_str = 2 [default = ""];
-  optional string source_type = 10 [default = ""];
-  optional int64 source_weight = 12 [default = 0];
-  optional int64 destination =3 [default = 1];
+  optional int64 destination = 3 [default = 1];
   optional string destination_str = 4 [default = ""];
-  optional string destination_type = 11 [default = ""];
-  optional int64 destination_weight = 13 [default = 0];
   optional int64 weight = 5 [default = 1];
   optional int64 time = 6 [default = 1];
   optional int64 result = 9;
+  optional int64 meta_index = 10;
 }
 
 message EdgeDeletion {
@@ -30,6 +27,17 @@ message EdgeDeletion {
   optional int64 destination =3 [default = 1];
   optional string destination_str = 4 [default = ""];
   optional int64 result = 7;
+  optional int64 meta_index = 8;
+}
+
+message VertexUpdate {
+  optional int64 vertex = 1 [default = 0];
+  optional string vertex_str = 2 [default = ""];
+  optional int64 type = 3 [default = 0];
+  optional string type_str = 4 [default = ""];
+  optional int64 set_weight = 5;
+  optional int64 incr_weight = 6;
+  optional int64 meta_index = 7;
 }
 
 enum BatchType {
@@ -44,6 +52,8 @@ message StingerBatch {
 
   repeated EdgeInsertion insertions = 3;
   repeated EdgeDeletion deletions = 4;
+  repeated VertexUpdate vertex_updates = 8;
+  repeated bytes metadata = 9;
 
   optional bool make_undirected = 5 [default = true];
   optional BatchType type = 6 [default = NUMBERS_ONLY];

@@ -24,10 +24,12 @@ typedef enum {
   VALUE_SOURCE_STR,
   VALUE_SOURCE_TYPE,
   VALUE_SOURCE_WEIGHT,
+  VALUE_SOURCE_WEIGHT_INCR,
   VALUE_DESTINATION,
   VALUE_DESTINATION_STR,
   VALUE_DESTINATION_TYPE,
   VALUE_DESTINATION_WEIGHT,
+  VALUE_DESTINATION_WEIGHT_INCR,
   VALUE_WEIGHT,
   VALUE_TIME
 } value_type_t;
@@ -61,10 +63,12 @@ struct EdgeCollection {
     has_const_source_str = false;
     has_const_source_type = false;
     has_const_source_weight = false;
+    has_const_source_weight_incr = false;
     has_const_destination = false;
     has_const_destination_str = false;
     has_const_destination_type = false;
     has_const_destination_weight = false;
+    has_const_destination_weight_incr = false;
     has_const_weight = false;
     has_const_time = false;
   }
@@ -95,10 +99,12 @@ struct EdgeCollection {
   bool has_const_source_str;
   bool has_const_source_type;
   bool has_const_source_weight;
+  bool has_const_source_weight_incr;
   bool has_const_destination;
   bool has_const_destination_str;
   bool has_const_destination_type;
   bool has_const_destination_weight;
+  bool has_const_destination_weight_incr;
   bool has_const_weight;
   bool has_const_time;
 
@@ -108,17 +114,20 @@ struct EdgeCollection {
   std::vector<std::string> source_str;
   std::vector<std::string> source_type;
   std::vector<int64_t> source_weight;
+  std::vector<int64_t> source_weight_incr;
   std::vector<int64_t> destination;
   std::vector<std::string> destination_str;
   std::vector<std::string> destination_type;
   std::vector<int64_t> destination_weight;
+  std::vector<int64_t> destination_weight_incr;
   std::vector<int64_t> weight;
   std::vector<int64_t> time;
 
   EdgeInsertion *
-  get_insertion(StingerBatch & batch) {
+  get_insertion(StingerBatch & batch, int64_t meta_index) {
     LOG_D("called")
     EdgeInsertion * in = batch.add_insertions();
+    in->set_meta_index(meta_index);
     if(has_const_type) {
       in->set_type(const_type);
     }
@@ -131,23 +140,11 @@ struct EdgeCollection {
     if(has_const_source_str) {
       in->set_source_str(const_source_str);
     }
-    if(has_const_source_type) {
-      in->set_source_type(const_source_type);
-    }
-    if(has_const_source_weight) {
-      in->set_source_weight(const_source_weight);
-    }
     if(has_const_destination) {
       in->set_destination(const_destination);
     }
     if(has_const_destination_str) {
       in->set_destination_str(const_destination_str);
-    }
-    if(has_const_destination_type) {
-      in->set_destination_type(const_destination_type);
-    }
-    if(has_const_destination_weight) {
-      in->set_destination_weight(const_destination_weight);
     }
     if(has_const_weight) {
       in->set_weight(const_weight);
@@ -158,6 +155,47 @@ struct EdgeCollection {
     return in;
   }
 
+  template<bool is_source>
+  VertexUpdate *
+  get_vertex_update(StingerBatch & batch) {
+    LOG_D("called")
+    VertexUpdate * up = batch.add_vertex_updates();
+    if(is_source) {
+      if(has_const_source) {
+	up->set_vertex(const_source);
+      }
+      if(has_const_source_str) {
+	up->set_vertex_str(const_source_str);
+      }
+    if(has_const_source_type) {
+	up->set_type_str(const_source_type);
+    }
+    if(has_const_source_weight) {
+	up->set_set_weight(const_source_weight);
+      }
+      if(has_const_source_weight_incr) {
+	up->set_incr_weight(const_source_weight);
+    }
+    } else {
+    if(has_const_destination) {
+	up->set_vertex(const_destination);
+    }
+    if(has_const_destination_str) {
+	up->set_vertex_str(const_destination_str);
+    }
+    if(has_const_destination_type) {
+	up->set_type_str(const_destination_type);
+    }
+    if(has_const_destination_weight) {
+	up->set_set_weight(const_destination_weight);
+    }
+      if(has_const_destination_weight_incr) {
+	up->set_incr_weight(const_destination_weight);
+    }
+    }
+    return up;
+  }
+
   void print() {
     for(int64_t s = 0; s < start.size(); s++) {
       if(start[s])
@@ -165,47 +203,102 @@ struct EdgeCollection {
     }
   }
 
-  template<bool use_last>
+  template<bool use_last, bool source_is_int, bool dest_is_int>
   inline void
-  handle_vtypes_vweights(EdgeInsertion * in, int64_t & src_type, int64_t & src_weight, int64_t & dest_type, int64_t & dest_weight) {
+  handle_vtypes_vweights(StingerBatch & batch, int64_t meta_index, int64_t source, const std::string & source_str, int64_t dest, const std::string & dest_str, 
+	int64_t & src_type, int64_t & src_weight, int64_t & src_weight_incr, int64_t & dest_type, int64_t & dest_weight, int64_t & dest_weight_incr) {
+
+    bool do_source = has_const_source_type || has_const_source_weight || has_const_source_weight_incr ||
+		     source_type.size() || source_weight.size() || source_weight_incr.size();
+
+    bool do_destination = has_const_destination_type || has_const_destination_weight || has_const_destination_weight_incr ||
+		     destination_type.size() || destination_weight.size() || destination_weight_incr.size();
+
+
+    if(do_source) {
+      VertexUpdate * up = get_vertex_update<true>(batch);
+      up->set_meta_index(meta_index);
+
     if(src_type < source_type.size()) {
-      in->set_source_type(source_type[src_type++]);
+	up->set_type_str(source_type[src_type++]);
     } else if(use_last && source_type.size()) {
-      in->set_source_type(source_type[source_type.size()-1]);
+	up->set_type_str(source_type[source_type.size()-1]);
       src_type++;
     }
+
     if(src_weight < source_weight.size()) {
-      in->set_source_weight(source_weight[src_weight++]);
+	up->set_set_weight(source_weight[src_weight++]);
     } else if(use_last && source_weight.size()) {
-      in->set_source_weight(source_weight[source_weight.size()-1]);
+	up->set_set_weight(source_weight[source_weight.size()-1]);
       src_weight++;
     }
+
+      if(src_weight_incr < source_weight_incr.size()) {
+	up->set_incr_weight(source_weight_incr[src_weight_incr++]);
+      } else if(use_last && source_weight_incr.size()) {
+	up->set_incr_weight(source_weight_incr[source_weight_incr.size()-1]);
+	src_weight_incr++;
+      }
+
+      if(!has_const_source && !has_const_destination_str) {
+	if(source_is_int) {
+	  up->set_vertex(source);
+	} else {
+	  up->set_vertex_str(source_str);
+	}
+      }
+    }
+
+    if(do_destination) {
+      VertexUpdate * up = get_vertex_update<false>(batch);
+      up->set_meta_index(meta_index);
+
     if(dest_type < destination_type.size()) {
-      in->set_destination_type(destination_type[dest_type++]);
+	up->set_type_str(destination_type[dest_type++]);
     } else if(use_last && destination_type.size()) {
-      in->set_destination_type(destination_type[destination_type.size()-1]);
+	up->set_type_str(destination_type[destination_type.size()-1]);
       dest_type++;
     }
+
     if(dest_weight < destination_weight.size()) {
-      in->set_destination_weight(destination_weight[dest_weight++]);
+	up->set_set_weight(destination_weight[dest_weight++]);
     } else if(use_last && destination_weight.size()) {
-      in->set_destination_weight(destination_weight[destination_weight.size()-1]);
+	up->set_set_weight(destination_weight[destination_weight.size()-1]);
       dest_weight++;
     }
+
+      if(dest_weight_incr < destination_weight_incr.size()) {
+	up->set_incr_weight(destination_weight_incr[dest_weight_incr++]);
+      } else if(use_last && destination_weight_incr.size()) {
+	up->set_incr_weight(destination_weight_incr[destination_weight_incr.size()-1]);
+	dest_weight_incr++;
+  }
+
+      if(!has_const_destination && !has_const_destination_str) {
+	if(dest_is_int) {
+	  up->set_vertex(dest);
+	} else {
+	  up->set_vertex_str(dest_str);
+	}
+      }
+    }
+
   }
 
   int64_t
-  apply(StingerBatch & batch, char ** fields, int64_t * lengths, int64_t count, int64_t & timestamp) {
+  apply(StingerBatch & batch, char ** fields, int64_t * lengths, int64_t count, int64_t & timestamp, int64_t meta_index) {
     type.clear();
     type_str.clear();
     source.clear();
     source_str.clear();
     source_type.clear();
     source_weight.clear();
+    source_weight_incr.clear();
     destination.clear();
     destination_str.clear();
     destination_type.clear();
     destination_weight.clear();
+    destination_weight_incr.clear();
     weight.clear();
     time.clear();
 
@@ -219,8 +312,10 @@ struct EdgeCollection {
 
     int64_t src_type = 0;
     int64_t src_weight = 0;
+    int64_t src_weight_incr = 0;
     int64_t dest_type = 0;
     int64_t dest_weight = 0;
+    int64_t dest_weight_incr = 0;
 
     switch(path) {
       default:
@@ -233,31 +328,31 @@ struct EdgeCollection {
 		for(int64_t w = 0; w < weight.size(); w++) {
 		  if(time.size()) {
 		    for(int64_t m = 0; m < time.size(); m++) {
-		      EdgeInsertion * in = get_insertion(batch);
+		      EdgeInsertion * in = get_insertion(batch, meta_index);
 		      in->set_type(type[t]); in->set_source(source[s]); in->set_destination(destination[d]);
 		      in->set_weight(weight[w]); in->set_time(time[m]);
-		      handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		      handle_vtypes_vweights<true, true, true>(batch, meta_index, source[s], NULL, destination[d], NULL, src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		    }
 		  } else {
-		    EdgeInsertion * in = get_insertion(batch);
+		    EdgeInsertion * in = get_insertion(batch, meta_index);
 		    in->set_type(type[t]); in->set_source(source[s]); in->set_destination(destination[d]);
 		    in->set_weight(weight[w]); in->set_time(timestamp++);
-		    handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		    handle_vtypes_vweights<true, true, true>(batch, meta_index, source[s], NULL, destination[d], NULL, src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		  }
 		}
 	      } else {
 		if(time.size()) {
 		  for(int64_t m = 0; m < time.size(); m++) {
-		    EdgeInsertion * in = get_insertion(batch);
+		    EdgeInsertion * in = get_insertion(batch, meta_index);
 		    in->set_type(type[t]); in->set_source(source[s]); in->set_destination(destination[d]);
 		    in->set_weight(1); in->set_time(time[m]);
-		    handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		    handle_vtypes_vweights<true, true, true>(batch, meta_index, source[s], NULL, destination[d], NULL, src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		  }
 		} else {
-		  EdgeInsertion * in = get_insertion(batch);
+		  EdgeInsertion * in = get_insertion(batch, meta_index);
 		  in->set_type(type[t]); in->set_source(source[s]); in->set_destination(destination[d]);
 		  in->set_weight(1); in->set_time(timestamp++);
-		  handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		  handle_vtypes_vweights<true, true, true>(batch, meta_index, source[s], NULL, destination[d], NULL, src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		}
 	      }
 	    }
@@ -266,31 +361,31 @@ struct EdgeCollection {
 		for(int64_t w = 0; w < weight.size(); w++) {
 		  if(time.size()) {
 		    for(int64_t m = 0; m < time.size(); m++) {
-		      EdgeInsertion * in = get_insertion(batch);
+		      EdgeInsertion * in = get_insertion(batch, meta_index);
 		      in->set_type(type[t]); in->set_source(source[s]); in->set_destination_str(destination_str[d]);
 		      in->set_weight(weight[w]); in->set_time(time[m]);
-		      handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		      handle_vtypes_vweights<true, true, false>(batch, meta_index, source[s], NULL, 0, destination_str[d], src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		    }
 		  } else {
-		    EdgeInsertion * in = get_insertion(batch);
+		    EdgeInsertion * in = get_insertion(batch, meta_index);
 		    in->set_type(type[t]); in->set_source(source[s]); in->set_destination_str(destination_str[d]);
 		    in->set_weight(weight[w]); in->set_time(timestamp++);
-		    handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		    handle_vtypes_vweights<true, true, false>(batch, meta_index, source[s], NULL, 0, destination_str[d], src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		  }
 		}
 	      } else {
 		if(time.size()) {
 		  for(int64_t m = 0; m < time.size(); m++) {
-		    EdgeInsertion * in = get_insertion(batch);
+		    EdgeInsertion * in = get_insertion(batch, meta_index);
 		    in->set_type(type[t]); in->set_source(source[s]); in->set_destination_str(destination_str[d]);
 		    in->set_weight(1); in->set_time(time[m]);
-		    handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		    handle_vtypes_vweights<true, true, false>(batch, meta_index, source[s], NULL, 0, destination_str[d], src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		  }
 		} else {
-		  EdgeInsertion * in = get_insertion(batch);
+		  EdgeInsertion * in = get_insertion(batch, meta_index);
 		  in->set_type(type[t]); in->set_source(source[s]); in->set_destination_str(destination_str[d]);
 		  in->set_weight(1); in->set_time(timestamp++);
-		  handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		  handle_vtypes_vweights<true, true, false>(batch, meta_index, source[s], NULL, 0, destination_str[d], src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		}
 	      }
 	    }
@@ -301,31 +396,31 @@ struct EdgeCollection {
 		for(int64_t w = 0; w < weight.size(); w++) {
 		  if(time.size()) {
 		    for(int64_t m = 0; m < time.size(); m++) {
-		      EdgeInsertion * in = get_insertion(batch);
+		      EdgeInsertion * in = get_insertion(batch, meta_index);
 		      in->set_type(type[t]); in->set_source_str(source_str[s]); in->set_destination(destination[d]);
 		      in->set_weight(weight[w]); in->set_time(time[m]);
-		      handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		      handle_vtypes_vweights<true, false, true>(batch, meta_index, 0, source_str[s], destination[d], NULL, src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		    }
 		  } else {
-		    EdgeInsertion * in = get_insertion(batch);
+		    EdgeInsertion * in = get_insertion(batch, meta_index);
 		    in->set_type(type[t]); in->set_source_str(source_str[s]); in->set_destination(destination[d]);
 		    in->set_weight(weight[w]); in->set_time(timestamp++);
-		    handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		    handle_vtypes_vweights<true, false, true>(batch, meta_index, 0, source_str[s], destination[d], NULL, src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		  }
 		}
 	      } else {
 		if(time.size()) {
 		  for(int64_t m = 0; m < time.size(); m++) {
-		    EdgeInsertion * in = get_insertion(batch);
+		    EdgeInsertion * in = get_insertion(batch, meta_index);
 		    in->set_type(type[t]); in->set_source_str(source_str[s]); in->set_destination(destination[d]);
 		    in->set_weight(1); in->set_time(time[m]);
-		    handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		    handle_vtypes_vweights<true, false, true>(batch, meta_index, 0, source_str[s], destination[d], NULL, src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		  }
 		} else {
-		  EdgeInsertion * in = get_insertion(batch);
+		  EdgeInsertion * in = get_insertion(batch, meta_index);
 		  in->set_type(type[t]); in->set_source_str(source_str[s]); in->set_destination(destination[d]);
 		  in->set_weight(1); in->set_time(timestamp++);
-		  handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		  handle_vtypes_vweights<true, false, true>(batch, meta_index, 0, source_str[s], destination[d], NULL, src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		}
 	      }
 	    }
@@ -334,31 +429,31 @@ struct EdgeCollection {
 		for(int64_t w = 0; w < weight.size(); w++) {
 		  if(time.size()) {
 		    for(int64_t m = 0; m < time.size(); m++) {
-		      EdgeInsertion * in = get_insertion(batch);
+		      EdgeInsertion * in = get_insertion(batch, meta_index);
 		      in->set_type(type[t]); in->set_source_str(source_str[s]); in->set_destination_str(destination_str[d]);
 		      in->set_weight(weight[w]); in->set_time(time[m]);
-		      handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		      handle_vtypes_vweights<true, false, false>(batch, meta_index, 0, source_str[s], 0, destination_str[d], src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		    }
 		  } else {
-		    EdgeInsertion * in = get_insertion(batch);
+		    EdgeInsertion * in = get_insertion(batch, meta_index);
 		    in->set_type(type[t]); in->set_source_str(source_str[s]); in->set_destination_str(destination_str[d]);
 		    in->set_weight(weight[w]); in->set_time(timestamp++);
-		    handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		    handle_vtypes_vweights<true, false, false>(batch, meta_index, 0, source_str[s], 0, destination_str[d], src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		  }
 		}
 	      } else {
 		if(time.size()) {
 		  for(int64_t m = 0; m < time.size(); m++) {
-		    EdgeInsertion * in = get_insertion(batch);
+		    EdgeInsertion * in = get_insertion(batch, meta_index);
 		    in->set_type(type[t]); in->set_source_str(source_str[s]); in->set_destination_str(destination_str[d]);
 		    in->set_weight(1); in->set_time(time[m]);
-		    handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		    handle_vtypes_vweights<true, false, false>(batch, meta_index, 0, source_str[s], 0, destination_str[d], src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		  }
 		} else {
-		  EdgeInsertion * in = get_insertion(batch);
+		  EdgeInsertion * in = get_insertion(batch, meta_index);
 		  in->set_type(type[t]); in->set_source_str(source_str[s]); in->set_destination_str(destination_str[d]);
 		  in->set_weight(1); in->set_time(timestamp++);
-		  handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		  handle_vtypes_vweights<true, false, false>(batch, meta_index, 0, source_str[s], 0, destination_str[d], src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		}
 	      }
 	    }
@@ -371,31 +466,31 @@ struct EdgeCollection {
 		for(int64_t w = 0; w < weight.size(); w++) {
 		  if(time.size()) {
 		    for(int64_t m = 0; m < time.size(); m++) {
-		      EdgeInsertion * in = get_insertion(batch);
+		      EdgeInsertion * in = get_insertion(batch, meta_index);
 		      in->set_type(0); in->set_source(source[s]); in->set_destination(destination[d]);
 		      in->set_weight(weight[w]); in->set_time(time[m]);
-		      handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		      handle_vtypes_vweights<true, true, true>(batch, meta_index, source[s], NULL, destination[d], NULL, src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		    }
 		  } else {
-		    EdgeInsertion * in = get_insertion(batch);
+		    EdgeInsertion * in = get_insertion(batch, meta_index);
 		    in->set_type(0); in->set_source(source[s]); in->set_destination(destination[d]);
 		    in->set_weight(weight[w]); in->set_time(timestamp++);
-		    handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		    handle_vtypes_vweights<true, true, true>(batch, meta_index, source[s], NULL, destination[d], NULL, src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		  }
 		}
 	      } else {
 		if(time.size()) {
 		  for(int64_t m = 0; m < time.size(); m++) {
-		    EdgeInsertion * in = get_insertion(batch);
+		    EdgeInsertion * in = get_insertion(batch, meta_index);
 		    in->set_type(0); in->set_source(source[s]); in->set_destination(destination[d]);
 		    in->set_weight(1); in->set_time(time[m]);
-		    handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		    handle_vtypes_vweights<true, true, true>(batch, meta_index, source[s], NULL, destination[d], NULL, src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		  }
 		} else {
-		  EdgeInsertion * in = get_insertion(batch);
+		  EdgeInsertion * in = get_insertion(batch, meta_index);
 		  in->set_type(0); in->set_source(source[s]); in->set_destination(destination[d]);
 		  in->set_weight(1); in->set_time(timestamp++);
-		  handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		  handle_vtypes_vweights<true, true, true>(batch, meta_index, source[s], NULL, destination[d], NULL, src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		}
 	      }
 	    }
@@ -404,31 +499,31 @@ struct EdgeCollection {
 		for(int64_t w = 0; w < weight.size(); w++) {
 		  if(time.size()) {
 		    for(int64_t m = 0; m < time.size(); m++) {
-		      EdgeInsertion * in = get_insertion(batch);
+		      EdgeInsertion * in = get_insertion(batch, meta_index);
 		      in->set_type(0); in->set_source(source[s]); in->set_destination_str(destination_str[d]);
 		      in->set_weight(weight[w]); in->set_time(time[m]);
-		      handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		      handle_vtypes_vweights<true, true, false>(batch, meta_index, source[s], NULL, 0, destination_str[d], src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		    }
 		  } else {
-		    EdgeInsertion * in = get_insertion(batch);
+		    EdgeInsertion * in = get_insertion(batch, meta_index);
 		    in->set_type(0); in->set_source(source[s]); in->set_destination_str(destination_str[d]);
 		    in->set_weight(weight[w]); in->set_time(timestamp++);
-		    handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		    handle_vtypes_vweights<true, true, false>(batch, meta_index, source[s], NULL, 0, destination_str[d], src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		  }
 		}
 	      } else {
 		if(time.size()) {
 		  for(int64_t m = 0; m < time.size(); m++) {
-		    EdgeInsertion * in = get_insertion(batch);
+		    EdgeInsertion * in = get_insertion(batch, meta_index);
 		    in->set_type(0); in->set_source(source[s]); in->set_destination_str(destination_str[d]);
 		    in->set_weight(1); in->set_time(time[m]);
-		    handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		    handle_vtypes_vweights<true, true, false>(batch, meta_index, source[s], NULL, 0, destination_str[d], src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		  }
 		} else {
-		  EdgeInsertion * in = get_insertion(batch);
+		  EdgeInsertion * in = get_insertion(batch, meta_index);
 		  in->set_type(0); in->set_source(source[s]); in->set_destination_str(destination_str[d]);
 		  in->set_weight(1); in->set_time(timestamp++);
-		  handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		  handle_vtypes_vweights<true, true, false>(batch, meta_index, source[s], NULL, 0, destination_str[d], src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		}
 	      }
 	    }
@@ -439,31 +534,31 @@ struct EdgeCollection {
 		for(int64_t w = 0; w < weight.size(); w++) {
 		  if(time.size()) {
 		    for(int64_t m = 0; m < time.size(); m++) {
-		      EdgeInsertion * in = get_insertion(batch);
+		      EdgeInsertion * in = get_insertion(batch, meta_index);
 		      in->set_type(0); in->set_source_str(source_str[s]); in->set_destination(destination[d]);
 		      in->set_weight(weight[w]); in->set_time(time[m]);
-		      handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		      handle_vtypes_vweights<true, false, true>(batch, meta_index, 0, source_str[s], destination[d], NULL, src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		    }
 		  } else {
-		    EdgeInsertion * in = get_insertion(batch);
+		    EdgeInsertion * in = get_insertion(batch, meta_index);
 		    in->set_type(0); in->set_source_str(source_str[s]); in->set_destination(destination[d]);
 		    in->set_weight(weight[w]); in->set_time(timestamp++);
-		    handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		    handle_vtypes_vweights<true, false, true>(batch, meta_index, 0, source_str[s], destination[d], NULL, src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		  }
 		}
 	      } else {
 		if(time.size()) {
 		  for(int64_t m = 0; m < time.size(); m++) {
-		    EdgeInsertion * in = get_insertion(batch);
+		    EdgeInsertion * in = get_insertion(batch, meta_index);
 		    in->set_type(0); in->set_source_str(source_str[s]); in->set_destination(destination[d]);
 		    in->set_weight(1); in->set_time(time[m]);
-		    handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		    handle_vtypes_vweights<true, false, true>(batch, meta_index, 0, source_str[s], destination[d], NULL, src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		  }
 		} else {
-		  EdgeInsertion * in = get_insertion(batch);
+		  EdgeInsertion * in = get_insertion(batch, meta_index);
 		  in->set_type(0); in->set_source_str(source_str[s]); in->set_destination(destination[d]);
 		  in->set_weight(1); in->set_time(timestamp++);
-		  handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		  handle_vtypes_vweights<true, false, true>(batch, meta_index, 0, source_str[s], destination[d], NULL, src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		}
 	      }
 	    }
@@ -472,31 +567,31 @@ struct EdgeCollection {
 		for(int64_t w = 0; w < weight.size(); w++) {
 		  if(time.size()) {
 		    for(int64_t m = 0; m < time.size(); m++) {
-		      EdgeInsertion * in = get_insertion(batch);
+		      EdgeInsertion * in = get_insertion(batch, meta_index);
 		      in->set_type(0); in->set_source_str(source_str[s]); in->set_destination_str(destination_str[d]);
 		      in->set_weight(weight[w]); in->set_time(time[m]);
-		      handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		      handle_vtypes_vweights<true, false, false>(batch, meta_index, 0, source_str[s], 0, destination_str[d], src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		    }
 		  } else {
-		    EdgeInsertion * in = get_insertion(batch);
+		    EdgeInsertion * in = get_insertion(batch, meta_index);
 		    in->set_type(0); in->set_source_str(source_str[s]); in->set_destination_str(destination_str[d]);
 		    in->set_weight(weight[w]); in->set_time(timestamp++);
-		    handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		    handle_vtypes_vweights<true, false, false>(batch, meta_index, 0, source_str[s], 0, destination_str[d], src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		  }
 		}
 	      } else {
 		if(time.size()) {
 		  for(int64_t m = 0; m < time.size(); m++) {
-		    EdgeInsertion * in = get_insertion(batch);
+		    EdgeInsertion * in = get_insertion(batch, meta_index);
 		    in->set_type(0); in->set_source_str(source_str[s]); in->set_destination_str(destination_str[d]);
 		    in->set_weight(1); in->set_time(time[m]);
-		    handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		    handle_vtypes_vweights<true, false, false>(batch, meta_index, 0, source_str[s], 0, destination_str[d], src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		  }
 		} else {
-		  EdgeInsertion * in = get_insertion(batch);
+		  EdgeInsertion * in = get_insertion(batch, meta_index);
 		  in->set_type(0); in->set_source_str(source_str[s]); in->set_destination_str(destination_str[d]);
 		  in->set_weight(1); in->set_time(timestamp++);
-		  handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		  handle_vtypes_vweights<true, false, false>(batch, meta_index, 0, source_str[s], 0, destination_str[d], src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		}
 	      }
 	    }
@@ -509,31 +604,31 @@ struct EdgeCollection {
 		for(int64_t w = 0; w < weight.size(); w++) {
 		  if(time.size()) {
 		    for(int64_t m = 0; m < time.size(); m++) {
-		      EdgeInsertion * in = get_insertion(batch);
+		      EdgeInsertion * in = get_insertion(batch, meta_index);
 		      in->set_type(0); in->set_source(source[s]); in->set_destination(destination[d]);
 		      in->set_weight(weight[w]); in->set_time(time[m]);
-		      handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		      handle_vtypes_vweights<true, true, true>(batch, meta_index, source[s], NULL, destination[d], NULL, src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		    }
 		  } else {
-		    EdgeInsertion * in = get_insertion(batch);
+		    EdgeInsertion * in = get_insertion(batch, meta_index);
 		    in->set_type(0); in->set_source(source[s]); in->set_destination(destination[d]);
 		    in->set_weight(weight[w]); in->set_time(timestamp++);
-		    handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		    handle_vtypes_vweights<true, true, true>(batch, meta_index, source[s], NULL, destination[d], NULL, src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		  }
 		}
 	      } else {
 		if(time.size()) {
 		  for(int64_t m = 0; m < time.size(); m++) {
-		    EdgeInsertion * in = get_insertion(batch);
+		    EdgeInsertion * in = get_insertion(batch, meta_index);
 		    in->set_type(0); in->set_source(source[s]); in->set_destination(destination[d]);
 		    in->set_weight(1); in->set_time(time[m]);
-		    handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		    handle_vtypes_vweights<true, true, true>(batch, meta_index, source[s], NULL, destination[d], NULL, src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		  }
 		} else {
-		  EdgeInsertion * in = get_insertion(batch);
+		  EdgeInsertion * in = get_insertion(batch, meta_index);
 		  in->set_type(0); in->set_source(source[s]); in->set_destination(destination[d]);
 		  in->set_weight(1); in->set_time(timestamp++);
-		  handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		  handle_vtypes_vweights<true, true, true>(batch, meta_index, source[s], NULL, destination[d], NULL, src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		}
 	      }
 	    }
@@ -542,31 +637,31 @@ struct EdgeCollection {
 		for(int64_t w = 0; w < weight.size(); w++) {
 		  if(time.size()) {
 		    for(int64_t m = 0; m < time.size(); m++) {
-		      EdgeInsertion * in = get_insertion(batch);
+		      EdgeInsertion * in = get_insertion(batch, meta_index);
 		      in->set_type(0); in->set_source(source[s]); in->set_destination_str(destination_str[d]);
 		      in->set_weight(weight[w]); in->set_time(time[m]);
-		      handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		      handle_vtypes_vweights<true, true, false>(batch, meta_index, source[s], NULL, 0, destination_str[d], src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		    }
 		  } else {
-		    EdgeInsertion * in = get_insertion(batch);
+		    EdgeInsertion * in = get_insertion(batch, meta_index);
 		    in->set_type(0); in->set_source(source[s]); in->set_destination_str(destination_str[d]);
 		    in->set_weight(weight[w]); in->set_time(timestamp++);
-		    handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		    handle_vtypes_vweights<true, true, false>(batch, meta_index, source[s], NULL, 0, destination_str[d], src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		  }
 		}
 	      } else {
 		if(time.size()) {
 		  for(int64_t m = 0; m < time.size(); m++) {
-		    EdgeInsertion * in = get_insertion(batch);
+		    EdgeInsertion * in = get_insertion(batch, meta_index);
 		    in->set_type(0); in->set_source(source[s]); in->set_destination_str(destination_str[d]);
 		    in->set_weight(1); in->set_time(time[m]);
-		    handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		    handle_vtypes_vweights<true, true, false>(batch, meta_index, source[s], NULL, 0, destination_str[d], src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		  }
 		} else {
-		  EdgeInsertion * in = get_insertion(batch);
+		  EdgeInsertion * in = get_insertion(batch, meta_index);
 		  in->set_type(0); in->set_source(source[s]); in->set_destination_str(destination_str[d]);
 		  in->set_weight(1); in->set_time(timestamp++);
-		  handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		  handle_vtypes_vweights<true, true, false>(batch, meta_index, source[s], NULL, 0, destination_str[d], src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		}
 	      }
 	    }
@@ -577,31 +672,31 @@ struct EdgeCollection {
 		for(int64_t w = 0; w < weight.size(); w++) {
 		  if(time.size()) {
 		    for(int64_t m = 0; m < time.size(); m++) {
-		      EdgeInsertion * in = get_insertion(batch);
+		      EdgeInsertion * in = get_insertion(batch, meta_index);
 		      in->set_type(0); in->set_source_str(source_str[s]); in->set_destination(destination[d]);
 		      in->set_weight(weight[w]); in->set_time(time[m]);
-		      handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		      handle_vtypes_vweights<true, false, true>(batch, meta_index, 0, source_str[s], destination[d], NULL, src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		    }
 		  } else {
-		    EdgeInsertion * in = get_insertion(batch);
+		    EdgeInsertion * in = get_insertion(batch, meta_index);
 		    in->set_type(0); in->set_source_str(source_str[s]); in->set_destination(destination[d]);
 		    in->set_weight(weight[w]); in->set_time(timestamp++);
-		    handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		    handle_vtypes_vweights<true, false, true>(batch, meta_index, 0, source_str[s], destination[d], NULL, src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		  }
 		}
 	      } else {
 		if(time.size()) {
 		  for(int64_t m = 0; m < time.size(); m++) {
-		    EdgeInsertion * in = get_insertion(batch);
+		    EdgeInsertion * in = get_insertion(batch, meta_index);
 		    in->set_type(0); in->set_source_str(source_str[s]); in->set_destination(destination[d]);
 		    in->set_weight(1); in->set_time(time[m]);
-		    handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		    handle_vtypes_vweights<true, false, true>(batch, meta_index, 0, source_str[s], destination[d], NULL, src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		  }
 		} else {
-		  EdgeInsertion * in = get_insertion(batch);
+		  EdgeInsertion * in = get_insertion(batch, meta_index);
 		  in->set_type(0); in->set_source_str(source_str[s]); in->set_destination(destination[d]);
 		  in->set_weight(1); in->set_time(timestamp++);
-		  handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		  handle_vtypes_vweights<true, false, true>(batch, meta_index, 0, source_str[s], destination[d], NULL, src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		}
 	      }
 	    }
@@ -610,31 +705,31 @@ struct EdgeCollection {
 		for(int64_t w = 0; w < weight.size(); w++) {
 		  if(time.size()) {
 		    for(int64_t m = 0; m < time.size(); m++) {
-		      EdgeInsertion * in = get_insertion(batch);
+		      EdgeInsertion * in = get_insertion(batch, meta_index);
 		      in->set_type(0); in->set_source_str(source_str[s]); in->set_destination_str(destination_str[d]);
 		      in->set_weight(weight[w]); in->set_time(time[m]);
-		      handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		      handle_vtypes_vweights<true, false, false>(batch, meta_index, 0, source_str[s], 0, destination_str[d], src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		    }
 		  } else {
-		    EdgeInsertion * in = get_insertion(batch);
+		    EdgeInsertion * in = get_insertion(batch, meta_index);
 		    in->set_type(0); in->set_source_str(source_str[s]); in->set_destination_str(destination_str[d]);
 		    in->set_weight(weight[w]); in->set_time(timestamp++);
-		    handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		    handle_vtypes_vweights<true, false, false>(batch, meta_index, 0, source_str[s], 0, destination_str[d], src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		  }
 		}
 	      } else {
 		if(time.size()) {
 		  for(int64_t m = 0; m < time.size(); m++) {
-		    EdgeInsertion * in = get_insertion(batch);
+		    EdgeInsertion * in = get_insertion(batch, meta_index);
 		    in->set_type(0); in->set_source_str(source_str[s]); in->set_destination_str(destination_str[d]);
 		    in->set_weight(1); in->set_time(time[m]);
-		    handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		    handle_vtypes_vweights<true, false, false>(batch, meta_index, 0, source_str[s], 0, destination_str[d], src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		  }
 		} else {
-		  EdgeInsertion * in = get_insertion(batch);
+		  EdgeInsertion * in = get_insertion(batch, meta_index);
 		  in->set_type(0); in->set_source_str(source_str[s]); in->set_destination_str(destination_str[d]);
 		  in->set_weight(1); in->set_time(timestamp++);
-		  handle_vtypes_vweights<true>(in, src_type, src_weight, dest_type, dest_weight);
+		  handle_vtypes_vweights<true, false, false>(batch, meta_index, 0, source_str[s], 0, destination_str[d], src_type, src_weight, src_weight_incr, dest_type, dest_weight, dest_weight_incr);
 		}
 	      }
 	    }
@@ -648,7 +743,13 @@ struct EdgeCollection {
 	stop = stop < destination.size() ? stop : destination.size();
 
 	for(int64_t e = 0; e < stop; e++) {
-	  EdgeInsertion * in = get_insertion(batch);
+	  EdgeInsertion * in = get_insertion(batch, meta_index);
+
+	  bool src_str = false;
+	  bool dest_str = false;
+	  bool src_int = false;
+	  bool dest_int = false;
+
 	  if(e < type.size()) {
 	    in->set_type(type[e]);
 	  } else if(e + type.size() < type_str.size()) {
@@ -659,14 +760,22 @@ struct EdgeCollection {
 
 	  if(e < source.size()) {
 	    in->set_source(source[e]);
+	    src_int = true;
 	  } else if(e + source.size() < source_str.size()) {
 	    in->set_source_str(source_str[e-source.size()]);
+	    src_str = true;
+	  } else {
+	    in->set_source_str("CSV_PARSE_ERR_NO_SRC");
 	  }
 
 	  if(e < destination.size()) {
 	    in->set_destination(destination[e]);
+	    dest_int = true;
 	  } else if(e + destination.size() < destination_str.size()) {
 	    in->set_destination_str(destination_str[e-destination.size()]);
+	    dest_str = true;
+	  } else {
+	    in->set_destination_str("CSV_PARSE_ERR_NO_DEST");
 	  }
 
 	  if(e < weight.size()) {
@@ -684,10 +793,19 @@ struct EdgeCollection {
 	  } else {
 	    in->set_time(timestamp++);
 	  }
-	  handle_vtypes_vweights<false>(in, src_type, src_weight, dest_type, dest_weight);
+
+	  if(src_int && dest_int)
+	    handle_vtypes_vweights<true, true, true>(batch, meta_index, source[e], NULL, destination[e], NULL, e, e, e, e, e, e);
+	  if(src_int && dest_str)
+	    handle_vtypes_vweights<true, true, false>(batch, meta_index, source[e], NULL, 0, destination_str[e], e, e, e, e, e, e);
+	  if(src_str && dest_int)
+	    handle_vtypes_vweights<true, false, true>(batch, meta_index, 0, source_str[e], destination[e], NULL, e, e, e, e, e, e);
+	  if(src_str && dest_str)
+	    handle_vtypes_vweights<true, false, false>(batch, meta_index, 0, source_str[e], 0, destination_str[e], e, e, e, e, e, e);
 	}
       } break;
     }
+    return 1;
   }
 };
 
@@ -723,6 +841,10 @@ struct ExploreCSVValue : public ExploreCSVGeneric {
 	edges.source_weight.push_back(atol(field));
 	break;
 
+      case VALUE_SOURCE_WEIGHT_INCR:
+	edges.source_weight_incr.push_back(atol(field));
+	break;
+
       case VALUE_DESTINATION:
 	edges.destination.push_back(atol(field));
 	break;
@@ -737,6 +859,10 @@ struct ExploreCSVValue : public ExploreCSVGeneric {
 
       case VALUE_DESTINATION_WEIGHT:
 	edges.destination_weight.push_back(atol(field));
+	break;
+
+      case VALUE_DESTINATION_WEIGHT_INCR:
+	edges.destination_weight_incr.push_back(atol(field));
 	break;
 
       case VALUE_WEIGHT:
@@ -848,14 +974,14 @@ struct EdgeCollectionSet {
     return set[index] = val;
   }
 
-  int64_t apply(StingerBatch & batch, char ** fields, int64_t * lengths, int64_t count) {
+  int64_t apply(StingerBatch & batch, char ** fields, int64_t * lengths, int64_t count, int64_t meta_index) {
     int64_t rtn = 0;
 
     LOG_D_A("about to apply %ld\n", set.size());
     for(int64_t index = 0; index < set.size(); index++) {
       if(set[index]) {
 	LOG_D_A("applying %ld", index);
-	rtn += set[index]->apply(batch, fields, lengths, count, time);
+	rtn += set[index]->apply(batch, fields, lengths, count, time, meta_index);
       }
     }
 
@@ -905,6 +1031,9 @@ struct EdgeCollectionSet {
 	} else if(0 == strncmp(string, "_type", 5)) {
 	  type = VALUE_SOURCE_TYPE;
 	  string += 5;
+	} else if(0 == strncmp(string, "_weight_incr", 12)) {
+	  type = VALUE_SOURCE_WEIGHT_INCR;
+	  string += 12;
 	} else if(0 == strncmp(string, "_weight", 7)) {
 	  type = VALUE_SOURCE_WEIGHT;
 	  string += 7;
@@ -919,6 +1048,9 @@ struct EdgeCollectionSet {
 	} else if(0 == strncmp(string, "_type", 5)) {
 	  type = VALUE_DESTINATION_TYPE;
 	  string += 5;
+	} else if(0 == strncmp(string, "_weight_incr", 12)) {
+	  type = VALUE_DESTINATION_WEIGHT_INCR;
+	  string += 12;
 	} else if(0 == strncmp(string, "_weight", 7)) {
 	  type = VALUE_DESTINATION_WEIGHT;
 	  string += 7;

@@ -7,7 +7,7 @@
 #include "stinger.h"
 #include "csv.h"
 
-void
+int64_t
 readCSVLineDynamic(char delim, FILE * file, char ** buf, uint64_t * bufSize, char *** fields, uint64_t ** lengths, uint64_t * fieldsSize, uint64_t * count) 
 {
   char	   * locBuf         = *buf;
@@ -72,6 +72,8 @@ readCSVLineDynamic(char delim, FILE * file, char ** buf, uint64_t * bufSize, cha
   *fieldsSize = locFieldsSize;
   *count      = locCount;
   *lengths    = locLengths;
+
+  return length;
 }
 
 void

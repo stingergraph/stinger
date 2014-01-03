@@ -31,7 +31,18 @@ class StingerEdgeUpdate(Structure):
 	      ("destination", c_int64),
 	      ("destination_str", c_char_p),
 	      ("weight", c_int64),
-	      ("time", c_int64)]
+	      ("time", c_int64),
+	      ("result", c_int64),
+	      ("meta_index", c_int64)]
+
+class StingerVertexUpdate(Structure):
+  _fields_ = [("vertex", c_int64),
+	      ("vertex_str", c_char_p),
+	      ("type", c_int64),
+	      ("type_str", c_char_p),
+	      ("set_weight", c_int64),
+	      ("incr_weight", c_int64),
+	      ("meta_index", c_int64)]
 
 class StingerRegisteredAlg(Structure):
   _fields_ = [("enabled", c_int),
@@ -55,6 +66,11 @@ class StingerRegisteredAlg(Structure):
 	      ("insertions", POINTER(StingerEdgeUpdate)),
 	      ("num_deletions", c_int64),
 	      ("deletions", POINTER(StingerEdgeUpdate)),
+	      ("num_vertex_updates", c_int64),
+	      ("vertex_updates", POINTER(StingerVertexUpdate)),
+	      ("num_metadata", c_int64),
+	      ("metadata", POINTER(c_char_p)),
+	      ("metadata_lengths", POINTER(c_int64)),
 	      ("batch_storage", c_void_p),
 	      ("batch_type", c_int)]
 
