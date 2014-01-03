@@ -604,17 +604,11 @@ stinger_alg_begin_post(stinger_registered_alg * alg)
   OMP("omp for")
   for(size_t v = 0; v < server_to_alg->batch().vertex_updates_size(); v++) {
     const VertexUpdate & up = server_to_alg->batch().vertex_updates(v);
-    if(up.has_type_str()) {
-      alg->vertex_updates[v].type_str		= up.type_str().c_str();
-    } else {
-      alg->vertex_updates[v].type		= up.type();
-    }
+    alg->vertex_updates[v].type_str		= up.type_str().c_str();
+    alg->vertex_updates[v].type		= up.type();
 
-    if(up.has_vertex_str()) {
-      alg->vertex_updates[v].vertex_str	        = up.vertex_str().c_str();
-    } else {
-      alg->vertex_updates[v].vertex		= up.vertex();
-    }
+    alg->vertex_updates[v].vertex_str	        = up.vertex_str().c_str();
+    alg->vertex_updates[v].vertex		= up.vertex();
 
     alg->vertex_updates[v].set_weight           = up.set_weight();
     alg->vertex_updates[v].incr_weight          = up.incr_weight();
