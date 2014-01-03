@@ -83,18 +83,23 @@ class StingerRegisteredAlg(Structure):
 class StingerStream():
   def __init__(self, host, port, strings=True):
     self.sock_handle = libstinger_net['stream_connect'](c_char_p(host), c_int(port))
-    self.insertions = (StingerEdgeUpdate * 100)()
-    self.insertions_size = 100
+    self.insertions_size = 5000
+    self.insertions = (StingerEdgeUpdate * self.insertions_size)()
+    self.insertions_refs = []
     self.insertions_count = 0
-    self.deletions = (StingerEdgeUpdate * 100)()
-    self.deletions_size = 100
+    self.deletions_size = 5000
+    self.deletions = (StingerEdgeUpdate * self.deletions_size)()
+    self.deletions_refs = []
     self.deletions_count = 0
     self.only_strings = strings
 
   def add_insert(self, vfrom, vto, etype=0, weight=0, ts=0):
     if(self.insertions_count >= self.insertions_size):
       self.insertions_size *= 2
-      resize(self.insertions, sizeof(self.insertions._type_) * self.insertions_size)
+      insertions_tmp = (StingerEdgeUpdate * self.insertions_size)()
+      self.insertions_refs.append(self.insertions)
+      memmove(addressof(insertions_tmp), addressof(self.insertions), sizeof(StingerEdgeUpdate * (self.insertions_size/2)))
+      self.insertions = insertions_tmp
 
     if(self.only_strings):
       self.insertions[self.insertions_count].source_str = c_char_p(vfrom)
@@ -118,7 +123,10 @@ class StingerStream():
   def add_delete(self, vfrom, vto, etype=0):
     if(self.deletions_count >= self.deletions_size):
       self.deletions_size *= 2
-      resize(self.deletions, sizeof(self.deletions._type_) * self.deletions_size)
+      deletions_tmp = (StingerEdgeUpdate * self.deletions_size)()
+      self.deletions_refs.append(self.deletions)
+      memmove(addressof(deletions_tmp), addressof(self.deletions), sizeof(StingerEdgeUpdate * (self.deletions_size/2)))
+      self.deletions = deletions_tmp
 
     if(self.only_strings):
       self.deletions[self.deletions_count].source_str = c_char_p(vfrom)
@@ -141,6 +149,8 @@ class StingerStream():
 	self.insertions, self.insertions_count, self.deletions, self.deletions_count)
     self.insertions_count = 0
     self.deletions_count = 0
+    self.insertions_refs = []
+    self.deletions_refs = []
 
 
 class StingerAlg():
