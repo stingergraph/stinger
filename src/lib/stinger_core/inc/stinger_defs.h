@@ -21,7 +21,7 @@ extern "C" {
 #define STINGER_MAX_LVERTICES (1L<<27)
 #else
 /* much smaller for quick testing */
-#define STINGER_MAX_LVERTICES (1L<<22)
+#define STINGER_MAX_LVERTICES (1L<<20)
 #endif
 #endif
 /** Edges per edge block */
