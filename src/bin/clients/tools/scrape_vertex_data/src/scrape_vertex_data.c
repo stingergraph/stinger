@@ -47,7 +47,7 @@ main(int argc, char *argv[])
 	fread(name, sizeof(char), len, fp);
       }
       if(i != stop) {
-	printf("%.*s", len, name);
+	printf("%.*s", (int) len, name);
       } else {
 	fprintf(stderr, "Number out of range\n");
       }

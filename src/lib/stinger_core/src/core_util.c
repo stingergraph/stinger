@@ -1,5 +1,9 @@
 #include <alloca.h>
 
+#if defined(_OPENMP)
+#include <omp.h>
+#endif
+
 #include "core_util.h"
 #include "stinger_defs.h"
 

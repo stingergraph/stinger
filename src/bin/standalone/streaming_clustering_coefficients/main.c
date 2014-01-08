@@ -55,7 +55,7 @@ main (const int argc, char *argv[])
   OMP("omp parallel")
   {
   OMP("omp master")
-  PRINT_STAT_INT64 ("num_threads", omp_get_num_threads());
+  PRINT_STAT_INT64 ("num_threads", (long int) omp_get_num_threads());
   }
 #endif
 

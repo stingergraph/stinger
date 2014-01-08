@@ -81,7 +81,7 @@ int main (int argc, char *argv[])
 
   /* Connect to STINGER as a monitor */
   if (-1 == mon_connect(10103, "localhost", "alg_to_mongo")) {
-    LOG_E_A ("Connect to STINGER on %s:%ld failed", "localhost", 10103);
+    LOG_E_A ("Connect to STINGER on %s:%d failed", "localhost", 10103);
     return -1;
   }
 
@@ -136,7 +136,7 @@ int main (int argc, char *argv[])
       /* Mongo send batch */
       if (MONGO_ERROR == mongo_insert_batch (&conn, collection_name, (const bson **)ps, count, 0, 0)) {
 	LOG_E ("MongoDB insert failed");
-	LOG_E_A ("conn->err: %ld", conn.err);
+	LOG_E_A ("conn->err: %d", conn.err);
       }
     }
 

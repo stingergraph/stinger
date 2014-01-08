@@ -188,7 +188,7 @@ parse_query (char * input, query_plan_t * query)
 		      int64_t limit_number;
 		      //printf(":: LIMIT\n");
 		      query->activate_limit = 1;
-		      sscanf(token, "%lld", &limit_number);
+		      sscanf(token, "%ld", &limit_number);
 		      query->limit = limit_number;
 		      //printf("%ld\n", (long) limit_number);
 
@@ -209,7 +209,7 @@ parse_query (char * input, query_plan_t * query)
 		      int64_t offset_number;
 		      //printf(":: OFFSET\n");
 		      if (token) {
-			sscanf(token, "%lld", &offset_number);
+			sscanf(token, "%ld", &offset_number);
 			query->offset = offset_number;
 			//printf("%ld\n", (long) offset_number);
 			next_state = DONE;

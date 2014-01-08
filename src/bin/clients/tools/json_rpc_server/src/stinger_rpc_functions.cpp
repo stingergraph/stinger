@@ -1160,7 +1160,7 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
 		char * physID;
 		uint64_t len;
 		if(-1 == stinger_mapping_physid_direct(S, vtx, &physID, &len)) {
-		  physID = "";
+		  physID = (char *) "";
 		  len = 0;
 		}
 		vtx_phys.SetString(physID, len, allocator);
@@ -1227,7 +1227,7 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
 		char * physID;
 		uint64_t len;
 		if(-1 == stinger_mapping_physid_direct(S, vtx, &physID, &len)) {
-		  physID = "";
+		  physID = (char *) "";
 		  len = 0;
 		}
 		vtx_phys.SetString(physID, len, allocator);
@@ -1294,7 +1294,7 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
 		char * physID;
 		uint64_t len;
 		if(-1 == stinger_mapping_physid_direct(S, vtx, &physID, &len)) {
-		  physID = "";
+		  physID = (char *) "";
 		  len = 0;
 		}
 		vtx_phys.SetString(physID, len, allocator);
@@ -1361,7 +1361,7 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
 		char * physID;
 		uint64_t len;
 		if(-1 == stinger_mapping_physid_direct(S, vtx, &physID, &len)) {
-		  physID = "";
+		  physID = (char *) "";
 		  len = 0;
 		}
 		vtx_phys.SetString(physID, len, allocator);
@@ -1428,7 +1428,7 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
 		char * physID;
 		uint64_t len;
 		if(-1 == stinger_mapping_physid_direct(S, vtx, &physID, &len)) {
-		  physID = "";
+		  physID = (char *) "";
 		  len = 0;
 		}
 		vtx_phys.SetString(physID, len, allocator);
@@ -1647,7 +1647,7 @@ array_to_json_monolithic_stinger   (json_rpc_array_meth_t method, stinger_t * S,
 	  char * physID;
 	  uint64_t len;
 	  if(-1 == stinger_mapping_physid_direct(S, vtx, &physID, &len)) {
-	    physID = "";
+	    physID = (char *) "";
 	    len = 0;
 	  }
 	  vtx_phys.SetString(physID, len, allocator);
@@ -1709,7 +1709,7 @@ array_to_json_monolithic_stinger   (json_rpc_array_meth_t method, stinger_t * S,
 	  char * physID;
 	  uint64_t len;
 	  if(-1 == stinger_mapping_physid_direct(S, vtx, &physID, &len)) {
-	    physID = "";
+	    physID = (char *) "";
 	    len = 0;
 	  }
 	  vtx_phys.SetString(physID, len, allocator);
@@ -1771,7 +1771,7 @@ array_to_json_monolithic_stinger   (json_rpc_array_meth_t method, stinger_t * S,
 	  char * physID;
 	  uint64_t len;
 	  if(-1 == stinger_mapping_physid_direct(S, vtx, &physID, &len)) {
-	    physID = "";
+	    physID = (char *) "";
 	    len = 0;
 	  }
 	  vtx_phys.SetString(physID, len, allocator);
@@ -1833,7 +1833,7 @@ array_to_json_monolithic_stinger   (json_rpc_array_meth_t method, stinger_t * S,
 	  char * physID;
 	  uint64_t len;
 	  if(-1 == stinger_mapping_physid_direct(S, vtx, &physID, &len)) {
-	    physID = "";
+	    physID = (char *) "";
 	    len = 0;
 	  }
 	  vtx_phys.SetString(physID, len, allocator);
@@ -1895,7 +1895,7 @@ array_to_json_monolithic_stinger   (json_rpc_array_meth_t method, stinger_t * S,
 	  char * physID;
 	  uint64_t len;
 	  if(-1 == stinger_mapping_physid_direct(S, vtx, &physID, &len)) {
-	    physID = "";
+	    physID = (char *) "";
 	    len = 0;
 	  }
 	  vtx_phys.SetString(physID, len, allocator);

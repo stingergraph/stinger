@@ -100,18 +100,18 @@ egonet_to_json(stinger_t * S, int64_t vtx) {
       edge_added = 1;
       if(etype) {
 	sprintf(edge_str, "{ \"type\" : \"%s\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
-	    etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, 0, source);
+	    etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, (long int) 0, source);
       } else {
 	sprintf(edge_str, "{ \"type\" : \"%ld\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
-	    STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, 0, source);
+	    STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, (long int) 0, source);
       }
     } else {
       if(etype) {
 	sprintf(edge_str, ",\n{ \"type\" : \"%s\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
-	    etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, 0, source);
+	    etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, (long int) 0, source);
       } else {
 	sprintf(edge_str, ",\n{ \"type\" : \"%ld\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
-	    STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, 0, source);
+	    STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, (long int) 0, source);
       }
     }
 

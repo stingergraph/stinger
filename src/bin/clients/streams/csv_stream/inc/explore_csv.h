@@ -874,7 +874,7 @@ struct ExploreCSVValue : public ExploreCSVGeneric {
 	break;
 
       default:
-	LOG_E_A("Unknown type %ld", value_type);
+	LOG_E_A("Unknown type %d", value_type);
 	return false;
     }
     return true;

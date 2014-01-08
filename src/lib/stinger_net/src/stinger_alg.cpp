@@ -79,7 +79,7 @@ stinger_register_alg_impl(stinger_register_alg_params params)
   }
 
   LOG_D("About to set dependencies");
-  LOG_D_A("Count is [%d]", params.num_dependencies);
+  LOG_D_A("Count is [%ld]", params.num_dependencies);
   for(int64_t i = 0; i < params.num_dependencies; i++) {
     alg_to_server.add_req_dep_name(params.dependencies[i]);
   }

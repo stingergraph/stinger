@@ -140,12 +140,12 @@ JSON_RPC_community_subgraph::onRequest(
       char * physID;
       uint64_t len;
       if(-1 == stinger_mapping_physid_direct(S, (*it).first, &physID, &len)) {
-        physID = "";
+        physID = (char *) "";
         len = 0;
       }
       src_str.SetString(physID, len, allocator);
       if(-1 == stinger_mapping_physid_direct(S, (*it).second, &physID, &len)) {
-        physID = "";
+        physID = (char *) "";
         len = 0;
       }
       dst_str.SetString(physID, len, allocator);
@@ -178,12 +178,12 @@ JSON_RPC_community_subgraph::onRequest(
       char * physID;
       uint64_t len;
       if(-1 == stinger_mapping_physid_direct(S, (*it).first, &physID, &len)) {
-        physID = "";
+        physID = (char *) "";
         len = 0;
       }
       src_str.SetString(physID, len, allocator);
       if(-1 == stinger_mapping_physid_direct(S, (*it).second, &physID, &len)) {
-        physID = "";
+        physID = (char *) "";
         len = 0;
       }
       dst_str.SetString(physID, len, allocator);
@@ -266,12 +266,12 @@ JSON_RPC_community_subgraph::onRegister(
 	  char * physID;
 	  uint64_t len;
 	  if(-1 == stinger_mapping_physid_direct(S, (*it), &physID, &len)) {
-	    physID = "";
+	    physID = (char *) "";
 	    len = 0;
 	  }
 	  src_str.SetString(physID, len, allocator);
 	  if(-1 == stinger_mapping_physid_direct(S, STINGER_EDGE_DEST, &physID, &len)) {
-	    physID = "";
+	    physID = (char *) "";
 	    len = 0;
 	  }
 	  dst_str.SetString(physID, len, allocator);
@@ -450,12 +450,12 @@ JSON_RPC_vertex_event_notifier::onRegister(
 	char * physID;
 	uint64_t len;
 	if(-1 == stinger_mapping_physid_direct(S, (*it), &physID, &len)) {
-	  physID = "";
+	  physID = (char *) "";
 	  len = 0;
 	}
 	src_str.SetString(physID, len, allocator);
 	if(-1 == stinger_mapping_physid_direct(S, STINGER_EDGE_DEST, &physID, &len)) {
-	  physID = "";
+	  physID = (char *) "";
 	  len = 0;
 	}
 	dst_str.SetString(physID, len, allocator);
@@ -502,12 +502,12 @@ JSON_RPC_vertex_event_notifier::onRequest(
       char * physID;
       uint64_t len;
       if(-1 == stinger_mapping_physid_direct(S, (*it).first, &physID, &len)) {
-        physID = "";
+        physID = (char *) "";
         len = 0;
       }
       src_str.SetString(physID, len, allocator);
       if(-1 == stinger_mapping_physid_direct(S, (*it).second, &physID, &len)) {
-        physID = "";
+        physID = (char *) "";
         len = 0;
       }
       dst_str.SetString(physID, len, allocator);
@@ -539,12 +539,12 @@ JSON_RPC_vertex_event_notifier::onRequest(
       char * physID;
       uint64_t len;
       if(-1 == stinger_mapping_physid_direct(S, (*it).first, &physID, &len)) {
-        physID = "";
+        physID = (char *) "";
         len = 0;
       }
       src_str.SetString(physID, len, allocator);
       if(-1 == stinger_mapping_physid_direct(S, (*it).second, &physID, &len)) {
-        physID = "";
+        physID = (char *) "";
         len = 0;
       }
       dst_str.SetString(physID, len, allocator);
