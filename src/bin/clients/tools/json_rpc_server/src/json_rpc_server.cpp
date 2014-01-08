@@ -46,6 +46,7 @@ begin_request_handler(struct mg_connection *conn)
     int64_t read = mg_read(conn, storage, MAX_REQUEST_SIZE);
     if (read > MAX_REQUEST_SIZE-2) {
       LOG_E_A("Request was too large: %ld", read);
+      return -1;
     }
     storage[read] = '\0';
 
@@ -68,6 +69,7 @@ begin_request_handler(struct mg_connection *conn)
 	      "HTTP/1.1 200 OK\r\n"
 	      "Content-Type: text/plain\r\n"
 	      "Content-Length: %d\r\n"        // Always set Content-Length
+	      "Access-Control-Allow-Origin: *\r\n"
 	      "\r\n"
 	      "%s",
 	      out_len, out_ch);
