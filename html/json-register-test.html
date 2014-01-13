@@ -28,8 +28,19 @@ dataType: "json",
 success: function(data) {whatever = data; $(".register").append("<p>" + JSON.stringify(data) + "</p>");}
 });
 
+
+data = {"jsonrpc": "2.0", "method": "register", "params": {"type": "get_latlon", "count": 100}, "id": 5};
+jQuery.ajax({
+url: "http://localhost:8088/jsonrpc",
+type: "POST",
+data: JSON.stringify(data),
+dataType: "json",
+success: function(data) {whatever = data; $(".latlon").append("<p>" + JSON.stringify(data) + "</p>");}
+});
+
 </script>
 <div class="subgraph">subgraph:&nbsp;</div>
 <div class="register">register:&nbsp;</div>
+<div class="latlon">latlon:&nbsp;</div>
 </body>
 </html>

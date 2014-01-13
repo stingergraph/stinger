@@ -76,6 +76,32 @@ namespace gt {
 	}
     };
 
+    class JSON_RPC_get_latlon : public JSON_RPCSession {
+      private:
+	rpc_params_t p[2];
+	int64_t _count;
+	bool _strings;
+
+	std::set<std::pair<double, double> > _coordinates;
+
+      public:
+	JSON_RPC_get_latlon(int64_t sess_id, JSON_RPCServerState * session) : JSON_RPCSession(sess_id, session) {
+	  p[0] = ((rpc_params_t) {"count", TYPE_INT64, &_count, false, 0});
+	  p[1] = ((rpc_params_t) {NULL, TYPE_NONE, NULL, false, 0});
+	}
+	virtual rpc_params_t * get_params();
+	virtual int64_t update(const StingerBatch & batch);
+	virtual int64_t onRegister(
+		      rapidjson::Value & result,
+		      rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
+	virtual int64_t onRequest(
+		      rapidjson::Value & result,
+		      rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
+	virtual JSON_RPCSession * gimme(int64_t sess_id, JSON_RPCServerState * session) {
+	  return new JSON_RPC_get_latlon(sess_id, session);
+	}
+    };
+
   }
 }
 

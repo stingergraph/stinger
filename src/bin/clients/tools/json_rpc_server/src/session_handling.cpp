@@ -566,3 +566,111 @@ JSON_RPC_vertex_event_notifier::onRequest(
 
   return 0;
 }
+
+/* latlon */
+rpc_params_t *
+JSON_RPC_get_latlon::get_params()
+{
+  return p;
+}
+
+int64_t
+JSON_RPC_get_latlon::update(const StingerBatch & batch)
+{
+  if (0 == batch.insertions_size () && 0 == batch.deletions_size ()) { 
+    return 0;
+  }
+
+  stinger_t * S = server_state->get_stinger();
+  if (!S) {
+    LOG_E ("STINGER pointer is invalid");
+    return -1;
+  }
+
+  int sz = batch.metadata_size();
+
+  for (int i = 0; i < sz; i++) {
+    rapidjson::Document document;
+    std::string metadata = batch.metadata(i);
+    document.Parse<0>(metadata.c_str());
+
+    if (!document.IsObject()) {
+      continue;
+    }
+    
+    if (!document.HasMember("geo")) {
+      continue;
+    }
+  
+    const rapidjson::Value& geo = document["geo"];
+
+    if (!geo.IsObject()) {
+      continue;
+    }
+    
+    if (!geo.HasMember("coordinates")) {
+      continue;
+    }
+  
+    const rapidjson::Value& coord = geo["coordinates"];
+
+    if (!coord.IsArray()) {
+      continue;
+    }
+
+    double lat = coord[(rapidjson::SizeType) 0].GetDouble();
+    double lon = coord[(rapidjson::SizeType) 1].GetDouble();
+
+    LOG_D_A ("Lat: %f, Lon: %f", lat, lon);
+    _coordinates.insert(std::make_pair(lat, lon));
+  }
+
+  return 0;
+}
+
+int64_t
+JSON_RPC_get_latlon::onRegister(
+	      rapidjson::Value & result,
+	      rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator)
+{
+  stinger_t * S = server_state->get_stinger();
+  if (!S) {
+    LOG_E ("STINGER pointer is invalid");
+    return json_rpc_error(-32603, result, allocator);
+  }
+
+
+  reset_timeout();
+
+  return 0;
+}
+
+int64_t
+JSON_RPC_get_latlon::onRequest(
+	      rapidjson::Value & result,
+	      rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator)
+{
+  stinger_t * S = server_state->get_stinger();
+  rapidjson::Value coord, lat, lon, pair;
+  std::set<std::pair<double, double> >::iterator it;
+
+  /* send insertions back */
+  coord.SetArray();
+
+  for (it = _coordinates.begin(); it != _coordinates.end(); ++it) {
+    lat.SetDouble((*it).first);
+    lon.SetDouble((*it).second);
+    pair.SetObject();
+    pair.AddMember("lat", lat, allocator);
+    pair.AddMember("lon", lon, allocator);
+    
+    coord.PushBack(pair, allocator);
+  }
+
+  result.AddMember("coord", coord, allocator);
+
+  /* clear both and reset the clock */
+  _coordinates.clear();
+
+  return 0;
+}
