@@ -51,7 +51,7 @@ array_to_bson   (
     size_t off = 0;
     bson * bson_ptr = documents[item_count];
     char * physID;
-    size_t len;
+    uint64_t len;
 
     /* initialize BSON object for this vertex */
     bson_init (bson_ptr);
