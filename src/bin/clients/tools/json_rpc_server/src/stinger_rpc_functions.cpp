@@ -1454,23 +1454,23 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
       LOG_D_A ("%s: does not match %d", search_string, nv);
       switch (description_string[off]) {
 	case 'f':
-	  data += (nv * sizeof(float));
+	  data += (STINGER_MAX_LVERTICES * sizeof(float));
 	  break;
 
 	case 'd':
-	  data += (nv * sizeof(double));
+	  data += (STINGER_MAX_LVERTICES * sizeof(double));
 	  break;
 
 	case 'i':
-	  data += (nv * sizeof(int32_t));
+	  data += (STINGER_MAX_LVERTICES * sizeof(int32_t));
 	  break;
 
 	case 'l':
-	  data += (nv * sizeof(int64_t));
+	  data += (STINGER_MAX_LVERTICES * sizeof(int64_t));
 	  break;
 
 	case 'b':
-	  data += (nv * sizeof(uint8_t));
+	  data += (STINGER_MAX_LVERTICES * sizeof(uint8_t));
 	  break;
 
 	default:
@@ -1927,6 +1927,196 @@ array_to_json_monolithic_stinger   (json_rpc_array_meth_t method, stinger_t * S,
       result.AddMember("vertex_str", vtx_str, allocator);
     result.AddMember("value", vtx_val, allocator);
 
+    rtn.AddMember(search_string, result, allocator);
+  }
+  else {
+    LOG_W_A ("%s: shouldn't get here", search_string);
+    return json_rpc_error(-32602, rtn, allocator);
+  }
+
+  return 0;
+}
+
+
+int64_t 
+JSON_RPC_get_data_array_reduction::operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator)
+{
+  char * algorithm_name;
+  char * data_array_name;
+  char * reduce_op;
+  rpc_params_t p[] = {
+    {"name", TYPE_STRING, &algorithm_name, false, 0},
+    {"data", TYPE_STRING, &data_array_name, false, 0},
+    {"op", TYPE_STRING, &reduce_op, false, 0},
+    {NULL, TYPE_NONE, NULL, false, 0}
+  };
+
+  if (contains_params(p, params)) {
+    StingerAlgState * alg_state = server_state->get_alg(algorithm_name);
+    if (!alg_state) {
+      LOG_E ("Algorithm is not running");
+      return json_rpc_error(-32003, result, allocator);
+    }
+    return array_to_json_reduction (
+	server_state->get_stinger(),
+	result,
+	allocator,
+	alg_state->data_description.c_str(),
+	(uint8_t *) alg_state->data,
+	data_array_name
+    );
+  } else {
+    return json_rpc_error(-32602, result, allocator);
+  }
+}
+
+
+int
+array_to_json_reduction    (stinger_t * S,
+			    rapidjson::Value& rtn,
+			    rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator,
+			    const char * description_string, uint8_t * data,
+			    const char * search_string
+			    )
+{
+  size_t off = 0;
+  size_t len = strlen(description_string);
+  char * tmp = (char *) xmalloc ((len+1) * sizeof(char));
+  strcpy(tmp, description_string);
+
+  rapidjson::Value result (rapidjson::kObjectType);
+  rapidjson::Value reduction_value;
+
+  /* the description string is space-delimited */
+  char * placeholder;
+  char * ptr = strtok_r (tmp, " ", &placeholder);
+
+  /* skip the formatting */
+  char * pch = strtok_r (NULL, " ", &placeholder);
+
+  int64_t done = 0;
+
+  if (pch == NULL) {
+    LOG_W_A ("pch is null :: %s :: %s", description_string, search_string);
+  }
+
+  int64_t start = 0;
+  int64_t end = STINGER_MAX_LVERTICES;
+
+  while (pch != NULL)
+  {
+    if (strcmp(pch, search_string) == 0) {
+      switch (description_string[off]) {
+	case 'f':
+	  {
+	    double sum = 0.0;
+	    for (int64_t i = start; i < end; i++) {
+	      double val = (double)((float *) data)[i];
+	      sum += val;
+	    }
+	    
+	    reduction_value.SetDouble(sum);
+	    done = 1;
+	    break;
+	  }
+
+	case 'd':
+	  {
+	    double sum = 0.0;
+	    for (int64_t i = start; i < end; i++) {
+	      double val = (double)((double *) data)[i];
+	      sum += val;
+	    }
+	    
+	    reduction_value.SetDouble(sum);
+	    done = 1;
+	    break;
+	  }
+
+	case 'i':
+	  {
+	    int64_t sum = 0;
+	    for (int64_t i = start; i < end; i++) {
+	      int64_t val = (int64_t)((int32_t *) data)[i];
+	      sum += val;
+	    }
+	    
+	    reduction_value.SetInt64(sum);
+	    done = 1;
+	    break;
+	  }
+
+	case 'l':
+	  {
+	    int64_t sum = 0;
+	    for (int64_t i = start; i < end; i++) {
+	      int64_t val = (int64_t)((int64_t *) data)[i];
+	      sum += val;
+	    }
+	    
+	    reduction_value.SetInt64(sum);
+	    done = 1;
+	    break;
+	  }
+
+	case 'b':
+	  {
+	    int64_t sum = 0;
+	    for (int64_t i = start; i < end; i++) {
+	      int64_t val = (int64_t)((uint8_t *) data)[i];
+	      sum += val;
+	    }
+	    
+	    reduction_value.SetInt64(sum);
+	    done = 1;
+	    break;
+	  }
+
+	default:
+	  LOG_W_A("Umm...what letter was that?\ndescription_string: %s", description_string);
+	  return json_rpc_error(-32603, rtn, allocator);
+
+      }
+
+    } else {
+      switch (description_string[off]) {
+	case 'f':
+	  data += (STINGER_MAX_LVERTICES * sizeof(float));
+	  break;
+
+	case 'd':
+	  data += (STINGER_MAX_LVERTICES * sizeof(double));
+	  break;
+
+	case 'i':
+	  data += (STINGER_MAX_LVERTICES * sizeof(int32_t));
+	  break;
+
+	case 'l':
+	  data += (STINGER_MAX_LVERTICES * sizeof(int64_t));
+	  break;
+
+	case 'b':
+	  data += (STINGER_MAX_LVERTICES * sizeof(uint8_t));
+	  break;
+
+	default:
+	  LOG_W_A("Umm...what letter was that?\ndescription_string: %s", description_string);
+	  return json_rpc_error(-32603, rtn, allocator);
+
+      }
+      off++;
+    }
+    
+    if (done)
+      break;
+
+    pch = strtok_r (NULL, " ", &placeholder);
+  }
+
+  free(tmp);
+  if (done) {
+    result.AddMember("value", reduction_value, allocator);
     rtn.AddMember(search_string, result, allocator);
   }
   else {
