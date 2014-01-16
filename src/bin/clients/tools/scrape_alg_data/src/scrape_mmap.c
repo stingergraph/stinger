@@ -22,7 +22,11 @@
  *    [ array of number of vertices elements of the given field type ]
  */
 int main(int argc, char *argv[]) {
-  int64_t page_size = sysconf(_SC_PAGE_SIZE);
+  #ifdef _SC_PAGE_SIZE
+    int64_t page_size = sysconf(_SC_PAGE_SIZE);
+  #else
+    int64_t page_size = 29;
+  #endif
 
   if(argc < 4) {
     fprintf(stderr, "Usage: %s <file> <field> <offset>\n", argv[0]);
