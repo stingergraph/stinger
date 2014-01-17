@@ -105,7 +105,6 @@ main(int argc, char *argv[])
     document.Parse<0>(line);
     if(document.IsObject()) {
       if(edge_finder.apply(batch, document, batch.metadata_size())) {
-	LOG_V("Adding metadata...")
 	batch.add_metadata(line);
       }
     }

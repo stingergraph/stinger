@@ -29,7 +29,7 @@ StingerMon::get_mon() {
 
 StingerMon::StingerMon() : stinger(NULL), 
   stinger_loc(""), stinger_sz(0), algs(NULL), alg_map(NULL),
-  waiting(0), wait_lock(0)
+  waiting(0), wait_lock(0), max_time(-922337203685477580)
 {
   pthread_rwlock_init(&alg_lock, NULL);
   sem_init(&sync_lock, 0, 0);
@@ -127,9 +127,23 @@ StingerMon::update_algs(stinger_t * stinger_copy, std::string new_loc, int64_t n
   algs = new_algs;
   alg_map = new_alg_map;
 
+  /* update max time with latest insertion time */
+  int64_t new_max_time = max_time;
+  for(int64_t i = 0; i < batch.insertions_size(); i++) {
+    int64_t edge_time = batch.insertions(i).time();
+    if(edge_time > new_max_time)
+      new_max_time = edge_time;
+  }
+  max_time = new_max_time;
+
   LOG_D("write lock release");
   pthread_rwlock_unlock(&alg_lock);
   LOG_D("write lock released");
+}
+
+int64_t
+StingerMon::get_max_time() {
+  return max_time;
 }
 
 void

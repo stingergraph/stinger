@@ -33,6 +33,7 @@ namespace gt {
 
 	int64_t waiting;
 	int64_t wait_lock;
+	int64_t max_time;
         sem_t sync_lock;
 
       public:
@@ -60,6 +61,9 @@ namespace gt {
 	update_algs(stinger_t * stinger_copy, std::string new_loc, int64_t new_sz, 
 	  std::vector<StingerAlgState *> * new_algs, std::map<std::string, StingerAlgState *> * new_alg_map,
 	  const StingerBatch & batch);
+	
+	int64_t
+	get_max_time();
 
 	stinger_t *
 	get_stinger();

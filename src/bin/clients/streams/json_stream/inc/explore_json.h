@@ -23,6 +23,7 @@ typedef enum {
   VALUE_DESTINATION_WEIGHT,
   VALUE_DESTINATION_WEIGHT_INCR,
   VALUE_WEIGHT,
+  VALUE_TIME_TTR,
   VALUE_TIME
 } value_type_t;
 
@@ -31,6 +32,107 @@ typedef enum {
   PATH_EXACT,
   PATH_ORDERED
 } path_type_t;
+
+/* convert month string into numeric (assumes capitalization) */
+int64_t
+month(const char * month) {
+  switch(month[0]) {
+    case 'J': {
+		if(month[1] == 'a') {
+		  return 1;
+		} else if(month[2] == 'n') {
+		  return 6;
+		} else {
+		  return 7;
+		}
+	      } break;
+    case 'F': {
+		return 2;
+	      } break;
+    case 'M': {
+		if(month[2] == 'r') {
+		  return 3;
+		} else {
+		  return 5;
+		}
+	      } break;
+    case 'A': {
+		if(month[1] == 'p') {
+		  return 4;
+		} else {
+		  return 8;
+		}
+	      } break;
+    case 'S': {
+		return 9;
+	      } break;
+    case 'O': {
+		return 10;
+	      } break;
+    case 'N': {
+		return 11;
+	      } break;
+    case 'D': {
+		return 12;
+	      } break;
+
+  }
+}
+
+#define CHAR2INT(X) ((X) - '0')
+/* convert a twitter timestamp string into a simplistic int64 representation
+ *  * that is readable when printed and quick to create: YYYYMMDDHHMMSS */
+int64_t
+parse_twitter_time(const char * time, int64_t len) {
+  LOG_D_A("Called with %.*s", len, time)
+  /*
+   *   Mon Sep 24 03:35:21 +0000 2012
+   *   Sun, 28 Oct 2012 17:32:08 +0000
+   *   012345678901234567890123456789
+   *   0         1         2
+   *         */
+  if(time[3] == ',') {
+    /* year */
+    return CHAR2INT(time[12]) * 10000000000000 +
+	   CHAR2INT(time[13]) *  1000000000000 +
+	   CHAR2INT(time[14]) *   100000000000 +
+	   CHAR2INT(time[15]) *    10000000000 +
+	   /* month */
+	   month(time + 8) *         100000000 +
+	   /* day */
+	   CHAR2INT(time[5]) *        10000000 +
+	   CHAR2INT(time[6]) *         1000000 +
+	   /* hour */
+	   CHAR2INT(time[17]) *         100000 +
+	   CHAR2INT(time[18]) *          10000 +
+	   /* minute */
+	   CHAR2INT(time[20]) *            1000 +
+	   CHAR2INT(time[21]) *             100 +
+	   /* second */
+	   CHAR2INT(time[23]) *              10 +
+	   CHAR2INT(time[24]);
+  } else {
+    /* year */
+    return CHAR2INT(time[26]) * 10000000000000 +
+	   CHAR2INT(time[27]) *  1000000000000 +
+	   CHAR2INT(time[28]) *   100000000000 +
+	   CHAR2INT(time[29]) *    10000000000 +
+	   /* month */
+	   month(time + 4) *         100000000 +
+	   /* day */
+	   CHAR2INT(time[8]) *        10000000 +
+	   CHAR2INT(time[9]) *         1000000 +
+	   /* hour */
+	   CHAR2INT(time[11]) *         100000 +
+	   CHAR2INT(time[12]) *          10000 +
+	   /* minute */
+	   CHAR2INT(time[14]) *            1000 +
+	   CHAR2INT(time[15]) *             100 +
+	   /* second */
+	   CHAR2INT(time[17]) *              10 +
+	   CHAR2INT(time[18]);
+  }
+}
 
 struct EdgeCollection;
 
@@ -299,6 +401,8 @@ struct EdgeCollection {
 	return 0;
       }
     }
+
+    LOG_D_A("Time size is %ld", time.size());
 
     int64_t src_type = 0;
     int64_t src_weight = 0;
@@ -872,10 +976,17 @@ struct ExploreJSONValue : public ExploreJSONGeneric {
 	  edges.weight.push_back(document.GetInt64());
 	break;
 
+      case VALUE_TIME_TTR:
+	if(document.IsString()) {
+	  edges.time.push_back(parse_twitter_time(document.GetString(), document.GetStringLength()));
+	  LOG_D_A("Parsed: %ld", edges.time[edges.time.size()-1]);
+	}
+	break;    
+
       case VALUE_TIME:
 	if(document.IsInt64())
 	  edges.time.push_back(document.GetInt64());
-	break;
+	break;    
 
       default:
 	LOG_E_A("Unknown type %d", value_type);
@@ -1117,7 +1228,12 @@ struct EdgeCollectionSet {
 	type = VALUE_WEIGHT;
       } else if(0 == strncmp(string, "time", 4)) {
 	string += 4;
-	type = VALUE_TIME;
+	if(0 == strncmp(string, "_ttr", 4)) {
+	  string += 4;
+	  type = VALUE_TIME_TTR;
+	} else {
+	  type = VALUE_TIME;
+	}
       } else {
 	LOG_W_A("Unknown type string: %s", string);
 	return rtn;

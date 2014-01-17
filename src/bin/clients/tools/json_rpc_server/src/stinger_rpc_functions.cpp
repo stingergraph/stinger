@@ -152,6 +152,7 @@ JSON_RPC_get_graph_stats::operator()(rapidjson::Value * params, rapidjson::Value
 
   rapidjson::Value nv;
   rapidjson::Value ne;
+  rapidjson::Value max_time_seen;
   rapidjson::Value edge_types;
   rapidjson::Value vertex_types;
 
@@ -183,9 +184,12 @@ JSON_RPC_get_graph_stats::operator()(rapidjson::Value * params, rapidjson::Value
   nv.SetInt64(num_vertices);
   int64_t num_edges = stinger_edges_up_to(S, num_vertices);
   ne.SetInt64(num_edges);
+  
+  max_time_seen.SetInt64(server_state->get_max_time());
 
   result.AddMember("vertices", nv, allocator);
   result.AddMember("edges", ne, allocator);
+  result.AddMember("time", max_time_seen, allocator);
   result.AddMember("edge_types", edge_types, allocator);
   result.AddMember("vertex_types", vertex_types, allocator);
 
