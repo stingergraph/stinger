@@ -13,6 +13,7 @@ IF(APPLE)
   SET(libdep_rmat_edge_generator ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib stinger_net)
   SET(libdep_javascript_proxy ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib stinger_net mongoose)
   SET(libdep_mongodb_stream ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib stinger_net mongo_c_driver)
+  SET(libdep_human_edge_generator ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib stinger_net)
 ELSE()
   SET(libdep_json_stream ${CMAKE_BINARY_DIR}/lib/libprotobuf.so stinger_net)
   SET(libdep_json_edge_stream ${CMAKE_BINARY_DIR}/lib/libprotobuf.so stinger_net)
@@ -22,6 +23,7 @@ ELSE()
   SET(libdep_rmat_edge_generator ${CMAKE_BINARY_DIR}/lib/libprotobuf.so stinger_net)
   SET(libdep_javascript_proxy ${CMAKE_BINARY_DIR}/lib/libprotobuf.so stinger_net mongoose)
   SET(libdep_mongodb_stream ${CMAKE_BINARY_DIR}/lib/libprotobuf.so stinger_net mongo_c_driver)
+  SET(libdep_human_edge_generator ${CMAKE_BINARY_DIR}/lib/libprotobuf.so stinger_net)
 ENDIF()
 
 SET(tgtdep_default stinger_core stinger_utils rt)
@@ -32,6 +34,7 @@ SET(tgtdep_csv_edge_stream protobuf stinger_net)
 SET(tgtdep_random_edge_generator protobuf stinger_net)
 SET(tgtdep_rmat_edge_generator protobuf stinger_net)
 SET(tgtdep_javascript_proxy protobuf stinger_net)
+SET(tgtdep_human_edge_generator protobuf stinger_net)
 
 #################################################################
 # Iterate over each library and build appropriately based on type
