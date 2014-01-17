@@ -2013,7 +2013,8 @@ array_to_json_reduction    (stinger_t * S,
 	    double sum = 0.0;
 	    for (int64_t i = start; i < end; i++) {
 	      double val = (double)((float *) data)[i];
-	      sum += val;
+	      if (val > 0.0)
+		sum += val;
 	    }
 	    reduction_value.SetDouble(sum);
 	    reduction_name.SetString(pch, pch_len, allocator);
@@ -2032,7 +2033,8 @@ array_to_json_reduction    (stinger_t * S,
 	    double sum = 0.0;
 	    for (int64_t i = start; i < end; i++) {
 	      double val = (double)((double *) data)[i];
-	      sum += val;
+	      if (val > 0.0)
+		sum += val;
 	    }
 	    reduction_value.SetDouble(sum);
 	    reduction_name.SetString(pch, pch_len, allocator);
@@ -2051,7 +2053,8 @@ array_to_json_reduction    (stinger_t * S,
 	    int64_t sum = 0;
 	    for (int64_t i = start; i < end; i++) {
 	      int64_t val = (int64_t)((int32_t *) data)[i];
-	      sum += val;
+	      if (val > 0)
+		sum += val;
 	    }
 	    reduction_value.SetInt64(sum);
 	    reduction_name.SetString(pch, pch_len, allocator);
@@ -2070,7 +2073,8 @@ array_to_json_reduction    (stinger_t * S,
 	    int64_t sum = 0;
 	    for (int64_t i = start; i < end; i++) {
 	      int64_t val = (int64_t)((int64_t *) data)[i];
-	      sum += val;
+	      if (val > 0)
+		sum += val;
 	    }
 	    
 	    reduction_value.SetInt64(sum);
@@ -2090,7 +2094,8 @@ array_to_json_reduction    (stinger_t * S,
 	    int64_t sum = 0;
 	    for (int64_t i = start; i < end; i++) {
 	      int64_t val = (int64_t)((uint8_t *) data)[i];
-	      sum += val;
+	      if (val > 0)
+		sum += val;
 	    }
 
 	    reduction_value.SetInt64(sum);
