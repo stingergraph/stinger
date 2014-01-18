@@ -118,10 +118,10 @@ designed to consume one object per line like the Twitter stream and to produce e
 The templates can use the following variables (where one of the two source and one of the two destination variables 
 must be used):
 
-    $source_str         - The source vertex name
+    $source_str         - The source vertex name.
     $source             - The source of the edge as a number (must be able to parse as an integer 
                           less than the maximum vertex ID in the STINGER server).
-    $source_type        - A string representing the type of the source vertex
+    $source_type        - A string representing the type of the source vertex.
     $source_weight      - A number to be added to the weight of the source vertex (vertex weights
                           start at zero).
     $destination_str    - The destination vertex name
@@ -133,6 +133,10 @@ must be used):
     $type_str           - The edge type as a string
     $weight             - The weight of the edge (must be able to parse as an integer).
     $time               - The time of the edge (must be able to parse as an integer).
+    $time_ttr           - Must be a string of either the form "Mon Sep 24 03:35:21 +0000 2012" or 
+                          "Sun, 28 Oct 2012 17:32:08 +0000".  These will be converted internally
+                          into integers of the form YYYYMMDDHHMMSS.  Note that this does not currently support
+                          setting a constant value.
 
 For example, the simplest template for Twitter mentions and retweets would be (we'll call this template.json):
 
@@ -164,6 +168,20 @@ own OAuth data):
     'Authorization: OAuth oauth_consumer_key="KEYKEYKEY", oauth_nonce="NONCENONCENONCE", 
     oauth_signature="SIGSIGSIG", oauth_signature_method="HMAC-SHA1", oauth_timestamp="ts", 
     oauth_token="TOKENTOKENTOKEN", oauth_version="1.0"' --verbose | ./bin/json_stream template.json
+
+Parsing CSV Files / Streams
+---------------------------
+
+The csv\_stream parser follows a simpilar templated format to the json parser, so parsing edges out of a file might look like:
+
+    id,email_a,config_a,email_b,config_b,unix_time,length
+    na,$source_str1,na,$dest_str1,na,$time1,$weight1, $source_type1=email, $destination_type1=email
+
+This file would create edges between email addresses using the lenght field as the weight and the Unix timestamp field as the time.  To use this template, pipe the file or stream into the parser and pass the template as a parameter like so:
+
+    cat emails.csv | ./bin/csv_parser template.csv
+
+Please be aware that the CSV parser and the underlying code to parse CSV files does not currently trim whitespace, and does not treat quoted strings of any kind as quoted.
 
 Using a Standalone Client
 -------------------------
