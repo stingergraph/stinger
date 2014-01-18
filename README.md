@@ -169,7 +169,7 @@ own OAuth data):
     oauth_signature="SIGSIGSIG", oauth_signature_method="HMAC-SHA1", oauth_timestamp="ts", 
     oauth_token="TOKENTOKENTOKEN", oauth_version="1.0"' --verbose | ./bin/json_stream template.json
 
-Parsing CSV Files / Streams
+Example: Parsing CSV Files / Streams
 ---------------------------
 
 The csv\_stream parser follows a simpilar templated format to the json parser, so parsing edges out of a file might look like:
@@ -192,3 +192,36 @@ To create a toy R-MAT graph (256K vertices and 2M undirected edges) and run the 
     
     
 [![githalytics.com alpha](https://cruel-carlota.pagodabox.com/a7d82e7aa670122314238336dbbd7c89 "githalytics.com")](http://githalytics.com/robmccoll/stinger)
+
+Handling Common Errors
+======================
+
+The first thing to understand is how STINGER manages memory. When STINGER starts, it allocates one large block of memory (enough to hold its maximum size), and then manages its own memory allocation from that pool.  The server version of STINGER does this in shared memory so that multiple processes can see the graph.  Unfortunately, the error handling for memory allocations is not particularly user-friendly at the moment.  Changing the way that this works is on the issues list (see https://github.com/robmccoll/stinger/issues/8).
+
+- "Bus error" when running the server: The size of STINGER that the server is trying to allocate is too large for your memory.  Reduce the size of your STINGER and recompile.
+- "XXX: eb pool exhausted" when running the server, standalone executables, or anything else using stinger\_core: you have run out of internal edge storage.  Increase the size of STINGER and recompile.
+
+To solve these problems: there are a few values in stinger\_defs.h (https://github.com/robmccoll/stinger/blob/master/src/lib/stinger\_core/inc/stinger\_defs.h) that determine the maximum size of the graph.  You can tune these values and recompile (you will need to do a clean rebuild - make clean beforehand).
+
+    /** Maximum number of vertices in STINGER */
+    #if !defined(STINGER_MAX_LVERTICES)
+    #if defined (__MTA__)
+    /* XXX: Assume only 2**25 vertices */
+    #define STINGER_MAX_LVERTICES (1L<<27)
+    #else
+    /* much smaller for quick testing */
+    #define STINGER_MAX_LVERTICES (1L<<22)
+    #endif
+    #endif
+    /** Edges per edge block */
+    #define STINGER_EDGEBLOCKSIZE 14
+    /** Number of edge types */
+    #define STINGER_NUMETYPES 5
+    /** Number of vertex types (with names) */
+    #define STINGER_NUMVTYPES 128
+
+STINGER\_MAX\_LVERTICES determines the maximum number of vertices (here written as 1L<<22 or roughly 4 million).
+STINGER\_EDGEBLOCKSIZE determines how many edges are in each edge block (there are 4 * STINGER\_MAX\_LVERTICES edge blocks, so 4 * STINGER\_MAX\_LVERTICES * STINGER\_EDGEBLOCKSIZE is the maximum number of directed edges).
+STINGER\_NUMETYPES determines the maximum number of edge types.
+
+Make sure to modify the STINGER\_MAX\_LVERTICES listed under much smaller for quick testing.  These are listed in the order of how much of an affect they will have on the size of Stinger.
