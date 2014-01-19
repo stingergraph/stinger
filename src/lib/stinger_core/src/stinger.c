@@ -6,6 +6,7 @@
 #endif
 
 #include "stinger.h"
+#include "stinger_error.h"
 #include "stinger_atomics.h"
 #include "core_util.h"
 #include "xmalloc.h"
@@ -226,8 +227,11 @@ get_from_ebpool (const struct stinger * S, eb_index_t *out, size_t k)
   {
     ebt0 = stinger_int64_fetch_add (&(ebpool->ebpool_tail), k);
     if (ebt0 + k >= EBPOOL_SIZE) {
-      fprintf (stderr, "XXX: eb pool exhausted\n");
-      abort ();
+      LOG_F("STINGER has run out of internal storage space.  Storing this graph will require a larger\n"
+	    "       initial STINGER allocation. Try reducing the number of vertices and/or edges per block in\n"
+	    "       stinger_defs.h.  See the 'Handling Common Errors' section of the README.md for more\n"
+	    "       information on how to do this.\n");
+      abort();
     }
     OMP("omp parallel for")
       MTA ("mta assert nodep")
