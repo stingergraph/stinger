@@ -196,6 +196,9 @@ To create a toy R-MAT graph (256K vertices and 2M undirected edges) and run the 
 Handling Common Errors
 ======================
 
+Runtime Issues
+--------------
+
 The first thing to understand is how STINGER manages memory. When STINGER starts, it allocates one large block of memory (enough to hold its maximum size), and then manages its own memory allocation from that pool.  The server version of STINGER does this in shared memory so that multiple processes can see the graph.  Unfortunately, the error handling for memory allocations is not particularly user-friendly at the moment.  Changing the way that this works is on the issues list (see https://github.com/robmccoll/stinger/issues/8).
 
 - "Bus error" when running the server: The size of STINGER that the server is trying to allocate is too large for your memory.  Reduce the size of your STINGER and recompile.
@@ -225,3 +228,12 @@ STINGER\_EDGEBLOCKSIZE determines how many edges are in each edge block (there a
 STINGER\_NUMETYPES determines the maximum number of edge types.
 
 Make sure to modify the STINGER\_MAX\_LVERTICES listed under much smaller for quick testing.  These are listed in the order of how much of an affect they will have on the size of Stinger.
+
+Build Problems
+--------------
+
+First check the STINGER GitHub page to verify that the build is passing (icon immediately under the title).  If it is not passing, the issue resides within the current version itself.  Please checkout a previous revision - the build should be fixed shortly as failing builds sent notifications to the authors.  
+
+Build problems after pulling updates are frequently the result of changes to the Protocol Buffer formats used in STINGER.  These are currently unavoidable as an unfortunate side effect of how we distribute PB and tie it into CMake.  To fix, remove your build directory and build STINGER from scratch.
+
+Additionally, this version of the STINGER tool suite is tested almost exclusively on Linux machines running later version of Ubuntu and Fedora.  While we  would like to have multi-platform compatibility with Mac (via "real" GCC) and Windows (via GCC on cygwin), these are lower priority for our team - unless a project sponsor requires it :-)  
