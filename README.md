@@ -204,7 +204,7 @@ The first thing to understand is how STINGER manages memory. When STINGER starts
 - "Bus error" when running the server: The size of STINGER that the server is trying to allocate is too large for your memory.  Reduce the size of your STINGER and recompile.
 - "XXX: eb pool exhausted" or "STINGER has run out of internal storage space" when running the server, standalone executables, or anything else using stinger\_core: you have run out of internal edge storage.  Increase the size of STINGER and recompile.
 
-To solve these problems: there are a few values in stinger\_defs.h (https://github.com/robmccoll/stinger/blob/master/src/lib/stinger\_core/inc/stinger\_defs.h) that determine the maximum size of the graph.  You can tune these values and recompile (you will need to do a clean rebuild - make clean beforehand).
+To solve these problems: there are a few values in stinger\_defs.h (https://github.com/robmccoll/stinger/blob/master/src/lib/stinger_core/inc/stinger_defs.h) that determine the maximum size of the graph.  You can tune these values and recompile (you will need to do a clean rebuild - make clean beforehand).
 
     /** Maximum number of vertices in STINGER */
     #if !defined(STINGER_MAX_LVERTICES)
