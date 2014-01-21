@@ -62,11 +62,13 @@ shmmap (const char * name, int oflags, mode_t mode, int prot, size_t size, int m
   sigfillset(&sa.sa_mask);
   sigaction(SIGBUS, &sa, NULL);
 
-  if(-1 == ftruncate(fd, size)) {
-    int err = errno;
-    fprintf(stderr, "Mapping STINGER failed (it is likely that your STINGER is too large -\n"
-	"try reducing the number of vertices and/or edges per block in stinger_defs.h).\nError was: %s\n", strerror(err));
-    return NULL;
+  if(O_RDONLY != O_RDONLY & oflags) {
+    if(-1 == ftruncate(fd, size)) {
+      int err = errno;
+      fprintf(stderr, "Mapping STINGER failed (it is likely that your STINGER is too large -\n"
+	  "try reducing the number of vertices and/or edges per block in stinger_defs.h).\nBLAAH Error was: %s\n", strerror(err));
+      return NULL;
+    }
   }
   
   void * rtn = mmap(NULL, size, prot, MAP_SHARED, fd, 0);
