@@ -140,22 +140,22 @@ stinger_adjacency_get(const stinger_t * S, vindex_t v) {
 
 int
 stinger_mapping_create(const stinger_t * S, const char * byte_string, uint64_t length, int64_t * vtx_out) {
-  stinger_physmap_mapping_create(stinger_physmap_get(S), stinger_vertices_get(S), byte_string, length, vtx_out);
+  return stinger_physmap_mapping_create(stinger_physmap_get(S), stinger_vertices_get(S), byte_string, length, vtx_out);
 }
 
 vindex_t
 stinger_mapping_lookup(const stinger_t * S, const char * byte_string, uint64_t length) {
-  stinger_physmap_vtx_lookup(stinger_physmap_get(S), stinger_vertices_get(S), byte_string, length);
+  return stinger_physmap_vtx_lookup(stinger_physmap_get(S), stinger_vertices_get(S), byte_string, length);
 }
 
 int
 stinger_mapping_physid_get(const stinger_t * S, vindex_t vertexID, char ** outbuffer, uint64_t * outbufferlength) {
-  stinger_physmap_id_get(stinger_physmap_get(S), stinger_vertices_get(S), vertexID, outbuffer, outbufferlength);
+  return stinger_physmap_id_get(stinger_physmap_get(S), stinger_vertices_get(S), vertexID, outbuffer, outbufferlength);
 }
 
 int
 stinger_mapping_physid_direct(const stinger_t * S, vindex_t vertexID, char ** out_ptr, uint64_t * out_len) {
-  stinger_physmap_id_direct(stinger_physmap_get(S), stinger_vertices_get(S), vertexID, out_ptr, out_len);
+  return stinger_physmap_id_direct(stinger_physmap_get(S), stinger_vertices_get(S), vertexID, out_ptr, out_len);
 }
 
 vindex_t
