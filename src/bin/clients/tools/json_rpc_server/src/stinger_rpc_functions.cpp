@@ -1973,12 +1973,16 @@ JSON_RPC_get_data_array_reduction::operator()(rapidjson::Value * params, rapidjs
     {NULL, TYPE_NONE, NULL, false, 0}
   };
 
+  rapidjson::Value max_time_seen;
+  max_time_seen.SetInt64(server_state->get_max_time());
+
   if (contains_params(p, params)) {
     StingerAlgState * alg_state = server_state->get_alg(algorithm_name);
     if (!alg_state) {
       LOG_E ("Algorithm is not running");
       return json_rpc_error(-32003, result, allocator);
     }
+    result.AddMember("time", max_time_seen, allocator);
     return array_to_json_reduction (
 	server_state->get_stinger(),
 	result,
