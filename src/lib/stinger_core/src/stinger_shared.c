@@ -69,7 +69,7 @@ shmmap (const char * name, int oflags, mode_t mode, int prot, size_t size, int m
 	"try reducing the number of vertices and/or edges per block in stinger_defs.h. Error was: %s", strerror(err));
   }
 #else
-  if(O_RDONLY != O_RDONLY & oflags) {
+  if(O_RDONLY != (O_RDONLY & oflags)) {
     if(-1 == ftruncate(fd, size)) {
       int err = errno;
       LOG_E_A("Mapping failed (it is likely that your STINGER is too large -\n"
