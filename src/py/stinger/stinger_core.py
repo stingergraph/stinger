@@ -21,13 +21,16 @@ class Stinger:
       self.s = c_void_p(stinger_new())
     else:
       self.free = False
-      self.s = s
+      self.s = c_void_p(s)
 
   def __del__(self):
     if(self.free):
       stinger_free_all = libstinger_core['stinger_free_all']
       stinger_free_all.restype = c_void_p
       self.s = stinger_free_all(self.s)
+
+  def raw(self):
+    return self.s
 
   def save_to_file(self, filename):
     libstinger_core['stinger_save_to_file'](self.s, 1+self.max_active_vtx(), c_char_p(filename))

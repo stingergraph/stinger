@@ -193,6 +193,12 @@ stinger_alg_begin_post(stinger_registered_alg * alg);
 stinger_registered_alg *
 stinger_alg_end_post(stinger_registered_alg * alg);
 
+void
+stinger_alg_weight_double(stinger_t * S, double * field, double weight);
+
+void
+stinger_alg_weight_int64(stinger_t * S, int64_t * field, int64_t weight);
+
 #ifdef __cplusplus
 }
 #endif

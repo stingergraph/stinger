@@ -232,6 +232,12 @@ class StingerDataArray():
     else:
       return 0
 
+  def get_data_ptr(self):
+    return self.data
+
+  def weight_double(self, weight):
+    libstinger_net['stinger_alg_weight_double'](self.s.raw(), self.data, c_double(weight))
+
 
 class StingerAlgState():
   def __init__(self, alg, stinger):

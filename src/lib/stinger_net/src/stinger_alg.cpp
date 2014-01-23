@@ -656,3 +656,23 @@ stinger_alg_end_post(stinger_registered_alg * alg)
 
   return alg;
 }
+
+extern "C" void
+stinger_alg_weight_double(stinger_t * S, double * field, double weight) {
+  int64_t nv = stinger_mapping_nv(S);
+
+  OMP("omp parallel for")
+  for(int64_t v = 0; v < nv; v++) {
+    field[v] *= weight;
+  }
+}
+
+extern "C" void
+stinger_alg_weight_int64(stinger_t * S, int64_t * field, int64_t weight) {
+  int64_t nv = stinger_mapping_nv(S);
+
+  OMP("omp parallel for")
+  for(int64_t v = 0; v < nv; v++) {
+    field[v] *= weight;
+  }
+}
