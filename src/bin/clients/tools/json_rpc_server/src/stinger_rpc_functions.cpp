@@ -767,6 +767,9 @@ JSON_RPC_get_data_array_range::operator()(rapidjson::Value * params, rapidjson::
     {NULL, TYPE_NONE, NULL, false, 0}
   };
 
+  rapidjson::Value max_time_seen;
+  max_time_seen.SetInt64(server_state->get_max_time());
+
   if (contains_params(p, params)) {
     StingerAlgState * alg_state = server_state->get_alg(algorithm_name);
     if (nsamples) {
@@ -777,6 +780,7 @@ JSON_RPC_get_data_array_range::operator()(rapidjson::Value * params, rapidjson::
 	LOG_E ("Algorithm is not running");
 	return json_rpc_error(-32003, result, allocator);
       } else {
+	result.AddMember("time", max_time_seen, allocator);
 	return array_to_json_monolithic_stinger (
 	    RANGE,
 	    server_state->get_stinger(),
@@ -794,6 +798,7 @@ JSON_RPC_get_data_array_range::operator()(rapidjson::Value * params, rapidjson::
 	);
       }
     }
+    result.AddMember("time", max_time_seen, allocator);
     return array_to_json_monolithic (
 	RANGE,
 	server_state->get_stinger(),
@@ -836,6 +841,9 @@ JSON_RPC_get_data_array_sorted_range::operator()(rapidjson::Value * params, rapi
     {NULL, TYPE_NONE, NULL, false, 0}
   };
 
+  rapidjson::Value max_time_seen;
+  max_time_seen.SetInt64(server_state->get_max_time());
+
   if (contains_params(p, params)) {
     StingerAlgState * alg_state = server_state->get_alg(algorithm_name);
     if (nsamples) {
@@ -846,6 +854,7 @@ JSON_RPC_get_data_array_sorted_range::operator()(rapidjson::Value * params, rapi
 	LOG_E ("Algorithm is not running");
 	return json_rpc_error(-32003, result, allocator);
       } else {
+	result.AddMember("time", max_time_seen, allocator);
 	return array_to_json_monolithic_stinger (
 	  SORTED,
 	  server_state->get_stinger(),
@@ -864,6 +873,7 @@ JSON_RPC_get_data_array_sorted_range::operator()(rapidjson::Value * params, rapi
 	);
       }
     }
+    result.AddMember("time", max_time_seen, allocator);
     return array_to_json_monolithic (
 	SORTED,
 	server_state->get_stinger(),
@@ -900,6 +910,9 @@ JSON_RPC_get_data_array_set::operator()(rapidjson::Value * params, rapidjson::Va
     {NULL, TYPE_NONE, NULL, false, 0}
   };
 
+  rapidjson::Value max_time_seen;
+  max_time_seen.SetInt64(server_state->get_max_time());
+
   if (contains_params(p, params)) {
     StingerAlgState * alg_state = server_state->get_alg(algorithm_name);
     if (!alg_state) {
@@ -907,6 +920,7 @@ JSON_RPC_get_data_array_set::operator()(rapidjson::Value * params, rapidjson::Va
 	LOG_E ("Algorithm is not running");
 	return json_rpc_error(-32003, result, allocator);
       } else {
+	result.AddMember("time", max_time_seen, allocator);
 	return array_to_json_monolithic_stinger (
 	  SET,
 	  server_state->get_stinger(),
@@ -927,6 +941,7 @@ JSON_RPC_get_data_array_set::operator()(rapidjson::Value * params, rapidjson::Va
 	);
       }
     }
+    result.AddMember("time", max_time_seen, allocator);
     return array_to_json_monolithic (
 	SET,
 	server_state->get_stinger(),
@@ -968,6 +983,9 @@ JSON_RPC_get_data_array::operator()(rapidjson::Value * params, rapidjson::Value 
     {NULL, TYPE_NONE, NULL, false, 0}
   };
 
+  rapidjson::Value max_time_seen;
+  max_time_seen.SetInt64(server_state->get_max_time());
+
   if (contains_params(p, params)) {
     StingerAlgState * alg_state = server_state->get_alg(algorithm_name);
     if (nsamples) {
@@ -978,6 +996,7 @@ JSON_RPC_get_data_array::operator()(rapidjson::Value * params, rapidjson::Value 
 	LOG_E ("Algorithm is not running");
 	return json_rpc_error(-32003, result, allocator);
       } else {
+	result.AddMember("time", max_time_seen, allocator);
 	return array_to_json_monolithic_stinger (
 	  RANGE,
 	  server_state->get_stinger(),
@@ -995,6 +1014,7 @@ JSON_RPC_get_data_array::operator()(rapidjson::Value * params, rapidjson::Value 
 	);
       }
     }
+    result.AddMember("time", max_time_seen, allocator);
     return array_to_json_monolithic (
 	RANGE,
 	server_state->get_stinger(),
@@ -1953,12 +1973,16 @@ JSON_RPC_get_data_array_reduction::operator()(rapidjson::Value * params, rapidjs
     {NULL, TYPE_NONE, NULL, false, 0}
   };
 
+  rapidjson::Value max_time_seen;
+  max_time_seen.SetInt64(server_state->get_max_time());
+
   if (contains_params(p, params)) {
     StingerAlgState * alg_state = server_state->get_alg(algorithm_name);
     if (!alg_state) {
       LOG_E ("Algorithm is not running");
       return json_rpc_error(-32003, result, allocator);
     }
+    result.AddMember("time", max_time_seen, allocator);
     return array_to_json_reduction (
 	server_state->get_stinger(),
 	result,
