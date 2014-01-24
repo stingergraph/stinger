@@ -118,7 +118,7 @@ main(int argc, char *argv[])
       batch.set_make_undirected(true);
       batch.set_type(MIXED);
       batch.set_keep_alive(true);
-      sleep(2);
+      sleep(5);
     }
   }
 
