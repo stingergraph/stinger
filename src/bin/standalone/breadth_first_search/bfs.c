@@ -223,6 +223,11 @@ st_conn_stinger_source (const struct stinger * G, const int64_t nv,
 
   int64_t deg_s = stinger_outdegree (G, from);
   if (deg_s == 0) {
+    free (neighbors);
+    free (QHead);
+    free (marks_t);
+    free (marks_s);
+    free (Q);
     return num;
   }
 
