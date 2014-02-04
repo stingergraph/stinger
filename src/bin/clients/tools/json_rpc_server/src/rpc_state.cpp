@@ -99,7 +99,10 @@ bool
 JSON_RPCFunction::contains_params(rpc_params_t * p, rapidjson::Value * params)
 {
   if (!params)
-    return true;
+    return true; //shouldn't this be return false?
+
+  if (params->IsArray())
+    return false;
 
   while(p->name)
   {
