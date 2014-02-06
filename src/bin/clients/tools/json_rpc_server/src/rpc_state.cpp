@@ -175,22 +175,23 @@ JSON_RPCFunction::contains_params(rpc_params_t * p, rapidjson::Value * params)
 	  params_array_t * ptr = (params_array_t *) p->output;
 	  ptr->len = (*params)[p->name].Size();
 	  ptr->arr = (int64_t *) xmalloc(sizeof(int64_t) * ptr->len);
+
+	  int64_t count_valid = 0;
 	  for (int64_t i = 0; i < ptr->len; i++) {
 	    if ((*params)[p->name][i].IsInt64()) {
 	      int64_t tmp = (*params)[p->name][i].GetInt64();
-	      if (tmp < 0 || tmp >= STINGER_MAX_LVERTICES) {
-		return false;
+	      if ( !(tmp < 0 || tmp >= STINGER_MAX_LVERTICES) ) {
+		ptr->arr[count_valid++] = tmp;
 	      }
-	      ptr->arr[i] = tmp;
 	    }
 	    else if ((*params)[p->name][i].IsString()) {
 	      int64_t tmp = stinger_mapping_lookup(S, (*params)[p->name][i].GetString(), (*params)[p->name][i].GetStringLength());
-	      if (tmp == -1) {
-		return false;
+	      if (tmp != -1) {
+		ptr->arr[count_valid++] = tmp;
 	      }
-	      ptr->arr[i] = tmp;
 	    }
 	  }
+	  ptr->len = count_valid;
 	} break;
       }
     }
