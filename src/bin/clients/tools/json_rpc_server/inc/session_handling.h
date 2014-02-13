@@ -82,7 +82,7 @@ namespace gt {
 	int64_t _count;
 	bool _strings;
 
-	std::set<std::pair<double, double> > _coordinates;
+	std::set<std::pair<std::string, std::pair<double, double> > > _coordinates;
 
       public:
 	JSON_RPC_get_latlon(int64_t sess_id, JSON_RPCServerState * session) : JSON_RPCSession(sess_id, session) {

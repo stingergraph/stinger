@@ -598,6 +598,22 @@ JSON_RPC_get_latlon::update(const StingerBatch & batch)
       continue;
     }
     
+    if(document.HasMember("location")) {
+      const rapidjson::Value& location= document["location"];
+      if(location.HasMember("lng") && location.HasMember("lat")) {
+	double lat = location["lat"].GetDouble();
+	double lng = location["lng"].GetDouble();
+	std::string cat = document["category"].GetString();
+	cat = cat.substr(0,3);
+	cat += ": ";
+	if(document.HasMember("text")) {
+	  cat += document["text"].GetString();
+	}
+	_coordinates.insert(std::make_pair(cat, std::make_pair(lat, lng)));
+	LOG_D_A ("Lat: %f, Lon: %f", lat, lng);
+      }
+    }
+    
     if (!document.HasMember("geo")) {
       continue;
     }
@@ -621,8 +637,19 @@ JSON_RPC_get_latlon::update(const StingerBatch & batch)
     double lat = coord[(rapidjson::SizeType) 0].GetDouble();
     double lon = coord[(rapidjson::SizeType) 1].GetDouble();
 
+    std::string cat;
+    if(document.HasMember("category")) {
+      cat = document["category"].GetString();
+      cat = cat.substr(0,3);
+      cat += ": ";
+      if(document.HasMember("text")) {
+	cat += document["text"].GetString();
+      }
+    }
+
+    _coordinates.insert(std::make_pair(cat, std::make_pair(lat, lon)));
+
     LOG_D_A ("Lat: %f, Lon: %f", lat, lon);
-    _coordinates.insert(std::make_pair(lat, lon));
   }
 
   return 0;
@@ -651,18 +678,20 @@ JSON_RPC_get_latlon::onRequest(
 	      rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator)
 {
   stinger_t * S = server_state->get_stinger();
-  rapidjson::Value coord, lat, lon, pair;
-  std::set<std::pair<double, double> >::iterator it;
+  rapidjson::Value coord, lat, lon, pair, cat;
+  std::set<std::pair<std::string, std::pair<double, double> > >::iterator it;
 
   /* send insertions back */
   coord.SetArray();
 
   for (it = _coordinates.begin(); it != _coordinates.end(); ++it) {
-    lat.SetDouble((*it).first);
-    lon.SetDouble((*it).second);
+    lat.SetDouble((*it).second.first);
+    lon.SetDouble((*it).second.second);
+    cat.SetString((*it).first.c_str());
     pair.SetObject();
     pair.AddMember("lat", lat, allocator);
     pair.AddMember("lon", lon, allocator);
+    pair.AddMember("cat", cat, allocator);
     
     coord.PushBack(pair, allocator);
   }
