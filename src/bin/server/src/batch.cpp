@@ -142,7 +142,11 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	      int64_t u, v;
 	      TS(in);
 	      handle_edge_names_types<NUMBERS_ONLY>(in, S, src, dest, u, v);
-	      in.set_result(stinger_incr_edge_pair(S, in.type(), in.source(), in.destination(), in.weight(), in.time()));
+	      if(batch.make_undirected()) {
+		in.set_result(stinger_incr_edge_pair(S, in.type(), in.source(), in.destination(), in.weight(), in.time()));
+	      } else {
+		in.set_result(stinger_incr_edge(S, in.type(), in.source(), in.destination(), in.weight(), in.time()));
+	      }
 	      if(in.result() == -1) {
 		LOG_E_A("Error inserting edge <%ld, %ld>", in.source(), in.destination());
 	      } else {
@@ -165,7 +169,11 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	  OMP("omp for")
 	    for(size_t d = 0; d < batch.deletions_size(); d++) {
 	      EdgeDeletion & del = *batch.mutable_deletions(d);
-	      del.set_result(stinger_remove_edge_pair(S, del.type(), del.source(), del.destination()));
+	      if(batch.make_undirected()) {
+		del.set_result(stinger_remove_edge_pair(S, del.type(), del.source(), del.destination()));
+	      } else {
+		del.set_result(stinger_remove_edge(S, del.type(), del.source(), del.destination()));
+	      }
 	      if(-1 == del.result()) {
 		LOG_E_A("Error removing edge <%ld, %ld>", del.source(), del.destination());
 	      } else {
@@ -191,7 +199,11 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	      int64_t u, v;
 	      TS(in);
 	      handle_edge_names_types<NUMBERS_ONLY>(in, S, src, dest, u, v);
-	      in.set_result(stinger_incr_edge_pair(S, in.type(), in.source(), in.destination(), in.weight(), in.time()));
+	      if(batch.make_undirected()) {
+		in.set_result(stinger_incr_edge_pair(S, in.type(), in.source(), in.destination(), in.weight(), in.time()));
+	      } else {
+		in.set_result(stinger_incr_edge(S, in.type(), in.source(), in.destination(), in.weight(), in.time()));
+	      }
 	      if(in.result() == -1) {
 		LOG_E_A("Error inserting edge <%ld, %ld>", in.source(), in.destination());
 	      }
@@ -200,7 +212,11 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	  OMP("omp for")
 	    for(size_t d = 0; d < batch.deletions_size(); d++) {
 	      EdgeDeletion & del = *batch.mutable_deletions(d);
-	      del.set_result(stinger_remove_edge_pair(S, del.type(), del.source(), del.destination()));
+	      if(batch.make_undirected()) {
+		del.set_result(stinger_remove_edge_pair(S, del.type(), del.source(), del.destination()));
+	      } else {
+		del.set_result(stinger_remove_edge(S, del.type(), del.source(), del.destination()));
+	      }
 	      if(-1 == del.result()) {
 		LOG_E_A("Error removing edge <%ld, %ld>", del.source(), del.destination());
 	      }
@@ -224,7 +240,11 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	    handle_edge_names_types<STRINGS_ONLY>(in, S, src, dest, u, v);
 
 	    if(u != -1 && v != -1) {
-	      in.set_result(stinger_incr_edge_pair(S, in.type(), u, v, in.weight(), in.time()));
+	      if(batch.make_undirected()) {
+		in.set_result(stinger_incr_edge_pair(S, in.type(), u, v, in.weight(), in.time()));
+	      } else {
+		in.set_result(stinger_incr_edge(S, in.type(), u, v, in.weight(), in.time()));
+	      }
 	      if(in.result() == -1) {
 	      LOG_E_A("Error inserting edge <%s, %s>", in.source_str().c_str(), in.destination_str().c_str());
 	      } else {
@@ -244,7 +264,11 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	    v = stinger_mapping_lookup(S, dest.c_str(), dest.length());
 
 	    if(u != -1 && v != -1) {
-	      del.set_result(-1 == stinger_remove_edge_pair(S, del.type(), u, v));
+	      if(batch.make_undirected()) {
+		del.set_result(-1 == stinger_remove_edge_pair(S, del.type(), u, v));
+	      } else {
+		del.set_result(-1 == stinger_remove_edge(S, del.type(), u, v));
+	      }
 	      if(del.result() == -1) {
 		LOG_E_A("Error removing edge <%s, %s>", del.source_str().c_str(), del.destination_str().c_str());
 	      } else {
@@ -268,7 +292,11 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	    TS(in);
 	    handle_edge_names_types<MIXED>(in, S, src, dest, u, v);
 	    if(u != -1 && v != -1) {
-	      in.set_result(stinger_incr_edge_pair(S, in.type(), u, v, in.weight(), in.time()));
+	      if(batch.make_undirected()) {
+		in.set_result(stinger_incr_edge_pair(S, in.type(), u, v, in.weight(), in.time()));
+	      } else {
+		in.set_result(stinger_incr_edge(S, in.type(), u, v, in.weight(), in.time()));
+	      }
 	      if(in.result() == -1) {
 		LOG_E_A("Error inserting edge <%ld - %s, %ld - %s>", u, in.source_str().c_str(), v, 
 			in.destination_str().c_str());
@@ -310,7 +338,11 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	    }
 
 	    if(u != -1 && v != -1) {
-	      del.set_result(stinger_remove_edge_pair(S, del.type(), u, v));
+	      if(batch.make_undirected()) {
+		del.set_result(stinger_remove_edge_pair(S, del.type(), u, v));
+	      } else {
+		del.set_result(stinger_remove_edge(S, del.type(), u, v));
+	      }
 	      if(del.result() == -1) {
 		LOG_E_A("Error removing edge <%ld - %s, %ld - %s>", u, del.source_str().c_str(), v, 
 			del.destination_str().c_str());

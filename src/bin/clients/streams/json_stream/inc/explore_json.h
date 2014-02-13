@@ -24,6 +24,7 @@ typedef enum {
   VALUE_DESTINATION_WEIGHT_INCR,
   VALUE_WEIGHT,
   VALUE_TIME_TTR,
+  VALUE_TIME_UNIX,
   VALUE_TIME
 } value_type_t;
 
@@ -132,6 +133,34 @@ parse_twitter_time(const char * time, int64_t len) {
 	   CHAR2INT(time[17]) *              10 +
 	   CHAR2INT(time[18]);
   }
+}
+
+int64_t
+parse_unix_time(int64_t ts) {
+  /* handle ms */
+  if(ts > 10000000000) {
+    ts /= 1000;
+  }
+
+  struct tm * me = gmtime(&ts);
+  return //CHAR2INT(time[26]) * 10000000000000 +
+	 //CHAR2INT(time[27]) *  1000000000000 +
+	 //CHAR2INT(time[28]) *   100000000000 +
+	 me->tm_year          *    10000000000 +
+	 /* month */
+	 me->tm_mon           *      100000000 +
+	 /* day */
+	 //CHAR2INT(time[8])  *       10000000 +
+	 me->tm_mday          *        1000000 +
+	 /* hour */
+	 //CHAR2INT(time[11]) *         100000 +
+	 me->tm_hour          *          10000 +
+	 /* minute */
+	 //CHAR2INT(time[14]) *           1000 +
+	 me->tm_min           *            100 +
+	 /* second */
+	 //CHAR2INT(time[17]) *             10 +
+	 me->tm_sec;
 }
 
 struct EdgeCollection;
@@ -988,6 +1017,11 @@ struct ExploreJSONValue : public ExploreJSONGeneric {
 	  edges.time.push_back(document.GetInt64());
 	break;    
 
+      case VALUE_TIME_UNIX:
+	if(document.IsInt64())
+	  edges.time.push_back(parse_unix_time(document.GetInt64()));
+	break;    
+
       default:
 	LOG_E_A("Unknown type %d", value_type);
 	return false;
@@ -1231,6 +1265,9 @@ struct EdgeCollectionSet {
 	if(0 == strncmp(string, "_ttr", 4)) {
 	  string += 4;
 	  type = VALUE_TIME_TTR;
+	} else if(0 == strncmp(string, "_unix", 5)) {
+	  string += 5;
+	  type = VALUE_TIME_UNIX;
 	} else {
 	  type = VALUE_TIME;
 	}

@@ -30,9 +30,10 @@ main(int argc, char *argv[])
   double timeout = 0;
   struct hostent * server = NULL;
   char * filename = NULL;
+  int use_directed = 0;
 
   int opt = 0;
-  while(-1 != (opt = getopt(argc, argv, "p:a:x:t:"))) {
+  while(-1 != (opt = getopt(argc, argv, "p:a:x:t:d"))) {
     switch(opt) {
       case 'p': {
 		  port = atoi(optarg);
@@ -49,6 +50,9 @@ main(int argc, char *argv[])
 		    LOG_E_A("ERROR: server %s could not be resolved.", optarg);
 		    exit(-1);
 		  }
+		} break;
+      case 'd': {
+		  use_directed = 1;
 		} break;
       case 't': {
 	timeout = atof(optarg);
@@ -102,7 +106,11 @@ main(int argc, char *argv[])
   edge_finder.print();
 
   StingerBatch batch;
-  batch.set_make_undirected(true);
+  if(use_directed) {
+    batch.set_make_undirected(false);
+  } else {
+    batch.set_make_undirected(true);
+  }
   batch.set_type(MIXED);
   batch.set_keep_alive(true);
 
@@ -122,7 +130,11 @@ main(int argc, char *argv[])
       send_message(sock_handle, batch);
       timesince = 0;
       batch.Clear();
-      batch.set_make_undirected(true);
+      if(use_directed) {
+	batch.set_make_undirected(false);
+      } else {
+	batch.set_make_undirected(true);
+      }
       batch.set_type(MIXED);
       batch.set_keep_alive(true);
     }
