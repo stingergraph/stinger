@@ -6,6 +6,8 @@ SET(libdep_depold_community int_hm_seq int_ht_seq)
 
 IF(APPLE)
   SET(libdep_protobuf_test ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib)
+ELSEIF(CYGWIN OR WIN32)
+  SET(libdep_protobuf_test ${CMAKE_BINARY_DIR}/lib/libprotobuf.dll.a)
 ELSE()
   SET(libdep_protobuf_test ${CMAKE_BINARY_DIR}/lib/libprotobuf.so)
 ENDIF()

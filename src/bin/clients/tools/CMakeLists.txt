@@ -9,6 +9,8 @@ SET(libdep_alg_to_mongo stinger_net mongo_c_driver)
 
 IF(APPLE)
   SET(libdep_json_rpc_server ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib stinger_net pthread mongoose)
+ELSEIF(CYGWIN OR WIN32)
+  SET(libdep_json_rpc_server ${CMAKE_BINARY_DIR}/lib/libprotobuf.dll.a stinger_net pthread mongoose)
 ELSE()
   SET(libdep_json_rpc_server ${CMAKE_BINARY_DIR}/lib/libprotobuf.so stinger_net pthread mongoose)
 ENDIF()

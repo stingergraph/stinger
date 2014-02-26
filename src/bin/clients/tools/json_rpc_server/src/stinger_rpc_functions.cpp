@@ -6,8 +6,13 @@
 #include <queue>
 #include <set>
 #include <vector>
+#include <climits>
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
+
+#ifndef INT64_MAX
+#define INT64_MAX 9223372036854775807 /* sometimes c++ just doesn't want this to work */
+#endif
 
 //#define LOG_AT_W  /* warning only */
 

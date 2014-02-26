@@ -142,7 +142,7 @@ parse_unix_time(int64_t ts) {
     ts /= 1000;
   }
 
-  struct tm * me = gmtime(&ts);
+  struct tm * me = gmtime((time_t *)&ts);
   return //CHAR2INT(time[26]) * 10000000000000 +
 	 //CHAR2INT(time[27]) *  1000000000000 +
 	 //CHAR2INT(time[28]) *   100000000000 +
