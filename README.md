@@ -98,11 +98,11 @@ Using the Server
 ----------------
 To run an example using the server and five terminals:
 
-    term1:build$ server
-    term2:build$ json_rpc_server
-    term3:build$ static_components
-    term4:build$ pagerank
-    term5:build$ rmat_edge_generator -n 100000 -x 10000
+    term1:build$ ./bin/server
+    term2:build$ ./bin/json_rpc_server
+    term3:build$ ./bin/static_components
+    term4:build$ ./bin/pagerank
+    term5:build$ ./bin/rmat_edge_generator -n 100000 -x 10000
 
 This will start a stream of R-MAT edges over 100,000 vertices in batches of 10,000 edges.  A connected component labeling
 and PageRank scoring will be maintained.  The JSON RPC server will host interactive web pages at 
