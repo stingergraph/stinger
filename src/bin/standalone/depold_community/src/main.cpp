@@ -116,7 +116,7 @@ depold_cc(stinger_t * S, int64_t nv, int64_t deg_thresh, int64_t * labels)
 
     /* For all edges in the STINGER graph of type 0 in parallel, attempt to assign
        lesser component IDs to neighbors with greater component IDs */
-    for(int64_t t = 0; t < STINGER_NUMETYPES; t++) {
+    for(int64_t t = 0; t < S->max_netypes; t++) {
       STINGER_PARALLEL_FORALL_EDGES_BEGIN (S, t) {
 	if ((labels[STINGER_EDGE_DEST] < labels[STINGER_EDGE_SOURCE]) && 
 	  (stinger_outdegree(S, STINGER_EDGE_SOURCE) < deg_thresh) &&
@@ -155,7 +155,7 @@ depold_post(stinger_t * S, int64_t nv, int64_t deg_thresh, int64_t * labels)
     }
   }
 
-  for(int64_t t = 0; t < STINGER_NUMETYPES; t++) {
+  for(int64_t t = 0; t < S->max_netypes; t++) {
     STINGER_PARALLEL_FORALL_EDGES_BEGIN (S, t) {
       if (labels[STINGER_EDGE_DEST] == labels[STINGER_EDGE_SOURCE]) {
 	stinger_int64_fetch_add(total_deg + labels[STINGER_EDGE_DEST], 1);

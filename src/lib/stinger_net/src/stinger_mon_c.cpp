@@ -50,7 +50,7 @@ extern "C" {
   }
 
   int64_t
-  stinger_mon_get_max_nv() {
-    return STINGER_MAX_LVERTICES;
+  stinger_mon_get_max_nv(void * self) {
+    return ((StingerMon *)self)->get_stinger()->max_nv;
   }
 }

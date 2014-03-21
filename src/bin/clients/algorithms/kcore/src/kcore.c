@@ -79,7 +79,7 @@ main(int argc, char *argv[])
   }
 
   int64_t * kcore = (int64_t *)alg->alg_data;
-  int64_t * count = ((int64_t *)alg->alg_data) + STINGER_MAX_LVERTICES;
+  int64_t * count = ((int64_t *)alg->alg_data) + alg->stinger->max_nv;
   int64_t k;
   
   /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
@@ -87,7 +87,7 @@ main(int argc, char *argv[])
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
   stinger_alg_begin_init(alg); {
     LOG_I("Kcore init starting");
-    kcore_find(alg->stinger, kcore, count, STINGER_MAX_LVERTICES, &k);
+    kcore_find(alg->stinger, kcore, count, alg->stinger->max_nv, &k);
     LOG_I_A("Kcore init finished. Largest core is %ld", (long)k);
   } stinger_alg_end_init(alg);
 
@@ -104,7 +104,7 @@ main(int argc, char *argv[])
     /* Post processing */
     if(stinger_alg_begin_post(alg)) {
       LOG_I("Kcore post starting");
-      kcore_find(alg->stinger, kcore, count, STINGER_MAX_LVERTICES, &k);
+      kcore_find(alg->stinger, kcore, count, alg->stinger->max_nv, &k);
       LOG_I_A("Kcore post finished. Largest core is %ld", (long)k);
       stinger_alg_end_post(alg);
     }

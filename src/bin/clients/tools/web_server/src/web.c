@@ -119,11 +119,11 @@ get_label_stats_json(char * name) {
 
   if(KV_SUCCESS == kv_store_get(&labels, &key, &val)) {
     int64_t * int_labels = kve_get_ptr(val);
-    int64_t * counts = xcalloc(sizeof(int64_t), STINGER_MAX_LVERTICES);
+    int64_t * counts = xcalloc(sizeof(int64_t), S->max_nv);
     int64_t nv = stinger_mapping_nv(S);
     for(int64_t v = 0; v < nv; v++) {
       int64_t lab = int_labels[v];
-      if(lab >= 0 && lab < STINGER_MAX_LVERTICES)
+      if(lab >= 0 && lab < S->max_nv)
 	counts[lab]++;
     }
 
@@ -318,7 +318,7 @@ get_stingerid_json(stinger_t * S, char * phys_ids) {
   char intbuf[256];
   for(uint64_t i = 0; i < count; i++) {
     int64_t vtx = stinger_mapping_lookup(S, fields[i], lengths[i]);
-    if(vtx < STINGER_MAX_LVERTICES && vtx >= 0) {
+    if(vtx < S->max_nv && vtx >= 0) {
       if(found) {
 	string_append_cstr(rtn, ",\n");
       }
@@ -550,9 +550,9 @@ begin_request_handler(struct mg_connection *conn)
 	  vtx = atoi(suburi);
 	}
 
-	if(vtx < STINGER_MAX_LVERTICES && vtx >= 0) {
+	if(vtx < S->max_nv && vtx >= 0) {
 	    string_t * rslt;
-	    if (!vtxlimit || vtxlimit >= STINGER_MAX_LVERTICES)
+	    if (!vtxlimit || vtxlimit >= S->max_nv)
 	        rslt = labeled_subgraph_to_json(S, vtx, kve_get_ptr(val), vtxlimit);
 	    else {
 	      /*
@@ -598,7 +598,7 @@ begin_request_handler(struct mg_connection *conn)
       }
 
 /*
-      if(vtx < STINGER_MAX_LVERTICES && vtx >= 0) {
+      if(vtx < S->max_nv && vtx >= 0) {
 	extern string_t * vtxcomm_to_json(stinger_t*, int64_t, int64_t);
 	string_t * rslt = vtxcomm_to_json(S, vtx, vtxlimit);
 	assert (rslt);
@@ -646,7 +646,7 @@ begin_request_handler(struct mg_connection *conn)
       vtx = atoi(suburi);
     }
     
-    if(vtx < STINGER_MAX_LVERTICES && vtx >= 0) {
+    if(vtx < S->max_nv && vtx >= 0) {
       string_t * egonet = egonet_to_json(S, vtx);
       mg_printf(conn,
 	  "HTTP/1.1 200 OK\r\n"
@@ -684,7 +684,7 @@ begin_request_handler(struct mg_connection *conn)
       int64_t found = 0;
       for(uint64_t i = 0; i < count; i++) {
 	group_vertices[found] = stinger_mapping_lookup(S, fields[i], lengths[i]);
-	if(group_vertices[found] >= STINGER_MAX_LVERTICES || group_vertices[found] < 0) {
+	if(group_vertices[found] >= S->max_nv || group_vertices[found] < 0) {
 	  group_vertices[found] = 0;
 	} else {
 	  found++;
@@ -723,7 +723,7 @@ begin_request_handler(struct mg_connection *conn)
       int64_t found = 0;
       for(uint64_t i = 0; i < count; i++) {
 	group_vertices[found] = atol(fields[i]);
-	if(group_vertices[found] >= STINGER_MAX_LVERTICES || group_vertices[found] < 0) {
+	if(group_vertices[found] >= S->max_nv || group_vertices[found] < 0) {
 	  group_vertices[found] = 0;
 	} else {
 	  found++;

@@ -218,11 +218,11 @@ main(int argc, char *argv[])
   }
 
   double * bc = (double *)alg->alg_data;
-  int64_t * times_found = (int64_t *)(bc + STINGER_MAX_LVERTICES);
+  int64_t * times_found = (int64_t *)(bc + alg->stinger->max_nv);
   double * sample_bc = NULL;
 
   if(do_weighted) {
-    sample_bc = xcalloc(sizeof(double), STINGER_MAX_LVERTICES);
+    sample_bc = xcalloc(sizeof(double), alg->stinger->max_nv);
   }
   
   /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *

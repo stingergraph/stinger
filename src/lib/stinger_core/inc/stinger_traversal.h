@@ -153,8 +153,8 @@ extern "C" {
   do {									\
     MAP_STING(STINGER_); \
     struct stinger_eb * ebpool_priv = ebpool->ebpool; \
-    for(uint64_t p__ = 0; p__ < ETA[(TYPE_)].high; p__++) {	\
-      struct stinger_eb *  current_eb__ = ebpool_priv+ ETA[(TYPE_)].blocks[p__]; \
+    for(uint64_t p__ = 0; p__ < ETA((STINGER_),(TYPE_))->high; p__++) {	\
+      struct stinger_eb *  current_eb__ = ebpool_priv+ ETA((STINGER_),(TYPE_))->blocks[p__]; \
       int64_t source__ = current_eb__->vertexID;			\
       int64_t type__ = current_eb__->etype;				\
       for(uint64_t i__ = 0; i__ < stinger_eb_high(current_eb__); i__++) { \
@@ -173,8 +173,8 @@ extern "C" {
     struct stinger_eb * ebpool_priv = ebpool->ebpool; \
     OMP("omp parallel for")						\
     MTA("mta assert parallel")						\
-    for(uint64_t p__ = 0; p__ < ETA[(TYPE_)].high; p__++) {	\
-      struct stinger_eb *  current_eb__ = ebpool_priv+ ETA[(TYPE_)].blocks[p__]; \
+    for(uint64_t p__ = 0; p__ < ETA((STINGER_),(TYPE_))->high; p__++) {	\
+      struct stinger_eb *  current_eb__ = ebpool_priv+ ETA((STINGER_),(TYPE_))->blocks[p__]; \
       int64_t source__ = current_eb__->vertexID;			\
       int64_t type__ = current_eb__->etype;				\
       for(uint64_t i__ = 0; i__ < stinger_eb_high(current_eb__); i__++) { \
@@ -305,8 +305,8 @@ extern "C" {
         const struct stinger * restrict S__ = (STINGER_);               \
         struct stinger_eb * restrict ebp__ = ebpool->ebpool;	\
         const int64_t etype__ = (TYPE_);                                \
-        for(uint64_t p__ = 0; p__ < ETA[(TYPE_)].high; p__++) {    \
-          int64_t ebp_k__ = ETA[(TYPE_)].blocks[p__];              \
+        for(uint64_t p__ = 0; p__ < ETA((STINGER_),(TYPE_))->high; p__++) {    \
+          int64_t ebp_k__ = ETA((STINGER_),(TYPE_))->blocks[p__];              \
           const int64_t source__ = ebp__[ebp_k__].vertexID;             \
           const int64_t type__ = ebp__[ebp_k__].etype;                  \
           for(uint64_t i__ = 0; i__ < ebp__[ebp_k__].high; i__++) {     \
@@ -330,8 +330,8 @@ extern "C" {
 	const struct stinger_eb * restrict ebp__ = ebpool->ebpool;	\
         OMP("omp parallel") {                                           \
           OMP("omp single") {                                           \
-            for(uint64_t p__ = 0; p__ < ETA[(TYPE_)].high; p__++) { \
-              int64_t ebp_k__ = ETA[(TYPE_)].blocks[p__];          \
+            for(uint64_t p__ = 0; p__ < ETA((STINGER_),(TYPE_))->high; p__++) { \
+              int64_t ebp_k__ = ETA((STINGER_),(TYPE_))->blocks[p__];          \
               const int64_t source__ = ebp__[ebp_k__].vertexID;         \
               const int64_t type__ = ebp__[ebp_k__].etype;              \
               OMP("omp task untied firstprivate(ebp_k__)")              \
@@ -426,7 +426,7 @@ extern "C" {
     } break; \
     /* vtype */ \
     case 4: { \
-      for(uint64_t j__ = 0; j__ < STINGER_MAX_LVERTICES; j__++) { \
+      for(uint64_t j__ = 0; j__ < (stinger->max_nv); j__++) { \
 	for(uint64_t i__ = 0; i__ < vtx_type_filter_count; i__++) { \
 	  if(stinger_vtype((stinger), j__) == vtx_type_filter[i__]) { \
 	    STINGER_FORALL_EDGES_OF_VTX_BEGIN(stinger, j__) { \
@@ -496,7 +496,7 @@ extern "C" {
       } \
     } break; \
     case 8: { \
-      for(uint64_t j__ = 0; j__ < STINGER_MAX_LVERTICES; j__++) { \
+      for(uint64_t j__ = 0; j__ < (stinger->max_nv); j__++) { \
 	STINGER_FORALL_EDGES_OF_VTX_BEGIN(stinger, j__) { \
 	  if(STINGER_EDGE_TIME_FIRST > created_after && STINGER_EDGE_TIME_FIRST < created_before && \
 	     STINGER_EDGE_TIME_RECENT > modified_after && STINGER_EDGE_TIME_RECENT < modified_before) { \
@@ -553,7 +553,7 @@ extern "C" {
     } break; \
     /* vtype */ \
     case 12: { \
-      for(uint64_t j__ = 0; j__ < STINGER_MAX_LVERTICES; j__++) { \
+      for(uint64_t j__ = 0; j__ < (stinger->max_nv); j__++) { \
 	for(uint64_t i__ = 0; i__ < vtx_type_filter_count; i__++) { \
 	  if(stinger_vtype((stinger), j__) == vtx_type_filter[i__]) { \
 	    STINGER_FORALL_EDGES_OF_VTX_BEGIN(stinger, j__) { \

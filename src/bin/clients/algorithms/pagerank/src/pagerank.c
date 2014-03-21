@@ -127,11 +127,11 @@ main(int argc, char *argv[])
 
   double * pr = (double *)alg->alg_data;
   OMP("omp parallel for")
-  for(uint64_t v = 0; v < STINGER_MAX_LVERTICES; v++) {
-    pr[v] = 1 / ((double)STINGER_MAX_LVERTICES);
+  for(uint64_t v = 0; v < alg->stinger->max_nv; v++) {
+    pr[v] = 1 / ((double)alg->stinger->max_nv);
   }
 
-  double * tmp_pr = (double *)xcalloc(STINGER_MAX_LVERTICES, sizeof(double));
+  double * tmp_pr = (double *)xcalloc(alg->stinger->max_nv, sizeof(double));
   
   /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
    * Initial static computation

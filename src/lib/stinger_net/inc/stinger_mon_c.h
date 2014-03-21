@@ -34,7 +34,7 @@ extern "C" {
   stinger_mon_wait_for_sync(void * self);
 
   int64_t
-  stinger_mon_get_max_nv();
+  stinger_mon_get_max_nv(void * self);
 
 }
 

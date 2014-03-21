@@ -226,7 +226,7 @@ get_from_ebpool (const struct stinger * S, eb_index_t *out, size_t k)
   eb_index_t ebt0;
   {
     ebt0 = stinger_int64_fetch_add (&(ebpool->ebpool_tail), k);
-    if (ebt0 + k >= EBPOOL_SIZE) {
+    if (ebt0 + k >= (S->max_neblocks)) {
       LOG_F("STINGER has run out of internal storage space.  Storing this graph will require a larger\n"
 	    "       initial STINGER allocation. Try reducing the number of vertices and/or edges per block in\n"
 	    "       stinger_defs.h.  See the 'Handling Common Errors' section of the README.md for more\n"
@@ -244,6 +244,18 @@ get_from_ebpool (const struct stinger * S, eb_index_t *out, size_t k)
 /* }}} */
 
 /* {{{ Internal utilities */
+
+vindex_t
+stinger_max_nv(stinger_t * S)
+{
+  return S->max_nv;
+}
+
+int64_t
+stinger_max_num_etypes(stinger_t * S)
+{
+  return S->max_netypes;
+}
 
 
 /** @brief Calculate the largest active vertex ID
@@ -264,7 +276,7 @@ stinger_max_active_vertex(const struct stinger * S) {
   OMP("omp parallel") {
     uint64_t local_max = 0;
     OMP("omp for")
-    for(uint64_t i = 0; i < STINGER_MAX_LVERTICES; i++) {
+    for(uint64_t i = 0; i < (S->max_nv); i++) {
       if((stinger_indegree_get(S, i) > 0 || stinger_outdegree_get(S, i) > 0) && 
 	i > local_max) {
 	local_max = i;
@@ -290,7 +302,7 @@ uint64_t
 stinger_num_active_vertices(const struct stinger * S) {
   uint64_t out = 0;
   OMP("omp parallel for reduction(+:out)")
-  for(uint64_t i = 0; i < STINGER_MAX_LVERTICES; i++) {
+  for(uint64_t i = 0; i < (S->max_nv); i++) {
     if(stinger_indegree_get(S, i) > 0 || stinger_outdegree_get(S, i) > 0) {
       out++;
     }
@@ -360,7 +372,7 @@ int64_t
 stinger_total_edges (const struct stinger * S)
 {
   uint64_t rtn = 0;
-  for (uint64_t i = 0; i < STINGER_MAX_LVERTICES; i++) {
+  for (uint64_t i = 0; i < (S->max_nv); i++) {
     rtn += stinger_outdegree_get(S, i);
   }
   return rtn;
@@ -395,7 +407,7 @@ size_t
 stinger_graph_size (const struct stinger *S)
 {
   MAP_STING(S);
-  int64_t num_edgeblocks = ETA->high;
+  int64_t num_edgeblocks = ebpool->ebpool_tail;;
   int64_t size_edgeblock = sizeof(struct stinger_eb);
 
   int64_t vertices_size = stinger_vertices_size_bytes(stinger_vertices_get(S));
@@ -514,7 +526,7 @@ stinger_consistency_check (struct stinger *S, uint64_t NV)
 
   free (inDegree);
 
-#if STINGER_NUMETYPES == 1
+#if 0
   // check for self-edges and duplicate edges
   int64_t count_self = 0;
   int64_t count_duplicate = 0;
@@ -590,7 +602,7 @@ stinger_fragmentation (struct stinger *S, uint64_t NV, struct stinger_fragmentat
     }
   }
 
-  int64_t totalEdgeBlocks = ETA->high;
+  int64_t totalEdgeBlocks = ebpool->ebpool_tail;
 
   stats->num_empty_edges = numSpaces;
   stats->num_fragmented_blocks = numBlocks;
@@ -608,49 +620,66 @@ stinger_fragmentation (struct stinger *S, uint64_t NV, struct stinger_fragmentat
 
 /* {{{ Allocating and tearing down */
 
-MTA ("mta inline")
-void stinger_init (void)
+size_t
+stinger_ebpool_size(int64_t nebs)
 {
+  return (sizeof(struct stinger_ebpool) + nebs * sizeof(struct stinger_eb));
 }
 
+size_t
+stinger_etype_array_size(int64_t nebs)
+{
+  return (sizeof(struct stinger_etype_array) + nebs * sizeof(struct stinger_eb));
+}
 
 /** @brief Create a new STINGER data structure.
  *
  *  Allocates memory for a STINGER data structure.  If this is the first STINGER
  *  to be allocated, it also initializes the edge block pool.  Edge blocks are
- *  allocated and assigned for each value less than STINGER_NUMETYPES.
+ *  allocated and assigned for each value less than netypes.
  *
  *  @return Pointer to struct stinger
  */
 MTA ("mta inline")
-struct stinger *stinger_new (void)
+struct stinger *stinger_new_full (int64_t nv, int64_t nebs, int64_t netypes, int64_t nvtypes)
 {
+  nv      = nv      ? nv      : STINGER_DEFAULT_VERTICES;
+  nebs    = nebs    ? nebs    : STINGER_DEFAULT_VERTICES * STINGER_DEFAULT_NEB_FACTOR;
+  netypes = netypes ? netypes : STINGER_DEFAULT_NUMETYPES;
+  nvtypes = nvtypes ? nvtypes : STINGER_DEFAULT_NUMVTYPES;
+
   size_t i;
   size_t sz = 0;
 
   size_t vertices_start = 0;
-  sz += stinger_vertices_size(STINGER_MAX_LVERTICES);
+  sz += stinger_vertices_size(nv);
 
   size_t physmap_start = sz;
-  sz += stinger_physmap_size(STINGER_MAX_LVERTICES); 
+  sz += stinger_physmap_size(nv);
 
   size_t ebpool_start = sz;
-  sz += sizeof(struct stinger_ebpool);
+  sz += netypes * stinger_ebpool_size(nebs);
 
   size_t etype_names_start = sz;
-  sz += stinger_names_size(STINGER_NUMETYPES);
+  sz += stinger_names_size(netypes);
 
   size_t vtype_names_start = sz;
-  sz += stinger_names_size(STINGER_NUMVTYPES);
+  sz += stinger_names_size(nvtypes);
 
   size_t ETA_start = sz;
-  sz += STINGER_NUMETYPES * sizeof(struct stinger_etype_array);
+  sz += netypes * stinger_etype_array_size(nebs);
 
   size_t length = sz;
 
   struct stinger *G = xmalloc (sizeof(struct stinger) + sz);
 
   xzero(G, sizeof(struct stinger) + sz);
+
+  G->max_nv       = nv;
+  G->max_neblocks = nebs;
+  G->max_netypes  = netypes;
+  G->max_nvtypes  = nvtypes;
+
   G->length = length;
   G->vertices_start = vertices_start;
   G->physmap_start = physmap_start;
@@ -662,30 +691,40 @@ struct stinger *stinger_new (void)
   MAP_STING(G);
 
   int64_t zero = 0;
-  stinger_vertices_init(vertices, STINGER_MAX_LVERTICES);
-  stinger_physmap_init(physmap, STINGER_MAX_LVERTICES);
-  stinger_names_init(etype_names, STINGER_NUMETYPES);
+  stinger_vertices_init(vertices, nv);
+  stinger_physmap_init(physmap, nv);
+  stinger_names_init(etype_names, netypes);
   stinger_names_create_type(etype_names, "None", &zero);
-  stinger_names_init(vtype_names, STINGER_NUMVTYPES);
+  stinger_names_init(vtype_names, nvtypes);
   stinger_names_create_type(vtype_names, "None", &zero);
 
   ebpool->ebpool_tail = 1;
   ebpool->is_shared = 0;
 
-#if STINGER_NUMETYPES == 1
-  ETA[0].length = EBPOOL_SIZE;
-  ETA[0].high = 0;
-#else
   OMP ("omp parallel for")
   MTA ("mta assert parallel")
   MTASTREAMS ()
-  for (i = 0; i < STINGER_NUMETYPES; ++i) {
-    ETA[i].length = EBPOOL_SIZE;
-    ETA[i].high = 0;
+  for (i = 0; i < netypes; ++i) {
+    ETA(G,i)->length = nebs;
+    ETA(G,i)->high = 0;
   }
-#endif
 
   return G;
+}
+
+
+/** @brief Create a new STINGER data structure.
+ *
+ *  Allocates memory for a STINGER data structure.  If this is the first STINGER
+ *  to be allocated, it also initializes the edge block pool.  Edge blocks are
+ *  allocated and assigned for each value less than netypes.
+ *
+ *  @return Pointer to struct stinger
+ */
+MTA ("mta inline")
+struct stinger *stinger_new (void)
+{
+  return stinger_new_full(0,0,0,0);;
 }
 
 /** @brief Free memory allocated to a particular STINGER instance.
@@ -826,12 +865,12 @@ push_ebs (struct stinger *G, size_t neb,
   MAP_STING(G);
   etype = ebpool->ebpool[eb[0]].etype;
   assert (etype >= 0);
-  assert (etype < STINGER_NUMETYPES);
+  assert (etype < G->max_netypes);
 
-  place = stinger_int64_fetch_add (&(ETA[etype].high), neb);
+  place = stinger_int64_fetch_add (&(ETA(G,etype)->high), neb);
 
   eb_index_t *blocks;
-  blocks = ETA[etype].blocks;
+  blocks = ETA(G,etype)->blocks;
 
   MTA ("mta assert nodep")
   for (int64_t k = 0; k < neb; ++k)
@@ -1925,8 +1964,8 @@ stinger_remove_all_edges_of_type (struct stinger *G, int64_t type)
   /* TODO fix bugs here */
   MTA("mta assert parallel")
   OMP("omp parallel for")
-  for (uint64_t p = 0; p < ETA[type].high; p++) {
-    struct stinger_eb *current_eb = ebpool->ebpool + ETA[type].blocks[p];
+  for (uint64_t p = 0; p < ETA(G, type)->high; p++) {
+    struct stinger_eb *current_eb = ebpool->ebpool + ETA(G,type)->blocks[p];
     int64_t thisVertex = current_eb->vertexID;
     int64_t high = current_eb->high;
     struct stinger_edge * edges = current_eb->edges;
@@ -1975,15 +2014,17 @@ stinger_save_to_file (struct stinger * S, uint64_t maxVtx, const char * stingerf
 {
 #define tdeg(X,Y) offsets[((X) * (maxVtx+2)) + (Y+2)]
 
-  MAP_STING(S);
-  uint64_t * restrict offsets = xcalloc((maxVtx+2) * STINGER_NUMETYPES, sizeof(uint64_t));
+  /* TODO TODO TODO fix this function and the load function to work wihtout static sizes */
 
-  for(int64_t type = 0; type < STINGER_NUMETYPES; type++) {
+  MAP_STING(S);
+  uint64_t * restrict offsets = xcalloc((maxVtx+2) * (S->max_netypes), sizeof(uint64_t));
+
+  for(int64_t type = 0; type < (S->max_netypes); type++) {
     struct stinger_eb * local_ebpool = ebpool->ebpool;
     OMP("omp parallel for")
     MTA("mta assert parallel")
-    for(uint64_t block = 0; block < ETA[type].high; block++) {
-      struct stinger_eb * cureb = local_ebpool + ETA[type].blocks[block];
+    for(uint64_t block = 0; block < ETA(S,type)->high; block++) {
+      struct stinger_eb * cureb = local_ebpool + ETA(S, type)->blocks[block];
       int64_t num = cureb->numEdges;
       if (num) {
 	stinger_int64_fetch_add(&tdeg(type,cureb->vertexID), num);
@@ -1991,31 +2032,31 @@ stinger_save_to_file (struct stinger * S, uint64_t maxVtx, const char * stingerf
     }
   }
 
-  for(int64_t type = 0; type < STINGER_NUMETYPES; type++) {
+  for(int64_t type = 0; type < (S->max_netypes); type++) {
     prefix_sum(maxVtx+2, offsets + (type * (maxVtx+2)));
   }
 
-  uint64_t * restrict type_offsets = xmalloc((STINGER_NUMETYPES+1) * sizeof(uint64_t));
+  uint64_t * restrict type_offsets = xmalloc(((S->max_netypes)+1) * sizeof(uint64_t));
 
   type_offsets[0] = 0;
-  for(int64_t type = 0; type < STINGER_NUMETYPES; type++) {
+  for(int64_t type = 0; type < (S->max_netypes); type++) {
     type_offsets[type+1] = offsets[type * (maxVtx + 2) + (maxVtx + 1)] + type_offsets[type];
   }
 
-  int64_t * restrict ind = xmalloc(4 * type_offsets[STINGER_NUMETYPES] * sizeof(int64_t));
-  int64_t * restrict weight = ind + type_offsets[STINGER_NUMETYPES];
-  int64_t * restrict timefirst = weight + type_offsets[STINGER_NUMETYPES];
-  int64_t * restrict timerecent = timefirst + type_offsets[STINGER_NUMETYPES];
+  int64_t * restrict ind = xmalloc(4 * type_offsets[(S->max_netypes)] * sizeof(int64_t));
+  int64_t * restrict weight = ind + type_offsets[(S->max_netypes)];
+  int64_t * restrict timefirst = weight + type_offsets[(S->max_netypes)];
+  int64_t * restrict timerecent = timefirst + type_offsets[(S->max_netypes)];
 
 #undef tdeg
 #define tdeg(X,Y) offsets[((X) * (maxVtx+2)) + (Y+1)]
 
-  for(int64_t type = 0; type < STINGER_NUMETYPES; type++) {
+  for(int64_t type = 0; type < (S->max_netypes); type++) {
     struct stinger_eb * local_ebpool = ebpool->ebpool;
     OMP("omp parallel for")
     MTA("mta assert parallel")
-    for(uint64_t block = 0; block < ETA[type].high; block++) {
-      struct stinger_eb * cureb = local_ebpool + ETA[type].blocks[block];
+    for(uint64_t block = 0; block < ETA(S,type)->high; block++) {
+      struct stinger_eb * cureb = local_ebpool + ETA(S,type)->blocks[block];
       int64_t num = cureb->numEdges;
       if (num) {
 	int64_t my_off = stinger_int64_fetch_add(&tdeg(type,cureb->vertexID),num) + type_offsets[type];
@@ -2043,7 +2084,7 @@ stinger_save_to_file (struct stinger * S, uint64_t maxVtx, const char * stingerf
     return -1;
   }
 
-  int64_t etypes = STINGER_NUMETYPES;
+  int64_t etypes = (S->max_netypes);
   int64_t written = 0;
 
   written += fwrite(&endian_check, sizeof(int64_t), 1, fp);
@@ -2067,7 +2108,7 @@ stinger_save_to_file (struct stinger * S, uint64_t maxVtx, const char * stingerf
   fclose(fp);
 #else
   xmt_luc_io_init();
-  int64_t etypes = STINGER_NUMETYPES;
+  int64_t etypes = (S->max_netypes);
   int64_t written = 0;
   size_t sz = (3 + etypes + 1 + (maxVtx+2) * etypes + 4 * type_offsets[etypes]) * sizeof(int64_t);
   int64_t * xmt_buf = xmalloc (sz);
@@ -2145,12 +2186,12 @@ stinger_open_from_file (const char * stingerfile, struct stinger ** S, uint64_t 
     etypes = bs64(etypes);
   }
 
-  if(*maxVtx > STINGER_MAX_LVERTICES) {
-    fprintf (stderr, "%s %d: Vertices in file \"%s\" larger than STINGER_MAX_LVERTICES\n", __func__, __LINE__, stingerfile);
+  if(*maxVtx > ((*S)->max_nv)) {
+    fprintf (stderr, "%s %d: Vertices in file \"%s\" larger than the maximum number of vertices.\n", __func__, __LINE__, stingerfile);
     return -1;
   }
-  if(etypes > STINGER_NUMETYPES) {
-    fprintf (stderr, "%s %d: Edge types in file \"%s\" larger than STINGER_NUMETYPES\n", __func__, __LINE__, stingerfile);
+  if(etypes > ((*S)->max_netypes)) {
+    fprintf (stderr, "%s %d: Edge types in file \"%s\" larger than the maximum number of edge types.\n", __func__, __LINE__, stingerfile);
     return -1;
   }
 
@@ -2235,7 +2276,7 @@ main(int argc, char *argv[])
 {
   stinger_t * S = stinger_new();
 
-  for(int64_t i = 0; i < STINGER_NUMETYPES; i++) {
+  for(int64_t i = 0; i < (S->max_netypes); i++) {
     char name[128];
     sprintf(name, "%ld", (long)i);
 
@@ -2246,7 +2287,7 @@ main(int argc, char *argv[])
       LOG_E("Etype doesn't have expected number");
   }
 
-  for(int64_t i = 0; i < STINGER_NUMVTYPES; i++) {
+  for(int64_t i = 0; i < (S->max_nvtypes); i++) {
     char name[128];
     sprintf(name, "%ld", (long)i);
 
@@ -2279,7 +2320,7 @@ main(int argc, char *argv[])
   int64_t nv;
   stinger_open_from_file("test_stinger.bin", &S, &nv);
 
-  for(int64_t i = 0; i < STINGER_NUMETYPES; i++) {
+  for(int64_t i = 0; i < (S->max_netypes); i++) {
     char name[128];
     sprintf(name, "%ld", (long)i);
 
@@ -2293,7 +2334,7 @@ main(int argc, char *argv[])
       LOG_E("etype doesn't have expected number");
   }
 
-  for(int64_t i = 0; i < STINGER_NUMVTYPES; i++) {
+  for(int64_t i = 0; i < (S->max_nvtypes); i++) {
     char name[128];
     sprintf(name, "%ld", (long)i);
 

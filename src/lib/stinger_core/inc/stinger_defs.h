@@ -14,31 +14,33 @@ extern "C" {
 * @{
 */
 
-/** Maximum number of vertices in STINGER */
-#if !defined(STINGER_MAX_LVERTICES)
-#if defined (__MTA__)
-/* XXX: Assume only 2**25 vertices */
-#define STINGER_MAX_LVERTICES (1L<<27)
-#else
-/* much smaller for quick testing */
-#define STINGER_MAX_LVERTICES (1L<<20)
-#endif
-#endif
+/** Default maximum number of vertices in allocated STINGER */
+#define STINGER_DEFAULT_VERTICES (1L<<20)
+/** Default maximum number of edge types in allocated STINGER */
+#define STINGER_DEFAULT_NUMETYPES 5
+/** Default maximum number of vertex types with names - integer types can be
+ *  INT64_MIN to INT64_MAX */
+#define STINGER_DEFAULT_NUMVTYPES 128
+
+#define STINGER_DEFAULT_NEB_FACTOR 4
+
+/** \def STINGER_DEFAULT_VERTICES
+*   \brief Default maximum number of vertices in allocated STINGER
+*/
+/** \def STINGER_DEFAULT_NUMETYPES
+*   \brief Default maximum number of edge types in allocated STINGER
+*/
+/** \def STINGER_DEFAULT_NUMVTYPES
+*   \brief  Default maximum number of vertex types with names - integer types can be
+*           INT64_MIN to INT64_MAX
+*/
+
+
 /** Edges per edge block */
 #define STINGER_EDGEBLOCKSIZE 14
-/** Number of edge types */
-#define STINGER_NUMETYPES 5
-/** Number of vertex types (with names) */
-#define STINGER_NUMVTYPES 128
-
-/** \def STINGER_MAX_LVERTICES
-*   \brief Maximum number of vertices that STINGER can support
-*/
 /** \def STINGER_EDGEBLOCKSIZE
-*   \brief Number of edges stored in an edge block
-*/
-/** \def STINGER_NUMETYPES
-*   \brief Number of edge types allowed.  Edge type values are 0 to STINGER_NUMETYPES - 1.
+*   \brief Number of edges stored in an edge block, users should not change 
+*         this value as it is used statically
 */
 
 
@@ -102,8 +104,8 @@ extern "C" {
     assert (G);				    \
     assert (from >= 0);			    \
     assert (to >= 0);			    \
-    assert (from < STINGER_MAX_LVERTICES);  \
-    assert (to < STINGER_MAX_LVERTICES);    \
+    assert (from < stinger_max_nv(G));  \
+    assert (to < stinger_max_nv(G));    \
   } while (0)
 
 #ifdef __cplusplus

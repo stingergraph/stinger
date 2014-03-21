@@ -28,7 +28,7 @@ execute_query (query_plan_t * query, stinger_t * S)
   int64_t offset = query->offset;
   int64_t rows = 0;
   int64_t valid = 0;  /* track number of valid rows, for limit/offset clauses */
-  int64_t nv = STINGER_MAX_LVERTICES;
+  int64_t nv = S->max_nv;
 
   if (limit == 0)
     limit = nv;

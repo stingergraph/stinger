@@ -138,7 +138,7 @@ stinger_register_alg_impl(stinger_register_alg_params params)
   if(params.data_per_vertex) {
     LOG_D_A("Mapping alg storage at %s", server_to_alg.alg_data_loc().c_str());
     strcpy(rtn->alg_data_loc, server_to_alg.alg_data_loc().c_str());
-    rtn->alg_data = shmmap(server_to_alg.alg_data_loc().c_str(), O_RDWR, S_IRUSR | S_IWUSR, PROT_READ | PROT_WRITE, params.data_per_vertex * STINGER_MAX_LVERTICES, MAP_SHARED);
+    rtn->alg_data = shmmap(server_to_alg.alg_data_loc().c_str(), O_RDWR, S_IRUSR | S_IWUSR, PROT_READ | PROT_WRITE, params.data_per_vertex * rtn->stinger->max_nv, MAP_SHARED);
     if(!rtn->alg_data) {
       LOG_E("Mapping alg data failed");
     }
@@ -165,7 +165,7 @@ stinger_register_alg_impl(stinger_register_alg_params params)
     
     rtn->dep_data[d] = shmmap(
       server_to_alg.dep_data_loc(d).c_str(), O_RDWR, S_IRUSR | S_IWUSR, PROT_READ | PROT_WRITE, 
-      server_to_alg.dep_data_per_vertex(d) * STINGER_MAX_LVERTICES, MAP_SHARED);
+      server_to_alg.dep_data_per_vertex(d) * rtn->stinger->max_nv, MAP_SHARED);
 
     if(!rtn->dep_data[d]) {
       LOG_E_A("Failed to map data for %s, but continuing", server_to_alg.dep_name(d).c_str());

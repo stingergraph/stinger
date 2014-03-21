@@ -192,8 +192,6 @@ connected_components_stinger_edge_parallel_and_tree(
     freeT = 1;
   }
 
-  assert(STINGER_NUMETYPES == 1);
-
   OMP("omp parallel") {
     OMP("omp for")
       for(uint64_t k = 0; k < nv; ++k) {
@@ -204,17 +202,19 @@ connected_components_stinger_edge_parallel_and_tree(
     while(1) {
       OMP("omp single")
 	change = 0;
-      STINGER_FORALL_EDGES_BEGIN(S, 0) {
-	if(d[STINGER_EDGE_SOURCE] < d[STINGER_EDGE_DEST]) {
-	  // NOTE: Do not change this to d[d[v]].  It breaks the tree. The
-	  // data flow relationship represented in the tree between a vertex
-	  // and its neighbors is not correct unless we move data accross one
-	  // physical edge at a time.
-	  d[STINGER_EDGE_DEST] = d[STINGER_EDGE_SOURCE];
-	  tree[STINGER_EDGE_DEST] = STINGER_EDGE_SOURCE;
-	  ++change;
-	}
-      } STINGER_FORALL_EDGES_END();
+      for(int64_t t = 0; t < S->max_netypes; t++) {
+	STINGER_FORALL_EDGES_BEGIN(S, t) {
+	  if(d[STINGER_EDGE_SOURCE] < d[STINGER_EDGE_DEST]) {
+	    // NOTE: Do not change this to d[d[v]].  It breaks the tree. The
+	    // data flow relationship represented in the tree between a vertex
+	    // and its neighbors is not correct unless we move data accross one
+	    // physical edge at a time.
+	    d[STINGER_EDGE_DEST] = d[STINGER_EDGE_SOURCE];
+	    tree[STINGER_EDGE_DEST] = STINGER_EDGE_SOURCE;
+	    ++change;
+	  }
+	} STINGER_FORALL_EDGES_END();
+      }
 
       if(!change) break;
 
@@ -256,8 +256,6 @@ connected_components_stinger_edge (const size_t nv,
     freeT = 1;
   }
 
-  assert(STINGER_NUMETYPES == 1);
-
   OMP("omp parallel") {
     OMP("omp for")
       for(uint64_t k = 0; k < nv; ++k) {
@@ -267,16 +265,18 @@ connected_components_stinger_edge (const size_t nv,
     while(1) {
       OMP("omp single")
 	change = 0;
-      STINGER_PARALLEL_FORALL_EDGES_BEGIN(S, 0) {
-	if(d[STINGER_EDGE_SOURCE] < d[STINGER_EDGE_DEST]) {
-	  // NOTE: Do not change this to d[d[v]].  It breaks the tree. The
-	  // data flow relationship represented in the tree between a vertex
-	  // and its neighbors is not correct unless we move data accross one
-	  // physical edge at a time.
-	  d[d[STINGER_EDGE_DEST]] = d[STINGER_EDGE_SOURCE];
-	  ++change;
-	}
-      } STINGER_PARALLEL_FORALL_EDGES_END();
+      for(int64_t t = 0; t < S->max_netypes; t++) {
+	STINGER_PARALLEL_FORALL_EDGES_BEGIN(S, t) {
+	  if(d[STINGER_EDGE_SOURCE] < d[STINGER_EDGE_DEST]) {
+	    // NOTE: Do not change this to d[d[v]].  It breaks the tree. The
+	    // data flow relationship represented in the tree between a vertex
+	    // and its neighbors is not correct unless we move data accross one
+	    // physical edge at a time.
+	    d[d[STINGER_EDGE_DEST]] = d[STINGER_EDGE_SOURCE];
+	    ++change;
+	  }
+	} STINGER_PARALLEL_FORALL_EDGES_END();
+      }
 
       if(!change) break;
 

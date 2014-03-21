@@ -140,6 +140,12 @@ shmunmap_kill(const char * name, void * ptr, size_t size) {
 struct stinger *
 stinger_shared_new (char ** out)
 {
+  return stinger_shared_new_full(out, 0, 0, 0, 0);
+}
+
+struct stinger *
+stinger_shared_new_full (char ** out, int64_t nv, int64_t nebs, int64_t netypes, int64_t nvtypes)
+{
   if (*out == NULL)
   {
     *out = xmalloc(sizeof(char) * MAX_NAME_LEN);
@@ -150,28 +156,33 @@ stinger_shared_new (char ** out)
     getcwd(pwd,  MAX_NAME_LEN-16);
     sprintf(*out, "%s/%lx", pwd, (uint64_t)rand());
 #endif
-  }
+  }                              
+
+  nv      = nv      ? nv      : STINGER_DEFAULT_VERTICES;
+  nebs    = nebs    ? nebs    : STINGER_DEFAULT_VERTICES * STINGER_DEFAULT_NEB_FACTOR;
+  netypes = netypes ? netypes : STINGER_DEFAULT_NUMETYPES;
+  nvtypes = nvtypes ? nvtypes : STINGER_DEFAULT_NUMVTYPES;
  
   size_t i;
   size_t sz = 0;
 
   size_t vertices_start = 0;
-  sz += stinger_vertices_size(STINGER_MAX_LVERTICES);
+  sz += stinger_vertices_size(nv);
 
   size_t physmap_start = sz;
-  sz += stinger_physmap_size(STINGER_MAX_LVERTICES); 
+  sz += stinger_physmap_size(nv);
 
   size_t ebpool_start = sz;
-  sz += sizeof(struct stinger_ebpool);
+  sz += netypes * stinger_ebpool_size(nebs);
 
   size_t etype_names_start = sz;
-  sz += stinger_names_size(STINGER_NUMETYPES);
+  sz += stinger_names_size(netypes);
 
   size_t vtype_names_start = sz;
-  sz += stinger_names_size(STINGER_NUMVTYPES);
+  sz += stinger_names_size(nvtypes);
 
   size_t ETA_start = sz;
-  sz += STINGER_NUMETYPES * sizeof(struct stinger_etype_array);
+  sz += netypes * stinger_etype_array_size(nebs);
 
   size_t length = sz;
 
@@ -185,6 +196,12 @@ stinger_shared_new (char ** out)
 
   /* initialize the new data structure */
   xzero(G, sizeof(struct stinger) + sz);
+
+  G->max_nv       = nv;
+  G->max_neblocks = nebs;
+  G->max_netypes  = netypes;
+  G->max_nvtypes  = nvtypes;
+
   G->length = length;
   G->vertices_start = vertices_start;
   G->physmap_start = physmap_start;
@@ -196,28 +213,24 @@ stinger_shared_new (char ** out)
   MAP_STING(G);
 
   int64_t zero = 0;
-  stinger_vertices_init(vertices, STINGER_MAX_LVERTICES);
-  stinger_physmap_init(physmap, STINGER_MAX_LVERTICES);
-  stinger_names_init(etype_names, STINGER_NUMETYPES);
+  stinger_vertices_init(vertices, nv);
+  stinger_physmap_init(physmap, nv);
+  stinger_names_init(etype_names, netypes);
   stinger_names_create_type(etype_names, "None", &zero);
-  stinger_names_init(vtype_names, STINGER_NUMVTYPES);
+  stinger_names_init(vtype_names, nvtypes);
   stinger_names_create_type(vtype_names, "None", &zero);
 
   ebpool->ebpool_tail = 1;
   ebpool->is_shared = 0;
 
-#if STINGER_NUMETYPES == 1
-  ETA[0].length = EBPOOL_SIZE;
-  ETA[0].high = 0;
-#else
   OMP ("omp parallel for")
   MTA ("mta assert parallel")
   MTASTREAMS ()
-  for (i = 0; i < STINGER_NUMETYPES; ++i) {
-    ETA[i].length = EBPOOL_SIZE;
-    ETA[i].high = 0;
+  for (i = 0; i < netypes; ++i) {
+    ETA(G,i)->length = nebs;
+    ETA(G,i)->high = 0;
   }
-#endif
+
   printf("Shared: %s\n", *out);
 
   return G;

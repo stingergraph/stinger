@@ -95,7 +95,7 @@ handle_alg(struct AcceptedSock * sock, StingerServerState & server_state)
 
     /* check name and attempt to allocate space */
     if(is_simple_name(alg_to_server.alg_name().c_str(), alg_to_server.alg_name().length())) {
-      int64_t data_total = alg_to_server.data_per_vertex() * STINGER_MAX_LVERTICES;
+      int64_t data_total = alg_to_server.data_per_vertex() * server_state.get_stinger()->max_nv;
       void * data = NULL;
       char map_name[256] = "";
 

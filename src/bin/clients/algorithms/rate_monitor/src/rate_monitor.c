@@ -56,9 +56,9 @@ main(int argc, char *argv[])
     return -1;
   }
 
-  bzero(alg->alg_data, sizeof(double) * 2 * STINGER_MAX_LVERTICES);
+  bzero(alg->alg_data, sizeof(double) * 2 * alg->stinger->max_nv);
   double * vel	  = (double *)alg->alg_data;
-  double * accel  = vel + STINGER_MAX_LVERTICES;
+  double * accel  = vel + alg->stinger->max_nv;
 
   
   /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *

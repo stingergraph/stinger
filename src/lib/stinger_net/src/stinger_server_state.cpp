@@ -534,7 +534,7 @@ StingerServerState::write_data()
 
       snprintf(name_buf, 1024, "%s/%s.%ld.rslt", out_dir.c_str(), alg->name.c_str(), batch_count);
 
-      int64_t nv_max = STINGER_MAX_LVERTICES;
+      int64_t nv_max = stinger->max_nv;
       int64_t nv = stinger_mapping_nv(stinger);
       int64_t size = 0;
 

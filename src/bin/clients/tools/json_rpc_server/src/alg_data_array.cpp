@@ -25,7 +25,7 @@ namespace gt {
 		    const char * algorithm_name,
 		    const char * field) : state(server_state)
     { 
-      len = STINGER_MAX_LVERTICES;
+      len = server_state->get_stinger()->max_nv;
       strncpy(alg, algorithm_name, 128);
       StingerAlgState * alg_state = server_state->get_alg(algorithm_name);
       if (!alg_state) {

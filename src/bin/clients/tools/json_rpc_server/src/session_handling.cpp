@@ -225,7 +225,7 @@ JSON_RPC_community_subgraph::onRegister(
   }
 
   const char * description_string = alg_state -> data_description.c_str();
-  int64_t nv = STINGER_MAX_LVERTICES;
+  int64_t nv = S->max_nv;
   uint8_t * data = (uint8_t *) alg_state->data;
   const char * search_string = _data_array_name;
 

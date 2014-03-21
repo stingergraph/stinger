@@ -255,7 +255,7 @@ group_to_json(stinger_t * S, int64_t * group, int64_t groupsize) {
  * vertices with the same label */
 string_t *
 labeled_subgraph_to_json(stinger_t * S, int64_t src, int64_t * labels, const int64_t vtxlimit_in) {
-  const int64_t vtxlimit = (vtxlimit_in < 1 || vtxlimit_in > STINGER_MAX_LVERTICES? STINGER_MAX_LVERTICES : vtxlimit_in);
+  const int64_t vtxlimit = (vtxlimit_in < 1 || vtxlimit_in > S->max_nv ? S->max_nv : vtxlimit_in);
   string_t vertices, edges;
   string_init_from_cstr(&vertices, "\"vertices\" : [ \n");
   string_init_from_cstr(&edges, "\"edges\" : [ \n");
@@ -271,7 +271,7 @@ labeled_subgraph_to_json(stinger_t * S, int64_t src, int64_t * labels, const int
   edge_str = &vtx_str[1UL<<20UL];
   vtx_file = fmemopen(vtx_str, sizeof(vtx_str) * 1UL<<20UL, "w");
 
-  uint8_t * found = xcalloc(sizeof(uint8_t), STINGER_MAX_LVERTICES);
+  uint8_t * found = xcalloc(sizeof(uint8_t), S->max_nv);
   int64_t * queue = xmalloc(sizeof(int64_t) * (vtxlimit < 1? 1 : vtxlimit));
 
   queue[0] = src;

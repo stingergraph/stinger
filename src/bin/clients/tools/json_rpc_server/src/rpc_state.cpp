@@ -126,7 +126,7 @@ JSON_RPCFunction::contains_params(rpc_params_t * p, rapidjson::Value * params) {
         case TYPE_VERTEX: {
           if((*params)[p->name].IsInt64()) {
             int64_t tmp = (*params)[p->name].GetInt64();
-            if (tmp < 0 || tmp >= STINGER_MAX_LVERTICES)
+            if (tmp < 0 || tmp >= S->max_nv)
               return false;
             *((int64_t *)p->output) = tmp;
           } else if((*params)[p->name].IsString()) {
@@ -179,7 +179,7 @@ JSON_RPCFunction::contains_params(rpc_params_t * p, rapidjson::Value * params) {
 	  for (int64_t i = 0; i < ptr->len; i++) {
 	    if ((*params)[p->name][i].IsInt64()) {
 	      int64_t tmp = (*params)[p->name][i].GetInt64();
-	      if ( !(tmp < 0 || tmp >= STINGER_MAX_LVERTICES) ) {
+	      if ( !(tmp < 0 || tmp >= S->max_nv) ) {
 		ptr->arr[count_valid++] = tmp;
 	      }
 	    }

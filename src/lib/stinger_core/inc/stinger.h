@@ -20,21 +20,25 @@ typedef struct stinger stinger_t;
 /* STINGER creation & deletion */
 struct stinger *stinger_new (void);
 
+struct stinger *stinger_new_full (int64_t nv, int64_t nebs, int64_t netypes, int64_t nvtypes);
+
 void stinger_set_initial_edges (struct stinger * /* G */ ,
-				const size_t /* nv */ ,
-				const int64_t /* EType */ ,
-				const int64_t * /* off */ ,
-				const int64_t * /* phys_to */ ,
-				const int64_t * /* weights */ ,
-				const int64_t * /* times */ ,
-				const int64_t * /* first_times */ ,
-				const int64_t
-				/* single_ts, if !times or !first_times */
-  );
+				const size_t     /* nv */ ,
+				const int64_t    /* EType */ ,
+				const int64_t *  /* off */ ,
+				const int64_t *  /* phys_to */ ,
+				const int64_t *  /* weights */ ,
+				const int64_t *  /* times */ ,
+				const int64_t *  /* first_times */ ,
+				const int64_t    /* single_ts, if !times or !first_times */);
 
 struct stinger *stinger_free (struct stinger *);
 
 struct stinger *stinger_free_all (struct stinger *);
+
+vindex_t stinger_max_nv(stinger_t * S);
+
+int64_t stinger_max_num_etypes(stinger_t * S);
 
 /* read and write stinger from disk 
  * writes stinger into series of files in the specified directory
@@ -277,6 +281,12 @@ int64_t stinger_total_edges (const struct stinger *);
 int64_t stinger_edges_up_to(const struct stinger * S, int64_t nv);
 
 size_t stinger_graph_size (const struct stinger *);
+
+size_t
+stinger_ebpool_size(int64_t nebs);
+
+size_t
+stinger_etype_array_size(int64_t nebs);
 
 /* Graph traversal macros *
  * MUST BE CALLED IN PAIRS.

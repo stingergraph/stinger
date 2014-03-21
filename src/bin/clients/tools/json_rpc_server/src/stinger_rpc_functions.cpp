@@ -252,7 +252,7 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
   }
 
   /* breadth-first search */
-  int64_t nv = STINGER_MAX_LVERTICES;
+  int64_t nv = S->max_nv;
 
   int64_t * found   = (int64_t *) xmalloc (nv * sizeof(int64_t));
   for (int64_t i = 0; i < nv; i++) {
@@ -527,7 +527,7 @@ JSON_RPC_label_breadth_first_search::operator()(rapidjson::Value * params, rapid
   AlgDataArray labels(server_state, algorithm_name, data_array_name);
 
   /* breadth-first search */
-  int64_t nv = STINGER_MAX_LVERTICES;
+  int64_t nv = S->max_nv;
 
   int64_t * found = (int64_t *) xmalloc (nv * sizeof(int64_t));
   for (int64_t i = 0; i < nv; i++) {
@@ -1483,23 +1483,23 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
       LOG_D_A ("%s: does not match %d", search_string, nv);
       switch (description_string[off]) {
 	case 'f':
-	  data += (STINGER_MAX_LVERTICES * sizeof(float));
+	  data += (S->max_nv * sizeof(float));
 	  break;
 
 	case 'd':
-	  data += (STINGER_MAX_LVERTICES * sizeof(double));
+	  data += (S->max_nv * sizeof(double));
 	  break;
 
 	case 'i':
-	  data += (STINGER_MAX_LVERTICES * sizeof(int32_t));
+	  data += (S->max_nv * sizeof(int32_t));
 	  break;
 
 	case 'l':
-	  data += (STINGER_MAX_LVERTICES * sizeof(int64_t));
+	  data += (S->max_nv * sizeof(int64_t));
 	  break;
 
 	case 'b':
-	  data += (STINGER_MAX_LVERTICES * sizeof(uint8_t));
+	  data += (S->max_nv * sizeof(uint8_t));
 	  break;
 
 	default:
@@ -2029,7 +2029,7 @@ array_to_json_reduction    (stinger_t * S,
   }
 
   int64_t start = 0;
-  int64_t end = STINGER_MAX_LVERTICES;
+  int64_t end = S->max_nv;
 
   while (pch != NULL)
   {
@@ -2145,23 +2145,23 @@ array_to_json_reduction    (stinger_t * S,
 
       switch (description_string[off]) {
 	case 'f':
-	  data += (STINGER_MAX_LVERTICES * sizeof(float));
+	  data += (S->max_nv * sizeof(float));
 	  break;
 
 	case 'd':
-	  data += (STINGER_MAX_LVERTICES * sizeof(double));
+	  data += (S->max_nv * sizeof(double));
 	  break;
 
 	case 'i':
-	  data += (STINGER_MAX_LVERTICES * sizeof(int32_t));
+	  data += (S->max_nv * sizeof(int32_t));
 	  break;
 
 	case 'l':
-	  data += (STINGER_MAX_LVERTICES * sizeof(int64_t));
+	  data += (S->max_nv * sizeof(int64_t));
 	  break;
 
 	case 'b':
-	  data += (STINGER_MAX_LVERTICES * sizeof(uint8_t));
+	  data += (S->max_nv * sizeof(uint8_t));
 	  break;
 
 	default:

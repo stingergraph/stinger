@@ -49,7 +49,7 @@ main(int argc, char *argv[])
   stinger_alg_begin_init(alg); {
 
     LOG_I_A("Initializing algorithm... consistency check: %ld",
-      (long) stinger_consistency_check(alg->stinger, STINGER_MAX_LVERTICES));
+      (long) stinger_consistency_check(alg->stinger, alg->stinger->max_nv));
 
   } stinger_alg_end_init(alg);
 
@@ -62,7 +62,7 @@ main(int argc, char *argv[])
     if(stinger_alg_begin_pre(alg)) {
 
       LOG_I_A("Preprocessing algorithm... consistency check: %ld",
-	(long) stinger_consistency_check(alg->stinger, STINGER_MAX_LVERTICES));
+	(long) stinger_consistency_check(alg->stinger, alg->stinger->max_nv));
 
       LOG_I_A("Preprocessing algorithm... num_insertions: %ld",
 	alg->num_insertions);
@@ -97,7 +97,7 @@ main(int argc, char *argv[])
     if(stinger_alg_begin_post(alg)) {
 
       LOG_I_A("Postprocessing algorithm... consistency check: %ld",
-	(long) stinger_consistency_check(alg->stinger, STINGER_MAX_LVERTICES));
+	(long) stinger_consistency_check(alg->stinger, alg->stinger->max_nv));
 
       LOG_I_A("Postprocessing algorithm... num_insertions: %ld",
 	alg->num_insertions);

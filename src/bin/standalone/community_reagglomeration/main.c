@@ -81,10 +81,6 @@ main (const int argc, char *argv[])
   print_initial_graph_stats (nv, ne, batch_size, nbatch, naction);
   BATCH_SIZE_CHECK();
 
-  if (nv >= STINGER_MAX_LVERTICES) {
-    fprintf (stderr, "Increase STINGER_MAX_LVERTICES to at least %ld\n", (long)nv);
-  }
-
   ncomm_trace = xmalloc (nbatch * sizeof(*ncomm_trace));
   ncel_trace = xmalloc (nbatch * sizeof(*ncel_trace));
   nactvtx_trace = xmalloc (nbatch * sizeof(*nactvtx_trace));
@@ -103,6 +99,11 @@ main (const int argc, char *argv[])
   /* Convert to STINGER */
   tic ();
   S = stinger_new ();
+
+  if (nv >= S->max_nv) {
+    fprintf (stderr, "Increase stinger vertices to at least %ld\n", (long)nv);
+  }
+
   stinger_set_initial_edges (S, nv, 0, off, ind, weight, NULL, NULL, 0);
   PRINT_STAT_DOUBLE ("time_stinger", toc ());
   fflush(stdout);

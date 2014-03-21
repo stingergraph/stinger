@@ -114,7 +114,7 @@ StingerMon::update_algs(stinger_t * stinger_copy, std::string new_loc, int64_t n
     for(int64_t i = 0; i < algs->size(); i++) {
       StingerAlgState * cur_alg = (*algs)[i];
       if(cur_alg) {
-	shmunmap(cur_alg->data_loc.c_str(), cur_alg->data, cur_alg->data_per_vertex * STINGER_MAX_LVERTICES);
+	shmunmap(cur_alg->data_loc.c_str(), cur_alg->data, cur_alg->data_per_vertex * stinger->max_nv);
 	delete cur_alg;
       }
     }

@@ -43,13 +43,16 @@ map_update(ServerToMon & server_to_mon, stinger_t ** stinger_copy,
   std::map<std::string, StingerAlgState *> & alg_map)
 {
 
+  LOG_D_A("Mapping stinger %s %ld", server_to_mon.stinger_loc().c_str(), server_to_mon.stinger_size());
+  *stinger_copy = stinger_shared_private(server_to_mon.stinger_loc().c_str(), server_to_mon.stinger_size());
+
   LOG_D("Mapping all algs");
   for(int64_t d = 0; d < server_to_mon.dep_name_size(); d++) {
     StingerAlgState * alg_state = new StingerAlgState();
     
     alg_state->data = shmmap(
       server_to_mon.dep_data_loc(d).c_str(), O_RDWR, S_IRUSR | S_IWUSR, PROT_READ | PROT_WRITE, 
-      server_to_mon.dep_data_per_vertex(d) * STINGER_MAX_LVERTICES, MAP_PRIVATE);
+      server_to_mon.dep_data_per_vertex(d) * ((*stinger_copy)->max_nv), MAP_PRIVATE);
 
     if(!alg_state->data) {
       LOG_E_A("Failed to map data for %s, but continuing", server_to_mon.dep_name(d).c_str());
@@ -65,9 +68,6 @@ map_update(ServerToMon & server_to_mon, stinger_t ** stinger_copy,
     algs.push_back(alg_state);
     alg_map[server_to_mon.dep_name(d)] = alg_state;
   }
-
-  LOG_D_A("Mapping stinger %s %ld", server_to_mon.stinger_loc().c_str(), server_to_mon.stinger_size());
-  *stinger_copy = stinger_shared_private(server_to_mon.stinger_loc().c_str(), server_to_mon.stinger_size());
 
   if(*stinger_copy)
     return true;
