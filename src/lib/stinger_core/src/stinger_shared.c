@@ -14,6 +14,8 @@
 #include <unistd.h>
 #include <string.h>
 
+#include "compat/getMemorySize.h"
+
 void
 sigbus_handler(int sig, siginfo_t *si, void * vuctx)
 {
@@ -159,32 +161,52 @@ stinger_shared_new_full (char ** out, int64_t nv, int64_t nebs, int64_t netypes,
   }                              
 
   nv      = nv      ? nv      : STINGER_DEFAULT_VERTICES;
-  nebs    = nebs    ? nebs    : STINGER_DEFAULT_VERTICES * STINGER_DEFAULT_NEB_FACTOR;
+  nebs    = nebs    ? nebs    : STINGER_DEFAULT_NEB_FACTOR * nv;
   netypes = netypes ? netypes : STINGER_DEFAULT_NUMETYPES;
   nvtypes = nvtypes ? nvtypes : STINGER_DEFAULT_NUMVTYPES;
+
+  size_t memory_size = getMemorySize();
  
   size_t i;
-  size_t sz = 0;
+  size_t sz     = 0;
+  size_t length = 0;
+  int resized   = 0;
 
-  size_t vertices_start = 0;
-  sz += stinger_vertices_size(nv);
+  size_t vertices_start, physmap_start, ebpool_start, 
+	 etype_names_start, vtype_names_start, ETA_start;
 
-  size_t physmap_start = sz;
-  sz += stinger_physmap_size(nv);
+  do {
+    if(sz > ((memory_size * 3) / 4)) {
+      if(!resized) {
+	LOG_W_A("Resizing stinger to fit into memory (detected as %ld)", memory_size);
+      }
+      resized = 1;
 
-  size_t ebpool_start = sz;
-  sz += netypes * stinger_ebpool_size(nebs);
+      sz    = 0;
+      nv   /= 2;
+      nebs /= 2;
+    }
 
-  size_t etype_names_start = sz;
-  sz += stinger_names_size(netypes);
+    vertices_start = 0;
+    sz += stinger_vertices_size(nv);
 
-  size_t vtype_names_start = sz;
-  sz += stinger_names_size(nvtypes);
+    physmap_start = sz;
+    sz += stinger_physmap_size(nv);
 
-  size_t ETA_start = sz;
-  sz += netypes * stinger_etype_array_size(nebs);
+    ebpool_start = sz;
+    sz += netypes * stinger_ebpool_size(nebs);
 
-  size_t length = sz;
+    etype_names_start = sz;
+    sz += stinger_names_size(netypes);
+
+    vtype_names_start = sz;
+    sz += stinger_names_size(nvtypes);
+
+    ETA_start = sz;
+    sz += netypes * stinger_etype_array_size(nebs);
+
+    length = sz;
+  } while(sz > memory_size);
 
   struct stinger *G = shmmap (*out, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR,
     PROT_READ | PROT_WRITE, sizeof(struct stinger) + sz, MAP_SHARED);

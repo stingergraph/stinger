@@ -12,6 +12,8 @@
 #include "xmalloc.h"
 #include "x86_full_empty.h"
 
+#include "compat/getMemorySize.h"
+
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
  * ACCESS INTERNAL "CLASSES"
@@ -629,7 +631,7 @@ stinger_ebpool_size(int64_t nebs)
 size_t
 stinger_etype_array_size(int64_t nebs)
 {
-  return (sizeof(struct stinger_etype_array) + nebs * sizeof(struct stinger_eb));
+  return (sizeof(struct stinger_etype_array) + nebs * sizeof(eb_index_t));
 }
 
 /** @brief Create a new STINGER data structure.
@@ -644,32 +646,52 @@ MTA ("mta inline")
 struct stinger *stinger_new_full (int64_t nv, int64_t nebs, int64_t netypes, int64_t nvtypes)
 {
   nv      = nv      ? nv      : STINGER_DEFAULT_VERTICES;
-  nebs    = nebs    ? nebs    : STINGER_DEFAULT_VERTICES * STINGER_DEFAULT_NEB_FACTOR;
+  nebs    = nebs    ? nebs    : STINGER_DEFAULT_NEB_FACTOR * nv;
   netypes = netypes ? netypes : STINGER_DEFAULT_NUMETYPES;
   nvtypes = nvtypes ? nvtypes : STINGER_DEFAULT_NUMVTYPES;
 
+  size_t memory_size = getMemorySize();
+
   size_t i;
-  size_t sz = 0;
+  size_t sz     = 0;
+  size_t length = 0;
+  int resized   = 0;
 
-  size_t vertices_start = 0;
-  sz += stinger_vertices_size(nv);
+  size_t vertices_start, physmap_start, ebpool_start, 
+	 etype_names_start, vtype_names_start, ETA_start;
 
-  size_t physmap_start = sz;
-  sz += stinger_physmap_size(nv);
+  do {
+    if(sz > ((memory_size * 3) / 4)) {
+      if(!resized) {
+	LOG_W_A("Resizing stinger to fit into memory (detected as %ld)", memory_size);
+      }
+      resized = 1;
 
-  size_t ebpool_start = sz;
-  sz += netypes * stinger_ebpool_size(nebs);
+      sz    = 0;
+      nv   /= 2;
+      nebs /= 2;
+    }
 
-  size_t etype_names_start = sz;
-  sz += stinger_names_size(netypes);
+    vertices_start = 0;
+    sz += stinger_vertices_size(nv);
 
-  size_t vtype_names_start = sz;
-  sz += stinger_names_size(nvtypes);
+    physmap_start = sz;
+    sz += stinger_physmap_size(nv);
 
-  size_t ETA_start = sz;
-  sz += netypes * stinger_etype_array_size(nebs);
+    ebpool_start = sz;
+    sz += netypes * stinger_ebpool_size(nebs);
 
-  size_t length = sz;
+    etype_names_start = sz;
+    sz += stinger_names_size(netypes);
+
+    vtype_names_start = sz;
+    sz += stinger_names_size(nvtypes);
+
+    ETA_start = sz;
+    sz += netypes * stinger_etype_array_size(nebs);
+
+    length = sz;
+  } while(sz > memory_size);
 
   struct stinger *G = xmalloc (sizeof(struct stinger) + sz);
 
