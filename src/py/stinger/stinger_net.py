@@ -194,7 +194,7 @@ class StingerDataArray():
 
     self.field_name = field_name
     self.data_type = data_desc[0][field_index]
-    self.nv = libstinger_net['stinger_mon_get_max_nv'](self.alg)
+    self.nv = libstinger_net['stinger_alg_max_vertices'](s.raw())
     self.s = s
 
     offset = reduce(

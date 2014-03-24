@@ -676,3 +676,8 @@ stinger_alg_weight_int64(stinger_t * S, int64_t * field, int64_t weight) {
     field[v] *= weight;
   }
 }
+
+extern "C" int64_t
+stinger_alg_max_vertices(stinger_t * S) {
+  return S->max_nv;
+}

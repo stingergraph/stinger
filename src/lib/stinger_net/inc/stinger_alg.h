@@ -199,6 +199,9 @@ stinger_alg_weight_double(stinger_t * S, double * field, double weight);
 void
 stinger_alg_weight_int64(stinger_t * S, int64_t * field, int64_t weight);
 
+int64_t
+stinger_alg_max_vertices(stinger_t * S);
+
 #ifdef __cplusplus
 }
 #endif
