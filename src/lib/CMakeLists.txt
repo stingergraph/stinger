@@ -2,6 +2,7 @@ include(ExternalProject)
 
 ##################################################
 # Add library dependencies here as libdep_<folder>
+SET(libdep_stinger_core compat)
 SET(libdep_stinger_utils stinger_core int_hm_seq string fmemopen compat)
 SET(libdep_kv_store string)
 SET(libdep_mongoose dl pthread)
