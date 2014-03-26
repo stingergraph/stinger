@@ -143,12 +143,13 @@ parse_unix_time(int64_t ts) {
   }
 
   struct tm * me = gmtime((time_t *)&ts);
-  return //CHAR2INT(time[26]) * 10000000000000 +
+
+  ts =   //CHAR2INT(time[26]) * 10000000000000 +
 	 //CHAR2INT(time[27]) *  1000000000000 +
 	 //CHAR2INT(time[28]) *   100000000000 +
-	 me->tm_year          *    10000000000 +
+	 (me->tm_year + 1900) *    10000000000 +
 	 /* month */
-	 me->tm_mon           *      100000000 +
+	 (me->tm_mon + 1)     *      100000000 +
 	 /* day */
 	 //CHAR2INT(time[8])  *       10000000 +
 	 me->tm_mday          *        1000000 +
@@ -161,6 +162,8 @@ parse_unix_time(int64_t ts) {
 	 /* second */
 	 //CHAR2INT(time[17]) *             10 +
 	 me->tm_sec;
+
+  return ts;
 }
 
 struct EdgeCollection;
@@ -1009,6 +1012,7 @@ struct ExploreJSONValue : public ExploreJSONGeneric {
 	if(document.IsString()) {
 	  edges.time.push_back(parse_twitter_time(document.GetString(), document.GetStringLength()));
 	  LOG_D_A("Parsed: %ld", edges.time[edges.time.size()-1]);
+	} else {
 	}
 	break;    
 
