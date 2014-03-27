@@ -126,6 +126,7 @@ main (int argc, char ** argv)
   server_state.add_rpc_session("subgraph", new JSON_RPC_community_subgraph(0, &server_state));
   server_state.add_rpc_session("vertex_event_notifier", new JSON_RPC_vertex_event_notifier(0, &server_state));
   server_state.add_rpc_session("get_latlon", new JSON_RPC_get_latlon(0, &server_state));
+  server_state.add_rpc_session("get_latlon_gnip", new JSON_RPC_get_latlon_gnip(0, &server_state));
 
   mon_connect(10103, "localhost", "json_rpc");
 
