@@ -115,3 +115,27 @@ FOREACH(subdir ${subs})
     ENDIF()
   ENDIF()
 ENDFOREACH()
+
+##################################################
+# Memory size configuration bits for stinger_core
+SET(STINGER_DEFAULT_VERTICES "(1L<<24)" CACHE STRING "Default number of vertices")
+SET(STINGER_DEFAULT_NUMETYPES "5" CACHE STRING "Default number of edge types")
+SET(STINGER_DEFAULT_NUMVTYPES "128" CACHE STRING "Default number of vertex types")
+SET(STINGER_DEFAULT_NEB_FACTOR "4" CACHE STRING "Default number of edge blocks per vertex")
+SET(STINGER_EDGEBLOCKSIZE "14" CACHE STRING "Number of edges per edge block")
+SET(STINGER_NAME_STR_MAX "255" CACHE STRING "Max string length in physmap")
+
+CONFIGURE_FILE(stinger_core/inc/stinger_defs.h.in stinger_core/inc/stinger_defs.h @ONLY)
+CONFIGURE_FILE(stinger_core/inc/stinger_names.h.in stinger_core/inc/stinger_names.h @ONLY)
+INCLUDE_DIRECTORIES("${PROJECT_BINARY_DIR}/src/lib/stinger_core/inc")
+
+ADD_CUSTOM_COMMAND(TARGET stinger_core
+  POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_BINARY_DIR}/src/lib/stinger_core/inc/stinger_defs.h" "${CMAKE_BINARY_DIR}/include/stinger_core/stinger_defs.h"
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_BINARY_DIR}/src/lib/stinger_core/inc/stinger_names.h" "${CMAKE_BINARY_DIR}/include/stinger_core/stinger_names.h"
+  )
+ADD_CUSTOM_COMMAND(TARGET stinger_core_static
+  POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_BINARY_DIR}/src/lib/stinger_core/inc/stinger_defs.h" "${CMAKE_BINARY_DIR}/include/stinger_core/stinger_defs.h"
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_BINARY_DIR}/src/lib/stinger_core/inc/stinger_names.h" "${CMAKE_BINARY_DIR}/include/stinger_core/stinger_names.h"
+  )
