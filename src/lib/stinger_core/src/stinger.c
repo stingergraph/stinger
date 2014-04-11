@@ -1,5 +1,7 @@
 /* -*- mode: C; mode: folding; fill-column: 70; -*- */
 #include <dirent.h>
+#include <limits.h>
+#include <errno.h>
 
 #if defined(_OPENMP)
 #include <omp.h>
@@ -634,11 +636,58 @@ stinger_etype_array_size(int64_t nebs)
   return (sizeof(struct stinger_etype_array) + nebs * sizeof(eb_index_t));
 }
 
+static size_t max_memsize_env = 0;
+static void
+set_max_memsize_env (void)
+{
+  if (max_memsize_env != 0) return;
+  if (getenv ("STINGER_MAX_MEMSIZE")) {
+    char *tailptr = NULL;
+    unsigned long mx;
+    errno = 0;
+    mx = strtoul (getenv ("STINGER_MAX_MEMSIZE"), &tailptr, 10);
+    if (ULONG_MAX != mx && errno == 0) {
+      if (tailptr)
+        switch (*tailptr) {
+        case 't':
+        case 'T':
+          mx <<= 10;
+        case 'g':
+        case 'G':
+          mx <<= 10;
+        case 'm':
+        case 'M':
+          mx <<= 10;
+        case 'k':
+        case 'K':
+          mx <<= 10;
+          break;
+        }
+    }
+    max_memsize_env = mx;
+  } else {
+    max_memsize_env = SIZE_MAX;
+  }
+}
+
+static size_t
+max_memsize (void)
+{
+  size_t out;
+  set_max_memsize_env ();
+  out = getMemorySize();
+  if (out > max_memsize_env)
+    out = max_memsize_env;
+  return out;
+}
+
 /** @brief Create a new STINGER data structure.
  *
  *  Allocates memory for a STINGER data structure.  If this is the first STINGER
  *  to be allocated, it also initializes the edge block pool.  Edge blocks are
- *  allocated and assigned for each value less than netypes.
+ *  allocated and assigned for each value less than netypes.  The environment
+ *  variable STINGER_MAX_MEMSIZE, if set to a number with optional size suffix,
+ *  limits STINGER's maximum allocated size.
  *
  *  @return Pointer to struct stinger
  */
@@ -650,7 +699,7 @@ struct stinger *stinger_new_full (int64_t nv, int64_t nebs, int64_t netypes, int
   netypes = netypes ? netypes : STINGER_DEFAULT_NUMETYPES;
   nvtypes = nvtypes ? nvtypes : STINGER_DEFAULT_NUMVTYPES;
 
-  size_t memory_size = getMemorySize();
+  const size_t memory_size = max_memsize ();
 
   size_t i;
   size_t sz     = 0;
@@ -668,8 +717,8 @@ struct stinger *stinger_new_full (int64_t nv, int64_t nebs, int64_t netypes, int
       resized = 1;
 
       sz    = 0;
-      nv   /= 2;
-      nebs /= 2;
+      nv   = (3*nv)/4;
+      nebs = STINGER_DEFAULT_NEB_FACTOR * nv;
     }
 
     vertices_start = 0;

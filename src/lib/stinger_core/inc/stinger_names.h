@@ -6,7 +6,9 @@
 extern "C" {
 #endif
 
+#if !defined(NAME_STR_MAX)
 #define NAME_STR_MAX 255
+#endif
 
 typedef struct stinger_names {
   int64_t next_string;

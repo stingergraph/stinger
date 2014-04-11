@@ -14,15 +14,23 @@ extern "C" {
 * @{
 */
 
+#if !defined(STINGER_DEFAULT_VERTICES)
 /** Default maximum number of vertices in allocated STINGER */
-#define STINGER_DEFAULT_VERTICES (1L<<20)
+#define STINGER_DEFAULT_VERTICES (1L<<24)
+#endif
+#if !defined(STINGER_DEFAULT_NUMETYPES)
 /** Default maximum number of edge types in allocated STINGER */
 #define STINGER_DEFAULT_NUMETYPES 5
+#endif
+#if !defined(STINGER_DEFAULT_NUMVTYPES)
 /** Default maximum number of vertex types with names - integer types can be
  *  INT64_MIN to INT64_MAX */
 #define STINGER_DEFAULT_NUMVTYPES 128
+#endif
 
+#if !defined(STINGER_DEFAULT_NEB_FACTOR)
 #define STINGER_DEFAULT_NEB_FACTOR 4
+#endif
 
 /** \def STINGER_DEFAULT_VERTICES
 *   \brief Default maximum number of vertices in allocated STINGER
@@ -36,8 +44,10 @@ extern "C" {
 */
 
 
+#if !defined(STINGER_EDGEBLOCKSIZE)
 /** Edges per edge block */
 #define STINGER_EDGEBLOCKSIZE 14
+#endif
 /** \def STINGER_EDGEBLOCKSIZE
 *   \brief Number of edges stored in an edge block, users should not change 
 *         this value as it is used statically
