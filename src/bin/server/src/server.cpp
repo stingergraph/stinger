@@ -102,13 +102,12 @@ int main(int argc, char *argv[])
 			 "   [-i input_file_path]\n"
 			 "   [-t file_type]\n"
 			 "   [-1 (for numeric IDs)]\n"
-			 "   [-d]\n"
+			 "   [-d daemon mode]\n"
 			 "   [-k write algorithm states to disk]\n"
 			 "   [-v write vertex name mapping to disk]\n"
 			 "   [-f output directory for vertex names, alg states]\n"
 			 "   [-c cap number of history files to keep per alg]  \n", argv[0]);
 		  printf("Defaults:\n\tport_names: %d\n\tport_algs: %d\n\tport_streams: %d\n\tgraph_name: %s\n", port_names, port_algs, port_streams, graph_name);
-		  printf("-d: daemon mode\n");
 		  exit(0);
 		} break;
 
