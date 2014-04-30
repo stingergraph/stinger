@@ -175,7 +175,7 @@ Example: Parsing CSV Files / Streams
 The csv\_stream parser follows a simpilar templated format to the json parser, so parsing edges out of a file might look like:
 
     id,email_a,config_a,email_b,config_b,unix_time,length
-    na,$source_str1,na,$dest_str1,na,$time1,$weight1, $source_type1=email, $destination_type1=email
+    na,$source_str1,na,$destination_str1,na,$time1,$weight1, $source_type1=email, $destination_type1=email
 
 This file would create edges between email addresses using the lenght field as the weight and the Unix timestamp field as the time.  To use this template, pipe the file or stream into the parser and pass the template as a parameter like so:
 
