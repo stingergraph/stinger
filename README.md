@@ -179,7 +179,7 @@ The csv\_stream parser follows a simpilar templated format to the json parser, s
 
 This file would create edges between email addresses using the lenght field as the weight and the Unix timestamp field as the time.  To use this template, pipe the file or stream into the parser and pass the template as a parameter like so:
 
-    cat emails.csv | ./bin/csv_parser template.csv
+    cat emails.csv | ./bin/csv_stream template.csv
 
 Please be aware that the CSV parser and the underlying code to parse CSV files does not currently trim whitespace, and does not treat quoted strings of any kind as quoted.
 
