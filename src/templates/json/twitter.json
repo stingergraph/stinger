@@ -1,0 +1,3 @@
+{ "created_at": "$time_ttr1", "entities": { "user_mentions": [ { "screen_name": "$destination_str1", "type": "$destination_type1=twitter_handle" } ] }, "user": { "screen_name": "$source_str1", "type": "$source_type1=twitter_handle" }, "etype":"$type_str1=mentioned"}
+{ "created_at": "$time_ttr2", "entities": { "user_mentions": [ { "screen_name": "$source_str2", "type": "$source_type2=twitter_handle" } ] }, "user": { "screen_name": "$destination_str2", "type": "$destination_type2=twitter_handle" }, "etype":"$type_str2=mentioned_by"}
+
