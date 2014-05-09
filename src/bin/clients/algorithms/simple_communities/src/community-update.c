@@ -203,10 +203,10 @@ init_and_compute_community_state (struct community_state * cstate, struct el * g
     cstate->comm_limit,
     1,
     -1, -1, -1, 0, 1.1, 1, &cstate->hist, NULL, 0,
+    cstate->csize,
     cstate->ws, cstate->wslen,
     cstate->lockspace);
   shrinkwrap_graph (&cstate->cg);
-  cstate_forcibly_update_csize (cstate);
   return toc ();
 }
 
@@ -245,7 +245,7 @@ cstate_update (struct community_state * cstate, const struct stinger * S)
 
   update_el (&cstate->cg, cstate->cmap, cstate->csize,
              S, cstate->nvlist, cstate->vlist, cstate->mark,
-            &cstate->ws, &cstate->wslen);
+             &cstate->ws, &cstate->wslen);
 
 #if !defined(NDEBUG)
   assert (cstate_check (cstate));

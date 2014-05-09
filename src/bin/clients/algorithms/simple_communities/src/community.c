@@ -1603,6 +1603,7 @@ community (int64_t * c, struct el * restrict g /* destructive */,
            const int use_hist,
            struct community_hist * restrict hist,
            int64_t * restrict cmap_global, const int64_t nv_global,
+           int64_t * csize_out,
            int64_t * ws, size_t wslen,
            void * lockspace_in)
 /*
@@ -1633,7 +1634,7 @@ community (int64_t * c, struct el * restrict g /* destructive */,
 
   int64_t * ws_inner;
 
-  int64_t csz = -1;
+  int64_t * restrict csize = csize_out;
   intvtx_t old_nv;
   int64_t nsteps = 0;
   const int use_cov = covlevel > 0;
@@ -1667,6 +1668,11 @@ community (int64_t * c, struct el * restrict g /* destructive */,
   score = (double*)&rowend[nv_orig];
   ws_inner = (int64_t*)&score[ne_orig];
   wslen -= 3*nv_orig+ne_orig;
+  if (!csize) {
+    csize = ws_inner;
+    wslen -= nv_orig;
+    ws_inner = &ws_inner[nv_orig];
+  }
   assert (wslen > nv_orig+1 + 2*ne_orig);
   if (max_nsteps < 0) max_nsteps = nv_orig;
   if (maxnum < 2) maxnum = 2;
@@ -1710,8 +1716,10 @@ community (int64_t * c, struct el * restrict g /* destructive */,
 
     /* Initialize with all vertices separate */
     OMP("omp for nowait schedule(static)") MTA_STREAMS
-      for (intvtx_t i = 0; i < nv_orig; ++i)
+      for (intvtx_t i = 0; i < nv_orig; ++i) {
         c[i] = i;
+	csize[i] = 1;
+      }
     OMP("omp for schedule(static)") MTA_STREAMS
       for (int64_t k = 0; k < gv.ne; ++k)
         score[k] = -2962.5;
@@ -1721,30 +1729,10 @@ community (int64_t * c, struct el * restrict g /* destructive */,
                                     max_in_weight, nonself_in_weight,
                                     ws_inner);
 
-  if (cmap_global) {
-    OMP("omp parallel") {
-      int64_t tcsz = -1;
-      OMP("omp for")
-        for (int64_t k = 0; k < nv_orig; ++k)
-          ws_inner[k] = 0;
-      OMP("omp for")
-        for (int64_t k = 0; k < nv_global; ++k)
-          OMP("omp atomic") ++ws_inner[cmap_global[k]];
-      OMP("omp for")
-        for (int64_t k = 0; k < nv_orig; ++k)
-          if (ws_inner[k] > tcsz) tcsz = ws_inner[k];
-      OMP("omp critical")
-        if (csz < tcsz) csz = tcsz;
-    }
-  } else {
-      csz = 1;
-  }
-
   other_time += toc ();
 
   nsteps = 0;
-  while (nsteps < max_nsteps && csz <= maxsz && g->nv >= maxnum &&
-         cov_unsatisfied) {
+  while (nsteps < max_nsteps && g->nv >= maxnum && cov_unsatisfied) {
     intvtx_t new_nv = -1;
 #if !defined(NDEBUG)
     int64_t iterwgt, contractedwgt;
@@ -1775,6 +1763,8 @@ community (int64_t * c, struct el * restrict g /* destructive */,
     }
     if (min_degree > 0 || max_degree > 0)
       score_drop (score, min_degree, max_degree, *g, ws_inner);
+    if (maxsz < nv_orig)
+      score_drop_size (score, c, csize, maxsz, *g);
     score_time += toc ();
     double max_score = -HUGE_VAL;
     OMP("omp parallel") {
@@ -1908,9 +1898,23 @@ community (int64_t * c, struct el * restrict g /* destructive */,
     if (verbose) fprintf (stderr, "\tcontract ...");
     tic ();
     contract (g, new_nv, m, rowstart, rowend, ws_inner);
-    OMP("omp parallel for") MTA_NODEP MTA_STREAMS
-      for (intvtx_t i = 0; i < nv_orig; ++i)
-        if (c[i] >= 0) c[i] = m[c[i]];
+    OMP("omp parallel") {
+      OMP("omp for")
+	for (intvtx_t i = 0; i < new_nv; ++i)
+	  ws_inner[i] = 0;
+      OMP("omp for") MTA_NODEP MTA_STREAMS
+	for (intvtx_t i = 0; i < nv_orig; ++i)
+	  if (c[i] >= 0) c[i] = m[c[i]];
+      OMP("omp for")
+	for (intvtx_t i = 0; i < old_nv; ++i) {
+	  const int64_t mi = m[i];
+	  const intvtx_t sz = csize[i];
+	  OMP("omp atomic") ws_inner[mi] += sz;
+	}
+      OMP("omp for")
+	for (intvtx_t i = 0; i < new_nv; ++i)
+	  csize[i] = ws_inner[i];
+    }
     contract_time += toc ();
     if (verbose) fprintf (stderr, "done %ld\n", (long)g->nv);
 #if !defined(NDEBUG)
@@ -1943,46 +1947,11 @@ community (int64_t * c, struct el * restrict g /* destructive */,
                                       max_in_weight, nonself_in_weight,
                                       ws_inner);
 
-    csz = 0;
-    if (!cmap_global) {
-      OMP("omp parallel") {
-        int64_t local_csz = 0;
-        OMP("omp for") MTA_STREAMS
-          for (intvtx_t i = 0; i < g->nv; ++i)
-            ws_inner[i] = 0;
-        OMP("omp for") MTA_NODEP MTA_STREAMS
-          for (intvtx_t i = 0; i < nv_orig; ++i)
-            if (c[i] >= 0)
-              int64_fetch_add (&ws_inner[c[i]], 1);
-        OMP("omp for") MTA_STREAMS
-          for (intvtx_t i = 0; i < g->nv; ++i)
-            if (ws_inner[i] > local_csz) local_csz = ws_inner[i];
-        OMP("omp critical") {
-          if (local_csz > csz) csz = local_csz;
-        }
-      }
-    } else {
-      OMP("omp parallel") {
-        int64_t local_csz = 0;
-        /* First remap cmap_global */
-        OMP("omp for")
-          for (int64_t k = 0; k < nv_global; ++k)
+    if (cmap_global) {
+      OMP("omp parallel for")
+        for (int64_t k = 0; k < nv_global; ++k)
+          if (cmap_global[k] >= 0)
             cmap_global[k] = c[cmap_global[k]];
-        /* Now count. */
-        OMP("omp for") MTA_STREAMS
-          for (intvtx_t i = 0; i < g->nv; ++i)
-            ws_inner[i] = 0;
-        OMP("omp for") MTA_NODEP MTA_STREAMS
-          for (intvtx_t i = 0; i < nv_global; ++i)
-            if (cmap_global[i] >= 0)
-              int64_fetch_add (&ws_inner[cmap_global[i]], 1);
-        OMP("omp for") MTA_STREAMS
-          for (intvtx_t i = 0; i < g->nv; ++i)
-            if (ws_inner[i] > local_csz) local_csz = ws_inner[i];
-        OMP("omp critical") {
-          if (local_csz > csz) csz = local_csz;
-        }
-      }
     }
     ++nsteps;
     other_time += toc ();
@@ -2001,7 +1970,7 @@ int64_t
 update_community (int64_t * restrict cmap_global, const int64_t nv_global,
                   int64_t * restrict csize,
                   int64_t * restrict max_csize,
-                 int64_t * restrict n_nonsingletons_out,
+                  int64_t * restrict n_nonsingletons_out,
 
                   struct el * restrict g /* destructive */,
                   const int score_alg, const int match_alg, const int double_self,
@@ -2045,7 +2014,6 @@ update_community (int64_t * restrict cmap_global, const int64_t nv_global,
 
   int64_t * ws_inner;
 
-  int64_t csz = -1;
   int64_t n_nonsingletons = 0;
   intvtx_t old_nv;
   int64_t nsteps = 0;
@@ -2129,20 +2097,10 @@ update_community (int64_t * restrict cmap_global, const int64_t nv_global,
                                     max_in_weight, nonself_in_weight,
                                     ws_inner);
 
-  OMP("omp parallel") {
-    int64_t tcsz = -1;
-    OMP("omp for")
-      for (int64_t k = 0; k < nv_orig; ++k)
-        if (csize[k] > tcsz) tcsz = csize[k];
-      OMP("omp critical")
-        if (csz < tcsz) csz = tcsz;
-    }
-
   /* other_time += toc (); */
 
   nsteps = 0;
-  while (nsteps < max_nsteps && csz <= maxsz && g->nv >= maxnum &&
-         cov_unsatisfied) {
+  while (nsteps < max_nsteps && g->nv >= maxnum && cov_unsatisfied) {
     intvtx_t old_nc = g->nv;
     intvtx_t new_nv = -1;
 #if !defined(NDEBUG)
@@ -2358,11 +2316,9 @@ update_community (int64_t * restrict cmap_global, const int64_t nv_global,
                                       ws_inner);
 
     assert (g->nv == new_nv);
-    csz = 0;
     n_nonsingletons = 0;
     int64_t totsz = 0;
     OMP("omp parallel") {
-      int64_t local_csz = 0;
       OMP("omp for") MTA_STREAMS
         for (intvtx_t i = 0; i < new_nv; ++i)
           ws_inner[i] = 0;
@@ -2380,20 +2336,26 @@ update_community (int64_t * restrict cmap_global, const int64_t nv_global,
         }
       OMP("omp for reduction(+: totsz, n_nonsingletons)") MTA_STREAMS
         for (intvtx_t i = 0; i < new_nv; ++i) {
-         const intvtx_t z = ws_inner[i];
-          if (z > local_csz) local_csz = z;
+          const intvtx_t z = ws_inner[i];
           csize[i] = z;
-         if (z > 1) ++n_nonsingletons;
+          if (z > 1) ++n_nonsingletons;
           totsz += z;
         }
-      OMP("omp critical") {
-        if (local_csz > csz) csz = local_csz;
-      }
       assert (totsz == nv_global);
     }
 
     ++nsteps;
     /* other_time += toc (); */
+  }
+
+  int64_t csz = 0;
+  OMP("omp parallel") {
+    int64_t local_csz = 0;
+    OMP("omp for")
+      for (intvtx_t k = 0; k < g->nv; ++k)
+        if (csize[k] > local_csz) local_csz = csize[k];
+    OMP("omp critical")
+      if (local_csz > csz) csz = local_csz;
   }
 
   OMP("omp critical (cstate_update)") {

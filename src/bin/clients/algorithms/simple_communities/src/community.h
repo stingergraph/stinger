@@ -32,6 +32,7 @@ int64_t community (int64_t * c, struct el * restrict g /* destructive */,
                    const int use_hist,
                    struct community_hist * restrict,
                    int64_t * restrict cmap_global, const int64_t nv_global,
+                   int64_t * csize_out,
                    int64_t * ws, size_t wslen,
                    void*);
 
