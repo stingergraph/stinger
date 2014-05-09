@@ -98,7 +98,7 @@ Using the Server
 ----------------
 To run an example using the server and five terminals:
 
-    term1:build$ ./bin/server
+    term1:build$ env STINGER_MAX_MEMSIZE=1G ./bin/server
     term2:build$ ./bin/json_rpc_server
     term3:build$ ./bin/static_components
     term4:build$ ./bin/pagerank
@@ -106,7 +106,7 @@ To run an example using the server and five terminals:
 
 This will start a stream of R-MAT edges over 100,000 vertices in batches of 10,000 edges.  A connected component labeling
 and PageRank scoring will be maintained.  The JSON RPC server will host interactive web pages at 
-http://localhost:8088/full.html are powered by the live streaming analysis.
+http://localhost:8088/full.html are powered by the live streaming analysis.  The total memory usage of the dynamic graph is limited to 1 GiB.
 
 Example: Parsing Twitter
 ------------------------
