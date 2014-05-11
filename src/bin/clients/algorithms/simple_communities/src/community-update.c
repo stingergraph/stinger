@@ -868,7 +868,7 @@ double
 init_cstate_from_stinger (struct community_state * cs, const struct stinger * S)
 {
   const int64_t nv = stinger_max_active_vertex(S) + 1;
-  int64_t ne = stinger_total_edges(S);
+  int64_t ne = stinger_max_total_edges(S);
   struct el g = alloc_graph (nv, ne);
   double time = 0;
 
