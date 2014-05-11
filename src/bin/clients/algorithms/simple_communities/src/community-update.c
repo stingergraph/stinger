@@ -110,7 +110,6 @@ init_empty_community_state (struct community_state * cstate,
   init_community_state (cstate, graph_nv, ne_est);
 
   cstate->cg = alloc_graph (graph_nv, ne_est);
-  cstate->cg.ne = 0;
   intvtx_t * restrict d = cstate->cg.d;
   OMP("omp parallel for")
     for (int64_t k = 0; k < graph_nv; ++k)
@@ -886,7 +885,6 @@ init_cstate_from_stinger (struct community_state * cs, const struct stinger * S)
          const int64_t j = STINGER_RO_EDGE_DEST;
          const int64_t w = STINGER_RO_EDGE_WEIGHT;
          if (i < j) {
-           int64_t where = stinger_int64_fetch_add (&g.ne, 1);
             enqueue (&q, i, j, w, &g);
          } else if (i == j) {
            OMP("omp atomic") D(g, i) += w;

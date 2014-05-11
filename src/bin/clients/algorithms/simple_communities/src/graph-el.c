@@ -65,14 +65,15 @@ alloc_graph (int64_t nv, int64_t ne)
 
   memset (&out, 0, sizeof (out));
   out.nv = out.nv_orig = nv;
-  out.ne = out.ne_orig = ne;
+  out.ne_orig = ne;
+  out.ne = 0;
 
 #if defined(ALLOC_ON_2MiB)
   /* For simpler transparent huge pages on x86 */
   int err;
   err = posix_memalign (&out.d, 1<<20, nv * sizeof (*out.d));
   if (err) perror ("posix_memalign (out.d) failed");
-  err = posix_memalign (&out.el, 1<<20, 3 * ne * sizeof (*out.d));
+  err = posix_memalign (&out.el, 1<<20, 3 * ne_orig * sizeof (*out.d));
   if (err) perror ("posix_memalign (out.el) failed");
 #else
   out.d = xmalloc (nv * sizeof (*out.d));
@@ -185,6 +186,7 @@ copy_graph (struct el in)
   out = alloc_graph (in.nv, in.ne);
   memcpy (out.d, in.d, in.nv * sizeof (*in.d));
   memcpy (out.el, in.el, in.ne * sizeof (*in.el));
+  out.ne = in.ne;
   return out;
 }
 
@@ -239,6 +241,7 @@ el_snarf_graph (const char * fname,
     ne = hdr[2];
 
     *g = alloc_graph (nv, ne);
+    g->ne = ne;
 
 #if !defined(USE32BIT)
     sz = nv * sizeof (int64_t);
@@ -309,6 +312,7 @@ el_snarf_graph (const char * fname,
     nv = mem[1];
     ne = mem[2];
     *g = alloc_graph (nv, ne);
+    g->ne = ne;
 #if defined(USE32BIT)
 #error "Stupid idea."
 #endif
