@@ -280,6 +280,8 @@ int64_t stinger_total_edges (const struct stinger *);
 
 int64_t stinger_edges_up_to(const struct stinger * S, int64_t nv);
 
+int64_t stinger_max_total_edges (const struct stinger * S);
+
 size_t stinger_graph_size (const struct stinger *);
 
 size_t

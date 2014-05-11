@@ -363,23 +363,6 @@ stinger_eb_first_ts (const struct stinger_eb * eb_, int k_)
 }
 
 /**
-* @brief Count the total number of edges in STINGER.
-*
-* @param S The STINGER data structure
-*
-* @return The number of edges in STINGER
-*/
-int64_t
-stinger_total_edges (const struct stinger * S)
-{
-  uint64_t rtn = 0;
-  for (uint64_t i = 0; i < (S->max_nv); i++) {
-    rtn += stinger_outdegree_get(S, i);
-  }
-  return rtn;
-}
-
-/**
 * @brief Count the number of edges in STINGER up to nv.
 *
 * @param S The STINGER data structure
@@ -391,11 +374,40 @@ int64_t
 stinger_edges_up_to(const struct stinger * S, int64_t nv)
 {
   uint64_t rtn = 0;
-  for (uint64_t i = 0; i < nv; i++) {
-    rtn += stinger_outdegree_get(S, i);
-  }
+  OMP("omp parallel for reduction(+:rtn)")
+    for (uint64_t i = 0; i < nv; i++) {
+      rtn += stinger_outdegree_get(S, i);
+    }
   return rtn;
 }
+
+/**
+* @brief Count the total number of edges in STINGER.
+*
+* @param S The STINGER data structure
+*
+* @return The number of edges in STINGER
+*/
+int64_t
+stinger_total_edges (const struct stinger * S)
+{
+  return stinger_edges_up_to (S, S->max_nv);
+}
+
+/**
+* @brief Provide a fast upper bound on the total number of edges in STINGER.
+*
+* @param S The STINGER data structure
+*
+* @return An upper bound on the number of edges in STINGER
+*/
+int64_t
+stinger_max_total_edges (const struct stinger * S)
+{
+  MAP_STING(S);
+  return ebpool->ebpool_tail * STINGER_EDGEBLOCKSIZE;
+}
+
 
 /**
 * @brief Calculate the total size of the active STINGER graph in memory.
