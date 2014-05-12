@@ -880,6 +880,9 @@ init_cstate_from_stinger (struct community_state * cs, const struct stinger * S)
     q.n = 0;
 
     OMP("omp for")
+      for (int64_t i = 0; i < nv; ++i)
+        D(g, i) = 0;
+    OMP("omp for")
       for (int64_t i = 0; i < nv; ++i) {
        STINGER_READ_ONLY_FORALL_EDGES_OF_VTX_BEGIN(S, i) {
          const int64_t j = STINGER_RO_EDGE_DEST;

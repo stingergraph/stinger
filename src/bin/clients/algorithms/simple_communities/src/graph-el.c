@@ -73,10 +73,11 @@ alloc_graph (int64_t nv, int64_t ne)
   int err;
   err = posix_memalign (&out.d, 1<<20, nv * sizeof (*out.d));
   if (err) perror ("posix_memalign (out.d) failed");
+  memset (out.d, 0, nv * sizeof (*out.d));
   err = posix_memalign (&out.el, 1<<20, 3 * ne_orig * sizeof (*out.d));
   if (err) perror ("posix_memalign (out.el) failed");
 #else
-  out.d = xmalloc (nv * sizeof (*out.d));
+  out.d = xcalloc (nv, sizeof (*out.d));
   out.el = xmalloc (3 * ne * sizeof (*out.el));
 #endif
 
