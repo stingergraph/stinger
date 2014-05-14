@@ -114,6 +114,7 @@ void stinger_dspmTspv (const int64_t nv, const double alpha, const struct stinge
       if (yk < 0) {
         yk = loc_ws[j] = y_deg++;
         assert (yk < nv);
+        y_idx[yk] = j;
         y_val[yk] = aij * alphaxi;
       } else
         y_val[yk] += aij * alphaxi;
@@ -142,8 +143,8 @@ void stinger_unit_dspmTspv (const int64_t nv, const double alpha, const struct s
       int64_t yk = loc_ws[j];
       if (yk < 0) {
         yk = loc_ws[j] = y_deg++;
-        y_idx[yk] = j;
         assert (yk < nv);
+        y_idx[yk] = j;
         y_val[yk] = alphaxi;
       } else
         y_val[yk] += alphaxi;
