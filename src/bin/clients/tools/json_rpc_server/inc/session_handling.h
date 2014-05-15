@@ -159,12 +159,15 @@ namespace gt {
 
 	class semantic_coordinates {
 	  public:
+	    uint64_t _ref;
 	    double _lat, _lon;
 	    double _sentiment;
 	    std::string _categories;
 
 	    bool operator< (const semantic_coordinates& x) const {
-	      if (_lat != x._lat)
+	      if (_ref != x._ref)
+		return _ref < x._ref;
+	      else if (_lat != x._lat)
 		return _lat < x._lat;
 	      else if (_lon != x._lon)
 		return _lon < x._lon;
@@ -172,7 +175,8 @@ namespace gt {
 		return _sentiment < x._sentiment;
 	    }
 
-	    semantic_coordinates(double lat, double lon, double sent, std::string cat) {
+	    semantic_coordinates(uint64_t ref, double lat, double lon, double sent, std::string cat) {
+	      _ref = ref;
 	      _lat = lat;
 	      _lon = lon;
 	      _sentiment = sent;

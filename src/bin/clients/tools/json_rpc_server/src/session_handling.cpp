@@ -861,6 +861,10 @@ JSON_RPC_get_latlon_twitter::update(const StingerBatch & batch)
     double lon = coord[(rapidjson::SizeType) 1].GetDouble();
 
     //LOG_D_A ("Lat: %f, Lon: %f", lat, lon);
+    uint64_t ref = 0;
+    if (document.HasMember("id") && document["id"].IsInt64()) {
+      ref = document["id"].GetInt64();
+    }
    
     double sentiment = 0;
     if (document.HasMember("sent") && document["sent"].IsDouble()) {
@@ -876,7 +880,7 @@ JSON_RPC_get_latlon_twitter::update(const StingerBatch & batch)
       }
     }
   
-    semantic_coordinates tmp (lat, lon, sentiment, categories);
+    semantic_coordinates tmp (ref, lat, lon, sentiment, categories);
     _coordinates.insert(tmp);
   }
 
@@ -906,18 +910,20 @@ JSON_RPC_get_latlon_twitter::onRequest(
 	      rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator)
 {
   stinger_t * S = server_state->get_stinger();
-  rapidjson::Value coord, lat, lon, sentiment, categories, pair;
+  rapidjson::Value coord, ref, lat, lon, sentiment, categories, pair;
   std::set<semantic_coordinates>::iterator it;
 
   /* send insertions back */
   coord.SetArray();
 
   for (it = _coordinates.begin(); it != _coordinates.end(); ++it) {
+    ref.SetInt64((*it)._ref);
     lat.SetDouble((*it)._lat);
     lon.SetDouble((*it)._lon);
     sentiment.SetDouble((*it)._sentiment);
     categories.SetString((*it)._categories.c_str(), (*it)._categories.length());
     pair.SetObject();
+    pair.AddMember("ref", ref, allocator);
     pair.AddMember("lat", lat, allocator);
     pair.AddMember("lon", lon, allocator);
     pair.AddMember("sentiment", sentiment, allocator);
