@@ -12,6 +12,11 @@
 
 #include "compat.h"
 #include "spmspv.h"
+#include "spmspv_ompsimple.h"
+
+#define ALG_SEQ 0
+#define ALG_OMPSIMPLE 1
+int alg_to_try = ALG_SEQ;
 
 static inline int append_to_vlist (int64_t * restrict nvlist,
                                    int64_t * restrict vlist,
@@ -57,7 +62,17 @@ main(int argc, char *argv[])
   for (int k = 1; k < argc; ++k) {
     if (0 == strcmp(argv[k], "--unit"))
       nonunit_weights = 0;
-    else if (0 == strcmp(argv[k], "--help") || 0 == strcmp(argv[1], "-h")) {
+    else if (0 == strcmp(argv[k], "--alg")) {
+      ++k;
+      if (0 == strcmp(argv[k], "seq"))
+        alg_to_try = ALG_SEQ;
+      else if (0 == strcmp(argv[k], "ompsimple"))
+        alg_to_try = ALG_OMPSIMPLE;
+      else {
+        fprintf (stderr, "Unknown algorithm \"%s\".\n", argv[k]);
+        abort ();
+      }
+    } else if (0 == strcmp(argv[k], "--help") || 0 == strcmp(argv[1], "-h")) {
       fprintf (stderr,
                "spmspv_test [--unit]\n"
                "  --unit : Assume unit weight.\n");
@@ -163,21 +178,54 @@ main(int argc, char *argv[])
           }
       }
 
+#define SPMV_BRANCH(prodalg, PRODALG)                                   \
+      case ALG_ ## PRODALG:                                             \
+        if (nonunit_weights) {                                          \
+          stinger_dspmTv_ ## prodalg (nv, alpha, alg->stinger, dense_x, beta, y); \
+        } else {                                                        \
+          stinger_unit_dspmTv_ ## prodalg (nv, alpha, alg->stinger, dense_x, beta, y); \
+        }                                                               \
+        break
+
+#define SPMSPV_BRANCH(prodalg, PRODALG)                                 \
+      case ALG_ ## PRODALG:                                             \
+        tic ();                                                         \
+        if (nonunit_weights) {                                          \
+          stinger_dspmTspv_ ## prodalg (nv, alpha, alg->stinger, x.nv, x.idx, x.val, 0.0, &dy.nv, dy.idx, dy.val, \
+                            mark, val_ws);                              \
+        } else {                                                        \
+          stinger_unit_dspmTspv_ ## prodalg (nv, alpha, alg->stinger, x.nv, x.idx, x.val, 0.0, &dy.nv, dy.idx, dy.val, \
+                                 mark, val_ws);                         \
+        }                                                               \
+        mult_time = toc ();                                             \
+        break
+
       tic ();
-      if (nonunit_weights) {
-        stinger_dspmTv (nv, alpha, alg->stinger, dense_x, beta, y);
-      } else {
-        stinger_unit_dspmTv (nv, alpha, alg->stinger, dense_x, beta, y);
+      switch (alg_to_try) {
+      case ALG_SEQ:
+        tic ();
+        if (nonunit_weights) {
+          stinger_dspmTv (nv, alpha, alg->stinger, dense_x, beta, y);
+        } else {
+          stinger_unit_dspmTv (nv, alpha, alg->stinger, dense_x, beta, y);
+        }
+        break;
+        SPMV_BRANCH(ompsimple,OMPSIMPLE);
       }
       mult_time = toc ();
 
       tic ();
-      if (nonunit_weights) {
-        stinger_dspmTspv (nv, alpha, alg->stinger, x.nv, x.idx, x.val, 0.0, &dy.nv, dy.idx, dy.val,
-                          mark, val_ws);
-      } else {
-        stinger_unit_dspmTspv (nv, alpha, alg->stinger, x.nv, x.idx, x.val, 0.0, &dy.nv, dy.idx, dy.val,
-                               mark, val_ws);
+      switch (alg_to_try) {
+      case ALG_SEQ:
+        if (nonunit_weights) {
+          stinger_dspmTspv (nv, alpha, alg->stinger, x.nv, x.idx, x.val, 0.0, &dy.nv, dy.idx, dy.val,
+                            mark, val_ws);
+        } else {
+          stinger_unit_dspmTspv (nv, alpha, alg->stinger, x.nv, x.idx, x.val, 0.0, &dy.nv, dy.idx, dy.val,
+                                 mark, val_ws);
+        }
+        break;
+        SPMSPV_BRANCH(ompsimple,OMPSIMPLE);
       }
       /* Apply update to y_copy */
       OMP("omp parallel for")
