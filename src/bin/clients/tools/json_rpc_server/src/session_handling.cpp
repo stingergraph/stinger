@@ -731,7 +731,7 @@ JSON_RPC_get_latlon_gnip::update(const StingerBatch & batch)
     double lat = obj_lat.GetDouble();
     double lon = obj_lng.GetDouble();
 
-    LOG_D_A ("Lat: %f, Lon: %f", lat, lon);
+    //LOG_D_A ("Lat: %f, Lon: %f", lat, lon);
    
     double sentiment = 0;
     if (document.HasMember("sent") && document["sent"].IsDouble()) {
@@ -773,6 +773,135 @@ JSON_RPC_get_latlon_gnip::onRegister(
 
 int64_t
 JSON_RPC_get_latlon_gnip::onRequest(
+	      rapidjson::Value & result,
+	      rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator)
+{
+  stinger_t * S = server_state->get_stinger();
+  rapidjson::Value coord, lat, lon, sentiment, categories, pair;
+  std::set<semantic_coordinates>::iterator it;
+
+  /* send insertions back */
+  coord.SetArray();
+
+  for (it = _coordinates.begin(); it != _coordinates.end(); ++it) {
+    lat.SetDouble((*it)._lat);
+    lon.SetDouble((*it)._lon);
+    sentiment.SetDouble((*it)._sentiment);
+    categories.SetString((*it)._categories.c_str(), (*it)._categories.length());
+    pair.SetObject();
+    pair.AddMember("lat", lat, allocator);
+    pair.AddMember("lon", lon, allocator);
+    pair.AddMember("sentiment", sentiment, allocator);
+    pair.AddMember("categories", categories, allocator);
+    
+    coord.PushBack(pair, allocator);
+  }
+
+  result.AddMember("coord", coord, allocator);
+
+  /* clear both and reset the clock */
+  _coordinates.clear();
+
+  return 0;
+}
+
+
+/* Twitter sample stream latlon + sentiment + categories */
+rpc_params_t *
+JSON_RPC_get_latlon_twitter::get_params()
+{
+  return p;
+}
+
+int64_t
+JSON_RPC_get_latlon_twitter::update(const StingerBatch & batch)
+{
+  if (0 == batch.insertions_size () && 0 == batch.deletions_size ()) { 
+    return 0;
+  }
+
+  stinger_t * S = server_state->get_stinger();
+  if (!S) {
+    LOG_E ("STINGER pointer is invalid");
+    return -1;
+  }
+
+  int sz = batch.metadata_size();
+
+  for (int i = 0; i < sz; i++) {
+    rapidjson::Document document;
+    std::string metadata = batch.metadata(i);
+    document.Parse<0>(metadata.c_str());
+
+    if (!document.IsObject()) {
+      continue;
+    }
+    
+    if (!document.HasMember("geo")) {
+      continue;
+    }
+  
+    const rapidjson::Value& geo = document["geo"];
+
+    if (!geo.IsObject()) {
+      continue;
+    }
+
+    if (!geo.HasMember("coordinates")) {
+      continue;
+    }
+
+    const rapidjson::Value& coord = geo["coordinates"];
+
+    if (!coord.IsArray()) {
+      continue;
+    }
+    
+    double lat = coord[(rapidjson::SizeType) 0].GetDouble();
+    double lon = coord[(rapidjson::SizeType) 1].GetDouble();
+
+    //LOG_D_A ("Lat: %f, Lon: %f", lat, lon);
+   
+    double sentiment = 0;
+    if (document.HasMember("sent") && document["sent"].IsDouble()) {
+      sentiment = document["sent"].GetDouble();
+    }
+ 
+    std::string categories;
+    if (document.HasMember("categories") && document["categories"].IsArray()) {
+      const rapidjson::Value& a = document["categories"];
+      for (rapidjson::SizeType i = 0; i < a.Size(); i++) {
+	categories += a[i].GetString();
+	categories += ",";
+      }
+    }
+  
+    semantic_coordinates tmp (lat, lon, sentiment, categories);
+    _coordinates.insert(tmp);
+  }
+
+  return 0;
+}
+
+int64_t
+JSON_RPC_get_latlon_twitter::onRegister(
+	      rapidjson::Value & result,
+	      rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator)
+{
+  stinger_t * S = server_state->get_stinger();
+  if (!S) {
+    LOG_E ("STINGER pointer is invalid");
+    return json_rpc_error(-32603, result, allocator);
+  }
+
+
+  reset_timeout();
+
+  return 0;
+}
+
+int64_t
+JSON_RPC_get_latlon_twitter::onRequest(
 	      rapidjson::Value & result,
 	      rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator)
 {

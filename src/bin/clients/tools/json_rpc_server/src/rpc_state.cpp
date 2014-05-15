@@ -74,6 +74,8 @@ JSON_RPCServerState::update_algs(stinger_t * stinger_copy, std::string new_loc, 
       delete active_session_map[session_id];
       active_session_map.erase (session_id);
     } else {
+      //int64_t session_id = session->get_session_id();
+      //LOG_D_A ("Session %ld updating...", (long) session_id);
       session->update(batch);
       session->unlock();
     }
