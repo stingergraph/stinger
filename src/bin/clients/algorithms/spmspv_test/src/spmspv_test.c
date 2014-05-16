@@ -255,13 +255,11 @@ main(int argc, char *argv[])
         double t_cwise_err = 0.0;
         OMP("omp for nowait")
           for (int64_t i = 0; i < nv; ++i) {
-            const double yi = y[i];
-            const double ycopyi = y_copy[i];
             double err;
 
-            if (yi)
-              err = fabs ((yi - ycopyi)/yi);
-            else if (!ycopyi)
+            if (y[i] != 0.0)
+              err = fabs ((y[i] - y_copy[i])/y[i]);
+            else if (y_copy[i] == 0.0)
               err = 0.0;
             else
               err = HUGE_VAL;
