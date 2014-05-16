@@ -245,7 +245,7 @@ main(int argc, char *argv[])
           const int64_t i = dy.idx[k];
           assert (i >= 0);
           assert (i < nv);
-          y_copy[i] += dy.val[k];
+          y_copy[i] = beta * y_copy[i] + dy.val[k];
         }
       spmult_time = toc ();
 
