@@ -87,7 +87,7 @@ main(int argc, char *argv[])
   stinger_registered_alg * alg =
     stinger_register_alg(
       .name="spmspv_test",
-      .data_per_vertex=sizeof(double),
+      .data_per_vertex=2*sizeof(double),
       .data_description="dd spmspv-test-vect spmspv-test-x",
       .host="localhost",
     );
