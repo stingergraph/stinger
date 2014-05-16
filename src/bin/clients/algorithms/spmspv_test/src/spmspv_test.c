@@ -49,6 +49,8 @@ main(int argc, char *argv[])
 
   int64_t nv;
 
+  double * x_dense;
+
   double * y;
   double * y_copy;
 
@@ -86,7 +88,7 @@ main(int argc, char *argv[])
     stinger_register_alg(
       .name="spmspv_test",
       .data_per_vertex=sizeof(double),
-      .data_description="dd spmspv-test-vect", /* Meaningless, but... */
+      .data_description="dd spmspv-test-vect spmspv-test-x",
       .host="localhost",
     );
 
@@ -99,6 +101,8 @@ main(int argc, char *argv[])
   nv = stinger_max_active_vertex(alg->stinger)+1;
 
   y = (double*)alg->alg_data;
+  x_dense = &y[nv];
+  memset (x_dense, 0, nv * sizeof (*x_dense));
 
   y_copy = xmalloc (nv * sizeof (*y_copy));
 
@@ -157,6 +161,14 @@ main(int argc, char *argv[])
       }
       gather_time = toc ();
       stinger_alg_end_pre(alg);
+      OMP("omp parallel") {
+        OMP("omp for")
+          for (int64_t i = 0; i < nv; ++i)
+            dense_x[i] = 0;
+        OMP("omp for")
+          for (int64_t k = 0; k < x.nv; ++k)
+            dense_x[x.idx[k]] = 1.0;
+      }
     }
 
     /* Post processing */
