@@ -110,7 +110,7 @@ main(int argc, char *argv[])
   x = alloc_spvect (nv);
   dense_x = xmalloc (nv * sizeof (*dense_x));
   mark = xmalloc (nv * sizeof (*mark));
-  val_ws = xmalloc (nv * sizeof (*val_ws));
+  val_ws = xcalloc (nv, sizeof (*val_ws));
 
   /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
    * Initial static computation

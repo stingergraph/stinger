@@ -152,8 +152,10 @@ void stinger_dspmTspv_ompsimple (const int64_t nv, const double alpha, const str
 
     /* Pack the values back into the shorter form. */
     OMP("omp for")
-      for (int64_t k = 0; k < y_deg; ++k)
+      for (int64_t k = 0; k < y_deg; ++k) {
         y_val[k] = val_ws[y_idx[k]];
+        val_ws[y_idx[k]] = 0.0;
+      }
   }
 
   if (!val_ws_in) free (val_ws);
@@ -193,8 +195,10 @@ void stinger_unit_dspmTspv_ompsimple (const int64_t nv, const double alpha, cons
 
     /* Pack the values back into the shorter form. */
     OMP("omp for")
-      for (int64_t k = 0; k < y_deg; ++k)
+      for (int64_t k = 0; k < y_deg; ++k) {
         y_val[k] = val_ws[y_idx[k]];
+        val_ws[y_idx[k]] = 0.0;
+      }
   }
 
   if (!val_ws_in) free (val_ws);
