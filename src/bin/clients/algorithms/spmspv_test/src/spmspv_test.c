@@ -13,9 +13,11 @@
 #include "compat.h"
 #include "spmspv.h"
 #include "spmspv_ompsimple.h"
+#include "spmspv_ompcas.h"
 
 #define ALG_SEQ 0
 #define ALG_OMPSIMPLE 1
+#define ALG_OMPCAS 1
 int alg_to_try = ALG_SEQ;
 
 static inline int append_to_vlist (int64_t * restrict nvlist,
@@ -70,6 +72,8 @@ main(int argc, char *argv[])
         alg_to_try = ALG_SEQ;
       else if (0 == strcmp(argv[k], "ompsimple"))
         alg_to_try = ALG_OMPSIMPLE;
+      else if (0 == strcmp(argv[k], "ompcas"))
+        alg_to_try = ALG_OMPCAS;
       else {
         fprintf (stderr, "Unknown algorithm \"%s\".\n", argv[k]);
         abort ();
