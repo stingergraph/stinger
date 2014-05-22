@@ -54,6 +54,7 @@ main(int argc, char *argv[])
   int niter[NPR_ALG];
   double pr_time[NPR_ALG];
   int64_t pr_vol[NPR_ALG];
+  const char *pr_name[NPR_ALG] = {"pr", "pr_restart", "dpr", "dpr_held"};
 
   double alpha = 0.15;
   int maxiter = 100;
@@ -259,9 +260,14 @@ main(int argc, char *argv[])
 
       stinger_alg_end_post(alg);
 
-      printf ("%ld: pagerank %d %d %g %ld\n", (long)iter, BASELINE, niter[BASELINE], pr_time[BASELINE], pr_vol[BASELINE]);
-      printf ("%ld: pagerank_restart %d %d %g %ld\n", (long)iter, RESTART, niter[RESTART], pr_time[RESTART], pr_vol[RESTART]);
-      printf ("%ld: pagerank_dpr %d %d %g %ld\n", (long)iter, DPR, niter[DPR], pr_time[DPR] + compute_b_time, pr_vol[DPR]);
+      for (int alg = 0; alg <= DPR; ++alg) {
+        double err = 0.0;
+        if (alg > 0)
+          OMP("omp parallel for")
+            for (int64_t i = 0; i < nv; ++i)
+              err += fabs (pr_val[alg][i] - pr_val[BASELINE][i]);
+        printf ("%ld: %s %d %d %g %ld %g\n", (long)iter, pr_name[alg], alg, niter[alg], pr_time[alg], pr_vol[alg], err);
+      }
     }
   }
 
