@@ -188,6 +188,8 @@ void stinger_unit_dspmTspv_ompcas (const int64_t nv, const double alpha, const s
           OMP("omp atomic") val_ws[j] += alphaxi;
           if (loc_ws[j] < 0) {
             int64_t where;
+            int64_t expected = -1;
+            int64_t desired = -2;
             if (__atomic_compare_exchange_n (&loc_ws[j], &expected, &desired, 0,
                                              __ATOMIC_ACQUIRE, __ATOMIC_ACQUIRE)) {
               //if (bool_int64_compare_and_swap (&loc_ws[j], -1, -2)) {
