@@ -17,6 +17,18 @@
 #include "spmspv_ompcas.h"
 
 static inline double
+termthresh_pr (const int64_t nv, struct stinger *S)
+{
+  return nv * DBL_EPSILON;
+}
+
+static inline double
+termthresh_dpr (const int64_t nv, struct stinger *S)
+{
+  return sqrt (nv) * DBL_EPSILON;
+}
+
+static inline double
 safediv (const double numer, const double denom)
 {
   if (denom != 0.0) return numer / denom;
@@ -77,7 +89,7 @@ pagerank_core (const int64_t nv,
                const double alpha, const int maxiter,
                double * workspace)
 {
-  const double termthresh = sqrt (nv) * DBL_EPSILON;
+  const double termthresh = termthresh_pr (nv, S);
 
   double * xnew = workspace;
   double * x = x_in;
@@ -155,7 +167,7 @@ pagerank_dpr (struct stinger * S,
 {
   /* const int64_t nv = stinger_max_active_vertex (S) + 1; */
   const int64_t nv = stinger_max_nv (S);
-  const double termthresh = sqrt (nv) * DBL_EPSILON;
+  const double termthresh = termthresh_dpr (nv, S);
   double cb = 0.0;
   int64_t dpr_deg;
 
