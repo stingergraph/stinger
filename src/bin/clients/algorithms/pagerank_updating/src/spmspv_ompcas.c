@@ -9,6 +9,50 @@
 
 #include "compat.h"
 
+const static double NAN_EMPTY = nan ("0xDEADFACE");
+#if defined(__x86_64__) || defined(_M_X64)
+#include <immintrin.h>
+#define MM_PAUSE() _mm_pause()
+#else
+#define MM_PAUSE() do { } while (0)
+#endif
+
+#if !defined(ATOMIC_FP_FE_EMUL) && !defined(ATOMIC_FP_OPTIMISTIC) && !defined(ATOMIC_FP_OMP)
+#define ATOMIC_FP_OMP
+/* #define ATOMIC_FP_FE_EMUL */
+/* #define ATOMIC_FP_OPTIMISTIC */
+#endif
+
+static inline void
+atomic_daccum (double *p, const double val)
+{
+#if defined(ATOMIC_FP_FE_EMUL)
+  double pv, upd;
+  int done = 0;
+  do {
+    __atomic_load ((int64_t*)p, (int64_t*)&pv, __ATOMIC_ACQUIRE);
+    if (__atomic_compare_exchange ((int64_t*)p, (int64_t*)&pv, (int64_t*)&NAN_EMPTY, 1, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE)) {
+      upd = pv + val;
+      __atomic_store ((int64_t*)p, (int64_t*)&upd, __ATOMIC_RELEASE);
+      done = 1;
+    } else
+      MM_PAUSE();
+  } while (!done);
+#elif defined(ATOMIC_FP_OPTIMISTIC)
+  double pv, upd;
+  __atomic_load ((int64_t*)p, (int64_t*)&pv, __ATOMIC_ACQUIRE);
+  do {
+    upd = pv + val;
+    if (__atomic_compare_exchange ((int64_t*)p, (int64_t*)&pv, (int64_t*)&upd, 1, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
+      break;
+    else
+      MM_PAUSE();
+  } while (1);
+#else
+  OMP("omp atomic") *p += val;
+#endif
+}
+
 static inline void setup_y (const int64_t nv, const double beta, double * y)
 {
   if (0.0 == beta) {
@@ -38,7 +82,7 @@ dspmTv_accum (const struct stinger * S, const int64_t i, const double alphaxi, d
   STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, i) {
     const int64_t j = STINGER_EDGE_DEST;
     const double aij = STINGER_EDGE_WEIGHT;
-    OMP("omp atomic") y[j] += aij * alphaxi;
+    atomic_daccum (&y[j], aij * alphaxi);
   } STINGER_FORALL_EDGES_OF_VTX_END();
 }
 
@@ -47,7 +91,7 @@ dspmTv_unit_accum (const struct stinger * S, const int64_t i, const double alpha
 {
   STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, i) {
     const int64_t j = STINGER_EDGE_DEST;
-    OMP("omp atomic") y[j] += alphaxi;
+    atomic_daccum (&y[j], alphaxi);
   } STINGER_FORALL_EDGES_OF_VTX_END();
 }
 
@@ -186,11 +230,10 @@ dspmTspv_y_idx_accum (const struct stinger * S,
     /* if (bool_int64_compare_and_swap (&loc_ws[j], -1, -2)) { */
       /* Own it. */
       /* where = int64_fetch_add (y_deg, 1); */
-      where = __atomic_fetch_add (y_deg, 1, __ATOMIC_ACQ_REL);
-      loc_ws[j] = where;
+      where = __atomic_fetch_add (y_deg, 1, __ATOMIC_RELAXED);
       assert (where < nv);
-      __atomic_store (&y_idx[where], &j, __ATOMIC_RELEASE);
-      /* y_idx[where] = j; */
+      __atomic_store (&loc_ws[j], &where, __ATOMIC_RELEASE);
+      y_idx[where] = j;
     }
   }
 }
@@ -203,7 +246,7 @@ dspmTspv_accum (const struct stinger * S, const int64_t i, const double alphaxi,
   STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, i) {
     const int64_t j = STINGER_EDGE_DEST;
     const double aij = STINGER_EDGE_WEIGHT;
-    OMP("omp atomic") y[j] += aij * alphaxi;
+    atomic_daccum (&y[j], aij * alphaxi);
     dspmTspv_y_idx_accum (S, y_deg, y_idx, j, loc_ws);
   } STINGER_FORALL_EDGES_OF_VTX_END();
 }
@@ -215,7 +258,7 @@ dspmTspv_unit_accum (const struct stinger * S, const int64_t i, const double alp
 {
   STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, i) {
     const int64_t j = STINGER_EDGE_DEST;
-    OMP("omp atomic") y[j] += alphaxi;
+    atomic_daccum (&y[j], alphaxi);
     dspmTspv_y_idx_accum (S, y_deg, y_idx, j, loc_ws);
   } STINGER_FORALL_EDGES_OF_VTX_END();
 }
