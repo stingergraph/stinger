@@ -259,15 +259,15 @@ main(int argc, char *argv[])
         for (int64_t k = 0; k < b.nv; ++k) mark[dpr.idx[k]] = -1;
 
       stinger_alg_end_post(alg);
+    }
 
-      for (int alg = 0; alg <= DPR; ++alg) {
-        double err = 0.0;
-        if (alg > 0)
-          OMP("omp parallel for")
-            for (int64_t i = 0; i < nv; ++i)
-              err += fabs (pr_val[alg][i] - pr_val[BASELINE][i]);
-        printf ("%ld: %s %d %d %g %ld %g\n", (long)iter, pr_name[alg], alg, niter[alg], pr_time[alg], pr_vol[alg], err);
-      }
+    for (int alg = 0; alg <= DPR; ++alg) {
+      double err = 0.0;
+      if (alg > 0)
+        OMP("omp parallel for")
+          for (int64_t i = 0; i < nv; ++i)
+            err += fabs (pr_val[alg][i] - pr_val[BASELINE][i]);
+      fprintf (stderr, "%ld: %s %d %d %g %ld %g\n", (long)iter, pr_name[alg], alg, niter[alg], pr_time[alg], pr_vol[alg], err);
     }
   }
 
