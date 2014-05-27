@@ -151,6 +151,60 @@ namespace gt {
 	}
     };
 
+    class JSON_RPC_get_latlon_twitter : public JSON_RPCSession {
+      private:
+	rpc_params_t p[2];
+	int64_t _count;
+	bool _strings;
+
+	class semantic_coordinates {
+	  public:
+	    uint64_t _ref;
+	    double _lat, _lon;
+	    double _sentiment;
+	    std::string _categories;
+
+	    bool operator< (const semantic_coordinates& x) const {
+	      if (_ref != x._ref)
+		return _ref < x._ref;
+	      else if (_lat != x._lat)
+		return _lat < x._lat;
+	      else if (_lon != x._lon)
+		return _lon < x._lon;
+	      else
+		return _sentiment < x._sentiment;
+	    }
+
+	    semantic_coordinates(uint64_t ref, double lat, double lon, double sent, std::string cat) {
+	      _ref = ref;
+	      _lat = lat;
+	      _lon = lon;
+	      _sentiment = sent;
+	      _categories = cat;
+	    }
+	};
+
+	std::set<semantic_coordinates> _coordinates;
+
+      public:
+	JSON_RPC_get_latlon_twitter(int64_t sess_id, JSON_RPCServerState * session) : JSON_RPCSession(sess_id, session) {
+	  p[0] = ((rpc_params_t) {"count", TYPE_INT64, &_count, false, 0});
+	  p[1] = ((rpc_params_t) {NULL, TYPE_NONE, NULL, false, 0});
+	}
+	virtual rpc_params_t * get_params();
+	virtual int64_t update(const StingerBatch & batch);
+	virtual int64_t onRegister(
+		      rapidjson::Value & result,
+		      rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
+	virtual int64_t onRequest(
+		      rapidjson::Value & result,
+		      rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
+	virtual JSON_RPCSession * gimme(int64_t sess_id, JSON_RPCServerState * session) {
+	  return new JSON_RPC_get_latlon_twitter(sess_id, session);
+	}
+    };
+
+
   }
 }
 
