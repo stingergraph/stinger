@@ -18,6 +18,7 @@ extern "C" {
 #include "stinger_utils/stinger_utils.h"
 #include "stinger_utils/timer.h"
 #include "stinger_utils/dimacs_support.h"
+#include "stinger_utils/metisish_support.h"
 #include "stinger_utils/json_support.h"
 #include "stinger_utils/csv.h"
 }
@@ -144,6 +145,10 @@ int main(int argc, char *argv[])
       case 'd': {
 		  load_dimacs_graph (S, input_file);
 		} break;  /* DIMACS */
+
+      case 'm': {
+		  load_metisish_graph (S, input_file);
+		} break;
 
       case 'g': {
 		} break;  /* GML / GraphML / GEXF -- you pick */
