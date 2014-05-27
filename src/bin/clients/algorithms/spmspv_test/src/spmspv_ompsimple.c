@@ -29,7 +29,7 @@ static inline void setup_y (const int64_t nv, const double beta, double * y)
 
 /* Fragile macro, do not pass unevaluated expressions as arguments. */
 /* It's a macro to avoid a sequence point that could force fetching x[i]... */
-#define ALPHAXI_VAL(alpha, xi) (alpha == 0.0? 0.0 : (alpha == 1.0? xi : (alpha == -1.0? -xi : xi)))
+#define ALPHAXI_VAL(alpha, xi) (alpha == 0.0? 0.0 : (alpha == 1.0? xi : (alpha == -1.0? -xi : (alpha * xi))))
 
 void stinger_dspmTv_ompsimple (const int64_t nv, const double alpha, const struct stinger *S, const double * x, const double beta, double * y)
 {
