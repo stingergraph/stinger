@@ -135,6 +135,8 @@ main(int argc, char *argv[])
    * Streaming Phase
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
   while(alg->enabled) {
+    int64_t vol_x = 0;
+    int64_t vol_S = 0;
     ++iter;
     /* Pre processing */
     if(stinger_alg_begin_pre(alg)) {
@@ -192,7 +194,12 @@ main(int argc, char *argv[])
             dy.val[k] = 0.0;
             dense_x[x.idx[k]] = x.val[k];
           }
+        /* Count volume *after* changing the graph. */
+        OMP("omp for reduction(+:vol_x)")
+          for (int64_t k = 0; k < x.nv; ++k)
+            vol_x += stinger_outdegree_get (alg->stinger, x.idx[k]);
       }
+      vol_S = stinger_total_edges (alg->stinger);
 
 #define SPMV_BRANCH(prodalg, PRODALG)                                   \
       case ALG_ ## PRODALG:                                             \
@@ -278,7 +285,9 @@ main(int argc, char *argv[])
 
       LOG_V_A("spmspv_test: gather_time %ld = %g", (long)iter, gather_time);
       LOG_V_A("spmspv_test: mult_time %ld = %g", (long)iter, mult_time);
+      LOG_V_A("spmspv_test: mult_teps %ld = %g", (long)iter, vol_S / mult_time);
       LOG_V_A("spmspv_test: spmult_time %ld = %g", (long)iter, spmult_time);
+      LOG_V_A("spmspv_test: spmult_teps %ld = %g", (long)iter, vol_x / spmult_time);
       LOG_V_A("spmspv_test: cwise_err %ld = %g", (long)iter, cwise_err);
 
       clear_vlist (&dy.nv, dy.idx, mark);
