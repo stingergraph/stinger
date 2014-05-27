@@ -222,7 +222,7 @@ dspmTspv_y_idx_accum (const struct stinger * S,
 #if !defined(NDEBUG)
   const int64_t nv = stinger_max_active_vertex (S) + 1;
 #endif
-  if (loc_ws[j] < 0) {
+  if (loc_ws[j] == -1) {
     int64_t where;
     int64_t expected = -1;
     int64_t desired = -2;
