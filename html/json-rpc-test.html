@@ -135,6 +135,15 @@ dataType: "json",
 success: function(data) {whatever = data; $(".reduction").append("<p>" + JSON.stringify(data) + "</p>");}
 });
 
+data = {"jsonrpc": "2.0", "method": "get_server_info", "params": {}, "id": 13};
+jQuery.ajax({
+url: "http://localhost:8088/jsonrpc",
+type: "POST",
+data: JSON.stringify(data),
+dataType: "json",
+success: function(data) {whatever = data; $(".info").append("<p>" + JSON.stringify(data) + "</p>");}
+});
+
 </script>
 <div class="algorithms">algorithms:&nbsp;</div>
 <div class="description">description:&nbsp;</div>
@@ -150,5 +159,6 @@ success: function(data) {whatever = data; $(".reduction").append("<p>" + JSON.st
 <div class="stats_with_types">stats_with_types:&nbsp;</div>
 <div class="bfs">bfs:&nbsp;</div>
 <div class="reduction">reduction:&nbsp;</div>
+<div class="info">info:&nbsp;</div>
 </body>
 </html>
