@@ -128,12 +128,12 @@ pagerank_core (const int64_t nv,
 }
 
 int
-pagerank (struct stinger * S, double * x_in, const double * restrict v,
+pagerank (const int64_t nv,
+          struct stinger * S, double * x_in, const double * restrict v,
           const double alpha, const int maxiter,
           double * workspace)
 {
   /* const int64_t nv = stinger_max_active_vertex (S) + 1; */
-  const int64_t nv = stinger_max_nv (S);
   double * kv = &workspace[nv];
   vcopy_scale (1.0 / norm1 (nv, v), nv, v, kv);
   vcopy (nv, kv, x_in);
@@ -141,19 +141,19 @@ pagerank (struct stinger * S, double * x_in, const double * restrict v,
 }
 
 int
-pagerank_restart (struct stinger * S, double * x_in, const double * restrict v,
+pagerank_restart (const int64_t nv,
+                  struct stinger * S, double * x_in, const double * restrict v,
                   const double alpha, const int maxiter,
                   double * workspace)
 {
   /* const int64_t nv = stinger_max_active_vertex (S) + 1; */
-  const int64_t nv = stinger_max_nv (S);
   double * kv = &workspace[nv];
   vcopy_scale ((1.0 - alpha) / norm1 (nv, v), nv, v, kv);
   return pagerank_core (nv, S, x_in, kv, alpha, maxiter, workspace);
 }
 
 int
-pagerank_dpr (struct stinger * S,
+pagerank_dpr (const int64_t nv, struct stinger * S,
               int64_t * x_deg, int64_t * x_idx, double * x_val,
               const double alpha, const int maxiter,
               int64_t * b_deg, int64_t * b_idx, double * b_val,
@@ -166,7 +166,6 @@ pagerank_dpr (struct stinger * S,
               int64_t * total_vol_out)
 {
   /* const int64_t nv = stinger_max_active_vertex (S) + 1; */
-  const int64_t nv = stinger_max_nv (S);
   const double termthresh = termthresh_dpr (nv, S);
   double cb = 0.0;
   int64_t dpr_deg;

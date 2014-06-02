@@ -1,15 +1,15 @@
 #if !defined(PAGERANK_HEADER_)
 #define PAGERANK_HEADER_
 
-int pagerank (struct stinger * S, double * x_in, const double * restrict v,
+int pagerank (const int64_t nv, struct stinger * S, double * x_in, const double * restrict v,
               const double alpha, const int maxiter,
               double * workspace);
 
-int pagerank_restart (struct stinger * S, double * x_in, const double * restrict v,
+int pagerank_restart (const int64_t nv, struct stinger * S, double * x_in, const double * restrict v,
                       const double alpha, const int maxiter,
                       double * workspace);
 
-int pagerank_dpr (struct stinger * S,
+int pagerank_dpr (const int64_t nv, struct stinger * S,
                   int64_t * x_deg, int64_t * x_idx, double * x_val,
                   const double alpha, const int maxiter,
                   int64_t * b_deg, int64_t * b_idx, double * b_val,

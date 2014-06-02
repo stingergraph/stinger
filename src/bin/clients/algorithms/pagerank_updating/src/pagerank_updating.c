@@ -97,6 +97,12 @@ main(int argc, char *argv[])
   //nv = stinger_max_active_vertex (alg->stinger) + 1;
   max_nv = stinger_max_nv (alg->stinger);
   nv = max_nv;
+  if (getenv ("NV")) {
+    long nv_env = strtol (getenv ("NV"), NULL, 10);
+    if (nv_env > 0 && nv_env < nv)
+      nv = nv_env;
+  }
+  fprintf (stderr, "NV: %ld\n", (long)nv);
 
   for (int k = 0; k < NPR_ALG; ++k) {
     double * alg_data = (double*)alg->alg_data;
@@ -105,18 +111,18 @@ main(int argc, char *argv[])
     niter[k] = 0;
   }
 
-  mark = xmalloc (max_nv * sizeof (*mark));
-  v = xmalloc (max_nv * sizeof (*v));
-  dzero_workspace = xcalloc (max_nv, sizeof (*dzero_workspace));
-  workspace = xmalloc (2 * max_nv * sizeof (*workspace));
-  iworkspace = xmalloc (max_nv * sizeof (*iworkspace));
+  mark = xmalloc (nv * sizeof (*mark));
+  v = xmalloc (nv * sizeof (*v));
+  dzero_workspace = xcalloc (nv, sizeof (*dzero_workspace));
+  workspace = xmalloc (2 * nv * sizeof (*workspace));
+  iworkspace = xmalloc (nv * sizeof (*iworkspace));
   x = alloc_spvect (nv);
   b = alloc_spvect (nv);
   dpr = alloc_spvect (nv);
 
   OMP("omp parallel") {
     OMP("omp for nowait")
-      for (int64_t i = 0; i < max_nv; ++i) {
+      for (int64_t i = 0; i < nv; ++i) {
         mark[i] = -1;
         for (int k = 0; k < 4; ++k)
           pr_val[k][i] = 0.0;
@@ -132,7 +138,7 @@ main(int argc, char *argv[])
   stinger_alg_begin_init(alg); {
     if (stinger_total_edges (alg->stinger)) {
       tic ();
-      niter[BASELINE] = pagerank (alg->stinger, pr_val[BASELINE], v, alpha, maxiter, workspace);
+      niter[BASELINE] = pagerank (nv, alg->stinger, pr_val[BASELINE], v, alpha, maxiter, workspace);
       pr_time[BASELINE] = toc ();
 #if !defined(NDEBUG)
       for (int64_t k = 0; k < nv; ++k)
@@ -166,7 +172,7 @@ main(int argc, char *argv[])
     /* Pre processing */
     if(stinger_alg_begin_pre(alg)) {
       OMP("omp parallel for")
-        for (int64_t k = 0; k < max_nv; ++k) mark[k] = -1;
+        for (int64_t k = 0; k < nv; ++k) mark[k] = -1;
       /* Gather vertices that are affected by the batch. */
       /* (Really should be done in the framework, but ends up being handy here...) */
       tic ();
@@ -207,17 +213,17 @@ main(int argc, char *argv[])
                                               0.0,
                                               &b.nv, b.idx, b.val,
                                               mark, dzero_workspace);
-      compute_b_time = toc ();
-      stinger_alg_end_pre(alg);
       OMP("omp parallel") {
         OMP("omp for reduction(+: b0n)")
           for (int64_t k = 0; k < b.nv; ++k) b0n += fabs (b.val[k]);
         OMP("omp for")
           for (int64_t k = 0; k < b.nv; ++k) mark[b.idx[k]] = -1;
       }
+      compute_b_time = toc ();
+      stinger_alg_end_pre(alg);
     }
 
-    fprintf (stderr, "NV CHANGED %ld    %ld %ld   %g\n", (long)x.nv,
+    fprintf (stderr, "%ld: NV CHANGED %ld    %ld %ld   %g\n", (long)iter, (long)x.nv,
              (long)alg->num_insertions, (long)alg->num_deletions, b0n);
 
     /* Post processing */
@@ -229,19 +235,19 @@ main(int argc, char *argv[])
 
       /* Compute PageRank from scratch */
       tic ();
-      niter[BASELINE] = pagerank (S, pr_val[BASELINE], v, alpha, maxiter, workspace);
+      niter[BASELINE] = pagerank (nv, S, pr_val[BASELINE], v, alpha, maxiter, workspace);
       normalize_pr (nv, pr_val[BASELINE]);
       pr_time[BASELINE] = toc ();
       pr_vol[BASELINE] = niter[BASELINE] * NE;
 
       tic ();
-      niter[RESTART] = pagerank_restart (S, pr_val[RESTART], v, alpha, maxiter, workspace);
+      niter[RESTART] = pagerank_restart (nv, S, pr_val[RESTART], v, alpha, maxiter, workspace);
       normalize_pr (nv, pr_val[RESTART]);
       pr_time[RESTART] = toc ();
       pr_vol[RESTART] = niter[RESTART] * NE;
 
       tic ();
-      niter[DPR] = pagerank_dpr (S,
+      niter[DPR] = pagerank_dpr (nv, S,
                                  &x.nv, x.idx, x.val,
                                  alpha, maxiter,
                                  &b.nv, b.idx, b.val,
@@ -261,6 +267,7 @@ main(int argc, char *argv[])
       stinger_alg_end_post(alg);
     }
 
+    fprintf (stderr, "%ld: b_time %g\n", (long)iter, compute_b_time);
     for (int alg = 0; alg <= DPR; ++alg) {
       double err = 0.0;
       if (alg > 0)
