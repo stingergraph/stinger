@@ -127,6 +127,8 @@ int main(int argc, char *argv[])
   /* load edges from disk (if applicable) */
   if (input_file[0] != '\0')
   {
+    printf("\tReading...");
+    tic ();
     switch (file_type[0])
     {
       case 'b': {
@@ -165,6 +167,7 @@ int main(int argc, char *argv[])
 		  exit(0);
 		} break;
     }
+    printf(" (done: %lf s)\n", toc ());
   }
 
 
