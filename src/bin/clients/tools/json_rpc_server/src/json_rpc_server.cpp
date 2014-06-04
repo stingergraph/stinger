@@ -5,6 +5,7 @@
 #include <functional>
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
+#include <tclap/CmdLine.h>
 
 #define LOG_AT_W  /* warning only */
 
@@ -88,26 +89,17 @@ begin_request_handler(struct mg_connection *conn)
 int
 main (int argc, char ** argv)
 {
-  int unleash_daemon = 0;
+  bool unleash_daemon = false;
 
-  int opt = 0;
-  while(-1 != (opt = getopt(argc, argv, "h?d"))) {
-    switch(opt) {
-      default: {
-	LOG_E_A("Unknwon option %c", opt);
-      } /* no break */
-      case '?':
-      case 'h': {
-	printf("Usage: %s [-d]\n", argv[0]);
-	printf("-d\tdaemon mode\n");
-	exit(-1);
-      } break;
-	
-      case 'd': {
-	unleash_daemon = 1;
-      } break;
-    }
-  }
+  try {
+    /* parse command line configuration */
+    TCLAP::CmdLine cmd("JSON-RPC Server", ' ', "2.0");
+    TCLAP::SwitchArg daemonSwitch ("d", "daemon", "Daemon mode", cmd, false);
+    cmd.parse (argc, argv);
+    
+    unleash_daemon = daemonSwitch.getValue();
+  } catch (TCLAP::ArgException &e)
+  { std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl; return 0; }
 
   JSON_RPCServerState & server_state = JSON_RPCServerState::get_server_state();
   server_state.add_rpc_function("get_algorithms", new JSON_RPC_get_algorithms(&server_state));
