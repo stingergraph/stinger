@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
   int unleash_daemon = 0;
 
   char * graph_name = (char *) xmalloc (128*sizeof(char));
-  sprintf(graph_name, "/default");
+  sprintf(graph_name, "/stinger-default");
   char * input_file = (char *) xmalloc (1024*sizeof(char));
   input_file[0] = '\0';
   char * file_type = (char *) xmalloc (128*sizeof(char));
