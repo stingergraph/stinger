@@ -25,6 +25,18 @@ extern "C" {
 
 using namespace gt::stinger;
 
+static char * graph_name = NULL;
+static size_t graph_sz = 0;
+static struct stinger * S = NULL;
+
+extern "C" {
+  static void
+  shmdata_cleanup (void) {
+    if (graph_sz)
+      stinger_shared_free (S, graph_name, graph_sz);
+  }
+}
+
 int main(int argc, char *argv[])
 {
   StingerServerState & server_state = StingerServerState::get_server_state();
@@ -35,7 +47,7 @@ int main(int argc, char *argv[])
   int port_algs = port_names + 2;
   int unleash_daemon = 0;
 
-  char * graph_name = (char *) xmalloc (128*sizeof(char));
+  graph_name = (char *) xmalloc (128*sizeof(char));
   sprintf(graph_name, "/stinger-default");
   char * input_file = (char *) xmalloc (1024*sizeof(char));
   input_file[0] = '\0';
@@ -119,10 +131,10 @@ int main(int argc, char *argv[])
   printf("\tName: %s\n", graph_name);
 
   /* allocate the graph */
-  struct stinger * S = stinger_shared_new(&graph_name);
+  S = stinger_shared_new(&graph_name);
   //struct stinger * S = stinger_new ();
-  size_t graph_sz = S->length + sizeof(struct stinger);
-
+  graph_sz = S->length + sizeof(struct stinger);
+  atexit (shmdata_cleanup);
 
   /* load edges from disk (if applicable) */
   if (input_file[0] != '\0')
@@ -218,8 +230,7 @@ int main(int argc, char *argv[])
   printf(" done.\n"); fflush(stdout);
 
   /* clean up */
-  stinger_shared_free(S, graph_name, graph_sz);
-  free(graph_name);
+  /* Most handled by shmdata_cleanup */
   free(input_file);
 
   return 0;
