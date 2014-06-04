@@ -14,7 +14,7 @@ void error(const char *msg)
 }
 
 void
-start_udp_graph_name_server (char * graph_name, size_t graph_sz, int port)
+start_udp_graph_name_server (const char * graph_name, size_t graph_sz, int port)
 {
   int sock, length, n;
   socklen_t fromlen;
