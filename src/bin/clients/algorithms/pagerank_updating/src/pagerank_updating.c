@@ -171,6 +171,7 @@ main(int argc, char *argv[])
     ++iter;
     /* Pre processing */
     if(stinger_alg_begin_pre(alg)) {
+      clear_vlist (&x.nv, x.idx, mark);
       OMP("omp parallel for")
         for (int64_t k = 0; k < nv; ++k) mark[k] = -1;
       /* Gather vertices that are affected by the batch. */
