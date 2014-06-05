@@ -5,96 +5,72 @@
 #include <sys/types.h>
 #include <time.h>
 #include <netdb.h>
+#include <tclap/CmdLine.h>
 
-extern "C" {
 #include "stinger_core/stinger.h"
 #include "stinger_core/xmalloc.h"
 #include "stinger_utils/csv.h"
 #include "stinger_utils/timer.h"
 #include "stinger_utils/stinger_sockets.h"
+#include "stinger_core/stinger_error.h"
+
+extern "C" {
 #include "random.h"
 }
-
 #include "rmat_edge_generator.h"
 #include "build_name.h"
 
 using namespace gt::stinger;
-
-#define E_A(X,...) fprintf(stderr, "%s %s %d:\n\t" #X "\n", __FILE__, __func__, __LINE__, __VA_ARGS__);
-#define E(X) E_A(X,NULL)
-#define V_A(X,...) fprintf(stdout, "%s %s %d:\n\t" #X "\n", __FILE__, __func__, __LINE__, __VA_ARGS__);
-#define V(X) V_A(X,NULL)
 
 
 int
 main(int argc, char *argv[])
 {
   /* global options */
-  int port = 10102;
-  int batch_size = 100000;
-  int num_batches = -1;
-  int nv = 1024;
-  int is_int = 0;
+  int port;
+  int batch_size;
+  int num_batches;
+  int nv;
+  bool is_int;
   struct hostent * server = NULL;
 
-  int opt = 0;
-  while(-1 != (opt = getopt(argc, argv, "p:a:x:y:n:i"))) {
-    switch(opt) {
-      case 'p': {
-	port = atoi(optarg);
-      } break;
+  try {
+    /* parse command line configuration */
+    TCLAP::CmdLine cmd("STINGER RMAT Random Edge Generation Stream", ' ', "1.0");
+    
+    TCLAP::ValueArg<std::string> hostnameArg ("a", "host", "STINGER Server hostname", false, "localhost", "hostname", cmd);
+    TCLAP::ValueArg<int> portArg ("p", "port", "STINGER Stream Port", false, 10102, "port", cmd);
+    TCLAP::ValueArg<int> batchArg ("x", "batchsize", "Number of edges per batch", false, 1000, "edges", cmd);
+    TCLAP::ValueArg<int> numBatchesArg ("y", "numbatches", "Number of batches to send", false, -1, "batches", cmd);
+    TCLAP::ValueArg<int> nvArg ("n", "numvertices", "Number of possible vertices", false, 1024, "vertices", cmd);
+    TCLAP::SwitchArg intSwitch ("i", "integers", "Set to generate integer vertices only (no names)", cmd, false);
 
-      case 'x': {
-	batch_size = atol(optarg);
-      } break;
+    cmd.parse (argc, argv);
 
-      case 'y': {
-	num_batches = atol(optarg);
-      } break;
-
-      case 'a': {
-	server = gethostbyname(optarg);
-	if(NULL == server) {
-	  E_A("ERROR: server %s could not be resolved.", optarg);
-	  exit(-1);
-	}
-      } break;
-
-      case 'i': {
-	is_int = 1;
-      } break;
-
-      case 'n': {
-	nv = atol(optarg);
-      } break;
-
-      case '?':
-      case 'h': {
-	printf("Usage:    %s [-p port] [-a server_addr] [-n num_vertices] [-x batch_size] [-y num_batches] [-i]\n", argv[0]);
-	printf("Defaults:\n\tport: %d\n\tserver: localhost\n\tnum_vertices: %d\n-i forces the use of integers in place of strings\n", port, nv);
-	exit(0);
-      } break;
-    }
-  }
-
-  V_A("Running with: port: %d\n", port);
-
-  /* connect to localhost if server is unspecified */
-  if(NULL == server) {
-    server = gethostbyname("localhost");
+    port = portArg.getValue();
+    batch_size = batchArg.getValue();
+    num_batches = numBatchesArg.getValue();
+    nv = nvArg.getValue();
+    is_int = intSwitch.getValue();
+    
+    server = gethostbyname(hostnameArg.getValue().c_str());
     if(NULL == server) {
-      E_A("ERROR: server %s could not be resolved.", "localhost");
+      LOG_E_A("Hostname %s could not be resolved.", hostnameArg.getValue().c_str());
       exit(-1);
     }
-  }
+  
+    if(!(nv > 0)) {
+      LOG_E("ERROR: incorrect number of vertices");
+      exit(-1);
+    }
+    
+  } catch (TCLAP::ArgException &e)
+  { std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl; return 0; }
 
-  if(!(nv > 0)) {
-    printf("ERROR: incorrect number of vertices");
-    exit(-1);
-  }
 
   /* start the connection */
   int sock_handle = connect_to_batch_server (server, port);
+  LOG_V_A("Connected to %s on port %d", server->h_name, port);
 
   /* actually generate and send the batches */
   int64_t line = 0;
@@ -151,7 +127,7 @@ main(int argc, char *argv[])
       insertion->set_time(line);
     }
 
-    V("Sending messages.");
+    LOG_V("Sending messages.");
 
     send_message(sock_handle, batch);
     sleep(2);

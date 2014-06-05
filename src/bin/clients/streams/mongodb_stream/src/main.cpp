@@ -5,6 +5,7 @@
 #include <time.h>
 #include <netdb.h>
 #include <unistd.h>
+#include <tclap/CmdLine.h>
 
 #include "stinger_core/stinger.h"
 #include "stinger_core/xmalloc.h"
@@ -20,74 +21,62 @@
 
 using namespace gt::stinger;
 
-#define STINGER 1
 
 int
 main(int argc, char *argv[])
 {
   /* global options */
-  int stinger_port = 10102;
-  int mongo_port = 13001;
-  int batch_size = 100000;
-  int num_batches = -1;
+  int stinger_port;
+  int mongo_port;
+  int batch_size;
+  int num_batches;
   struct hostent * server = NULL;
-  char mongo_server[256];
-  mongo_server[0] = '\0';
+  const char * mongo_server = NULL;
+  const char * mongo_collection = NULL;
 
-  int opt = 0;
-  while(-1 != (opt = getopt(argc, argv, "p:x:y:a:m:n:"))) {
-    switch(opt) {
-      case 'p': {
-	stinger_port = atoi(optarg);
-      } break;
+  try {
+    /* parse command line configuration */
+    TCLAP::CmdLine cmd("STINGER MongoDB Edge Import Stream", ' ', "1.0");
+    
+    TCLAP::ValueArg<std::string> stingerHostArg ("a", "host", "STINGER Server hostname", false, "localhost", "hostname", cmd);
+    TCLAP::ValueArg<int> stingerPortArg ("p", "port", "STINGER Stream Port", false, 10102, "port", cmd);
+    TCLAP::ValueArg<std::string> mongoHostArg ("", "mongohost", "MongoDB hostname", false, "localhost", "hostname", cmd);
+    TCLAP::ValueArg<int> mongoPortArg ("", "mongoport", "MongoDB port", false, 27017, "port", cmd);
+    TCLAP::ValueArg<int> batchArg ("x", "batchsize", "Number of edges per batch", false, 1000, "edges", cmd);
+    TCLAP::ValueArg<int> numBatchesArg ("y", "numbatches", "Number of batches to send", false, -1, "batches", cmd);
+    TCLAP::UnlabeledValueArg<std::string> collectionArg ("collection", "MongoDB database.collection (in that form)", true, "", "db.collection", cmd);
 
-      case 'x': {
-	batch_size = atol(optarg);
-      } break;
+    cmd.parse (argc, argv);
 
-      case 'y': {
-	num_batches = atol(optarg);
-      } break;
+    stinger_port = stingerPortArg.getValue();
+    batch_size = batchArg.getValue();
+    num_batches = numBatchesArg.getValue();
+    
+    mongo_server = mongoHostArg.getValue().c_str();
+    mongo_port = mongoPortArg.getValue();
+    mongo_collection = collectionArg.getValue().c_str();
 
-      case 'a': {
-	server = gethostbyname(optarg);
-	if(NULL == server) {
-	  LOG_E_A ("Server %s could not be resolved", optarg);
-	  exit(-1);
-	}
-      } break;
-
-      case 'm': {
-	strncpy (mongo_server, optarg, 255);
-      } break;
-
-      case 'n': {
-	mongo_port = atoi(optarg);
-      } break;
-
-      case '?':
-      case 'h': {
-	printf("Usage:    %s [-a stinger_addr] [-p stinger_port] [-x batch_size] [-y num_batches] [-m mongo_addr] [-n mongo_port] db_name.collection_name\n", argv[0]);
-	printf("Defaults:\n\tstinger_port: %d\n\tstinger_server: localhost\n\tmongo_port: %d\n\tmongo_server: localhost\n", stinger_port, mongo_port);
-	exit(0);
-      } break;
+    server = gethostbyname(stingerHostArg.getValue().c_str());
+    if(NULL == server) {
+      LOG_E_A("Hostname %s could not be resolved.", stingerHostArg.getValue().c_str());
+      exit(-1);
     }
-  }
+    
+  } catch (TCLAP::ArgException &e)
+  { std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl; return 0; }
 
-  int64_t mongo_collection_index = 0;
-  if (optind < argc) {
-    mongo_collection_index = optind;
-  } else {
-    LOG_E ("Did not specify a valid MongoDB collection");
-    exit(-1);
-  }
 
   /* Begin Mongo Server Connect */
   mongo conn[1];
 
-  /* Default to localhost if unspecified */
-  if ('\0' == mongo_server[0]) {
-    strncpy (mongo_server, "127.0.0.1\0", 10);
+  if (mongo_collection == NULL) {
+    LOG_E ("Did not specify a valid MongoDB collection");
+    exit(-1);
+  }
+
+  if (mongo_server == NULL) {
+    LOG_E ("MongoDB server hostname is NULL");
+    exit(-1);
   }
 
   LOG_D_A ("Mongo Server Address: %s", mongo_server);
@@ -102,20 +91,11 @@ main(int argc, char *argv[])
   }
   /* End Mongo */
 
-#if STINGER
   /* Begin STINGER Server Connect */
-  if(NULL == server) {
-    server = gethostbyname("localhost");
-    if(NULL == server) {
-      LOG_E_A("Server %s could not be resolved", "localhost");
-      exit(-1);
-    }
-  }
-
   int sock_handle = connect_to_batch_server (server, stinger_port);
+  LOG_V_A("Connected to %s on port %d", server->h_name, port);
   /* End STINGER */
 
-#endif
   /* actually generate and send the batches */
   char * buf = NULL, ** fields = NULL;
   uint64_t bufSize = 0, * lengths = NULL, fieldsSize = 0, count = 0;
@@ -146,12 +126,10 @@ main(int argc, char *argv[])
     bson_finish (&query);
 
     //mongo_cursor_init (&cursor, conn, "twitter.imagine");
-    mongo_cursor_init (&cursor, conn, argv[mongo_collection_index]);
+    mongo_cursor_init (&cursor, conn, mongo_collection);
     mongo_cursor_set_query (&cursor, &query);
     cursor.limit = batch_size;
     cursor.skip = skip_num;
-    //printf("limit = %ld\n", cursor.limit);
-    //printf("skip = %ld\n", cursor.skip);
 
     int64_t print_header = 1;
     while (mongo_cursor_next(&cursor) == MONGO_OK) {
@@ -198,9 +176,7 @@ main(int argc, char *argv[])
     mongo_cursor_destroy (&cursor);
     /* End Mongo Query */
 
-#if STINGER
     send_message(sock_handle, batch);
-#endif
     sleep(2);
 
     if((batch_num >= num_batches) && (num_batches != -1)) {

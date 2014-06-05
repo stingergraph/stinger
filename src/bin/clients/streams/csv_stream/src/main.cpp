@@ -30,24 +30,14 @@ main(int argc, char *argv[])
 
   try {
     /* parse command line configuration */
-    TCLAP::CmdLine cmd("STINGER CSV Stream", ' ', "1.0");
+    TCLAP::CmdLine cmd("STINGER Templated CSV Stream", ' ', "1.0");
     
-    TCLAP::ValueArg<int> portArg ("p", "port", "STINGER Stream Port", false, 10102, "port");
-    cmd.add (portArg);
-
-    TCLAP::ValueArg<int> batchArg ("x", "batchsize", "Number of edges per batch", false, 1000, "edges");
-    cmd.add (batchArg);
-
-    TCLAP::ValueArg<std::string> hostnameArg ("a", "host", "STINGER Server hostname", false, "localhost", "hostname");
-    cmd.add (hostnameArg);
-    
+    TCLAP::ValueArg<std::string> hostnameArg ("a", "host", "STINGER Server hostname", false, "localhost", "hostname", cmd);
+    TCLAP::ValueArg<int> portArg ("p", "port", "STINGER Stream Port", false, 10102, "port", cmd);
+    TCLAP::ValueArg<int> batchArg ("x", "batchsize", "Number of edges per batch", false, 1000, "edges", cmd);
+    TCLAP::ValueArg<float> timeoutArg ("t", "timeout", "Timeout", false, 0.0, "seconds", cmd);
     TCLAP::SwitchArg directedSwitch ("d", "directed", "Set if graph edges are directed.  Otherwise edges are assumed undirected.", cmd, false);
-    
-    TCLAP::ValueArg<float> timeoutArg ("t", "timeout", "Timeout", false, 0.0, "seconds");
-    cmd.add (timeoutArg);
-
-    TCLAP::UnlabeledValueArg<std::string> filenameArg ("template", "Path to CSV template file", true, "", "filename");
-    cmd.add (filenameArg);
+    TCLAP::UnlabeledValueArg<std::string> filenameArg ("template", "Path to CSV template file", true, "", "filename", cmd);
 
     cmd.parse (argc, argv);
 
@@ -69,8 +59,7 @@ main(int argc, char *argv[])
 
   /* start the connection */
   int sock_handle = connect_to_batch_server (server, port);
-
-  LOG_V_A("Connected to %s on port %d\n", server->h_name, port);
+  LOG_V_A("Connected to %s on port %d", server->h_name, port);
 
 
   EdgeCollectionSet edge_finder;
