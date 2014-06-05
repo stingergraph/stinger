@@ -3,6 +3,7 @@
 #include <sys/types.h>
 #include <time.h>
 #include <netdb.h>
+#include <tclap/CmdLine.h>
 
 #include "stinger_utils/stinger_sockets.h"
 #include "stinger_utils/timer.h"
@@ -10,88 +11,76 @@
 #include "stinger_utils/csv.h"
 #include "explore_csv.h"
 
-using namespace gt::stinger;
-
-#define E_A(X,...) fprintf(stderr, "%s %s %d:\n\t" #X "\n", __FILE__, __func__, __LINE__, __VA_ARGS__);
-#define E(X) E_A(X,NULL)
-#define V_A(X,...) fprintf(stdout, "%s %s %d:\n\t" #X "\n", __FILE__, __func__, __LINE__, __VA_ARGS__);
-#define V(X) V_A(X,NULL)
-
 #define LOG_AT_I 1
 #include "stinger_core/stinger_error.h"
+
+using namespace gt::stinger;
 
 
 int
 main(int argc, char *argv[])
 {
   /* global options */
-  int port = 10102;
-  int batch_size = 1000;
-  double timeout = 0;
+  int port;
+  int batch_size;
   struct hostent * server = NULL;
-  char * filename = NULL;
-  int use_directed = 0;
+  bool use_directed;
+  float timeout;
+  const char * filename = NULL;
 
-  int opt = 0;
-  while(-1 != (opt = getopt(argc, argv, "p:a:x:t:d"))) {
-    switch(opt) {
-      case 'p': {
-		  port = atoi(optarg);
-		} break;
+  try {
+    /* parse command line configuration */
+    TCLAP::CmdLine cmd("STINGER CSV Stream", ' ', "1.0");
+    
+    TCLAP::ValueArg<int> portArg ("p", "port", "STINGER Stream Port", false, 10102, "port");
+    cmd.add (portArg);
 
-      case 'x': {
-		  batch_size = atol(optarg);
-		  LOG_I_A("Batch size changed to %d", batch_size);
-		} break;
+    TCLAP::ValueArg<int> batchArg ("x", "batchsize", "Number of edges per batch", false, 1000, "edges");
+    cmd.add (batchArg);
 
-      case 'a': {
-		  server = gethostbyname(optarg);
-		  if(NULL == server) {
-		    LOG_E_A("ERROR: server %s could not be resolved.", optarg);
-		    exit(-1);
-		  }
-		} break;
-      case 'd': {
-		  use_directed = 1;
-		} break;
-      case 't': {
-	timeout = atof(optarg);
-      } break;
+    TCLAP::ValueArg<std::string> hostnameArg ("a", "host", "STINGER Server hostname", false, "localhost", "hostname");
+    cmd.add (hostnameArg);
+    
+    TCLAP::SwitchArg directedSwitch ("d", "directed", "Set if graph edges are directed.  Otherwise edges are assumed undirected.", cmd, false);
+    
+    TCLAP::ValueArg<float> timeoutArg ("t", "timeout", "Timeout", false, 0.0, "seconds");
+    cmd.add (timeoutArg);
 
-      case '?':
-      case 'h': {
-		  printf("Usage:    %s [-p port] [-a server_addr] [-t timeout] [-x batch_size] filename\n", argv[0]);
-		  printf("Defaults:\n\tport: %d\n\tserver: localhost\n\ttimeout:%lf\n\tbatch_size: %d", port, timeout, batch_size);
-		  exit(0);
-		} break;
-    }
-  }
+    TCLAP::UnlabeledValueArg<std::string> filenameArg ("template", "Path to CSV template file", true, "", "filename");
+    cmd.add (filenameArg);
 
-  if (optind < argc && 0 != strcmp (argv[optind], "-")) {
-    filename = argv[optind];
-  } else {
-    LOG_E("No filename given.");
-    return -1;
-  }
+    cmd.parse (argc, argv);
 
-  LOG_V_A("Running with: port: %d\n", port);
-
-  /* connect to localhost if server is unspecified */
-  if(NULL == server) {
-    server = gethostbyname("localhost");
+    port = portArg.getValue();
+    batch_size = batchArg.getValue();
+    use_directed = directedSwitch.getValue();
+    timeout = timeoutArg.getValue();
+    filename = filenameArg.getValue().c_str();
+    
+    server = gethostbyname(hostnameArg.getValue().c_str());
     if(NULL == server) {
-      LOG_E_A("ERROR: server %s could not be resolved.", "localhost");
+      LOG_E_A("Hostname %s could not be resolved.", hostnameArg.getValue().c_str());
       exit(-1);
     }
-  }
+    
+  } catch (TCLAP::ArgException &e)
+  { std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl; return 0; }
+
 
   /* start the connection */
   int sock_handle = connect_to_batch_server (server, port);
+
+  LOG_V_A("Connected to %s on port %d\n", server->h_name, port);
 
 
   EdgeCollectionSet edge_finder;
 
   FILE * fp = fopen(filename, "r");
+  if (fp == NULL) {
+    LOG_E_A ("Unable to open file: %s", filename);
+    exit(-1);
+  }
+
   char * buf = NULL, ** fields = NULL;
   uint64_t bufSize = 0, * lengths = NULL, fieldsSize = 0, count = 0;
 
