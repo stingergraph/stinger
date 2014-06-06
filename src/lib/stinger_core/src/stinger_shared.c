@@ -114,7 +114,9 @@ shmunmap (const char * name, void * ptr, size_t size)
 }
 
 int
-shmunmap_kill(const char * name, void * ptr, size_t size) {
+shmunmap_unlink(const char * name, void * ptr, size_t size) {
+  int err;
+  err = shmunmap (name, ptr, size);
 #if !defined(__MTA__)
   if(shm_unlink(name)) {
     LOG_E_A("Unlinking %s", name);
@@ -124,6 +126,7 @@ shmunmap_kill(const char * name, void * ptr, size_t size) {
   if(unlink(name))
     return -1;
 #endif
+  return err;
 }
 
 
@@ -291,7 +294,7 @@ stinger_shared_free (struct stinger *S, const char * name, size_t sz)
   if (!S)
     return S;
 
-  int status = shmunmap(name, S, sz);
+  shmunmap_unlink (name, S, sz);
   return NULL;
 }
 

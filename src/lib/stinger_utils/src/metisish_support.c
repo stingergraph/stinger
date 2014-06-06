@@ -36,6 +36,46 @@ next_line (FILE * in, char * rowbuf, size_t sz)
   }
 }
 
+#define EBUFSZ 4192
+
+static int64_t n_ebuf = 0;
+static int64_t ebuf_i[EBUFSZ];
+static int64_t ebuf_j[EBUFSZ];
+static int64_t ebuf_w[EBUFSZ];
+
+#if !defined(OMP)
+#if defined(_OPENMP)
+#define OMP(x_) _Pragma(x_)
+#else
+#define OMP(x_)
+#endif
+#endif
+
+static void
+flush_ebuf (struct stinger * S)
+{
+  if (n_ebuf > 0) {
+    OMP("omp parallel for")
+      for (int64_t k = 0; k < n_ebuf; ++k)
+        stinger_insert_edge (S, /*type*/ 0, ebuf_i[k], ebuf_j[k], ebuf_w[k],
+                             /*time*/ 0);
+  }
+  n_ebuf = 0;
+}
+
+static inline void
+push_ebuf (struct stinger * S, int64_t i, int64_t j, int64_t w)
+{
+  int64_t where = n_ebuf++;
+  if (where >= EBUFSZ) {
+    flush_ebuf (S);
+    where = n_ebuf++;
+  }
+  ebuf_i[where] = i;
+  ebuf_j[where] = j;
+  ebuf_w[where] = w;
+}
+
 int
 load_metisish_graph (struct stinger * S, char * filename)
 {
@@ -90,10 +130,11 @@ load_metisish_graph (struct stinger * S, char * filename)
       /* fprintf (stderr, " (%" PRId64 "; %" PRId64 ")", j+1, w); */
 
       /* Let duplicates be inserted here... */
-      stinger_insert_edge (S, /*type*/ 0, i, j, w, /*time*/ 0);
+      push_ebuf (S, i, j, w);
 
     } while (pos < line_len && pos != posold);
   }
+  flush_ebuf (S);
 
   fclose (fp);
 
