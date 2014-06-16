@@ -6,8 +6,24 @@
 
 #include "stinger_core/stinger_atomics.h"
 #include "stinger_core/stinger.h"
+#include "stinger_core/xmalloc.h"
 
 #include "compat.h"
+
+#if defined(__GNUC__)
+#if __GNUC__ < 4
+#error "Ancient gcc needs updating."
+#elif __GNUC_MINOR__ < 7
+/* Define __atomic in terms of __sync */
+#define __atomic_compare_exchange(p,pv,newpv,unused1,unused2,unused3) __sync_bool_compare_and_swap((p), *(pv), *(newpv))
+#define __atomic_compare_exchange_n(p,pv,newv,unused1,unused2,unused3) __sync_bool_compare_and_swap((p), *(pv), (newv))
+#define __atomic_load(p, pv, unused1) (pv) = *(p)
+#define __atomic_store(p, pv, unused1) *(p) = *(pv)
+#define __atomic_fetch_add(p, pv, unused1) __sync_fetch_and_add((p), (pv))
+#endif
+#else
+#error "Needs atomic support, preferably through C11-ish..."
+#endif
 
 const static double NAN_EMPTY = nan ("0xDEADFACE");
 #if defined(__x86_64__) || defined(_M_X64)
@@ -222,7 +238,7 @@ dspmTspv_y_idx_accum (const struct stinger * S,
 #if !defined(NDEBUG)
   const int64_t nv = stinger_max_active_vertex (S) + 1;
 #endif
-  if (loc_ws[j] < 0) {
+  if (loc_ws[j] == -1) {
     int64_t where;
     int64_t expected = -1;
     int64_t desired = -2;
@@ -279,7 +295,7 @@ void stinger_dspmTspv_ompcas (const int64_t nv, const double alpha, const struct
 {
   int64_t y_deg = * y_deg_ptr;
   int64_t * loc_ws = loc_ws_in;
-  double * restrict val_ws = val_ws_in;
+  double * val_ws = val_ws_in;
 
   OMP("omp parallel if(!omp_in_parallel())") {
     setup_workspace (nv, &loc_ws, &val_ws);
@@ -304,8 +320,8 @@ void stinger_dspmTspv_ompcas (const int64_t nv, const double alpha, const struct
 void stinger_unit_dspmTspv_ompcas (const int64_t nv, const double alpha, const struct stinger *S, const int64_t x_deg, const int64_t * x_idx, const double * x_val, const double beta, int64_t * y_deg_ptr, int64_t * y_idx, double * y_val, int64_t * loc_ws_in, double * val_ws_in /*UNUSED*/)
 {
   int64_t y_deg = * y_deg_ptr;
-  int64_t * restrict loc_ws = loc_ws_in;
-  double * restrict val_ws = val_ws_in;
+  int64_t * loc_ws = loc_ws_in;
+  double * val_ws = val_ws_in;
 
   OMP("omp parallel if(!omp_in_parallel())") {
     setup_workspace (nv, &loc_ws, &val_ws);
@@ -331,7 +347,7 @@ void stinger_dspmTspv_degscaled_ompcas (const int64_t nv, const double alpha, co
 {
   int64_t y_deg = * y_deg_ptr;
   int64_t * loc_ws = loc_ws_in;
-  double * restrict val_ws = val_ws_in;
+  double * val_ws = val_ws_in;
 
   OMP("omp parallel if(!omp_in_parallel())") {
     setup_workspace (nv, &loc_ws, &val_ws);
@@ -359,8 +375,8 @@ void stinger_dspmTspv_degscaled_ompcas (const int64_t nv, const double alpha, co
 void stinger_unit_dspmTspv_degscaled_ompcas (const int64_t nv, const double alpha, const struct stinger *S, const int64_t x_deg, const int64_t * x_idx, const double * x_val, const double beta, int64_t * y_deg_ptr, int64_t * y_idx, double * y_val, int64_t * loc_ws_in, double * val_ws_in /*UNUSED*/)
 {
   int64_t y_deg = * y_deg_ptr;
-  int64_t * restrict loc_ws = loc_ws_in;
-  double * restrict val_ws = val_ws_in;
+  int64_t * loc_ws = loc_ws_in;
+  double * val_ws = val_ws_in;
 
   /* double t0, t1, t2, t3, tugh, tugh2; */
 
