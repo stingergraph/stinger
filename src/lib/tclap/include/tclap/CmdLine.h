@@ -47,6 +47,7 @@
 #include <iomanip>
 #include <algorithm>
 #include <stdlib.h> // Needed for exit(), which isn't defined in some envs.
+#include <fstream>
 
 namespace TCLAP {
 
@@ -233,6 +234,12 @@ private:
 		 * \param xors - List of Args to be added and xor'd.
 		 */
 		void xorAdd( std::vector<Arg*>& xors );
+
+		/**
+		 * Parses a configuration file.
+		 * \param filename - Path to a configuration file.
+		 */
+		void parse(const std::string& filename);
 
 		/**
 		 * Parses the command line.
@@ -429,6 +436,71 @@ inline void CmdLine::add( Arg* a )
 		_numRequired++;
 }
 
+
+inline void CmdLine::parse(const std::string& filename)
+{
+  std::vector<std::string> args;
+  std::string line;
+  std::ifstream fp (filename.c_str());
+
+  args.push_back(filename);
+
+  if (fp.is_open()) {
+    while (getline(fp, line)) {
+      std::size_t found;
+
+      found = line.find('=');
+      if (found == std::string::npos)
+	continue;
+
+      /* remove comment */
+      found = line.find('#');
+      if (found != std::string::npos) {
+	line.erase(found, std::string::npos);
+      }
+
+      found = line.find(';');
+      if (found != std::string::npos) {
+	line.erase(found, std::string::npos);
+      }
+
+      /* remove all whitespace from the line */
+      line.erase(std::remove_if(line.begin(), line.end(), isspace), line.end());
+
+      /* separate variable from value */
+      found = line.find('=');
+      std::string keyword = line.substr(0, found);
+      std::string value = line.substr(found+1, std::string::npos);
+
+      /* if nothing is left over, we should just continue */
+      if (keyword.length() < 1) {
+	continue;
+      }
+
+      /* prepend with -- */
+      keyword.insert(0, "--");
+
+      /* add the argument to the list */
+      if (value == "True" || value == "true") {  /* true */
+	args.push_back(keyword);
+	std::cout << "pushed: [[" << keyword << "]]" << std::endl;
+      } else if (value == "False" || value == "false") {  /* false */
+	std::cout << "pushed: nothing" << std:: endl;
+	continue;
+      } else {  /* just a value */
+	args.push_back(keyword);
+	args.push_back(value);
+
+	std::cout << "pushed: [[" << keyword << "]]" << std::endl;
+	std::cout << "pushed: [[" << value << "]]" << std::endl;
+      }
+
+    }
+    fp.close();
+  }
+
+  parse(args);
+}
 
 inline void CmdLine::parse(int argc, const char * const * argv)
 {
