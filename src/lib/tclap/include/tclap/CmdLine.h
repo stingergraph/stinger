@@ -483,16 +483,11 @@ inline void CmdLine::parse(const std::string& filename)
       /* add the argument to the list */
       if (value == "True" || value == "true") {  /* true */
 	args.push_back(keyword);
-	std::cout << "pushed: [[" << keyword << "]]" << std::endl;
       } else if (value == "False" || value == "false") {  /* false */
-	std::cout << "pushed: nothing" << std:: endl;
 	continue;
       } else {  /* just a value */
 	args.push_back(keyword);
 	args.push_back(value);
-
-	std::cout << "pushed: [[" << keyword << "]]" << std::endl;
-	std::cout << "pushed: [[" << value << "]]" << std::endl;
       }
 
     }
