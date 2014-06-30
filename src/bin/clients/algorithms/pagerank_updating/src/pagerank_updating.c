@@ -13,7 +13,7 @@
 #include "compat.h"
 #include "pagerank.h"
 #include "spmspv.h"
-#include "spmspv_ompcas.h"
+#include "spmspv_ompcas_batch.h"
 
 static inline int append_to_vlist (int64_t * restrict nvlist,
                                    int64_t * restrict vlist,
@@ -208,7 +208,7 @@ main(int argc, char *argv[])
       tic ();
       b.nv = 0;
       /* Compute b0 in b */
-      stinger_unit_dspmTspv_degscaled_ompcas (nv,
+      stinger_unit_dspmTspv_degscaled_ompcas_batch (nv,
                                               1.0, alg->stinger,
                                               x.nv, x.idx, x.val,
                                               0.0,

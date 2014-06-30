@@ -14,11 +14,14 @@
 #include "spmspv.h"
 #include "spmspv_ompsimple.h"
 #include "spmspv_ompcas.h"
+#include "spmspv_ompcas_batch.h"
 
 #define ALG_SEQ 0
 #define ALG_OMPSIMPLE 1
-#define ALG_OMPCAS 1
-int alg_to_try = ALG_SEQ;
+#define ALG_OMPCAS 2
+#define ALG_OMPCAS_BATCH 3
+static int alg_to_try = ALG_SEQ;
+static const char *alg_arg = "seq";
 
 static inline int append_to_vlist (int64_t * restrict nvlist,
                                    int64_t * restrict vlist,
@@ -68,13 +71,19 @@ main(int argc, char *argv[])
       nonunit_weights = 0;
     else if (0 == strcmp(argv[k], "--alg")) {
       ++k;
-      if (0 == strcmp(argv[k], "seq"))
+      if (0 == strcmp(argv[k], "seq")) {
         alg_to_try = ALG_SEQ;
-      else if (0 == strcmp(argv[k], "ompsimple"))
+        alg_arg = argv[k];
+      } else if (0 == strcmp(argv[k], "ompsimple")) {
         alg_to_try = ALG_OMPSIMPLE;
-      else if (0 == strcmp(argv[k], "ompcas"))
+        alg_arg = argv[k];
+      } else if (0 == strcmp(argv[k], "ompcas")) {
         alg_to_try = ALG_OMPCAS;
-      else {
+        alg_arg = argv[k];
+      } else if (0 == strcmp(argv[k], "ompcasbatch")) {
+        alg_to_try = ALG_OMPCAS_BATCH;
+        alg_arg = argv[k];
+      } else {
         fprintf (stderr, "Unknown algorithm \"%s\".\n", argv[k]);
         abort ();
       }
@@ -88,9 +97,11 @@ main(int argc, char *argv[])
   /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
    * Setup and register algorithm with the server
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+  char namebuf[1024];
+  sprintf(namebuf, "spmspv_test_%s", alg_arg);
   stinger_registered_alg * alg =
     stinger_register_alg(
-      .name="spmspv_test",
+      .name=namebuf,
       .data_per_vertex=2*sizeof(double),
       .data_description="dd spmspv-test-vect spmspv-test-x",
       .host="localhost",
@@ -129,6 +140,7 @@ main(int argc, char *argv[])
     init_time = toc ();
   } stinger_alg_end_init(alg);
 
+  LOG_V_A("spmspv_test: alg = %d", alg_to_try);
   LOG_V_A("spmspv_test: init time = %g\n", init_time);
 
   /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
@@ -234,6 +246,8 @@ main(int argc, char *argv[])
         }
         break;
         SPMV_BRANCH(ompsimple,OMPSIMPLE);
+        SPMV_BRANCH(ompcas,OMPCAS);
+        SPMV_BRANCH(ompcas_batch,OMPCAS_BATCH);
       }
       mult_time = toc ();
 
@@ -249,6 +263,8 @@ main(int argc, char *argv[])
         }
         break;
         SPMSPV_BRANCH(ompsimple,OMPSIMPLE);
+        SPMV_BRANCH(ompcas,OMPCAS);
+        SPMV_BRANCH(ompcas_batch,OMPCAS_BATCH);
       }
       /* Apply update to y_copy */
       OMP("omp parallel for")
