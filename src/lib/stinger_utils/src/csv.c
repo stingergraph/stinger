@@ -294,7 +294,7 @@ enum csv_fields {
 };
 
 int
-load_csv_graph (struct stinger * S, char * filename, int use_numerics)
+load_csv_graph (struct stinger * S, const char * filename, int use_numerics)
 {
   FILE * fp = fopen (filename, "r");
   if (!fp)

@@ -42,7 +42,7 @@ string_t *
 labeled_subgraph_to_json(stinger_t * S, int64_t src, int64_t * labels, const int64_t vtxlimit);
 
 int
-load_json_graph (struct stinger * S, char * filename);
+load_json_graph (struct stinger * S, const char * filename);
 
 #ifdef __cplusplus
 }
