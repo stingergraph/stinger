@@ -37,7 +37,6 @@ int main(int argc, char *argv[])
   std::string input_file;
   std::string file_type;
   std::string out_dir;
-  std::string conf_file;
   bool use_numerics;
   bool unleash_daemon;
 
@@ -51,7 +50,6 @@ int main(int argc, char *argv[])
     TCLAP::ValueArg<std::string> outDirArg ("f", "out", "Output directory for vertex names, algorithm states", false, "", "path", cmd);
     TCLAP::ValueArg<std::string> inputFileArg ("i", "input", "Input filename", false, "", "filename", cmd);
     TCLAP::ValueArg<std::string> fileTypeArg ("t", "type", "Input file type", false, "", "type", cmd);
-    TCLAP::ValueArg<std::string> confFileArg ("", "conf", "Configuration file", false, "", "path", cmd);
 
     TCLAP::SwitchArg algDataSwitch ("k", "saveAlgState", "Write algorithm states to disk after each batch of updates", cmd, false);
     TCLAP::SwitchArg writeNamesSwitch ("m", "saveVertexMap", "Write vertex name mapping to disk", cmd, false);
@@ -59,12 +57,6 @@ int main(int argc, char *argv[])
     TCLAP::SwitchArg daemonSwitch ("d", "daemon", "Daemon mode", cmd, false);
 
     cmd.parse (argc, argv);
-   
-    /* handle a config file, if present */
-    conf_file = confFileArg.getValue();
-    if (conf_file != "") {
-      cmd.parse (conf_file);
-    }
 
     /* get values */
     port_names = portArg.getValue();
@@ -73,7 +65,6 @@ int main(int argc, char *argv[])
     graph_name_str = graphNameArg.getValue();
     input_file = inputFileArg.getValue();
     file_type = fileTypeArg.getValue();
-
     use_numerics = numericSwitch.getValue();
     unleash_daemon = daemonSwitch.getValue();
 
