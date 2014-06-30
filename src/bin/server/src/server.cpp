@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
     /* handle a config file, if present */
     conf_file = confFileArg.getValue();
     if (conf_file != "") {
-      cmd.parse (conf_file);
+      //cmd.parse (conf_file);
     }
 
     /* get values */
