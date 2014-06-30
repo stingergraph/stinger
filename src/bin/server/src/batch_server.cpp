@@ -63,7 +63,7 @@ handle_stream(void * args)
 }
 
 void
-start_tcp_batch_server (struct stinger * S, const char * stinger_loc, int port_streams, int port_algs)
+start_tcp_batch_server (struct stinger * S, char * stinger_loc, int port_streams, int port_algs)
 {
   StingerServerState & server_state = StingerServerState::get_server_state();
   server_state.set_stinger(S);

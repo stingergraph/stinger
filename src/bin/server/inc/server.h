@@ -11,10 +11,10 @@ using namespace gt::stinger;
 
 /* function prototypes */
 void
-start_tcp_batch_server (struct stinger * S, const char * stinger_loc, int port_streams, int port_algs);
+start_tcp_batch_server (struct stinger * S, char * stinger_loc, int port_streams, int port_algs);
 
 void
-start_udp_graph_name_server (const char * graph_name, size_t graph_sz, int port);
+start_udp_graph_name_server (char * graph_name, size_t graph_sz, int port);
 
 int
 process_batch(stinger_t * S, StingerBatch & batch);
