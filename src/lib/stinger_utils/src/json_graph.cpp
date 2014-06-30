@@ -8,7 +8,7 @@ extern "C" {
 }
 
 extern "C" int
-load_json_graph (struct stinger * S, const char * filename)
+load_json_graph (struct stinger * S, char * filename)
 {
   std::string line, text;
   std::ifstream in(filename);

@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 int
-load_dimacs_graph (struct stinger * S, const char * filename);
+load_dimacs_graph (struct stinger * S, char * filename);
 
 #ifdef __cplusplus
 }

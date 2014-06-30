@@ -98,7 +98,7 @@ readline (char * buffer, int64_t * start, int64_t * end, int64_t * weight)
 
 
 int
-load_dimacs_graph (struct stinger * S, const char * filename)
+load_dimacs_graph (struct stinger * S, char * filename)
 {
   int64_t i;
   int64_t NE, NV;
