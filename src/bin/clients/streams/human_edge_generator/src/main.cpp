@@ -6,7 +6,6 @@
 #include <sys/types.h>
 #include <time.h>
 #include <netdb.h>
-#include <tclap/CmdLine.h>
 
 #include "stinger_core/stinger.h"
 #include "stinger_core/xmalloc.h"
@@ -18,37 +17,51 @@
 using namespace gt::stinger;
 
 
+
 int
 main(int argc, char *argv[])
 {
   /* global options */
-  int port;
+  int port = 10102;
   struct hostent * server = NULL;
 
-  try {
-    /* parse command line configuration */
-    TCLAP::CmdLine cmd("STINGER Human-generated Edge Stream", ' ', "1.0");
-    
-    TCLAP::ValueArg<std::string> hostnameArg ("a", "host", "STINGER Server hostname", false, "localhost", "hostname", cmd);
-    TCLAP::ValueArg<int> portArg ("p", "port", "STINGER Stream Port", false, 10102, "port", cmd);
-    
-    cmd.parse (argc, argv);
+  int opt = 0;
+  while(-1 != (opt = getopt(argc, argv, "p:a:"))) {
+    switch(opt) {
+      case 'p': {
+	port = atoi(optarg);
+      } break;
 
-    port = portArg.getValue();
-    
-    server = gethostbyname(hostnameArg.getValue().c_str());
-    if(NULL == server) {
-      LOG_E_A("Hostname %s could not be resolved.", hostnameArg.getValue().c_str());
-      exit(-1);
+      case 'a': {
+	server = gethostbyname(optarg);
+	if(NULL == server) {
+	  LOG_E_A ("ERROR: server %s could not be resolved.", optarg);
+	  exit(-1);
+	}
+      } break;
+
+      case '?':
+      case 'h': {
+	printf("Usage:    %s [-p port] [-a server_addr]\n", argv[0]);
+	printf("Defaults:\n\tport: %d\n\tserver: localhost\n", port);
+	exit(0);
+      } break;
     }
-    
-  } catch (TCLAP::ArgException &e)
-  { std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl; return 0; }
-  
+  }
+
+  LOG_D_A ("Running with: port: %d", port);
+
+  /* connect to localhost if server is unspecified */
+  if(NULL == server) {
+    server = gethostbyname("localhost");
+    if(NULL == server) {
+      LOG_E_A ("ERROR: server %s could not be resolved.", "localhost");
+      exit (-1);
+    }
+  }
 
   /* start the connection */
   int sock_handle = connect_to_batch_server (server, port);
-  LOG_V_A("Connected to %s on port %d", server->h_name, port);
 
   /* actually generate and send the batches */
   int64_t batch_num = 0;
