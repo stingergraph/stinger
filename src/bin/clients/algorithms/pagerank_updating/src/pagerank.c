@@ -15,6 +15,7 @@
 #include "spmspv.h"
 #include "spmspv_ompsimple.h"
 #include "spmspv_ompcas.h"
+#include "spmspv_ompcas_batch.h"
 
 static inline double
 termthresh_pr (const int64_t nv, struct stinger *S)
@@ -186,7 +187,7 @@ pagerank_dpr (const int64_t nv, struct stinger * S,
   int niter;
   /* OMP("omp master") time_1 = toc (); */
   /* Update b = b1 - b0 */
-  stinger_unit_dspmTspv_degscaled_ompcas (nv, 1.0, S, *x_deg, x_idx, x_val,
+  stinger_unit_dspmTspv_degscaled_ompcas_batch (nv, 1.0, S, *x_deg, x_idx, x_val,
                                           -1.0, b_deg, b_idx, b_val, mark, dzero_workspace);
   const int64_t bdeg = *b_deg;
 
@@ -230,7 +231,7 @@ pagerank_dpr (const int64_t nv, struct stinger * S,
     }
 
     /* OMP("omp master") time_1 = toc (); */
-    stinger_unit_dspmTspv_degscaled_ompcas (nv, alpha, S, dpr_deg, dpr_idx, dpr_val,
+    stinger_unit_dspmTspv_degscaled_ompcas_batch (nv, alpha, S, dpr_deg, dpr_idx, dpr_val,
                                             1.0,
                                             &new_dpr_deg, new_dpr_idx, new_dpr_val,
                                             mark, dzero_workspace);
