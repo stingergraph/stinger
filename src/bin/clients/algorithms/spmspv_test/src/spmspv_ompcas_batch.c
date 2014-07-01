@@ -237,6 +237,8 @@ struct batch {
      int64_t idx[BATCH_SIZE];
 };
 
+#define BATCH_INIT {.n = 0}
+
 static void
 flush (struct batch *b, int64_t * y_deg, int64_t * y_idx, int64_t * loc_ws)
 {
@@ -271,8 +273,11 @@ flush (struct batch *b, int64_t * y_deg, int64_t * y_idx, int64_t * loc_ws)
 static inline void
 enqueue (struct batch * b, const int64_t j, int64_t * y_deg, int64_t * y_idx, int64_t * loc_ws)
 {
-     if (b->n == BATCH_SIZE)
+     assert(b->n <= BATCH_SIZE);
+     if (b->n == BATCH_SIZE) {
           flush (b, y_deg, y_idx, loc_ws);
+          assert(b->n == 0);
+     }
      b->idx[b->n++] = j;
 }
 
@@ -321,7 +326,7 @@ void stinger_dspmTspv_ompcas_batch (const int64_t nv, const double alpha, const 
   OMP("omp parallel if(!omp_in_parallel()) shared(loc_ws, val_ws)") {
     setup_workspace (nv, &loc_ws, &val_ws);
     setup_sparse_y (beta, *y_deg_ptr, y_idx, y_val, loc_ws, val_ws);
-    struct batch b;
+    struct batch b = BATCH_INIT;
 
     OMP("omp for nowait")
       for (int64_t xk = 0; xk < x_deg; ++xk) {
@@ -329,8 +334,10 @@ void stinger_dspmTspv_ompcas_batch (const int64_t nv, const double alpha, const 
         const double alphaxi = ALPHAXI_VAL (alpha, x_val[xk]);
         if (alphaxi != 0.0)
              dspmTspv_accum (S, i, alphaxi, y_deg_ptr, y_idx, val_ws, loc_ws, &b);
+        assert(b.n <= BATCH_SIZE);
       }
     flush (&b, y_deg_ptr, y_idx, loc_ws);
+    assert(b.n == 0);
     OMP("omp barrier");
 
     pack_vals (*y_deg_ptr, y_idx, val_ws, y_val);
@@ -351,7 +358,7 @@ void stinger_unit_dspmTspv_ompcas_batch (const int64_t nv, const double alpha, c
   OMP("omp parallel if(!omp_in_parallel()) shared(loc_ws, val_ws)") {
     setup_workspace (nv, &loc_ws, &val_ws);
     setup_sparse_y (beta, *y_deg_ptr, y_idx, y_val, loc_ws, val_ws);
-    struct batch b;
+    struct batch b = BATCH_INIT;
 
     OMP("omp for nowait")
       for (int64_t xk = 0; xk < x_deg; ++xk) {
@@ -381,7 +388,7 @@ void stinger_dspmTspv_degscaled_ompcas_batch (const int64_t nv, const double alp
   OMP("omp parallel if(!omp_in_parallel()) shared(loc_ws, val_ws)") {
     setup_workspace (nv, &loc_ws, &val_ws);
     setup_sparse_y (beta, *y_deg_ptr, y_idx, y_val, loc_ws, val_ws);
-    struct batch b;
+    struct batch b = BATCH_INIT;
 
     OMP("omp for nowait")
       for (int64_t xk = 0; xk < x_deg; ++xk) {
@@ -417,7 +424,7 @@ void stinger_unit_dspmTspv_degscaled_ompcas_batch (const int64_t nv, const doubl
     /* OMP("omp single") t0 = omp_get_wtime (); */
     setup_workspace (nv, &loc_ws, &val_ws);
     setup_sparse_y (beta, *y_deg_ptr, y_idx, y_val, loc_ws, val_ws);
-    struct batch b;
+    struct batch b = BATCH_INIT;
 
     /* OMP("omp single") t1 = omp_get_wtime (); */
     OMP("omp for nowait") // reduction(+: tugh, tugh2)")
