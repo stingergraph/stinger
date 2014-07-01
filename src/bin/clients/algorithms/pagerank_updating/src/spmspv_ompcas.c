@@ -219,9 +219,9 @@ dspmTspv_y_idx_accum (const struct stinger * S,
                       const int64_t j,
                       int64_t * loc_ws)
 {
-#if !defined(NDEBUG)
-  const int64_t nv = stinger_max_active_vertex (S) + 1;
-#endif
+/* #if !defined(NDEBUG) */
+/*   const int64_t nv = stinger_max_active_vertex (S) + 1; */
+/* #endif */
   if (loc_ws[j] < 0) {
     int64_t where;
     int64_t expected = -1;
@@ -231,7 +231,7 @@ dspmTspv_y_idx_accum (const struct stinger * S,
       /* Own it. */
       /* where = int64_fetch_add (y_deg, 1); */
       where = __atomic_fetch_add (y_deg, 1, __ATOMIC_RELAXED);
-      assert (where < nv);
+      /* assert (where < nv); */
       __atomic_store (&loc_ws[j], &where, __ATOMIC_RELEASE);
       y_idx[where] = j;
     }
