@@ -1,5 +1,7 @@
 /* -*- mode: C; mode: folding; fill-column: 70; -*- */
 #include <dirent.h>
+#include <limits.h>
+#include <errno.h>
 
 #if defined(_OPENMP)
 #include <omp.h>
@@ -11,9 +13,6 @@
 #include "core_util.h"
 #include "xmalloc.h"
 #include "x86_full_empty.h"
-
-#include "compat/getMemorySize.h"
-
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
  * ACCESS INTERNAL "CLASSES"
@@ -364,23 +363,6 @@ stinger_eb_first_ts (const struct stinger_eb * eb_, int k_)
 }
 
 /**
-* @brief Count the total number of edges in STINGER.
-*
-* @param S The STINGER data structure
-*
-* @return The number of edges in STINGER
-*/
-int64_t
-stinger_total_edges (const struct stinger * S)
-{
-  uint64_t rtn = 0;
-  for (uint64_t i = 0; i < (S->max_nv); i++) {
-    rtn += stinger_outdegree_get(S, i);
-  }
-  return rtn;
-}
-
-/**
 * @brief Count the number of edges in STINGER up to nv.
 *
 * @param S The STINGER data structure
@@ -392,11 +374,40 @@ int64_t
 stinger_edges_up_to(const struct stinger * S, int64_t nv)
 {
   uint64_t rtn = 0;
-  for (uint64_t i = 0; i < nv; i++) {
-    rtn += stinger_outdegree_get(S, i);
-  }
+  OMP("omp parallel for reduction(+:rtn)")
+    for (uint64_t i = 0; i < nv; i++) {
+      rtn += stinger_outdegree_get(S, i);
+    }
   return rtn;
 }
+
+/**
+* @brief Count the total number of edges in STINGER.
+*
+* @param S The STINGER data structure
+*
+* @return The number of edges in STINGER
+*/
+int64_t
+stinger_total_edges (const struct stinger * S)
+{
+  return stinger_edges_up_to (S, S->max_nv);
+}
+
+/**
+* @brief Provide a fast upper bound on the total number of edges in STINGER.
+*
+* @param S The STINGER data structure
+*
+* @return An upper bound on the number of edges in STINGER
+*/
+int64_t
+stinger_max_total_edges (const struct stinger * S)
+{
+  MAP_STING(S);
+  return ebpool->ebpool_tail * STINGER_EDGEBLOCKSIZE;
+}
+
 
 /**
 * @brief Calculate the total size of the active STINGER graph in memory.
@@ -638,7 +649,9 @@ stinger_etype_array_size(int64_t nebs)
  *
  *  Allocates memory for a STINGER data structure.  If this is the first STINGER
  *  to be allocated, it also initializes the edge block pool.  Edge blocks are
- *  allocated and assigned for each value less than netypes.
+ *  allocated and assigned for each value less than netypes.  The environment
+ *  variable STINGER_MAX_MEMSIZE, if set to a number with optional size suffix,
+ *  limits STINGER's maximum allocated size.
  *
  *  @return Pointer to struct stinger
  */
@@ -650,7 +663,7 @@ struct stinger *stinger_new_full (int64_t nv, int64_t nebs, int64_t netypes, int
   netypes = netypes ? netypes : STINGER_DEFAULT_NUMETYPES;
   nvtypes = nvtypes ? nvtypes : STINGER_DEFAULT_NUMVTYPES;
 
-  size_t memory_size = getMemorySize();
+  const size_t memory_size = stinger_max_memsize ();
 
   size_t i;
   size_t sz     = 0;
@@ -661,6 +674,7 @@ struct stinger *stinger_new_full (int64_t nv, int64_t nebs, int64_t netypes, int
 	 etype_names_start, vtype_names_start, ETA_start;
 
   do {
+    size_t tmp;
     if(sz > ((memory_size * 3) / 4)) {
       if(!resized) {
 	LOG_W_A("Resizing stinger to fit into memory (detected as %ld)", memory_size);
@@ -668,29 +682,36 @@ struct stinger *stinger_new_full (int64_t nv, int64_t nebs, int64_t netypes, int
       resized = 1;
 
       sz    = 0;
-      nv   /= 2;
-      nebs /= 2;
+      nv   = (3*nv)/4;
+      nebs = STINGER_DEFAULT_NEB_FACTOR * nv;
     }
 
     vertices_start = 0;
-    sz += stinger_vertices_size(nv);
+    sz += (tmp = stinger_vertices_size(nv));
+    /* fprintf (stderr, " ... vtcs %ld\n", (long)tmp); */
 
     physmap_start = sz;
-    sz += stinger_physmap_size(nv);
+    sz += (tmp = stinger_physmap_size(nv));
+    /* fprintf (stderr, " ... physmap %ld\n", (long)tmp); */
 
     ebpool_start = sz;
-    sz += netypes * stinger_ebpool_size(nebs);
+    sz += (tmp = netypes * stinger_ebpool_size(nebs));
+    /* fprintf (stderr, " ... ebpool %ld\n", (long)tmp); */
 
     etype_names_start = sz;
-    sz += stinger_names_size(netypes);
+    sz += (tmp = stinger_names_size(netypes));
+    /* fprintf (stderr, " ... etypes %ld\n", (long)tmp); */
 
     vtype_names_start = sz;
-    sz += stinger_names_size(nvtypes);
+    sz += (tmp = stinger_names_size(nvtypes));
+    /* fprintf (stderr, " ... vtypes %ld\n", (long)tmp); */
 
     ETA_start = sz;
-    sz += netypes * stinger_etype_array_size(nebs);
+    sz += (tmp = netypes * stinger_etype_array_size(nebs));
+    /* fprintf (stderr, " ... etypes ary %ld\n", (long)tmp); */
 
     length = sz;
+    /* fprintf (stderr, "nv %ld  %ld %ld\n", (long)nv, (long)length, (long)memory_size); */
   } while(sz > memory_size);
 
   struct stinger *G = xmalloc (sizeof(struct stinger) + sz);

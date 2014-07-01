@@ -110,7 +110,6 @@ init_empty_community_state (struct community_state * cstate,
   init_community_state (cstate, graph_nv, ne_est);
 
   cstate->cg = alloc_graph (graph_nv, ne_est);
-  cstate->cg.ne = 0;
   intvtx_t * restrict d = cstate->cg.d;
   OMP("omp parallel for")
     for (int64_t k = 0; k < graph_nv; ++k)
@@ -203,10 +202,10 @@ init_and_compute_community_state (struct community_state * cstate, struct el * g
     cstate->comm_limit,
     1,
     -1, -1, -1, 0, 1.1, 1, &cstate->hist, NULL, 0,
+    cstate->csize,
     cstate->ws, cstate->wslen,
     cstate->lockspace);
   shrinkwrap_graph (&cstate->cg);
-  cstate_forcibly_update_csize (cstate);
   return toc ();
 }
 
@@ -245,7 +244,7 @@ cstate_update (struct community_state * cstate, const struct stinger * S)
 
   update_el (&cstate->cg, cstate->cmap, cstate->csize,
              S, cstate->nvlist, cstate->vlist, cstate->mark,
-            &cstate->ws, &cstate->wslen);
+             &cstate->ws, &cstate->wslen);
 
 #if !defined(NDEBUG)
   assert (cstate_check (cstate));
@@ -869,7 +868,7 @@ double
 init_cstate_from_stinger (struct community_state * cs, const struct stinger * S)
 {
   const int64_t nv = stinger_max_active_vertex(S) + 1;
-  int64_t ne = stinger_total_edges(S);
+  int64_t ne = stinger_max_total_edges(S);
   struct el g = alloc_graph (nv, ne);
   double time = 0;
 
@@ -881,12 +880,14 @@ init_cstate_from_stinger (struct community_state * cs, const struct stinger * S)
     q.n = 0;
 
     OMP("omp for")
+      for (int64_t i = 0; i < nv; ++i)
+        D(g, i) = 0;
+    OMP("omp for")
       for (int64_t i = 0; i < nv; ++i) {
        STINGER_READ_ONLY_FORALL_EDGES_OF_VTX_BEGIN(S, i) {
          const int64_t j = STINGER_RO_EDGE_DEST;
          const int64_t w = STINGER_RO_EDGE_WEIGHT;
          if (i < j) {
-           int64_t where = stinger_int64_fetch_add (&g.ne, 1);
             enqueue (&q, i, j, w, &g);
          } else if (i == j) {
            OMP("omp atomic") D(g, i) += w;

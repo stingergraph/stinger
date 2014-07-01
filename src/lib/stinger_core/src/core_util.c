@@ -7,6 +7,8 @@
 #include "core_util.h"
 #include "stinger_defs.h"
 
+#include "compat/getMemorySize.h"
+
 /**
  * @brief Simple comparator for pairs of int64_t.
  *
@@ -192,3 +194,49 @@ i64_cmp (const void *a, const void *b)
   const int64_t vb = *(const int64_t *) b;
   return va - vb;
 }
+
+static size_t max_memsize_env = 0;
+static void
+set_max_memsize_env (void)
+{
+  if (max_memsize_env != 0) return;
+  if (getenv ("STINGER_MAX_MEMSIZE")) {
+    char *tailptr = NULL;
+    unsigned long mx;
+    errno = 0;
+    mx = strtoul (getenv ("STINGER_MAX_MEMSIZE"), &tailptr, 10);
+    if (ULONG_MAX != mx && errno == 0) {
+      if (tailptr)
+        switch (*tailptr) {
+        case 't':
+        case 'T':
+          mx <<= 10;
+        case 'g':
+        case 'G':
+          mx <<= 10;
+        case 'm':
+        case 'M':
+          mx <<= 10;
+        case 'k':
+        case 'K':
+          mx <<= 10;
+          break;
+        }
+    }
+    max_memsize_env = mx;
+  } else {
+    max_memsize_env = SIZE_MAX;
+  }
+}
+
+size_t
+stinger_max_memsize (void)
+{
+  size_t out;
+  set_max_memsize_env ();
+  out = getMemorySize();
+  if (out > max_memsize_env)
+    out = max_memsize_env;
+  return out;
+}
+

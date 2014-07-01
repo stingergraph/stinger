@@ -28,6 +28,7 @@ int64_t find_in_sorted (const int64_t tofind, const int64_t N, const int64_t * r
 
 int i64_cmp (const void *a, const void *b);
 
+size_t stinger_max_memsize (void);
 #ifdef __cplusplus
 }
 #undef restrict

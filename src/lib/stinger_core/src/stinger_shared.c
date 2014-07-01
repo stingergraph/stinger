@@ -1,6 +1,7 @@
 #include "stinger_shared.h"
 #include "stinger_error.h"
 #include "x86_full_empty.h"
+#include "core_util.h"
 #include "xmalloc.h"
 
 #define _XOPEN_SOURCE 600
@@ -13,8 +14,6 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
-
-#include "compat/getMemorySize.h"
 
 void
 sigbus_handler(int sig, siginfo_t *si, void * vuctx)
@@ -165,7 +164,7 @@ stinger_shared_new_full (char ** out, int64_t nv, int64_t nebs, int64_t netypes,
   netypes = netypes ? netypes : STINGER_DEFAULT_NUMETYPES;
   nvtypes = nvtypes ? nvtypes : STINGER_DEFAULT_NUMVTYPES;
 
-  size_t memory_size = getMemorySize();
+  const size_t memory_size = stinger_max_memsize ();
  
   size_t i;
   size_t sz     = 0;

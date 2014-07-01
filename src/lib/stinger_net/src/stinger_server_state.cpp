@@ -556,23 +556,23 @@ StingerServerState::write_data()
 	switch(*field) {
 
 	  case 'f': {
-	    fwrite(data, sizeof(float), nv, fp);
+	    fwrite(data, sizeof(float), nv_max, fp);
 	    data += (sizeof(float) * nv_max);
 	  } break;
 	  case 'd': {
-	    fwrite(data, sizeof(double), nv, fp);
+	    fwrite(data, sizeof(double), nv_max, fp);
 	    data += (sizeof(double) * nv_max);
 	  } break;
 	  case 'i': {
-	    fwrite(data, sizeof(int32_t), nv, fp);
+	    fwrite(data, sizeof(int32_t), nv_max, fp);
 	    data += (sizeof(int32_t) * nv_max);
 	  } break;
 	  case 'l': {
-	    fwrite(data, sizeof(int64_t), nv, fp);
+	    fwrite(data, sizeof(int64_t), nv_max, fp);
 	    data += (sizeof(int64_t) * nv_max);
 	  } break;
 	  case 'b': {
-	    fwrite(data, sizeof(uint8_t), nv, fp);
+	    fwrite(data, sizeof(uint8_t), nv_max, fp);
 	    data += (sizeof(uint8_t) * nv_max);
 	  } break;
 
