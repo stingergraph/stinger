@@ -4,6 +4,13 @@
 
 #include <assert.h>
 
+#if defined(HAVE_VALGRIND_MEMCHECK_H)
+#include <valgrind/memcheck.h>
+#else
+#define VALGRIND_MAKE_MEM_NOACCESS(p_, len_)
+#define VALGRIND_MAKE_MEM_DEFINED(p_, len_)
+#endif
+
 #include "stinger_core/stinger.h"
 #include "stinger_core/xmalloc.h"
 #include "stinger_core/stinger_error.h"
@@ -224,7 +231,6 @@ main(int argc, char *argv[])
 
 #define SPMSPV_BRANCH(prodalg, PRODALG)                                 \
       case ALG_ ## PRODALG:                                             \
-        tic ();                                                         \
         if (nonunit_weights) {                                          \
           stinger_dspmTspv_ ## prodalg (nv, alpha, alg->stinger, x.nv, x.idx, x.val, 0.0, &dy.nv, dy.idx, dy.val, \
                             mark, val_ws);                              \
@@ -232,13 +238,11 @@ main(int argc, char *argv[])
           stinger_unit_dspmTspv_ ## prodalg (nv, alpha, alg->stinger, x.nv, x.idx, x.val, 0.0, &dy.nv, dy.idx, dy.val, \
                                  mark, val_ws);                         \
         }                                                               \
-        mult_time = toc ();                                             \
         break
 
       tic ();
       switch (alg_to_try) {
       case ALG_SEQ:
-        tic ();
         if (nonunit_weights) {
           stinger_dspmTv (nv, alpha, alg->stinger, dense_x, beta, y);
         } else {
@@ -250,6 +254,8 @@ main(int argc, char *argv[])
         SPMV_BRANCH(ompcas_batch,OMPCAS_BATCH);
       }
       mult_time = toc ();
+
+      VALGRIND_MAKE_MEM_NOACCESS(y, nv*sizeof(*y));
 
       tic ();
       switch (alg_to_try) {
@@ -263,9 +269,13 @@ main(int argc, char *argv[])
         }
         break;
         SPMSPV_BRANCH(ompsimple,OMPSIMPLE);
-        SPMV_BRANCH(ompcas,OMPCAS);
-        SPMV_BRANCH(ompcas_batch,OMPCAS_BATCH);
+        SPMSPV_BRANCH(ompcas,OMPCAS);
+        SPMSPV_BRANCH(ompcas_batch,OMPCAS_BATCH);
       }
+      spmult_time = toc ();
+
+      VALGRIND_MAKE_MEM_DEFINED(y, nv*sizeof(*y));
+
       /* Apply update to y_copy */
       OMP("omp parallel for")
         for (int64_t k = 0; k < dy.nv; ++k) {
@@ -276,12 +286,13 @@ main(int argc, char *argv[])
         }
       spmult_time = toc ();
 
-      /* Compute componentwise relative error */
+      /* Compute componentwise relative error... which can only be in updated locations. */
       cwise_err = 0.0;
       OMP("omp parallel") {
         double t_cwise_err = 0.0;
         OMP("omp for nowait")
-          for (int64_t i = 0; i < nv; ++i) {
+          for (int64_t k = 0; k < dy.nv; ++k) {
+            int64_t i = dy.idx[k];
             double err;
 
             if (y[i] != 0.0)
