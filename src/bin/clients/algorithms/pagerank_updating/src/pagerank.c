@@ -214,7 +214,7 @@ pagerank_dpr (const int64_t nv, struct stinger * S,
 
   for (int niter = 0; niter < maxiter && rho >= termthresh; ++niter) {
     niter_out = niter+1;
-    new_dpr_deg = dpr_deg;
+    new_dpr_deg = bdeg; //dpr_deg;
     OMP("omp parallel") {
       OMP("omp for nowait reduction(+: total_vol)")
         for (int64_t k = 0; k < dpr_deg; ++k)
@@ -224,9 +224,11 @@ pagerank_dpr (const int64_t nv, struct stinger * S,
 
       /* XXX: Assume pattern is only appended... */
       OMP("omp for")
-        for (int64_t k = 0; k < dpr_deg; ++k) {
-          new_dpr_idx[k] = dpr_idx[k];
-          new_dpr_val[k] = (k < bdeg? b_val[k] : 0.0);
+        for (int64_t k = 0; k < bdeg; ++k) {//dpr_deg; ++k) {
+          /* new_dpr_idx[k] = dpr_idx[k]; */
+          /* new_dpr_val[k] = (k < bdeg? b_val[k] : 0.0); */
+          new_dpr_idx[k] = b_idx[k];
+          new_dpr_val[k] = b_val[k];
         }
     }
 
