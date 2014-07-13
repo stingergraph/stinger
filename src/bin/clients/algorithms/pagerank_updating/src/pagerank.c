@@ -194,7 +194,7 @@ pagerank_dpr (const int64_t nv, struct stinger * S,
     /* OMP("omp master") { time_2 = toc (); fprintf (stderr, "time 1 %g\n", time_2 - time_1); } */
 
   OMP("omp parallel") {
-    OMP("omp for")
+    OMP("omp for reduction(+:cb)")
       for (int64_t k = 0; k < bdeg; ++k)
         cb += fabs (b_val[k]);
     OMP("omp for")
