@@ -243,19 +243,21 @@ pagerank_dpr (const int64_t nv, struct stinger * S,
 
     rho = 0;
     OMP("omp parallel") {
-      OMP("omp for reduction(+: rho)")
+      OMP("omp for")
         for (int64_t k = 0; k < dpr_deg; ++k)
-          rho += fabs (new_dpr_val[k] - dpr_val[k]);
+          dzero_workspace[dpr_idx[k]] = dpr_val[k];
       OMP("omp for reduction(+: rho)")
-        for (int64_t k = dpr_deg; k < new_dpr_deg; ++k)
-          rho += fabs (new_dpr_val[k]);
+        for (int64_t k = 0; k < new_dpr_deg; ++k)
+          rho += fabs (new_dpr_val[k] - dzero_workspace[new_dpr_idx[k]]);
+      OMP("omp for")
+        for (int64_t k = 0; k < dpr_deg; ++k)
+          dzero_workspace[dpr_idx[k]] = 0.0;
     }
 
-    /* nowait because the next loop uses new_dpr_deg... */
     rho *= cb / norm1_pr;
     /* fprintf (stderr, "rho %g    %g %g\n", rho, cb, norm1_pr); */
-    dpr_deg = new_dpr_deg;
 
+    dpr_deg = new_dpr_deg;
     OMP("omp parallel for")
       for (int64_t k = 0; k < new_dpr_deg; ++k) {
         dpr_idx[k] = new_dpr_idx[k];
