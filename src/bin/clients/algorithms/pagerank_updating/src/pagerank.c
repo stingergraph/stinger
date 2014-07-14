@@ -26,7 +26,7 @@ termthresh_pr (const int64_t nv, struct stinger *S)
 static inline double
 termthresh_dpr (const int64_t nv, struct stinger *S)
 {
-  return sqrt (nv) * DBL_EPSILON;
+  return sqrt(nv * DBL_EPSILON);
 }
 
 static inline double
