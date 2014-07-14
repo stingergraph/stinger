@@ -269,7 +269,7 @@ main(int argc, char *argv[])
       stinger_alg_end_post(alg);
     }
 
-    fprintf (stderr, "%ld: b_time %g\n", (long)iter, compute_b_time);
+    fprintf (stderr, "%ld: %12s %g\n", (long)iter, "b_time", compute_b_time);
     for (int alg = 0; alg <= DPR; ++alg) {
       double err = 0.0;
       const int64_t loc = find_max_pr (nv, pr_val[alg]);
@@ -360,20 +360,20 @@ int64_t
 find_max_pr (const int64_t nv, const double * restrict pr_val)
 {
   double max_val = -1.0;
-  int64_t loc = INT64_MAX;
+  int64_t loc = -1;
   OMP("omp parallel") {
     double t_max_val = -1.0;
-    double t_loc = INT64_MAX;
+    double t_loc = -1;
     OMP("omp for nowait")
       for (int64_t k = 0; k < nv; ++k) {
         const double v = pr_val[k];
-        if (v > t_max_val && k < t_loc) {
+        if (v > t_max_val && k > t_loc) {
           t_max_val = v;
           t_loc = k;
         }
       }
     OMP("omp critical") {
-      if (t_max_val > max_val && t_loc < loc) {
+      if (t_max_val > max_val && t_loc > loc) {
         max_val = t_max_val;
         loc = t_loc;
       }
