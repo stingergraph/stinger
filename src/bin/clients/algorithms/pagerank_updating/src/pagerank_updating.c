@@ -24,6 +24,7 @@ void clear_vlist (int64_t * restrict nvlist,
                   int64_t * restrict mark);
 
 static inline void normalize_pr (const int64_t nv, double * restrict pr_val);
+static int64_t find_max_pr (const int64_t nv, const double * restrict pr_val);
 
 static int nonunit_weights = 1;
 
@@ -271,11 +272,12 @@ main(int argc, char *argv[])
     fprintf (stderr, "%ld: b_time %g\n", (long)iter, compute_b_time);
     for (int alg = 0; alg <= DPR; ++alg) {
       double err = 0.0;
+      const int64_t loc = find_max_pr (nv, pr_val[alg]);
       if (alg > 0)
-        OMP("omp parallel for")
+        OMP("omp parallel for reduction(+: err)")
           for (int64_t i = 0; i < nv; ++i)
             err += fabs (pr_val[alg][i] - pr_val[BASELINE][i]);
-      fprintf (stderr, "%ld: %s %d %d %g %ld %g\n", (long)iter, pr_name[alg], alg, niter[alg], pr_time[alg], pr_vol[alg], err);
+      fprintf (stderr, "%ld: %12s %d\t%d %g %ld %g\t%ld %g\n", (long)iter, pr_name[alg], alg, niter[alg], pr_time[alg], pr_vol[alg], err, (long)loc, (loc >= 0? pr_val[alg][loc] : -1.0));
     }
   }
 
@@ -352,4 +354,30 @@ normalize_pr (const int64_t nv, double * restrict pr_val)
       for (int64_t k = 0; k < nv; ++k)
         pr_val[k] /= n1;
   }
+}
+
+int64_t
+find_max_pr (const int64_t nv, const double * restrict pr_val)
+{
+  double max_val = -1.0;
+  int64_t loc = INT64_MAX;
+  OMP("omp parallel") {
+    double t_max_val = -1.0;
+    double t_loc = INT64_MAX;
+    OMP("omp for nowait")
+      for (int64_t k = 0; k < nv; ++k) {
+        const double v = pr_val[k];
+        if (v > t_max_val && k < t_loc) {
+          t_max_val = v;
+          t_loc = k;
+        }
+      }
+    OMP("omp critical") {
+      if (t_max_val > max_val && t_loc < loc) {
+        max_val = t_max_val;
+        loc = t_loc;
+      }
+    }
+  }
+  return loc;
 }
