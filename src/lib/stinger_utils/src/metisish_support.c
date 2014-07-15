@@ -55,10 +55,19 @@ static void
 flush_ebuf (struct stinger * S)
 {
   if (n_ebuf > 0) {
-    OMP("omp parallel for")
-      for (int64_t k = 0; k < n_ebuf; ++k)
-        stinger_insert_edge (S, /*type*/ 0, ebuf_i[k], ebuf_j[k], ebuf_w[k],
+    OMP("omp parallel") {
+      char buf[65];
+      OMP("omp for")
+      for (int64_t k = 0; k < n_ebuf; ++k) {
+        int64_t id_i, id_j;
+        sprintf (buf, "%ld", (long)ebuf_i[k]);
+        stinger_mapping_create (S, buf, strlen(buf), &id_i);
+        sprintf (buf, "%ld", (long)ebuf_j[k]);
+        stinger_mapping_create (S, buf, strlen(buf), &id_j);
+        stinger_insert_edge (S, /*type*/ 0, id_i, id_j, ebuf_w[k],
                              /*time*/ 0);
+      }
+    }
   }
   n_ebuf = 0;
 }

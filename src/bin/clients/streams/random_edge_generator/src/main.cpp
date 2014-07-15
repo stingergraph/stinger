@@ -2,6 +2,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <iostream>
+#include <sstream>
 #include <sys/types.h>
 #include <time.h>
 #include <netdb.h>
@@ -160,8 +162,17 @@ main(int argc, char *argv[])
 	insertion->set_source(u);
 	insertion->set_destination(v);
       } else {
-	insertion->set_source_str(build_name(src, u));
-	insertion->set_destination_str(build_name(dest, v));
+	// insertion->set_source_str(build_name(src, u));
+	// insertion->set_destination_str(build_name(dest, v));
+        std::ostringstream foo;
+        foo << u;
+        src = foo.str();
+        foo.str("");
+        foo << v;
+        dest = foo.str();
+        // std::cerr << "Edge  " << src << " -- " << dest << std::endl;
+	insertion->set_source_str(src);
+	insertion->set_destination_str(dest);
       }
       insertion->set_weight(1);
       insertion->set_time(line);

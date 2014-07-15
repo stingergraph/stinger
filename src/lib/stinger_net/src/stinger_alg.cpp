@@ -22,6 +22,8 @@ extern "C" {
   #include "stinger_core/stinger_shared.h"
 }
 
+static void map_names (stinger_registered_alg * alg);
+
 using namespace gt::stinger;
 
 extern "C" stinger_registered_alg *
@@ -249,6 +251,7 @@ extern "C" stinger_registered_alg *
 stinger_alg_begin_pre(stinger_registered_alg * alg)
 {
   LOG_D("Requesting pre");
+  stinger_t * S = alg->stinger;
 
   AlgToServer alg_to_server;
   alg_to_server.set_alg_name(alg->alg_name);
@@ -449,9 +452,76 @@ stinger_alg_begin_pre(stinger_registered_alg * alg)
     alg->metadata_lengths[m] = meta.size();
   }
 
+  map_names (alg);
+
   LOG_D_A("Algorithm %s ready for pre", alg->alg_name);
 
   return alg;
+}
+
+void
+map_names (stinger_registered_alg * alg)
+{
+  stinger_t * S = alg->stinger;
+  int64_t src_id, dst_id, type_id;
+
+  OMP("omp for")
+    for (size_t i = 0; i < alg->num_insertions; i++) {
+      // if (alg->insertions[i].type_str) {
+      //   int64_t t;
+      //   fprintf (stderr, "sigh %s\n", alg->insertions[i].type_str);
+      //   stinger_etype_names_create_type (S, alg->insertions[i].type_str, &t);
+      //   alg->insertions[i].type = t;
+      // }
+      if (alg->insertions[i].source_str) {
+        int64_t t;
+        stinger_mapping_create (S, alg->insertions[i].source_str,
+                                strlen (alg->insertions[i].source_str), &t);
+        alg->insertions[i].source = t;
+      }
+      if (alg->insertions[i].destination_str) {
+        int64_t t;
+        stinger_mapping_create (S, alg->insertions[i].destination_str,
+                                strlen (alg->insertions[i].destination_str), &t);
+        alg->insertions[i].destination = t;
+      }
+    }
+
+  OMP("omp for")
+    for(size_t d = 0; d < alg->num_deletions; d++) {
+      // if (alg->deletions[d].type_str) {
+      //   int64_t t;
+      //   stinger_etype_names_create_type (S, alg->deletions[d].type_str, &t);
+      //   alg->deletions[d].type = t;
+      // }
+      if (alg->deletions[d].source_str) {
+        int64_t t;
+        stinger_mapping_create (S, alg->deletions[d].source_str,
+                                strlen (alg->deletions[d].source_str), &t);
+        alg->deletions[d].source = t;
+      }
+      if (alg->deletions[d].destination_str) {
+        int64_t t;
+        stinger_mapping_create (S, alg->deletions[d].destination_str,
+                                strlen (alg->deletions[d].destination_str), &t);
+        alg->deletions[d].destination = t;
+      }
+    }
+
+  // OMP("omp for")
+  //   for(size_t v = 0; v < alg->num_vertex_updates; v++) {
+  //     if (alg->vertex_updates[v].type_str) {
+  //       int64_t t;
+  //       stinger_vtype_names_create_type (S, alg->vertex_updates[v].type_str, &t);
+  //       alg->vertex_updates[v].type = t;
+  //     }
+
+  //     if (alg->vertex_updates[v].vertex_str) {
+  //       int64_t t;
+  //       stinger_mapping_create (S, alg->vertex_updates[v].vertex_str, strlen (alg->vertex_updates[v].vertex_str), &t);
+  //       alg->vertex_updates[v].vertex = t;
+  //     }
+  //   }
 }
 
 extern "C" stinger_registered_alg *
@@ -614,6 +684,8 @@ stinger_alg_begin_post(stinger_registered_alg * alg)
     alg->vertex_updates[v].incr_weight          = up.incr_weight();
     alg->vertex_updates[v].meta_index	        = up.meta_index();
   }
+
+  map_names (alg);
 
   LOG_D_A("Algorithm %s ready for post", alg->alg_name);
 
