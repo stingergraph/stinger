@@ -120,8 +120,8 @@ stinger_extract_mod (/*const*/ struct stinger *S,
     return;
   }
 
-  set = xmalloc (3 * NV * sizeof (*set));
-  Wvol = &set[NV];
+  set = xmalloc (NV * sizeof (*set));
+  Wvol = xmalloc (2 * NV * sizeof (*Wvol));
 
   /* Initialize the set with the seeds and their neighbors */
   nset = nsrc;
@@ -146,7 +146,7 @@ stinger_extract_mod (/*const*/ struct stinger *S,
 
       ++uvol;
       where = mark[v]-1;
-      if (where > 0) {
+      if (where >= 0) {
         if (where > nset) Wvol[2*where] += 1; /* No need to update aborbed ones... */
         continue;
       }
@@ -194,12 +194,16 @@ stinger_extract_mod (/*const*/ struct stinger *S,
     setvol += Wvol[1+2*best_loc];
 
     if (best_loc != nset) {
-      set[best_loc] = set[nset];
+      int64_t t = set[nset];
+      set[best_loc] = t;
       set[nset] = u;
+      assert(mark[u] == best_loc+1);
+      assert(mark[t] == nset+1);
       mark[u] = nset+1;
-      mark[set[best_loc]] = best_loc+1;
+      mark[t] = best_loc+1;
       Wvol[2*best_loc] = Wvol[2*nset];
       Wvol[1+2*best_loc] = Wvol[1+2*nset];
+      /* No longer need Wvol for new set member */
     }
     ++nset;
 
@@ -212,7 +216,7 @@ stinger_extract_mod (/*const*/ struct stinger *S,
       if (label && label_to_match != label[v]) continue;
 
       where = mark[v]-1;
-      if (where > 0) {
+      if (where >= 0) {
         if (where > nset) Wvol[2*where] += 1; /* No need to update aborbed ones... */
         continue;
       }
@@ -246,5 +250,6 @@ stinger_extract_mod (/*const*/ struct stinger *S,
     mark[set[k]] = 0;
 
   free (Wvol);
+  free (set);
 }
 

@@ -97,7 +97,8 @@ Toolbox
 <li><a href="#labelgrid" data-toggle="tab">Label Grid</a></li>
 <li><a href="#shortestpaths" data-toggle="tab">Shortest Paths</a></li>
 <li><a href="#labelgraph" data-toggle="tab">Label Graph</a></li>
-<li><a href="#labelsubgraph" data-toggle="tab">Label Subgraph</a></li>
+<li><a href="#labelbfssubgraph" data-toggle="tab">Label Subgraph (BFS)</a></li>
+<li><a href="#labelmodsubgraph" data-toggle="tab">Label Subgraph (modularity)</a></li>
 <li><a href="#groupgraph" data-toggle="tab">Group Graph</a></li>
 </ul>
 </div>
@@ -222,29 +223,60 @@ Toolbox
     </div>
   </form>
 </div>
-<div class="tab-pane" id="labelsubgraph">
-  <form action="#" class="form-horizontal" onSubmit="if($('#labelsubgraphalgorithm').val() && $('#labelsubgraphfield').val()) add_tool(new LabelSubgraph(tools, '#toolstream', $('#labelsubgraphalgorithm').val(), $('#labelsubgraphfield').val(), $('#labelsubgraphvertex').val(), $('#labelsubgraphlimit').val()));">
-    <legend>Label Subgraph</legend>
+<div class="tab-pane" id="labelbfssubgraph">
+  <form action="#" class="form-horizontal" onSubmit="if($('#labelbfssubgraphalgorithm').val() && $('#labelbfssubgraphfield').val()) add_tool(new LabelSubgraph('bfs', tools, '#toolstream', $('#labelbfssubgraphalgorithm').val(), $('#labelbfssubgraphfield').val(), $('#labelbfssubgraphvertex').val(), $('#labelbfssubgraphlimit').val()));">
+    <legend>Label Subgraph (BFS)</legend>
     <p>Select a label type and enter the name of a vertex.  The label graph will show the structure of all vertices with the same
     label as the chosen vertex. This version limits the graph to a certain number of vertices.</p>
     <div class="control-group">
-      <label class="control-label" for="labelsubgraphalgorithm">Algorithm</label>
+      <label class="control-label" for="labelbfssubgraphalgorithm">Algorithm</label>
       <div class="controls">
-	<select class="span5 algselector" id="labelsubgraphalgorithm">
+	<select class="span5 algselector" id="labelbfssubgraphalgorithm">
 	</select>
       </div>
-      <label class="control-label" for="labelsubgraphfield">Field</label>
+      <label class="control-label" for="labelbfssubgraphfield">Field</label>
       <div class="controls">
-	<select class="span5 fieldselector" id="labelsubgraphfield">
+	<select class="span5 fieldselector" id="labelbfssubgraphfield">
 	</select>
       </div>
-      <label class="control-label" for="labelsubgraphvertex">Vertex</label>
+      <label class="control-label" for="labelbfssubgraphvertex">Vertex</label>
       <div class="controls">
-	<input type="text" id="labelsubgraphvertex" class="span5" value="naomijones">
+	<input type="text" id="labelbfssubgraphvertex" class="span5" value="naomijones">
       </div>
-      <label class="control-label" for="labelsubgraphlimit">Vertex Limit</label>
+      <label class="control-label" for="labelbfssubgraphlimit">Vertex Limit</label>
       <div class="controls">
-	<input type="text" id="labelsubgraphlimit" class="span5" value="200">
+	<input type="text" id="labelbfssubgraphlimit" class="span5" value="200">
+      </div>
+      <div class="controls">
+	<br/>
+	<button type"submit" class="btn btn-success" >Add Tool</button>
+      </div>
+    </div>
+  </form>
+</div>
+<div class="tab-pane" id="labelmodsubgraph">
+  <form action="#" class="form-horizontal" onSubmit="if($('#labelmodsubgraphalgorithm').val() && $('#labelmodsubgraphfield').val()) add_tool(new LabelSubgraph('mod', tools, '#toolstream', $('#labelmodsubgraphalgorithm').val(), $('#labelmodsubgraphfield').val(), $('#labelmodsubgraphvertex').val(), $('#labelmodsubgraphlimit').val()));">
+    <legend>Label Subgraph (modularity)</legend>
+    <p>Select a label type and enter the name of a vertex.  The label graph will show the structure of all vertices with the same
+    label as the chosen vertex. This version limits the graph to a certain number of vertices.</p>
+    <div class="control-group">
+      <label class="control-label" for="labelmodsubgraphalgorithm">Algorithm</label>
+      <div class="controls">
+	<select class="span5 algselector" id="labelmodsubgraphalgorithm">
+	</select>
+      </div>
+      <label class="control-label" for="labelmodsubgraphfield">Field</label>
+      <div class="controls">
+	<select class="span5 fieldselector" id="labelmodsubgraphfield">
+	</select>
+      </div>
+      <label class="control-label" for="labelmodsubgraphvertex">Vertex</label>
+      <div class="controls">
+	<input type="text" id="labelmodsubgraphvertex" class="span5" value="naomijones">
+      </div>
+      <label class="control-label" for="labelmodsubgraphlimit">Vertex Limit</label>
+      <div class="controls">
+	<input type="text" id="labelmodsubgraphlimit" class="span5" value="200">
       </div>
       <div class="controls">
 	<br/>
@@ -1445,7 +1477,7 @@ function ShortestPaths(tools, id, source, dest) {
 /***************************************************
  * LABEL SUBGRAPH
  */
-  function LabelSubgraph(tools, id, alg, field, vtx, limit) {
+  function LabelSubgraph(kind, tools, id, alg, field, vtx, limit) {
     this.parent_id = id;
     this.id = id + tools.length;
     this.alg = alg;
@@ -1462,7 +1494,10 @@ function ShortestPaths(tools, id, source, dest) {
     this.graph = {vertices:{}, links: this.links, nodes:this.nodes};
     this.color = d3.scale.category20();
 
-    add_tool_win(this.parent_id, this.id, "Label Subgraph of " + vtx + " (" + alg + ", " + field + ", " + limit + ")", this);
+    expand_routine = "label_breadth_first_search";
+    if (kind === "mod") { expand_routine = "label_mod_expand"; }
+
+    add_tool_win(this.parent_id, this.id, "Label Subgraph (" + kind + ") of " + vtx + " (" + alg + ", " + field + ", " + limit + ")", this);
 
     this.force = d3.layout.force()
       .charge(-120)
@@ -1544,7 +1579,7 @@ function ShortestPaths(tools, id, source, dest) {
 
       obj.start();
 
-      rpc("label_breadth_first_search", {"wait_for_update": true, "source": obj.vtx, "name": obj.alg, "data": obj.field, "limit": obj.limit, "get_types": true, "strings":true}, next_id(), 
+      rpc(expand_routine, {"wait_for_update": true, "source": obj.vtx, "name": obj.alg, "data": obj.field, "limit": obj.limit, "get_types": true, "strings":true}, next_id(), 
 	(function(update, graph, obj) { return function(data) { update(data, graph, obj); }; })(obj.register, obj.graph, obj), null, obj.close, obj);
     }
 
@@ -1606,11 +1641,11 @@ function ShortestPaths(tools, id, source, dest) {
       obj.start();
 
       if(!obj.time_to_die)
-	rpc("label_breadth_first_search", {"wait_for_update": true, "source": obj.vtx, "name": obj.alg, "data": obj.field, "limit": obj.limit, "get_types": true, "strings":true}, next_id(), 
+	rpc(expand_routine, {"wait_for_update": true, "source": obj.vtx, "name": obj.alg, "data": obj.field, "limit": obj.limit, "get_types": true, "strings":true}, next_id(), 
 	  (function(update, graph, obj) { return function(data) { update(data, graph, obj); }; })(obj.update, obj.graph, obj), null, obj.close, obj);
     }
 
-    rpc("label_breadth_first_search", {"wait_for_update": true, "source": this.vtx, "name": this.alg, "data": this.field, "limit": this.limit, "get_types": true, "strings":true}, next_id(), 
+    rpc(expand_routine, {"wait_for_update": true, "source": this.vtx, "name": this.alg, "data": this.field, "limit": this.limit, "get_types": true, "strings":true}, next_id(), 
       (function(register, graph, start) { return function(data) { register(data, graph, start); }; })(this.register,this.graph, this), null, this.close, this);
   }
 
