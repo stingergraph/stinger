@@ -112,6 +112,9 @@ struct stinger
   uint64_t max_netypes;
   uint64_t max_nvtypes;
 
+  /* uint64_t cur_max_nv; Someday... */
+  uint64_t cur_ne;
+
   uint64_t vertices_start;
   uint64_t physmap_start;
   uint64_t etype_names_start;

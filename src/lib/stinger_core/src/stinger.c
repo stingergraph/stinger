@@ -959,6 +959,7 @@ update_edge_data (struct stinger * S, struct stinger_eb *eb,
       /* register new edge */
       stinger_outdegree_increment_atomic(S, eb->vertexID, 1);
       stinger_indegree_increment_atomic(S, neighbor, 1);
+      stinger_int64_fetch_add (&S->cur_ne, 1);
 
       if (index >= eb->high)
 	eb->high = index + 1;
@@ -983,6 +984,7 @@ update_edge_data (struct stinger * S, struct stinger_eb *eb,
     stinger_outdegree_increment_atomic(S, eb->vertexID, -1);
     stinger_indegree_increment_atomic(S, e->neighbor, -1);
     stinger_int64_fetch_add (&(eb->numEdges), -1);
+    stinger_int64_fetch_add (&S->cur_ne, -1);
     e->neighbor = neighbor;
   } 
 
@@ -1377,7 +1379,7 @@ MTA("mta parallel default")
  *  @param G STINGER data structure
  *  @param nv Number of vertices
  *  @param etype Edge type
- *  @param off_in Array of length nv containing the adjacency offset for each vertex
+ *  @param off_in Array of length nv+1 containing the adjacency offset for each vertex
  *  @param phys_adj_in Array containing the destination vertex of each edge
  *  @param weight_in Array containing integer weight of each edge
  *  @param ts_in Array containing recent timestamp of edge edge (or NULL)
@@ -1410,6 +1412,8 @@ stinger_set_initial_edges (struct stinger *G,
 
   assert (G);
   MAP_STING(G);
+
+  G->cur_ne = off[nv];
 
   blkoff = xcalloc (nv + 1, sizeof (*blkoff));
   OMP ("omp parallel for")
@@ -2003,10 +2007,11 @@ stinger_sort_actions (int64_t nactions, int64_t * actions,
 void
 stinger_remove_all_edges_of_type (struct stinger *G, int64_t type)
 {
+  int64_t ne_removed = 0;
   MAP_STING(G);
   /* TODO fix bugs here */
   MTA("mta assert parallel")
-  OMP("omp parallel for")
+  OMP("omp parallel for reduction(+: ne_removed)")
   for (uint64_t p = 0; p < ETA(G, type)->high; p++) {
     struct stinger_eb *current_eb = ebpool->ebpool + ETA(G,type)->blocks[p];
     int64_t thisVertex = current_eb->vertexID;
@@ -2024,11 +2029,13 @@ stinger_remove_all_edges_of_type (struct stinger *G, int64_t type)
       }
     }
     stinger_outdegree_increment_atomic(G, thisVertex, -removed);
+    ne_removed += removed;
     current_eb->high = 0;
     current_eb->numEdges = 0;
     current_eb->smallStamp = INT64_MAX;
     current_eb->largeStamp = INT64_MIN;
   }
+  stinger_int64_fetch_add (&G->cur_ne, -ne_removed);
 }
 
 const int64_t endian_check = 0x1234ABCD;
