@@ -594,7 +594,7 @@ vlist_to_json_subgraph (stinger_t * S,
 int64_t 
 JSON_RPC_label_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator)
 {
-  int64_t source;
+  params_array_t source;
   char * algorithm_name;
   char * data_array_name;
   int64_t limit;
@@ -604,7 +604,7 @@ JSON_RPC_label_breadth_first_search::operator()(rapidjson::Value * params, rapid
   bool get_vtypes; 
 
   rpc_params_t p[] = {
-    {"source", TYPE_VERTEX, &source, false, 0},
+    {"source", TYPE_ARRAY, &source, false, 0},
     {"name", TYPE_STRING, &algorithm_name, false, 0},
     {"data", TYPE_STRING, &data_array_name, false, 0},
     {"limit", TYPE_INT64, &limit, true, INT64_MAX},
@@ -631,7 +631,7 @@ JSON_RPC_label_breadth_first_search::operator()(rapidjson::Value * params, rapid
   }
 
   /* vertex has no edges -- this is easy */
-  if (stinger_outdegree (S, source) == 0) {
+  if (source.len == 1 && stinger_outdegree (S, source.arr[0]) == 0) {
     rapidjson::Value a(rapidjson::kArrayType);
     result.AddMember("subgraph", a, allocator);
     return 0;
@@ -652,7 +652,7 @@ JSON_RPC_label_breadth_first_search::operator()(rapidjson::Value * params, rapid
   const int64_t *label = labels.getptr<int64_t>();
   if (!label) return 0; /* XXX: Be more informative... */
 
-  stinger_extract_bfs (S, 1, &source, label, limit, -1, &nvlist, vlist, mark);
+  stinger_extract_bfs (S, source.len, source.arr, label, limit, -1, &nvlist, vlist, mark);
 
   // fprintf (stderr, "AUGH %ld\n", (long)nvlist);
 
@@ -669,7 +669,7 @@ JSON_RPC_label_breadth_first_search::operator()(rapidjson::Value * params, rapid
 int64_t 
 JSON_RPC_label_mod_expand::operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator)
 {
-  int64_t source;
+  params_array_t source;
   char * algorithm_name;
   char * data_array_name;
   int64_t limit;
@@ -679,7 +679,7 @@ JSON_RPC_label_mod_expand::operator()(rapidjson::Value * params, rapidjson::Valu
   bool get_vtypes; 
 
   rpc_params_t p[] = {
-    {"source", TYPE_VERTEX, &source, false, 0},
+    {"source", TYPE_ARRAY, &source, false, 0},
     {"name", TYPE_STRING, &algorithm_name, false, 0},
     {"data", TYPE_STRING, &data_array_name, false, 0},
     {"limit", TYPE_INT64, &limit, true, INT64_MAX},
@@ -706,7 +706,7 @@ JSON_RPC_label_mod_expand::operator()(rapidjson::Value * params, rapidjson::Valu
   }
 
   /* vertex has no edges -- this is easy */
-  if (stinger_outdegree (S, source) == 0) {
+  if (source.len == 1 && stinger_outdegree (S, source.arr[0]) == 0) {
     rapidjson::Value a(rapidjson::kArrayType);
     result.AddMember("subgraph", a, allocator);
     return 0;
@@ -727,7 +727,7 @@ JSON_RPC_label_mod_expand::operator()(rapidjson::Value * params, rapidjson::Valu
   const int64_t *label = labels.getptr<int64_t>();
   if (!label) return 0; /* XXX: Be more informative... */
 
-  stinger_extract_mod (S, 1, &source, label, limit, &nvlist, vlist, mark);
+  stinger_extract_mod (S, source.len, source.arr, label, limit, &nvlist, vlist, mark);
 
   vlist_to_json_subgraph (S, nvlist, vlist, mark,
                           strings, get_types, get_etypes, get_vtypes,

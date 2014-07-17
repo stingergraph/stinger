@@ -1482,7 +1482,11 @@ function ShortestPaths(tools, id, source, dest) {
     this.id = id + tools.length;
     this.alg = alg;
     this.field = field;
-    this.vtx = vtx;
+    if (-1 != vtx.indexOf(",")) {
+      this.vtx = vtx.split(',');
+    } else {
+      this.vtx = vtx.split(' ');
+    }
     this.limit = parseInt(_.trim(limit));
     this.time_to_die = false;
 
