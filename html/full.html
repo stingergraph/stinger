@@ -161,7 +161,7 @@ Toolbox
       </div>
       <label class="control-label" for="groupscoresgroup">Vertex</label>
       <div class="controls">
-	<textarea id="groupscoresgroup" class="span5" rows="2">joshuajones,norahjones</textarea>
+	<textarea id="groupscoresgroup" class="span5" rows="2">100,11818</textarea>
       </div>
       <div class="controls">
 	<br/>
@@ -190,7 +190,7 @@ Toolbox
       </div>
       <label class="control-label" for="labelgridvertex">Vertex</label>
       <div class="controls">
-	<textarea id="labelgridvertex" class="span5" rows="2">joshuajones,norahjones</textarea>
+	<textarea id="labelgridvertex" class="span5" rows="2">100,11818</textarea>
       </div>
       <div class="controls">
 	<br/>
@@ -210,11 +210,11 @@ Toolbox
     <div class="control-group">
       <label class="control-label" for="shortestsource">Source Vertex</label>
       <div class="controls">
-	<input type="text" id="shortestsource" class="span5" value="naomijones">
+	<input type="text" id="shortestsource" class="span5" value="100">
       </div>
       <label class="control-label" for="shortestdest">Destination Vertex</label>
       <div class="controls">
-	<input type="text" id="shortestdest" class="span5" value="joshuajones">
+	<input type="text" id="shortestdest" class="span5" value="25408">
       </div>
       <div class="controls">
 	<br/>
@@ -241,11 +241,11 @@ Toolbox
       </div>
       <label class="control-label" for="labelbfssubgraphvertex">Vertex</label>
       <div class="controls">
-	<input type="text" id="labelbfssubgraphvertex" class="span5" value="naomijones">
+	<input type="text" id="labelbfssubgraphvertex" class="span5" value="100">
       </div>
       <label class="control-label" for="labelbfssubgraphlimit">Vertex Limit</label>
       <div class="controls">
-	<input type="text" id="labelbfssubgraphlimit" class="span5" value="200">
+	<input type="text" id="labelbfssubgraphlimit" class="span5" value="50">
       </div>
       <div class="controls">
 	<br/>
@@ -272,11 +272,11 @@ Toolbox
       </div>
       <label class="control-label" for="labelmodsubgraphvertex">Vertex</label>
       <div class="controls">
-	<input type="text" id="labelmodsubgraphvertex" class="span5" value="naomijones">
+	<input type="text" id="labelmodsubgraphvertex" class="span5" value="100">
       </div>
       <label class="control-label" for="labelmodsubgraphlimit">Vertex Limit</label>
       <div class="controls">
-	<input type="text" id="labelmodsubgraphlimit" class="span5" value="200">
+	<input type="text" id="labelmodsubgraphlimit" class="span5" value="50">
       </div>
       <div class="controls">
 	<br/>
@@ -303,7 +303,7 @@ Toolbox
       </div>
       <label class="control-label" for="labelgraphvertex">Vertex</label>
       <div class="controls">
-	<input type="text" id="labelgraphvertex" class="span5" value="naomijones">
+	<input type="text" id="labelgraphvertex" class="span5" value="100">
       </div>
       <div class="controls">
 	<br/>
@@ -322,7 +322,7 @@ Toolbox
     <div class="control-group">
       <label class="control-label" for="groupgraphvertex">Vertices</label>
       <div class="controls">
-	<textarea id="groupgraphvertex" class="span5" rows="3">joshuajones,norahjones</textarea>
+	<textarea id="groupgraphvertex" class="span5" rows="3">100,11818</textarea>
       </div>
       <div class="controls">
 	<br/>
@@ -1515,15 +1515,15 @@ function ShortestPaths(tools, id, source, dest) {
     this.node = this.svg.selectAll(".node");
     this.link = this.svg.selectAll(".link");
 
-    this.start = function() {
+    this.start = function(graph) {
       this.node = this.svg.selectAll(".node");
       this.link = this.svg.selectAll(".link");
 
-      this.link = this.link.data(this.links, function(d) { return d.source.id + "-" + d.target.id; });
+      this.link = this.link.data(graph.links, function(d) { return d.source.id + "-" + d.target.id; });
       this.link.enter().insert("line", ".node").attr("class", "link");
       this.link.exit().remove();
 
-      this.node = this.node.data(this.nodes, function(d) { return d.id;});
+      this.node = this.node.data(graph.nodes, function(d) { return d.id;});
       this.node.enter().append("circle").attr("class", function(d) { return "node " + d.id; }).attr("r", 8).call(this.force.drag)
 	.style("fill", (function(colors) {return function(d) { return colors(d.group); }}) (this.color))
 	.append("title")
@@ -1531,8 +1531,8 @@ function ShortestPaths(tools, id, source, dest) {
       this.node.exit().remove();
 
       this.force
-	.nodes(this.nodes)
-	.links(this.links)
+	.nodes(graph.nodes)
+	.links(graph.links)
 	.on("tick", (function(obj) { return function() {
 	  obj.node.attr("cx", function(d) { return d.x; })
 	    .attr("cy", function(d) { return d.y; })
@@ -1559,6 +1559,34 @@ function ShortestPaths(tools, id, source, dest) {
     this.register = function(data, graph, obj) {
       var subgraph = data.result.subgraph_str;
 
+      var subg_verts = {};
+
+      for(e = 0; e < subgraph.length; e++) {
+	src = subgraph[e][0];
+	dest = subgraph[e][1];
+        subg_verts[src] = 1;
+        subg_verts[dest] = 1;
+      }
+
+      Object.keys(graph.vertices).forEach(function (v) {
+        if (!(v in subg_verts)) {
+//console.log("Deleting ", v);
+          Object.keys(graph.vertices[v].neighbors).foorEach(function (dest) {
+	    graph.links.splice(graph.links.indexOf(graph.vertices[v].neighbors[dest]),1);
+          })
+          graph.nodes.splice(graph.nodes.indexOf(graph.vertices[v]['in_arr']), 1);
+          delete graph.vertices[v];
+        } else {
+          Object.keys(graph.vertices[v].neighbors).forEach(function (dest) {
+            if (!(dest in subg_verts)) {
+//console.log("Deleting ", v, " -- ", dest);
+	      graph.links.splice(graph.links.indexOf(graph.vertices[v].neighbors[dest]),1);
+              delete graph.vertices[v].neighbors[dest];
+            }
+          })
+        }
+      })
+
       for(e = 0; e < subgraph.length; e++) {
 	src = subgraph[e][0];
 	dest = subgraph[e][1];
@@ -1581,7 +1609,7 @@ function ShortestPaths(tools, id, source, dest) {
 	}
       }
 
-      obj.start();
+      obj.start(graph);
 
       rpc(expand_routine, {"wait_for_update": true, "source": obj.vtx, "name": obj.alg, "data": obj.field, "limit": obj.limit, "get_types": true, "strings":true}, next_id(), 
 	(function(update, graph, obj) { return function(data) { update(data, graph, obj); }; })(obj.register, obj.graph, obj), null, obj.close, obj);
