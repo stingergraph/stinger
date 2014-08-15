@@ -292,6 +292,8 @@ stinger_shared_free (struct stinger *S, const char * name, size_t sz)
     return S;
 
   int status = shmunmap(name, S, sz);
+  status = shmunmap_kill(name, S, sz);
+
   return NULL;
 }
 
