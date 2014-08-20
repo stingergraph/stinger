@@ -190,8 +190,8 @@ stinger_shared_new_full (char ** out, int64_t nv, int64_t nebs, int64_t netypes,
       resized = 1;
 
       sz    = 0;
-      nv   /= 2;
-      nebs /= 2;
+      nv    = (3*nv)/4;
+      nebs  = STINGER_DEFAULT_NEB_FACTOR * nv;
     }
 
     vertices_start = 0;
@@ -213,7 +213,7 @@ stinger_shared_new_full (char ** out, int64_t nv, int64_t nebs, int64_t netypes,
     sz += netypes * stinger_etype_array_size(nebs);
 
     length = sz;
-  } while(sz > memory_size);
+  } while(sz > memory_size/2);
 
   struct stinger *G = shmmap (*out, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR,
     PROT_READ | PROT_WRITE, sizeof(struct stinger) + sz, MAP_SHARED);
