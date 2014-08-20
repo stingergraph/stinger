@@ -95,7 +95,7 @@ shmmap (const char * name, int oflags, mode_t mode, int prot, size_t size, int m
   return rtn;
 } 
 
-/** @brief Wrapper function to unmap / unlink shared memory.
+/** @brief Wrapper function to unmap shared memory.
  * 
  * @param name The string (beginning with /) name of the shared memory object.
  * @param ptr The pointer to the shared memory.
@@ -113,8 +113,14 @@ shmunmap (const char * name, void * ptr, size_t size)
   return 0;
 }
 
+/** @brief Wrapper function to unlink shared memory files in /dev/shm.
+ * 
+ * @param name The string (beginning with /) name of the shared memory object.
+ * @return 0 on success, -1 on failure.
+ */
 int
-shmunmap_kill(const char * name, void * ptr, size_t size) {
+shmunlink (const char * name) {
+  LOG_D_A("Called shmunlink with %s", name);
 #if !defined(__MTA__)
   if(shm_unlink(name)) {
     LOG_E_A("Unlinking %s", name);
@@ -124,6 +130,8 @@ shmunmap_kill(const char * name, void * ptr, size_t size) {
   if(unlink(name))
     return -1;
 #endif
+
+  return 0;
 }
 
 
@@ -292,7 +300,7 @@ stinger_shared_free (struct stinger *S, const char * name, size_t sz)
     return S;
 
   int status = shmunmap(name, S, sz);
-  status = shmunmap_kill(name, S, sz);
+  //status = shmunlink(name);
 
   return NULL;
 }

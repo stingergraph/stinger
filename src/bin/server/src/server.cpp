@@ -120,9 +120,7 @@ int main(int argc, char *argv[])
 
   /* allocate the graph */
   struct stinger * S = stinger_shared_new(&graph_name);
-  //struct stinger * S = stinger_new ();
   size_t graph_sz = S->length + sizeof(struct stinger);
-
 
   /* load edges from disk (if applicable) */
   if (input_file[0] != '\0')
@@ -177,24 +175,22 @@ int main(int argc, char *argv[])
   printf("\tConsistency %ld\n", (long) stinger_consistency_check(S, S->max_nv));
   printf("\tDone. %lf seconds\n", toc());
 
+  /* initialize the singleton members */
+  server_state.set_stinger(S);
+  server_state.set_stinger_loc(graph_name);
+  server_state.set_stinger_sz(graph_sz);
+  server_state.set_port(port_names, port_streams, port_algs);
+  server_state.set_mon_stinger(graph_name, sizeof(stinger_t) + S->length);
+ 
   /* we need a socket that can reply with the shmem name & size of the graph */
-  pid_t name_pid, batch_pid;
+  pthread_t name_pid, batch_pid;
+  
+  /* this thread will handle the shared memory name mapping */
+  pthread_create (&name_pid, NULL, start_udp_graph_name_server, NULL);
 
-  /* child will handle name and size requests */
-  name_pid = fork ();
-  if (name_pid == 0)
-  {
-    start_udp_graph_name_server (graph_name, graph_sz, port_names);
-    exit (0);
-  }
-
-  /* and we need a listener that can receive new edges */
-  batch_pid = fork ();
-  if (batch_pid == 0)
-  {
-    start_tcp_batch_server (S, graph_name, port_streams, port_algs);
-    exit (0);
-  }
+  /* this thread will handle the batch & alg servers */
+  /* TODO: bring the thread creation for the alg server to this level */
+  pthread_create (&batch_pid, NULL, start_tcp_batch_server, NULL);
 
   if(unleash_daemon) {
     while(1) { sleep(10); }
@@ -216,8 +212,16 @@ int main(int argc, char *argv[])
 
   /* clean up */
   stinger_shared_free(S, graph_name, graph_sz);
+  shmunlink(graph_name);
   free(graph_name);
   free(input_file);
+
+  /* clean up algorithm data stores */
+  for (size_t i = 0; i < server_state.get_num_algs(); i++) {
+    StingerAlgState * alg_state = server_state.get_alg(i);
+    const char * alg_data_loc = alg_state->data_loc.c_str();
+    shmunlink(alg_data_loc);
+  }
 
   return 0;
 }

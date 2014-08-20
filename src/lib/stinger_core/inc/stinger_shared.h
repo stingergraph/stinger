@@ -16,6 +16,9 @@ shmmap (const char * name, int oflags, mode_t mode, int prot, size_t size, int m
 int
 shmunmap (const char * name, void * ptr, size_t size);
 
+int
+shmunlink (const char * name);
+
 struct stinger *
 stinger_shared_new (char ** name);
 

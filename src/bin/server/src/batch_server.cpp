@@ -21,6 +21,7 @@ handle_stream(void * args)
 {
   StingerServerState & server_state = StingerServerState::get_server_state();
 
+  /* should be able to remove these */
   struct stinger *S = ((handle_stream_args *) args)->S;
   int sock = ((handle_stream_args *) args)->sock;
   free(args);
@@ -62,14 +63,13 @@ handle_stream(void * args)
   }
 }
 
-void
-start_tcp_batch_server (struct stinger * S, char * stinger_loc, int port_streams, int port_algs)
+void *
+start_tcp_batch_server (void * args)
 {
   StingerServerState & server_state = StingerServerState::get_server_state();
-  server_state.set_stinger(S);
-  server_state.set_stinger_loc(stinger_loc);
-  server_state.set_port(port_algs);
-  server_state.set_mon_stinger(stinger_loc, sizeof(stinger_t) + S->length);
+
+  struct stinger * S = server_state.get_stinger();
+  int port_streams = server_state.get_port_streams();
 
   int sock_handle, newsockfd;
   pthread_t garbage_thread_handle;
@@ -121,5 +121,4 @@ start_tcp_batch_server (struct stinger * S, char * stinger_loc, int port_streams
   }
 
   close(sock_handle);
-  return;
 }
