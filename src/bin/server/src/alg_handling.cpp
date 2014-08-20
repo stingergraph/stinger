@@ -152,6 +152,8 @@ handle_alg(struct AcceptedSock * sock, StingerServerState & server_state)
 
 	  deps_resolved = false;
           shmunmap(map_name, data, data_total);
+          shmunlink(map_name);
+
 	  delete alg_state;
 	  return;
 	}
@@ -695,7 +697,7 @@ start_alg_handling(void *)
   struct sockaddr_in sock_addr;
   memset(&sock_addr, 0, sizeof(sock_addr));
   sock_addr.sin_family = AF_INET;
-  sock_addr.sin_port   = htons((in_port_t)server_state.get_port());
+  sock_addr.sin_port   = htons((in_port_t)server_state.get_port_algs());
 
   if(-1 == (sock_handle = socket(AF_INET, SOCK_STREAM, 0))) {
     LOG_F_A("Socket create failed: %s", strerror(errno));

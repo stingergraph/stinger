@@ -22,9 +22,11 @@ struct delete_functor
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
  * PRIVATE METHODS
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
-StingerServerState::StingerServerState() : port(10101), convert_num_to_string(1), batch_count(0),
+StingerServerState::StingerServerState() : port_names(10101), port_streams(10102), port_algs(10103),
+				    convert_num_to_string(1), batch_count(0),
 				    alg_lock(1), stream_lock(1), batch_lock(1), dep_lock(1), mon_lock(1),
-				    write_alg_data(false), write_names(false), history_cap(0), out_dir("./")
+				    write_alg_data(false), write_names(false), history_cap(0), out_dir("./"),
+				    stinger_sz(0)
 {
   LOG_D("Initializing server state.");
 
@@ -70,37 +72,80 @@ StingerServerState::get_server_state()
 }
 
 /**
-* @brief Get the current port number.
+* @brief Get the current names port number.
 *
-* @return The current port number.
+* @return The current names port number.
 */
 int
-StingerServerState::get_port() 
+StingerServerState::get_port_names() 
 {
-  LOG_D_A("returning %ld", (long) port);
-  return port;
+  LOG_D_A("returning %ld", (long) port_names);
+  return port_names;
 }
 
 /**
-* @brief Sets the port to be used by the server. 
+* @brief Get the current streams port number.
+*
+* @return The current streams port number.
+*/
+int
+StingerServerState::get_port_streams() 
+{
+  LOG_D_A("returning %ld", (long) port_streams);
+  return port_streams;
+}
+
+/**
+* @brief Get the current algs port number.
+*
+* @return The current algs port number.
+*/
+int
+StingerServerState::get_port_algs() 
+{
+  LOG_D_A("returning %ld", (long) port_algs);
+  return port_algs;
+}
+
+/**
+* @brief Sets the ports to be used by the server. 
 * 
 * NOTE: Should only be called during initialization - i.e. when parsing
 * options.  This will not change the port once the server is running.
 *
-* @param new_port The new port number (1 - 65535, but really 1024 ~ 35000 or so).
+* @param new_port_names The new port number for the graph name server (1 - 65535, but really 1024 ~ 35000 or so).
+* @param new_port_streams The new port number for streams to connect to (1 - 65535, but really 1024 ~ 35000 or so).
+* @param new_port_algs The new port number for algorithms to connect to (1 - 65535, but really 1024 ~ 35000 or so).
 *
-* @return The port number (old one if new is invalid).
+* @return 0 on success, -1 on failure.
 */
 int
-StingerServerState::set_port(int new_port)
+StingerServerState::set_port(int new_port_names, int new_port_streams, int new_port_algs)
 {
-  LOG_D_A("called with %ld", (long) new_port);
-  if(new_port > 0 && new_port < 65535) {
-    port = new_port;
+  LOG_D_A("called with %ld, %ld, %ld", (long) new_port_names, (long) new_port_streams, (long) new_port_algs);
+
+  if (new_port_names > 0 && new_port_names < 65535) {
+    port_names = new_port_names;
   } else {
-    LOG_W_A("New port number %ld is invalid. Keeping %ld", (long) new_port, (long) port);
+    LOG_W_A("New names port number %ld is invalid", (long) new_port_names);
+    return -1;
   }
-  return port;
+
+  if (new_port_streams > 0 && new_port_streams < 65535) {
+    port_streams = new_port_streams;
+  } else {
+    LOG_W_A("New streams port number %ld is invalid", (long) new_port_streams);
+    return -1;
+  }
+  
+  if (new_port_algs > 0 && new_port_algs < 65535) {
+    port_algs = new_port_algs;
+  } else {
+    LOG_W_A("New algs port number %ld is invalid", (long) new_port_algs);
+    return -1;
+  }
+
+  return 0;
 }
 
 /**
@@ -442,6 +487,18 @@ void
 StingerServerState::set_stinger_loc(const std::string & loc)
 {
   stinger_loc = loc;
+}
+
+void
+StingerServerState::set_stinger_sz(size_t graph_sz)
+{
+  stinger_sz = graph_sz;
+}
+
+size_t
+StingerServerState::get_stinger_sz()
+{
+  return stinger_sz;
 }
 
 int64_t
