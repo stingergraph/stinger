@@ -7,20 +7,29 @@
 #include <netinet/in.h>
 #include <unistd.h>
 
+#include "server.h"
+#include "stinger_net/stinger_server_state.h"
+
 void error(const char *msg)
 {
   perror(msg);
   exit(1);
 }
 
-void
-start_udp_graph_name_server (char * graph_name, size_t graph_sz, int port)
+void *
+start_udp_graph_name_server (void * args)
 {
+  StingerServerState & server_state = StingerServerState::get_server_state();
+
   int sock, length, n;
   socklen_t fromlen;
   struct sockaddr_in server;
   struct sockaddr_in from;
   char buf[1024];
+
+  const char * graph_name = server_state.get_stinger_loc().c_str();
+  size_t graph_sz = server_state.get_stinger_sz();
+  int port = server_state.get_port_names();
 
   assert (port > 1024);
 

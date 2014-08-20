@@ -66,7 +66,9 @@ namespace gt {
 	int64_t timeout_granularity;
 
 
-	int port;
+	int port_names;
+	int port_streams;
+	int port_algs;
 	int convert_num_to_string;
 
 	std::vector<pthread_t> threads;
@@ -74,6 +76,7 @@ namespace gt {
 
 	stinger_t * stinger;
 	std::string stinger_loc;
+	size_t stinger_sz;
 
 	/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
 	 * PRIVATE METHODS
@@ -91,10 +94,16 @@ namespace gt {
 	get_server_state();
 
 	int
-	get_port();
+	get_port_names();
+	
+	int
+	get_port_streams();
 
 	int
-	set_port(int new_port);
+	get_port_algs();
+
+	int
+	set_port(int new_port_names, int new_port_streams, int new_port_algs);
 
 	int
 	convert_numbers_only_to_strings();
@@ -188,6 +197,12 @@ namespace gt {
 
 	void
 	set_stinger_loc(const std::string & loc);
+
+	void
+	set_stinger_sz(size_t graph_sz);
+
+	size_t
+	get_stinger_sz();
 
 	int64_t
 	time_granularity();

@@ -10,17 +10,17 @@ extern "C" {
 using namespace gt::stinger;
 
 /* function prototypes */
-void
-start_tcp_batch_server (struct stinger * S, char * stinger_loc, int port_streams, int port_algs);
-
-void
-start_udp_graph_name_server (char * graph_name, size_t graph_sz, int port);
-
-int
-process_batch(stinger_t * S, StingerBatch & batch);
+void *
+start_tcp_batch_server (void * args);
 
 void *
-start_alg_handling(void *);
+start_udp_graph_name_server (void * args);
+
+int
+process_batch (stinger_t * S, StingerBatch & batch);
+
+void *
+start_alg_handling (void *);
 
 
 /* global variables */
