@@ -192,7 +192,7 @@ extern "C" {
 /* source vertex based */
 #define STINGER_READ_ONLY_FORALL_EDGES_OF_VTX_BEGIN(STINGER_,VTX_)      \
   do {                                                                  \
-    MAP_STING(STINGER_); \
+    CONST_MAP_STING(STINGER_); \
     const struct stinger * restrict S__ = (STINGER_);			\
     const struct stinger_eb * restrict ebp__ = ebpool->ebpool;	\
     const int64_t source__ = (VTX_);                                    \
@@ -214,7 +214,7 @@ extern "C" {
 
 #define STINGER_READ_ONLY_FORALL_EDGES_OF_TYPE_OF_VTX_BEGIN(STINGER_,TYPE_,VTX_)      \
   do {                                                                  \
-    MAP_STING(STINGER_); \
+    CONST_MAP_STING(STINGER_); \
     const struct stinger * restrict S__ = (STINGER_);			\
     const struct stinger_eb * restrict ebp__ = ebpool->ebpool;	\
     const int64_t source__ = (VTX_);                                    \
@@ -241,7 +241,7 @@ extern "C" {
 
 #define STINGER_READ_ONLY_PARALLEL_FORALL_EDGES_OF_VTX_BEGIN(STINGER_,VTX_) \
   do {                                                                  \
-    MAP_STING(STINGER_); \
+    CONST_MAP_STING(STINGER_); \
     const struct stinger * restrict S__ = (STINGER_);			\
     const struct stinger_eb * restrict ebp__ = ebpool->ebpool;	\
     const int64_t source__ = (VTX_);					\
@@ -268,7 +268,7 @@ extern "C" {
 
 #define STINGER_READ_ONLY_PARALLEL_FORALL_EDGES_OF_TYPE_OF_VTX_BEGIN(STINGER_,VTX_) \
   do {                                                                  \
-    MAP_STING(STINGER_); \
+    CONST_MAP_STING(STINGER_); \
     const struct stinger * restrict S__ = (STINGER_);			\
     struct stinger_eb * ebpool_priv = ebpool->ebpool;		\
     OMP("omp parallel") {                                               \
@@ -301,7 +301,7 @@ extern "C" {
 /* all edges of a given type */
 #define STINGER_READ_ONLY_FORALL_EDGES_BEGIN(STINGER_,TYPE_)            \
       do {                                                              \
-	MAP_STING(STINGER_); \
+	CONST_MAP_STING(STINGER_); \
         const struct stinger * restrict S__ = (STINGER_);               \
         struct stinger_eb * restrict ebp__ = ebpool->ebpool;	\
         const int64_t etype__ = (TYPE_);                                \
@@ -324,7 +324,7 @@ extern "C" {
 
 #define STINGER_READ_ONLY_PARALLEL_FORALL_EDGES_BEGIN(STINGER_,TYPE_)   \
       do {                                                              \
-	MAP_STING(STINGER_); \
+	CONST_MAP_STING(STINGER_); \
         const struct stinger * restrict S__ = (STINGER_);             \
         const int64_t etype__ = (TYPE_);                              \
 	const struct stinger_eb * restrict ebp__ = ebpool->ebpool;	\
