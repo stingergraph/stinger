@@ -195,14 +195,14 @@ static void setup_workspace (const int64_t nv, int64_t ** loc_ws, double ** val_
 
 static void setup_sparse_y (const double beta,
                             int64_t y_deg, int64_t * y_idx, double * y_val,
-                            int64_t * loc_ws, double * val_ws /*UNUSED*/)
+                            int64_t * loc_ws, double * val_ws)
 {
   if (0.0 == beta) {
     OMP("omp for")
       for (int64_t k = 0; k < y_deg; ++k) {
         const int64_t i = y_idx[k];
         loc_ws[i] = k;
-        y_val[k] = 0.0;
+        val_ws[i] = 0.0;
       }
   } else if (1.0 == beta) {
     /* Still have to set up the pattern... */
@@ -210,13 +210,14 @@ static void setup_sparse_y (const double beta,
       for (int64_t k = 0; k < y_deg; ++k) {
         const int64_t i = y_idx[k];
         loc_ws[i] = k;
+        val_ws[i] = y_val[k];
       }
   } else if (-1.0 == beta) {
     OMP("omp for")
       for (int64_t k = 0; k < y_deg; ++k) {
         const int64_t i = y_idx[k];
         loc_ws[i] = k;
-        y_val[k] = -y_val[k];
+        val_ws[i] = -y_val[k];
       }
   } else if (1.0 != beta) {
     OMP("omp for")
@@ -224,7 +225,7 @@ static void setup_sparse_y (const double beta,
         const int64_t i = y_idx[k];
         const double yi = y_val[k];
         loc_ws[i] = k;
-        y_val[k] = beta * y_val[k];
+        val_ws[i] = beta * y_val[k];
       }
   }
 }

@@ -41,8 +41,8 @@ void clear_vlist (int64_t * restrict nvlist,
 static int nonunit_weights = 1;
 
 /* Arbitrary choice of coefficients for now. */
-static const double alpha = 1.0;
-static const double beta = 0.5;
+static const double alpha = 0.3;
+static const double beta = 0.7;
 
 static int64_t iter = 0;
 
@@ -57,7 +57,7 @@ int
 main(int argc, char *argv[])
 {
   double init_time, mult_time, gather_time, spmult_time;
-  double cwise_err;
+  double cwise_err, mult_cwise_err;
 
   int64_t nv;
 
@@ -65,6 +65,7 @@ main(int argc, char *argv[])
 
   double * y;
   double * y_copy;
+  double * y_seq;
 
   struct spvect dy;
   struct spvect x;
@@ -127,6 +128,7 @@ main(int argc, char *argv[])
   memset (x_dense, 0, nv * sizeof (*x_dense));
 
   y_copy = xmalloc (nv * sizeof (*y_copy));
+  y_seq = xmalloc (nv * sizeof (*y_seq));
 
   dy = alloc_spvect (nv);
   x = alloc_spvect (nv);
@@ -206,6 +208,7 @@ main(int argc, char *argv[])
             /* Form the dense x for testing. */
             dense_x[i] = 0.0;
             y_copy[i] = y[i];
+            y_seq[i] = y[i];
           }
         OMP("omp for")
           for (int64_t k = 0; k < x.nv; ++k) {
@@ -239,6 +242,14 @@ main(int argc, char *argv[])
                                  mark, val_ws);                         \
         }                                                               \
         break
+
+      if (nonunit_weights) {
+        stinger_dspmTv (nv, alpha, alg->stinger, dense_x, beta, y_seq);
+      } else {
+        stinger_unit_dspmTv (nv, alpha, alg->stinger, dense_x, beta, y_seq);
+      }
+
+      VALGRIND_MAKE_MEM_NOACCESS(y_seq, nv*sizeof(*y_seq));
 
       tic ();
       switch (alg_to_try) {
@@ -274,6 +285,7 @@ main(int argc, char *argv[])
       }
       spmult_time = toc ();
 
+      VALGRIND_MAKE_MEM_DEFINED(y_seq, nv*sizeof(*y_seq));
       VALGRIND_MAKE_MEM_DEFINED(y, nv*sizeof(*y));
 
       /* Apply update to y_copy */
@@ -286,6 +298,25 @@ main(int argc, char *argv[])
         }
       spmult_time = toc ();
 
+      mult_cwise_err = 0.0;
+      OMP("omp parallel") {
+        double t_cwise_err = 0.0;
+        OMP("omp for nowait")
+          for (int64_t i = 0; i < nv; ++i) {
+            double err;
+
+            if (y_seq[i] != 0.0)
+              err = fabs ((y_seq[i] - y[i])/y_seq[i]);
+            else if (y_copy[i] == 0.0)
+              err = 0.0;
+            else
+              err = HUGE_VAL;
+
+            if (err > t_cwise_err) t_cwise_err = err;
+          }
+        OMP("omp critical")
+          if (t_cwise_err > mult_cwise_err) mult_cwise_err = t_cwise_err;
+      }
       /* Compute componentwise relative error... which can only be in updated locations. */
       cwise_err = 0.0;
       OMP("omp parallel") {
@@ -295,8 +326,8 @@ main(int argc, char *argv[])
             int64_t i = dy.idx[k];
             double err;
 
-            if (y[i] != 0.0)
-              err = fabs ((y[i] - y_copy[i])/y[i]);
+            if (y_seq[i] != 0.0)
+              err = fabs ((y_seq[i] - y_copy[i])/y_seq[i]);
             else if (y_copy[i] == 0.0)
               err = 0.0;
             else
@@ -313,9 +344,10 @@ main(int argc, char *argv[])
       LOG_V_A("spmspv_test: gather_time %ld = %g", (long)iter, gather_time);
       LOG_V_A("spmspv_test: mult_time %ld = %g", (long)iter, mult_time);
       LOG_V_A("spmspv_test: mult_teps %ld = %g", (long)iter, vol_S / mult_time);
+      LOG_V_A("spmspv_test: mult_cwise_err %ld = %g", (long)iter, mult_cwise_err);
       LOG_V_A("spmspv_test: spmult_time %ld = %g", (long)iter, spmult_time);
       LOG_V_A("spmspv_test: spmult_teps %ld = %g", (long)iter, vol_x / spmult_time);
-      LOG_V_A("spmspv_test: cwise_err %ld = %g", (long)iter, cwise_err);
+      LOG_V_A("spmspv_test: spmult_cwise_err %ld = %g", (long)iter, cwise_err);
 
       clear_vlist (&dy.nv, dy.idx, mark);
       x.nv = 0;

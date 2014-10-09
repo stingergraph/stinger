@@ -55,14 +55,22 @@ main(int argc, char *argv[])
   int niter[NPR_ALG];
   double pr_time[NPR_ALG];
   int64_t pr_vol[NPR_ALG];
+  int64_t pr_nupd[NPR_ALG];
   const char *pr_name[NPR_ALG] = {"pr", "pr_restart", "dpr", "dpr_held"};
+
+  double * saved_dx;  /* All three are dense, windows into alg_data */
+  double * saved_dpr;
+  double * saved_dpr_held;
 
   double alpha = 0.15;
   int maxiter = 100;
 
   struct spvect x;
+  struct spvect x_held;
   struct spvect b;
+  struct spvect b_held;
   struct spvect dpr;
+  struct spvect dpr_held;
 
   int64_t * mark;
   double * v;
@@ -84,8 +92,8 @@ main(int argc, char *argv[])
   stinger_registered_alg * alg =
     stinger_register_alg(
       .name="pagerank_updating",
-      .data_per_vertex=4*sizeof(double),
-      .data_description="dddd pr pr_restart dpr dpr_held",
+      .data_per_vertex=(NPR_ALG+3)*sizeof(double),
+      .data_description="ddddddd pr pr_restart pr_dpr pr_dpr_held dx dpr dpr_held",
       .host="localhost",
     );
 
@@ -103,13 +111,26 @@ main(int argc, char *argv[])
     if (nv_env > 0 && nv_env < nv)
       nv = nv_env;
   }
-  fprintf (stderr, "NV: %ld\n", (long)nv);
+  fprintf (stderr, "NV: %ld   of %ld\n", (long)nv, (long)max_nv);
 
   for (int k = 0; k < NPR_ALG; ++k) {
     double * alg_data = (double*)alg->alg_data;
     pr_val[k] = &alg_data[k * max_nv];
     pr_vol[k] = 0;
     niter[k] = 0;
+    pr_nupd[k] = 0;
+  }
+
+  saved_dx = & ((double*)alg->alg_data)[max_nv * (NPR_ALG+0)];
+  saved_dpr = & ((double*)alg->alg_data)[max_nv * (NPR_ALG+1)];
+  saved_dpr_held = & ((double*)alg->alg_data)[max_nv * (NPR_ALG+2)];
+  OMP("omp parallel") {
+    OMP("omp for")
+      for (int64_t k = 0; k < max_nv; ++k) {
+        saved_dx[k] = 0.0;
+        saved_dpr[k] = 0.0;
+        saved_dpr_held[k] = 0.0;
+      }
   }
 
   mark = xmalloc (nv * sizeof (*mark));
@@ -118,8 +139,11 @@ main(int argc, char *argv[])
   workspace = xmalloc (2 * nv * sizeof (*workspace));
   iworkspace = xmalloc (nv * sizeof (*iworkspace));
   x = alloc_spvect (nv);
+  x_held = alloc_spvect (nv);
   b = alloc_spvect (nv);
+  b_held = alloc_spvect (nv);
   dpr = alloc_spvect (nv);
+  dpr_held = alloc_spvect (nv);
 
   OMP("omp parallel") {
     OMP("omp for nowait")
@@ -130,7 +154,7 @@ main(int argc, char *argv[])
       }
     OMP("omp for nowait")
       for (int64_t i = 0; i < nv; ++i)
-        v[i] = 1.0 / nv; /* XXX: Assuming nv doesn't change... */
+        v[i] = 1.0;
   }
 
   /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
@@ -151,14 +175,10 @@ main(int argc, char *argv[])
         assert (!isnan(pr_val[BASELINE][k]));
 #endif
       pr_vol[BASELINE] = niter[BASELINE] * stinger_total_edges (alg->stinger);
-      OMP("omp parallel") {
-        for (int k = 1; k < NPR_ALG; ++k) {
-          pr_time[k] = 0;
-          pr_vol[k] = 0;
-          OMP("omp for nowait")
-            for (int64_t i = 0; i < nv; ++i)
-              pr_val[k][i] = pr_val[BASELINE][i];
-        }
+      for (int k = 1; k < NPR_ALG; ++k) {
+        OMP("omp parallel for simd")
+          for (int64_t i = 0; i < nv; ++i)
+            pr_val[k][i] = pr_val[BASELINE][i];
       }
     }
   } stinger_alg_end_init(alg);
@@ -173,10 +193,16 @@ main(int argc, char *argv[])
     /* Pre processing */
     if(stinger_alg_begin_pre(alg)) {
       clear_vlist (&x.nv, x.idx, mark);
-      OMP("omp parallel for")
+      OMP("omp parallel for simd")
         for (int64_t k = 0; k < nv; ++k) mark[k] = -1;
       /* Gather vertices that are affected by the batch. */
       /* (Really should be done in the framework, but ends up being handy here...) */
+      for (int k = 1; k < NPR_ALG; ++k) {
+        pr_time[k] = -1;
+        pr_vol[k] = 0;
+        pr_nupd[k] = 0;
+      }
+
       tic ();
       {
         const int64_t nins = alg->num_insertions;
@@ -195,10 +221,9 @@ main(int argc, char *argv[])
               append_to_vlist (&x.nv, x.idx, mark, rem[k].source);
               append_to_vlist (&x.nv, x.idx, mark, rem[k].destination);
             }
-          OMP("omp for")
+          OMP("omp for simd")
             for (int64_t k = 0; k < x.nv; ++k) {
               assert(!isnan(pr_val[DPR][x.idx[k]]));
-              if (isnan(pr_val[DPR][x.idx[k]])) abort ();
               x.val[k] = pr_val[DPR][x.idx[k]];
               mark[x.idx[k]] = -1;
             }
@@ -206,22 +231,54 @@ main(int argc, char *argv[])
       }
       gather_time = toc ();
 
+      OMP("omp parallel for simd")
+        for (int64_t k = 0; k < x.nv; ++k)
+          saved_dx[x.idx[k]] = x.val[k];
+
       tic ();
       b.nv = 0;
       /* Compute b0 in b */
-      stinger_unit_dspmTspv_degscaled_ompcas_batch (nv,
-                                              1.0, alg->stinger,
-                                              x.nv, x.idx, x.val,
-                                              0.0,
-                                              &b.nv, b.idx, b.val,
-                                              mark, dzero_workspace);
       OMP("omp parallel") {
-        OMP("omp for reduction(+: b0n)")
-          for (int64_t k = 0; k < b.nv; ++k) b0n += fabs (b.val[k]);
-        OMP("omp for")
+        stinger_unit_dspmTspv_degscaled_ompcas_batch (nv,
+                                                      1.0, alg->stinger,
+                                                      x.nv, x.idx, x.val,
+                                                      0.0,
+                                                      &b.nv, b.idx, b.val,
+                                                      mark, dzero_workspace,
+                                                      &pr_vol[DPR]);
+        OMP("omp for simd")
           for (int64_t k = 0; k < b.nv; ++k) mark[b.idx[k]] = -1;
       }
       compute_b_time = toc ();
+      OMP("omp parallel") {
+        OMP("omp for simd nowait reduction(+: b0n)")
+          for (int64_t k = 0; k < b.nv; ++k) b0n += fabs (b.val[k]);
+        /* OMP("omp for") */
+        /*   for (int64_t k = 0; k < nv; ++k) dzero_workspace[k] = 0.0; */
+      }
+
+      /* Compute x, b0 for dpr_held */
+      
+      b_held.nv = 0;
+      x_held.nv = x.nv;
+      OMP("omp parallel") {
+        OMP("omp for simd")
+          for (int64_t k = 0; k < x.nv; ++k) {
+            assert(!isnan(pr_val[DPR_HELD][x.idx[k]]));
+            x_held.idx[k] = x.idx[k];
+            x_held.val[k] = pr_val[DPR_HELD][x.idx[k]];
+          }
+        stinger_unit_dspmTspv_degscaled_ompcas_batch (nv,
+                                                      1.0, alg->stinger,
+                                                      x_held.nv, x_held.idx, x_held.val,
+                                                      0.0,
+                                                      &b_held.nv, b_held.idx, b_held.val,
+                                                      mark, dzero_workspace,
+                                                      &pr_vol[DPR]);
+        OMP("omp for simd")
+          for (int64_t k = 0; k < b.nv; ++k) mark[b_held.idx[k]] = -1;
+      }
+      
       stinger_alg_end_pre(alg);
     }
 
@@ -235,19 +292,7 @@ main(int argc, char *argv[])
 
       //assert (nv == stinger_max_active_vertex (alg->stinger) + 1);
 
-      /* Compute PageRank from scratch */
-      tic ();
-      niter[BASELINE] = pagerank (nv, S, pr_val[BASELINE], v, alpha, maxiter, workspace);
-      normalize_pr (nv, pr_val[BASELINE]);
-      pr_time[BASELINE] = toc ();
-      pr_vol[BASELINE] = niter[BASELINE] * NE;
-
-      tic ();
-      niter[RESTART] = pagerank_restart (nv, S, pr_val[RESTART], v, alpha, maxiter, workspace);
-      normalize_pr (nv, pr_val[RESTART]);
-      pr_time[RESTART] = toc ();
-      pr_vol[RESTART] = niter[RESTART] * NE;
-
+      /* Compute the change in PageRank */
       tic ();
       niter[DPR] = pagerank_dpr (nv, S,
                                  &x.nv, x.idx, x.val,
@@ -257,27 +302,89 @@ main(int argc, char *argv[])
                                  &dpr.nv, dpr.idx, dpr.val,
                                  mark, iworkspace, workspace, dzero_workspace,
                                  &pr_vol[DPR]);
-      OMP("omp parallel for")
+      OMP("omp parallel for simd")
         for (int64_t k = 0; k < dpr.nv; ++k)
           pr_val[DPR][dpr.idx[k]] += dpr.val[k];
       normalize_pr (nv, pr_val[DPR]);
       pr_time[DPR] = toc ();
+      pr_nupd[DPR] = dpr.nv;
 
-      OMP("omp parallel for")
-        for (int64_t k = 0; k < b.nv; ++k) mark[dpr.idx[k]] = -1;
+      OMP("omp parallel for simd")
+        for (int64_t k = 0; k < dpr.nv; ++k) {
+          assert (mark[dpr.idx[k]] != -1);
+          mark[dpr.idx[k]] = -1;
+        }
+
+      /* Reset for dpr_held */
+      b.nv = 0;
+      OMP("omp parallel") {
+        /* Compute b0 in b */
+        stinger_unit_dspmTspv_degscaled_ompcas_batch (nv,
+                                                      1.0, alg->stinger,
+                                                      x.nv, x.idx, x.val,
+                                                      0.0,
+                                                      &b.nv, b.idx, b.val,
+                                                      mark, dzero_workspace,
+                                                      &pr_vol[DPR_HELD]);
+        OMP("omp for simd")
+          for (int64_t k = 0; k < b.nv; ++k) mark[b.idx[k]] = -1;
+      }
+
+      /* Compute the change in PageRank, holding back small changes */
+      tic ();
+      niter[DPR_HELD] = pagerank_dpr_held (nv, S, /* XXX */
+                                 &x_held.nv, x_held.idx, x_held.val,
+                                 alpha, maxiter,
+                                 &b_held.nv, b_held.idx, b_held.val,
+                                 1.0,
+                                 &dpr_held.nv, dpr_held.idx, dpr_held.val,
+                                 mark, iworkspace, workspace, dzero_workspace,
+                                 &pr_vol[DPR_HELD]);
+      OMP("omp parallel for simd")
+        for (int64_t k = 0; k < dpr_held.nv; ++k)
+          pr_val[DPR_HELD][dpr_held.idx[k]] += dpr_held.val[k];
+      normalize_pr (nv, pr_val[DPR_HELD]);
+      pr_time[DPR_HELD] = toc ();
+      pr_nupd[DPR_HELD] = dpr_held.nv;
+
+
+      /* Compute PageRank from scratch */
+      tic ();
+      niter[BASELINE] = pagerank (nv, S, pr_val[BASELINE], v, alpha, maxiter, workspace);
+      normalize_pr (nv, pr_val[BASELINE]);
+      pr_time[BASELINE] = toc ();
+      pr_vol[BASELINE] = niter[BASELINE] * NE;
+      pr_nupd[BASELINE] = nv;
+
+      /* Restart using the previous vector, cumulative... */
+      tic ();
+      niter[RESTART] = pagerank_restart (nv, S, pr_val[RESTART], v, alpha, maxiter, workspace);
+      normalize_pr (nv, pr_val[RESTART]);
+      pr_time[RESTART] = toc ();
+      pr_vol[RESTART] = niter[RESTART] * NE;
+      pr_nupd[RESTART] = nv;
 
       stinger_alg_end_post(alg);
     }
 
     fprintf (stderr, "%ld: %12s %g\n", (long)iter, "b_time", compute_b_time);
-    for (int alg = 0; alg <= DPR; ++alg) {
-      double err = 0.0;
+    int64_t loc_baseline;
+    for (int alg = 0; alg <= DPR_HELD; ++alg) {
+      double err = 0.0, mxerr = 0.0;
+      int64_t where = -1, nerr = 0;
       const int64_t loc = find_max_pr (nv, pr_val[alg]);
+      if (alg == 0) loc_baseline = loc;
       if (alg > 0)
-        OMP("omp parallel for reduction(+: err)")
-          for (int64_t i = 0; i < nv; ++i)
-            err += fabs (pr_val[alg][i] - pr_val[BASELINE][i]);
-      fprintf (stderr, "%ld: %12s %d\t%d %g %ld %g\t%ld %g\n", (long)iter, pr_name[alg], alg, niter[alg], pr_time[alg], pr_vol[alg], err, (long)loc, (loc >= 0? pr_val[alg][loc] : -1.0));
+        //OMP("omp parallel for reduction(+: err)")
+        for (int64_t i = 0; i < nv; ++i) {
+          const double ei = fabs (pr_val[alg][i] - pr_val[BASELINE][i]);
+          if (ei > mxerr) { where = i; mxerr = ei; }
+          err += ei;
+          if (ei > 0.0) ++nerr;
+        }
+      fprintf (stderr, "%ld: %12s %d\t%d %10g %8ld %10e %8ld %8ld\n",
+               (long)iter, pr_name[alg], alg,
+               niter[alg], pr_time[alg], pr_vol[alg], err, (long)nerr, (long)pr_nupd[alg]);
     }
   }
 
@@ -345,7 +452,7 @@ alloc_spvect (int64_t nvmax)
 void
 normalize_pr (const int64_t nv, double * restrict pr_val)
 {
-  double n1 = 0;
+  double n1 = 0.0;
   OMP("omp parallel") {
     OMP("omp for reduction(+: n1)")
       for (int64_t k = 0; k < nv; ++k)
@@ -361,22 +468,11 @@ find_max_pr (const int64_t nv, const double * restrict pr_val)
 {
   double max_val = -1.0;
   int64_t loc = -1;
-  OMP("omp parallel") {
-    double t_max_val = -1.0;
-    double t_loc = -1;
-    OMP("omp for nowait")
-      for (int64_t k = 0; k < nv; ++k) {
-        const double v = pr_val[k];
-        if (v > t_max_val && k > t_loc) {
-          t_max_val = v;
-          t_loc = k;
-        }
-      }
-    OMP("omp critical") {
-      if (t_max_val > max_val && t_loc > loc) {
-        max_val = t_max_val;
-        loc = t_loc;
-      }
+  for (int64_t k = 0; k < nv; ++k) {
+    const double v = pr_val[k];
+    if (v > max_val) {
+      max_val = v;
+      loc = k;
     }
   }
   return loc;
