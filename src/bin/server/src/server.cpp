@@ -29,6 +29,8 @@ static char * graph_name = NULL;
 static size_t graph_sz = 0;
 static struct stinger * S = NULL;
 
+static int start_pipe[2] = {-1, -1};
+
 /* we need a socket that can reply with the shmem name & size of the graph */
 static pthread_t name_pid, batch_pid;
 
@@ -130,6 +132,36 @@ int main(int argc, char *argv[])
   /* print configuration to the terminal */
   printf("\tName: %s\n", graph_name);
 
+  /* If being a "daemon" (after a fashion), wait on the child to finish initializing and then exit. */
+  if (unleash_daemon) {
+    pid_t pid;
+    if (pipe (start_pipe)) {
+      perror ("pipe");
+      abort ();
+    }
+    pid = fork ();
+    if (pid < 0) {
+      perror ("fork");
+      abort ();
+    }
+    if (0 != pid) { /* parent */
+      int exitcode;
+      close (start_pipe[1]);
+      read (start_pipe[0], &exitcode, sizeof (exitcode));
+      printf ("Server running.\n");
+      close (start_pipe[0]);
+      return exitcode;
+    }
+    /* else */
+    setsid (); /* XXX: Someday look for errors and abort horribly... */
+    close (start_pipe[0]);
+    struct sigaction sa;
+    sa.sa_flags = 0;
+    sigemptyset (&sa.sa_mask);
+    sa.sa_handler = SIG_IGN;
+    sigaction (SIGHUP, &sa, NULL); /* Paranoia, should no longer be attached to the tty */
+  }
+
   /* allocate the graph */
   struct stinger * S = stinger_shared_new(&graph_name);
   size_t graph_sz = S->length + sizeof(struct stinger);
@@ -205,6 +237,7 @@ int main(int argc, char *argv[])
   pthread_create (&batch_pid, NULL, start_tcp_batch_server, NULL);
 
   {
+    /* Inform the parent that we're ready for connections. */
     struct sigaction sa;
     sa.sa_flags = 0;
     sigemptyset (&sa.sa_mask);
@@ -216,6 +249,9 @@ int main(int argc, char *argv[])
   }
 
   if(unleash_daemon) {
+    int exitcode = EXIT_SUCCESS;
+    write (start_pipe[1], &exitcode, sizeof (exitcode));
+    close (start_pipe[1]);
     while(1) { sleep(10); }
   } else {
     printf("Press <q> to shut down the server...\n");
