@@ -103,7 +103,7 @@ StingerMon::update_algs(stinger_t * stinger_copy, std::string new_loc, int64_t n
   LOG_D("write lock received");
   /* remap stinger */
   if(stinger) {
-    stinger_shared_free(stinger, stinger_loc.c_str(), stinger_sz);
+    stinger_shared_unmap (stinger, stinger_loc.c_str(), stinger_sz);
   }
   stinger = stinger_copy;
   stinger_loc = new_loc;

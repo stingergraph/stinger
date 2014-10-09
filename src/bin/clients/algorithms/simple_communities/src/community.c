@@ -2340,7 +2340,7 @@ update_community (int64_t * restrict cmap_global, const int64_t nv_global,
           const intvtx_t z = ws_inner[i];
           csize[i] = z;
         }
-#if !defined(NDEBUG)
+#if 0&&!defined(NDEBUG)
       OMP("omp for reduction(+: totsz)") MTA_STREAMS
         for (intvtx_t i = 0; i < new_nv; ++i) {
           const intvtx_t z = csize[i];

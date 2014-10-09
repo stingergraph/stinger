@@ -2,6 +2,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <iostream>
+#include <sstream>
 #include <sys/types.h>
 #include <time.h>
 #include <netdb.h>
@@ -25,20 +27,23 @@ using namespace gt::stinger;
 #define V_A(X,...) fprintf(stdout, "%s %s %d:\n\t" #X "\n", __FILE__, __func__, __LINE__, __VA_ARGS__);
 #define V(X) V_A(X,NULL)
 
+#define DEFAULT_SEED 0x9367
 
 int
 main(int argc, char *argv[])
 {
   /* global options */
   int port = 10102;
-  int batch_size = 100000;
-  int num_batches = -1;
-  int nv = 1024;
+  long batch_size = 100000;
+  long num_batches = -1;
+  int64_t nv = 1024;
   int is_int = 0;
+  int delay = 2;
+  long seed = DEFAULT_SEED;
   struct hostent * server = NULL;
 
   int opt = 0;
-  while(-1 != (opt = getopt(argc, argv, "p:b:a:x:y:n:i"))) {
+  while(-1 != (opt = getopt(argc, argv, "p:b:a:x:y:n:is:d:"))) {
     switch(opt) {
       case 'p': {
 	port = atoi(optarg);
@@ -50,6 +55,16 @@ main(int argc, char *argv[])
 
       case 'y': {
 	num_batches = atol(optarg);
+      } break;
+
+      case 'd': {
+	delay = atoi (optarg);
+      } break;
+
+      case 's': {
+        long tmp_seed = atol (optarg);
+        if (tmp_seed) seed = tmp_seed;
+        else seed = time (NULL);
       } break;
 
       case 'i': {
@@ -70,11 +85,16 @@ main(int argc, char *argv[])
 
       case '?':
       case 'h': {
-	printf("Usage:    %s [-p port] [-a server_addr] [-n num_vertices] [-x batch_size] [-y num_batches] [-i]\n", argv[0]);
+	printf("Usage:    %s [-p port] [-a server_addr] [-n num_vertices] [-x batch_size] [-y num_batches] [-i] [-s seed] [-d delay]\n", argv[0]);
 	printf("Defaults:\n\tport: %d\n\tserver: localhost\n\tnum_vertices: %d\n -i forces the use of integers in place of strings\n", port, nv);
 	exit(0);
       } break;
     }
+  }
+
+  if (nv > 1L<<31) {
+    fprintf (stderr, "generator does not support nv > 2**31  (requested %ld)\n", (long)nv);
+    return EXIT_FAILURE;
   }
 
   V_A("Running with: port: %d\n", port);
@@ -97,7 +117,8 @@ main(int argc, char *argv[])
   int64_t line = 0;
   int batch_num = 0;
 
-  srand (time(NULL));
+  srand48 (seed);
+  const ldiv_t nv_breakup = ldiv (INT64_MAX, nv);
 
   while(1) {
     StingerBatch batch;
@@ -112,8 +133,22 @@ main(int argc, char *argv[])
     for(int e = 0; e < batch_size; e++) {
       line++;
 
-      int64_t u = rand() % nv;
-      int64_t v = rand() % nv;
+      int64_t u, v;
+      /* Rejection samping for u and v */
+      while (1) {
+        int64_t tmp = lrand48 ();
+        if (tmp >= nv_breakup.rem) {
+          u = tmp % nv;
+          break;
+        }
+      }
+      while (1) {
+        int64_t tmp = lrand48 ();
+        if (tmp >= nv_breakup.rem) {
+          v = tmp % nv;
+          break;
+        }
+      }
 
       if(u == v) {
 	e--;
@@ -127,8 +162,17 @@ main(int argc, char *argv[])
 	insertion->set_source(u);
 	insertion->set_destination(v);
       } else {
-	insertion->set_source_str(build_name(src, u));
-	insertion->set_destination_str(build_name(dest, v));
+	// insertion->set_source_str(build_name(src, u));
+	// insertion->set_destination_str(build_name(dest, v));
+        std::ostringstream foo;
+        foo << u;
+        src = foo.str();
+        foo.str("");
+        foo << v;
+        dest = foo.str();
+        // std::cerr << "Edge  " << src << " -- " << dest << std::endl;
+	insertion->set_source_str(src);
+	insertion->set_destination_str(dest);
       }
       insertion->set_weight(1);
       insertion->set_time(line);
@@ -137,7 +181,7 @@ main(int argc, char *argv[])
     V("Sending messages.");
 
     send_message(sock_handle, batch);
-    sleep(2);
+    sleep(delay);
 
     batch_num++;
     if((batch_num >= num_batches) && (num_batches != -1)) {

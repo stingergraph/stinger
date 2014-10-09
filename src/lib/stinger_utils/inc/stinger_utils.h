@@ -125,6 +125,26 @@ int64_t find_in_sorted (const int64_t tofind,
 
 int64_t prefix_sum (const int64_t n, int64_t *ary);
 
+void
+stinger_extract_bfs (/*const*/ struct stinger *S,
+                     const int64_t nsrc, const int64_t * srclist_in,
+                     const int64_t * label_in,
+                     const int64_t max_nv_out,
+                     const int64_t max_nlevels,
+                     int64_t * nv_out,
+                     int64_t * vlist_out /* size >=max_nv_out */,
+                     int64_t * mark_out /* size nv, zeros */);
+
+void
+stinger_extract_mod (/*const*/ struct stinger *S,
+                     const int64_t nsrc, const int64_t * srclist_in,
+                     const int64_t * label_in,
+                     const int64_t max_nv_out,
+                     int64_t * nv_out,
+                     int64_t * vlist_out /* size >=max_nv_out */,
+                     int64_t * mark_out /* size nv, zeros */);
+
+
 #ifdef __cplusplus
 }
 #undef restrict

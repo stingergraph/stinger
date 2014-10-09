@@ -3,6 +3,20 @@
 #include "stinger_core/xmalloc.h"
 #include "alg_data_array.h"
 
+namespace {
+  template <typename T> struct tc_info { static const char tc; static const char * tname; };
+#define DEF_TC_INFO(T,TC,TN)                            \
+  template struct tc_info<T>;                           \
+  template<> const char tc_info<T>::tc = TC;            \
+  template<> const char * tc_info<T>::tname = TN
+
+  DEF_TC_INFO(int32_t, 'i', "32-bit integer");
+  DEF_TC_INFO(int64_t, 'l', "64-bit integer");
+  DEF_TC_INFO(uint8_t, 'u', "8-bit unsigned integer");
+  DEF_TC_INFO(float, 'f', "32-bit float");
+  DEF_TC_INFO(double, 'd', "64-bit float");
+}
+
 namespace gt {
   namespace stinger {
 
@@ -110,59 +124,68 @@ namespace gt {
       d = (void *)(((uint8_t *)alg_state->data) + offset);
     }
 
+    template <typename T>
+    T AlgDataArray::getval(int64_t index)
+    {
+      if (t == tc_info<T>::tc)
+        return static_cast<T*>(d)[index];
+      else {
+        LOG_W_A("This is not a %s array", tc_info<T>::tname);
+        return static_cast<T>(0);
+      }
+    }
+
+    template int32_t AlgDataArray::getval<int32_t>(int64_t);
+    template int64_t AlgDataArray::getval<int64_t>(int64_t);
+    template float AlgDataArray::getval<float>(int64_t);
+    template double AlgDataArray::getval<double>(int64_t);
+    template uint8_t AlgDataArray::getval<uint8_t>(int64_t);
+
+    template <typename T>
+    const T* AlgDataArray::getptr()
+    {
+      if (t == tc_info<T>::tc)
+        return static_cast<T*>(d);
+      else {
+        LOG_W_A("This is not a %s array", tc_info<T>::tname);
+        return static_cast<T*>(NULL);
+      }
+    }
+
+    template const int32_t * AlgDataArray::getptr<int32_t>();
+    template const int64_t * AlgDataArray::getptr<int64_t>();
+    template const float * AlgDataArray::getptr<float>();
+    template const double * AlgDataArray::getptr<double>();
+    template const uint8_t * AlgDataArray::getptr<uint8_t>();
+
     int32_t
     AlgDataArray::get_int32(int64_t index)
     {
-      if(t == 'i') {
-	return ((int32_t *)d)[index];
-      } else {
-	LOG_W("This is not a 32-bit integer array");
-	return 0;
-      }
+      return getval<int32_t>(index);
     }
 
     int64_t
     AlgDataArray::get_int64(int64_t index)
     {
-      if(t == 'l') {
-	return ((int64_t *)d)[index];
-      } else {
-	LOG_W("This is not a 64-bit integer array");
-	return 0;
-      }
+      return getval<int64_t>(index);
     }
 
     float
     AlgDataArray::get_float(int64_t index)
     {
-      if(t == 'f') {
-	return ((float *)d)[index];
-      } else {
-	LOG_W("This is not a float array");
-	return 0;
-      }
+      return getval<float>(index);
     }
 
     double
     AlgDataArray::get_double(int64_t index)
     {
-      if(t == 'd') {
-	return ((double *)d)[index];
-      } else {
-	LOG_W("This is not a double array");
-	return 0;
-      }
+      return getval<double>(index);
     }
 
     uint8_t
     AlgDataArray::get_uint8(int64_t index)
     {
-      if(t == 'b') {
-	return ((uint8_t *)d)[index];
-      } else {
-	LOG_W("This is not a uint8_t array");
-	return 0;
-      }
+      return getval<uint8_t>(index);
     }
 
     bool

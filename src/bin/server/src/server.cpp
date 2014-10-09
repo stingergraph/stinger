@@ -25,6 +25,10 @@ extern "C" {
 
 using namespace gt::stinger;
 
+static char * graph_name = NULL;
+static size_t graph_sz = 0;
+static struct stinger * S = NULL;
+
 int main(int argc, char *argv[])
 {
   StingerServerState & server_state = StingerServerState::get_server_state();
@@ -35,8 +39,8 @@ int main(int argc, char *argv[])
   int port_algs = port_names + 2;
   int unleash_daemon = 0;
 
-  char * graph_name = (char *) xmalloc (128*sizeof(char));
-  sprintf(graph_name, "/default");
+  graph_name = (char *) xmalloc (128*sizeof(char));
+  sprintf(graph_name, "/stinger-default");
   char * input_file = (char *) xmalloc (1024*sizeof(char));
   input_file[0] = '\0';
   char * file_type = (char *) xmalloc (128*sizeof(char));
@@ -125,6 +129,8 @@ int main(int argc, char *argv[])
   /* load edges from disk (if applicable) */
   if (input_file[0] != '\0')
   {
+    printf("\tReading...");
+    tic ();
     switch (file_type[0])
     {
       case 'b': {
@@ -163,6 +169,7 @@ int main(int argc, char *argv[])
 		  exit(0);
 		} break;
     }
+    printf(" (done: %lf s)\n", toc ());
   }
 
 
@@ -214,7 +221,6 @@ int main(int argc, char *argv[])
   stinger_shared_free(S, graph_name, graph_sz);
   shmunlink(graph_name);
   free(graph_name);
-  free(input_file);
 
   /* clean up algorithm data stores */
   for (size_t i = 0; i < server_state.get_num_algs(); i++) {
