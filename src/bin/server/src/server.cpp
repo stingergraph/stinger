@@ -29,10 +29,18 @@ static char * graph_name = NULL;
 static size_t graph_sz = 0;
 static struct stinger * S = NULL;
 
+/* we need a socket that can reply with the shmem name & size of the graph */
+static pthread_t name_pid, batch_pid;
+
+static StingerServerState & server_state = StingerServerState::get_server_state();
+
+static void cleanup (void);
+extern "C" {
+  static void sigterm_cleanup (int);
+}
+  
 int main(int argc, char *argv[])
 {
-  StingerServerState & server_state = StingerServerState::get_server_state();
-
   /* default global options */
   int port_names = 10101;
   int port_streams = port_names + 1;
@@ -189,15 +197,23 @@ int main(int argc, char *argv[])
   server_state.set_port(port_names, port_streams, port_algs);
   server_state.set_mon_stinger(graph_name, sizeof(stinger_t) + S->length);
  
-  /* we need a socket that can reply with the shmem name & size of the graph */
-  pthread_t name_pid, batch_pid;
-  
   /* this thread will handle the shared memory name mapping */
   pthread_create (&name_pid, NULL, start_udp_graph_name_server, NULL);
 
   /* this thread will handle the batch & alg servers */
   /* TODO: bring the thread creation for the alg server to this level */
   pthread_create (&batch_pid, NULL, start_tcp_batch_server, NULL);
+
+  {
+    struct sigaction sa;
+    sa.sa_flags = 0;
+    sigemptyset (&sa.sa_mask);
+    sa.sa_handler = sigterm_cleanup;
+    /* Ignore the old handlers. */
+    sigaction (SIGINT, &sa, NULL);
+    sigaction (SIGTERM, &sa, NULL);
+    sigaction (SIGHUP, &sa, NULL);
+  }
 
   if(unleash_daemon) {
     while(1) { sleep(10); }
@@ -206,6 +222,14 @@ int main(int argc, char *argv[])
     while (getchar() != 'q');
   }
 
+  cleanup ();
+
+  return 0;
+}
+
+void
+cleanup (void)
+{
   printf("Shutting down the name server..."); fflush(stdout);
   int status;
   kill(name_pid, SIGTERM);
@@ -228,6 +252,11 @@ int main(int argc, char *argv[])
     const char * alg_data_loc = alg_state->data_loc.c_str();
     shmunlink(alg_data_loc);
   }
+}
 
-  return 0;
+void
+sigterm_cleanup (int)
+{
+  cleanup ();
+  exit (EXIT_SUCCESS);
 }
