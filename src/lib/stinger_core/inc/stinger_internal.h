@@ -75,13 +75,14 @@ struct stinger_edge
 */
 struct stinger_eb
 {
-  eb_index_t next;  /**< Pointer to the next edge block */
+  eb_index_t next;	    /**< Pointer to the next edge block */
   int64_t etype;	    /**< Edge type of this edge block */
   int64_t vertexID;	    /**< Source vertex ID associated with this edge block */
   int64_t numEdges;	    /**< Number of valid edges in the block */
   int64_t high;		    /**< High water mark */
   int64_t smallStamp;	    /**< Smallest timestamp in the block */
   int64_t largeStamp;	    /**< Largest timestamp in the block */
+  int64_t cache_pad;	    /**< Does not do anything -- for performance reasons only */
   struct stinger_edge edges[STINGER_EDGEBLOCKSIZE]; /**< Array of edges */
 };
 
