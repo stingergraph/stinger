@@ -9,39 +9,25 @@ typedef uint32_t uintvtx_t;
 typedef int64_t intvtx_t;
 typedef uint64_t uintvtx_t;
 #define INTVTX_MAX INT64_MAX
-#endif
+#endif /* defined(USE32BIT) */
 
 #if defined(__MTA__)
 #if !defined(MTA)
 #define MTA(x) _Pragma(x)
-#endif
+#endif /* !defined(MTA) */
 #if !defined(NDEBUG)
 #define MTA_NODEP MTA("mta assert parallel")
 #else
 #define MTA_NODEP MTA("mta assert nodep")
 #define nonMTA_break
-#endif
+#endif /* !defined(NDEBUG) */
 #else
 #if !defined(MTA)
 #define MTA(x)
-#endif
+#endif /* !defined(MTA) */
 #define MTA_NODEP
 #define nonMTA_break break
-#endif
-
-#if defined(_OPENMP)
-#include <omp.h>
-#if !defined(OMP)
-#define OMP(x) OMP_(x)
-#define OMP_(x) _Pragma(x)
-#endif
-#else
-#if !defined(OMP)
-#define OMP(x)
-#endif
-static inline int omp_get_num_threads (void) { return 1; }
-static inline int omp_get_thread_num (void) { return 0; }
-#endif
+#endif /* defined(__MTA__) */
 
 #if defined(__GNUC__)
 #define FN_MAY_BE_UNUSED __attribute__((unused))
