@@ -1,6 +1,8 @@
 #if !defined(COMPAT_HEADER_local_)
 #define COMPAT_HEADER_local_
 
+#include "stinger_core/stinger.h"
+
 #if defined(__MTA__)
 #if !defined(MTA)
 #define MTA(x) _Pragma(x)
@@ -17,28 +19,6 @@
 #endif
 #define MTA_NODEP
 #define nonMTA_break break
-#endif
-
-
-#if defined(_OPENMP)
-#include <omp.h>
-#if !defined(OMP)
-#define OMPSTR_(x) #x
-#define OMP(x) OMP_(OMPSTR_(x))
-#define OMP_(x) _Pragma(x)
-#endif
-#if _OPENMP >= 201307
-#define OMP_SIMD " simd "
-#else
-#define OMP_SIMD
-#endif
-#else
-#if !defined(OMP)
-#define OMP(x)
-#define OMP_SIMD
-#endif
-static inline int omp_get_num_threads (void) { return 1; }
-static inline int omp_get_thread_num (void) { return 0; }
 #endif
 
 #if defined(__GNUC__)
