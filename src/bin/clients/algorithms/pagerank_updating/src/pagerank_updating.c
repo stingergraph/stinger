@@ -176,7 +176,7 @@ main(int argc, char *argv[])
 #endif
       pr_vol[BASELINE] = niter[BASELINE] * stinger_total_edges (alg->stinger);
       for (int k = 1; k < NPR_ALG; ++k) {
-        OMP("omp parallel for simd")
+        OMP("omp parallel for" OMP_SIMD)
           for (int64_t i = 0; i < nv; ++i)
             pr_val[k][i] = pr_val[BASELINE][i];
       }
@@ -193,7 +193,7 @@ main(int argc, char *argv[])
     /* Pre processing */
     if(stinger_alg_begin_pre(alg)) {
       clear_vlist (&x.nv, x.idx, mark);
-      OMP("omp parallel for simd")
+      OMP("omp parallel for" OMP_SIMD)
         for (int64_t k = 0; k < nv; ++k) mark[k] = -1;
       /* Gather vertices that are affected by the batch. */
       /* (Really should be done in the framework, but ends up being handy here...) */
@@ -221,7 +221,7 @@ main(int argc, char *argv[])
               append_to_vlist (&x.nv, x.idx, mark, rem[k].source);
               append_to_vlist (&x.nv, x.idx, mark, rem[k].destination);
             }
-          OMP("omp for simd")
+          OMP("omp for" OMP_SIMD)
             for (int64_t k = 0; k < x.nv; ++k) {
               assert(!isnan(pr_val[DPR][x.idx[k]]));
               x.val[k] = pr_val[DPR][x.idx[k]];
@@ -231,7 +231,7 @@ main(int argc, char *argv[])
       }
       gather_time = toc ();
 
-      OMP("omp parallel for simd")
+      OMP("omp parallel for" OMP_SIMD)
         for (int64_t k = 0; k < x.nv; ++k)
           saved_dx[x.idx[k]] = x.val[k];
 
@@ -246,12 +246,12 @@ main(int argc, char *argv[])
                                                       &b.nv, b.idx, b.val,
                                                       mark, dzero_workspace,
                                                       &pr_vol[DPR]);
-        OMP("omp for simd")
+        OMP("omp for" OMP_SIMD)
           for (int64_t k = 0; k < b.nv; ++k) mark[b.idx[k]] = -1;
       }
       compute_b_time = toc ();
       OMP("omp parallel") {
-        OMP("omp for simd nowait reduction(+: b0n)")
+        OMP("omp for nowait reduction(+: b0n)" OMP_SIMD)
           for (int64_t k = 0; k < b.nv; ++k) b0n += fabs (b.val[k]);
         /* OMP("omp for") */
         /*   for (int64_t k = 0; k < nv; ++k) dzero_workspace[k] = 0.0; */
@@ -262,7 +262,7 @@ main(int argc, char *argv[])
       b_held.nv = 0;
       x_held.nv = x.nv;
       OMP("omp parallel") {
-        OMP("omp for simd")
+        OMP("omp for" OMP_SIMD)
           for (int64_t k = 0; k < x.nv; ++k) {
             assert(!isnan(pr_val[DPR_HELD][x.idx[k]]));
             x_held.idx[k] = x.idx[k];
@@ -275,7 +275,7 @@ main(int argc, char *argv[])
                                                       &b_held.nv, b_held.idx, b_held.val,
                                                       mark, dzero_workspace,
                                                       &pr_vol[DPR]);
-        OMP("omp for simd")
+        OMP("omp for" OMP_SIMD)
           for (int64_t k = 0; k < b.nv; ++k) mark[b_held.idx[k]] = -1;
       }
       
@@ -302,14 +302,14 @@ main(int argc, char *argv[])
                                  &dpr.nv, dpr.idx, dpr.val,
                                  mark, iworkspace, workspace, dzero_workspace,
                                  &pr_vol[DPR]);
-      OMP("omp parallel for simd")
+      OMP("omp parallel for" OMP_SIMD)
         for (int64_t k = 0; k < dpr.nv; ++k)
           pr_val[DPR][dpr.idx[k]] += dpr.val[k];
       normalize_pr (nv, pr_val[DPR]);
       pr_time[DPR] = toc ();
       pr_nupd[DPR] = dpr.nv;
 
-      OMP("omp parallel for simd")
+      OMP("omp parallel for" OMP_SIMD)
         for (int64_t k = 0; k < dpr.nv; ++k) {
           assert (mark[dpr.idx[k]] != -1);
           mark[dpr.idx[k]] = -1;
@@ -326,7 +326,7 @@ main(int argc, char *argv[])
                                                       &b.nv, b.idx, b.val,
                                                       mark, dzero_workspace,
                                                       &pr_vol[DPR_HELD]);
-        OMP("omp for simd")
+        OMP("omp for" OMP_SIMD)
           for (int64_t k = 0; k < b.nv; ++k) mark[b.idx[k]] = -1;
       }
 
@@ -340,7 +340,7 @@ main(int argc, char *argv[])
                                  &dpr_held.nv, dpr_held.idx, dpr_held.val,
                                  mark, iworkspace, workspace, dzero_workspace,
                                  &pr_vol[DPR_HELD]);
-      OMP("omp parallel for simd")
+      OMP("omp parallel for" OMP_SIMD)
         for (int64_t k = 0; k < dpr_held.nv; ++k)
           pr_val[DPR_HELD][dpr_held.idx[k]] += dpr_held.val[k];
       normalize_pr (nv, pr_val[DPR_HELD]);

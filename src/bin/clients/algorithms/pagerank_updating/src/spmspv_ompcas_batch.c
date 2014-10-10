@@ -72,15 +72,15 @@ atomic_daccum (double *p, const double val)
 static inline void setup_y (const int64_t nv, const double beta, double * y)
 {
   if (0.0 == beta) {
-    OMP("omp for simd")
+    OMP("omp for" OMP_SIMD)
       for (int64_t i = 0; i < nv; ++i)
         y[i] = 0.0;
   } else if (-1.0 == beta) {
-    OMP("omp for simd")
+    OMP("omp for" OMP_SIMD)
       for (int64_t i = 0; i < nv; ++i)
         y[i] = -y[i];
   } else if (!(1.0 == beta)) {
-    OMP("omp for simd")
+    OMP("omp for" OMP_SIMD)
       for (int64_t i = 0; i < nv; ++i)
         y[i] *= beta;
   }
@@ -182,7 +182,7 @@ static void setup_workspace (const int64_t nv, int64_t ** loc_ws, double ** val_
       *loc_ws = xmalloc (nv * sizeof (**loc_ws));
     }
     OMP("omp barrier");
-    OMP("omp for simd")
+    OMP("omp for" OMP_SIMD)
       for (int64_t k = 0; k < nv; ++k) (*loc_ws)[k] = -1;
   }
   if (!*val_ws) {
@@ -191,7 +191,7 @@ static void setup_workspace (const int64_t nv, int64_t ** loc_ws, double ** val_
       *val_ws = xmalloc (nv * sizeof (**val_ws));
     }
     OMP("omp barrier");
-    OMP("omp for simd")
+    OMP("omp for" OMP_SIMD)
       for (int64_t k = 0; k < nv; ++k) (*val_ws)[k] = 0.0;
   }
 }
@@ -201,7 +201,7 @@ static void setup_sparse_y (const double beta,
                             int64_t * loc_ws, double * val_ws)
 {
   if (0.0 == beta) {
-    OMP("omp for simd")
+    OMP("omp for" OMP_SIMD)
       for (int64_t k = 0; k < y_deg; ++k) {
         const int64_t i = y_idx[k];
         loc_ws[i] = k;
@@ -209,21 +209,21 @@ static void setup_sparse_y (const double beta,
       }
   } else if (1.0 == beta) {
     /* Still have to set up the pattern... */
-    OMP("omp for simd")
+    OMP("omp for" OMP_SIMD)
       for (int64_t k = 0; k < y_deg; ++k) {
         const int64_t i = y_idx[k];
         loc_ws[i] = k;
         val_ws[i] = y_val[k];
       }
   } else if (-1.0 == beta) {
-    OMP("omp for simd")
+    OMP("omp for" OMP_SIMD)
       for (int64_t k = 0; k < y_deg; ++k) {
         const int64_t i = y_idx[k];
         loc_ws[i] = k;
         val_ws[i] = -y_val[k];
       }
   } else if (1.0 != beta) {
-    OMP("omp for simd")
+    OMP("omp for" OMP_SIMD)
       for (int64_t k = 0; k < y_deg; ++k) {
         const int64_t i = y_idx[k];
         const double yi = y_val[k];
@@ -314,7 +314,7 @@ pack_vals (const int64_t y_deg, const int64_t * restrict y_idx,
            double * restrict val_ws, double * restrict y_val)
 {
   /* Pack the values back into the shorter form. */
-  OMP("omp for simd")
+  OMP("omp for" OMP_SIMD)
     for (int64_t k = 0; k < y_deg; ++k) {
       y_val[k] = val_ws[y_idx[k]];
       val_ws[y_idx[k]] = 0.0;
