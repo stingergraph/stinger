@@ -25,18 +25,32 @@ extern "C" {
 
 using namespace gt::stinger;
 
+static char * graph_name = NULL;
+static size_t graph_sz = 0;
+static struct stinger * S = NULL;
+
+static int start_pipe[2] = {-1, -1};
+
+/* we need a socket that can reply with the shmem name & size of the graph */
+static pthread_t name_pid, batch_pid;
+
+static StingerServerState & server_state = StingerServerState::get_server_state();
+
+static void cleanup (void);
+extern "C" {
+  static void sigterm_cleanup (int);
+}
+  
 int main(int argc, char *argv[])
 {
-  StingerServerState & server_state = StingerServerState::get_server_state();
-
   /* default global options */
   int port_names = 10101;
   int port_streams = port_names + 1;
   int port_algs = port_names + 2;
   int unleash_daemon = 0;
 
-  char * graph_name = (char *) xmalloc (128*sizeof(char));
-  sprintf(graph_name, "/default");
+  graph_name = (char *) xmalloc (128*sizeof(char));
+  sprintf(graph_name, "/stinger-default");
   char * input_file = (char *) xmalloc (1024*sizeof(char));
   input_file[0] = '\0';
   char * file_type = (char *) xmalloc (128*sizeof(char));
@@ -118,6 +132,36 @@ int main(int argc, char *argv[])
   /* print configuration to the terminal */
   printf("\tName: %s\n", graph_name);
 
+  /* If being a "daemon" (after a fashion), wait on the child to finish initializing and then exit. */
+  if (unleash_daemon) {
+    pid_t pid;
+    if (pipe (start_pipe)) {
+      perror ("pipe");
+      abort ();
+    }
+    pid = fork ();
+    if (pid < 0) {
+      perror ("fork");
+      abort ();
+    }
+    if (0 != pid) { /* parent */
+      int exitcode;
+      close (start_pipe[1]);
+      read (start_pipe[0], &exitcode, sizeof (exitcode));
+      printf ("Server running.\n");
+      close (start_pipe[0]);
+      return exitcode;
+    }
+    /* else */
+    setsid (); /* XXX: Someday look for errors and abort horribly... */
+    close (start_pipe[0]);
+    struct sigaction sa;
+    sa.sa_flags = 0;
+    sigemptyset (&sa.sa_mask);
+    sa.sa_handler = SIG_IGN;
+    sigaction (SIGHUP, &sa, NULL); /* Paranoia, should no longer be attached to the tty */
+  }
+
   /* allocate the graph */
   struct stinger * S = stinger_shared_new(&graph_name);
   size_t graph_sz = S->length + sizeof(struct stinger);
@@ -125,6 +169,8 @@ int main(int argc, char *argv[])
   /* load edges from disk (if applicable) */
   if (input_file[0] != '\0')
   {
+    printf("\tReading...");
+    tic ();
     switch (file_type[0])
     {
       case 'b': {
@@ -163,6 +209,7 @@ int main(int argc, char *argv[])
 		  exit(0);
 		} break;
     }
+    printf(" (done: %lf s)\n", toc ());
   }
 
 
@@ -182,9 +229,6 @@ int main(int argc, char *argv[])
   server_state.set_port(port_names, port_streams, port_algs);
   server_state.set_mon_stinger(graph_name, sizeof(stinger_t) + S->length);
  
-  /* we need a socket that can reply with the shmem name & size of the graph */
-  pthread_t name_pid, batch_pid;
-  
   /* this thread will handle the shared memory name mapping */
   pthread_create (&name_pid, NULL, start_udp_graph_name_server, NULL);
 
@@ -192,13 +236,36 @@ int main(int argc, char *argv[])
   /* TODO: bring the thread creation for the alg server to this level */
   pthread_create (&batch_pid, NULL, start_tcp_batch_server, NULL);
 
+  {
+    /* Inform the parent that we're ready for connections. */
+    struct sigaction sa;
+    sa.sa_flags = 0;
+    sigemptyset (&sa.sa_mask);
+    sa.sa_handler = sigterm_cleanup;
+    /* Ignore the old handlers. */
+    sigaction (SIGINT, &sa, NULL);
+    sigaction (SIGTERM, &sa, NULL);
+    sigaction (SIGHUP, &sa, NULL);
+  }
+
   if(unleash_daemon) {
+    int exitcode = EXIT_SUCCESS;
+    write (start_pipe[1], &exitcode, sizeof (exitcode));
+    close (start_pipe[1]);
     while(1) { sleep(10); }
   } else {
     printf("Press <q> to shut down the server...\n");
     while (getchar() != 'q');
   }
 
+  cleanup ();
+
+  return 0;
+}
+
+void
+cleanup (void)
+{
   printf("Shutting down the name server..."); fflush(stdout);
   int status;
   kill(name_pid, SIGTERM);
@@ -214,7 +281,6 @@ int main(int argc, char *argv[])
   stinger_shared_free(S, graph_name, graph_sz);
   shmunlink(graph_name);
   free(graph_name);
-  free(input_file);
 
   /* clean up algorithm data stores */
   for (size_t i = 0; i < server_state.get_num_algs(); i++) {
@@ -222,6 +288,11 @@ int main(int argc, char *argv[])
     const char * alg_data_loc = alg_state->data_loc.c_str();
     shmunlink(alg_data_loc);
   }
+}
 
-  return 0;
+void
+sigterm_cleanup (int)
+{
+  cleanup ();
+  exit (EXIT_SUCCESS);
 }

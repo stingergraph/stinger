@@ -34,11 +34,16 @@ namespace gt {
 	int64_t length();
 	char    type();
 	void	refresh();
+
+        template <typename T> T getval(int64_t index);
+        template <typename T> const T * getptr();
+
 	int32_t get_int32(int64_t index);
 	int64_t get_int64(int64_t index);
 	float   get_float(int64_t index);
 	double  get_double(int64_t index);
 	uint8_t get_uint8(int64_t index);
+
 	bool    equal(int64_t a, int64_t b);
 	void    to_value(int64_t index, rapidjson::Value & val, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
     };
