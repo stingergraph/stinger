@@ -25,7 +25,8 @@
 #error "Needs atomic support, preferably through C11-ish..."
 #endif
 
-const static double NAN_EMPTY = nan ("0xDEADFACE");
+//const static double NAN_EMPTY = nan ("0xDEADFACE");
+#define NAN_EMPTY nan ("0xDEADFACE")  // because clang doesn't like the alternative
 #if defined(__x86_64__) || defined(_M_X64)
 #include <immintrin.h>
 #define MM_PAUSE() _mm_pause()
