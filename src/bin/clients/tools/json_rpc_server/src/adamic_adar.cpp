@@ -1,33 +1,10 @@
-#include <cstdlib>
-#include <cstdio>
-#include <cstring>
-#include <algorithm>
-#include <functional>
-#include <queue>
-#include <set>
-#include <vector>
-#include <climits>
-#include <cmath>
-#define __STDC_LIMIT_MACROS
-#include <stdint.h>
-#include <sys/types.h>
-#include <unistd.h>
-
-#ifndef INT64_MAX
-#define INT64_MAX 9223372036854775807 /* sometimes c++ just doesn't want this to work */
-#endif
-
 //#define LOG_AT_W  /* warning only */
+#include "stinger_core/stinger_error.h"
 
 #include "stinger_core/xmalloc.h"
-#include "stinger_core/stinger_error.h"
-#include "stinger_utils/stinger_utils.h"
-
 #include "rapidjson/document.h"
-
 #include "json_rpc_server.h"
 #include "json_rpc.h"
-#include "session_handling.h"
 
 using namespace gt::stinger;
 
