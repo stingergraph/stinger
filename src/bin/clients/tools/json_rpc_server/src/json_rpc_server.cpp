@@ -120,6 +120,7 @@ main (int argc, char ** argv)
   server_state.add_rpc_function("label_breadth_first_search", new JSON_RPC_label_breadth_first_search(&server_state));
   server_state.add_rpc_function("label_mod_expand", new JSON_RPC_label_mod_expand(&server_state));
   server_state.add_rpc_function("breadth_first_search", new JSON_RPC_breadth_first_search(&server_state));
+  server_state.add_rpc_function("adamic_adar_index", new JSON_RPC_adamic_adar(&server_state));
   server_state.add_rpc_function("register", new JSON_RPC_register(&server_state));
   server_state.add_rpc_function("request", new JSON_RPC_request(&server_state));
   server_state.add_rpc_function("get_data_array_reduction", new JSON_RPC_get_data_array_reduction(&server_state));
