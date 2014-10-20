@@ -116,6 +116,11 @@ struct JSON_RPC_breadth_first_search: JSON_RPCFunction {
   virtual int64_t operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
 };
 
+struct JSON_RPC_adamic_adar: JSON_RPCFunction {
+  JSON_RPC_adamic_adar(JSON_RPCServerState * state) : JSON_RPCFunction(state) { }
+  virtual int64_t operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
+};
+
 struct JSON_RPC_get_algorithms : JSON_RPCFunction {
   JSON_RPC_get_algorithms(JSON_RPCServerState * state) : JSON_RPCFunction(state) { }
   virtual int64_t operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);

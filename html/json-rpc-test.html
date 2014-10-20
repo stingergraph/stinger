@@ -144,6 +144,15 @@ dataType: "json",
 success: function(data) {whatever = data; $(".info").append("<p>" + JSON.stringify(data) + "</p>");}
 });
 
+data = {"jsonrpc": "2.0", "method": "adamic_adar_index", "params": {"source": 1, "strings": true, "include_neighbors": true}, "id": 14};
+jQuery.ajax({
+url: "http://localhost:8088/jsonrpc",
+type: "POST",
+data: JSON.stringify(data),
+dataType: "json",
+success: function(data) {whatever = data; $(".adamic").append("<p>" + JSON.stringify(data) + "</p>"); }
+});
+
 </script>
 <div class="algorithms">algorithms:&nbsp;</div>
 <div class="description">description:&nbsp;</div>
@@ -160,5 +169,6 @@ success: function(data) {whatever = data; $(".info").append("<p>" + JSON.stringi
 <div class="bfs">bfs:&nbsp;</div>
 <div class="reduction">reduction:&nbsp;</div>
 <div class="info">info:&nbsp;</div>
+<div class="adamic">adamic:&nbsp;</div>
 </body>
 </html>
