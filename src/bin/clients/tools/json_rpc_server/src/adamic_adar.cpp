@@ -21,26 +21,17 @@ JSON_RPC_adamic_adar::operator()(rapidjson::Value * params, rapidjson::Value & r
 {
   int64_t source;
   bool strings;
-  bool get_types;
-  bool get_etypes;
-  bool get_vtypes;
+  bool include_neighbors;
 
   rpc_params_t p[] = {
     {"source", TYPE_VERTEX, &source, false, 0},
     {"strings", TYPE_BOOL, &strings, true, 0},
-    {"get_types", TYPE_BOOL, &get_types, true, 0},
-    {"get_etypes", TYPE_BOOL, &get_etypes, true, 0},
-    {"get_vtypes", TYPE_BOOL, &get_vtypes, true, 0},
+    {"include_neighbors", TYPE_BOOL, &include_neighbors, true, 0},
     {NULL, TYPE_NONE, NULL, false, 0}
   };
 
   if (!contains_params(p, params)) {
     return json_rpc_error(-32602, result, allocator);
-  }
-
-  if(get_types) {
-    get_etypes = true;
-    get_vtypes = true;
   }
 
   stinger_t * S = server_state->get_stinger();
@@ -127,54 +118,56 @@ JSON_RPC_adamic_adar::operator()(rapidjson::Value * params, rapidjson::Value & r
   two_hop_size = head;  // limit the computation later
 
   /* calculate the Adamic-Adar score for each vertex in level 1 */
-  for (int64_t k = 0; k < source_deg; k++) {
-    double adamic_adar_score = 0.0;
-    int64_t vtx = source_adj[k];
-    int64_t v_deg = stinger_outdegree(S, vtx);
+  if (include_neighbors) {
+    for (int64_t k = 0; k < source_deg; k++) {
+      double adamic_adar_score = 0.0;
+      int64_t vtx = source_adj[k];
+      int64_t v_deg = stinger_outdegree(S, vtx);
 
-    int64_t * target_adj = (int64_t *) xmalloc (v_deg * sizeof(int64_t));
-    size_t res;
-    stinger_gather_successors (S, vtx, &res, target_adj, NULL, NULL, NULL, NULL, v_deg);
-    qsort (target_adj, v_deg, sizeof(int64_t), compare);
+      int64_t * target_adj = (int64_t *) xmalloc (v_deg * sizeof(int64_t));
+      size_t res;
+      stinger_gather_successors (S, vtx, &res, target_adj, NULL, NULL, NULL, NULL, v_deg);
+      qsort (target_adj, v_deg, sizeof(int64_t), compare);
 
-    int64_t i = 0, j = 0;
-    while (i < source_deg && j < v_deg)
-    {
-      if (source_adj[i] < target_adj[j]) {
-	i++;
-      }
-      else if (target_adj[j] < source_adj[i]) {
-	j++;
-      }
-      else /* if source_adj[i] == target_adj[j] */
+      int64_t i = 0, j = 0;
+      while (i < source_deg && j < v_deg)
       {
-	int64_t neighbor = source_adj[i];
-	int64_t my_deg = stinger_outdegree(S, neighbor);
-	double score = 1.0 / log ((double) my_deg);
-	adamic_adar_score += score;
-	i++;
-	j++;
+	if (source_adj[i] < target_adj[j]) {
+	  i++;
+	}
+	else if (target_adj[j] < source_adj[i]) {
+	  j++;
+	}
+	else /* if source_adj[i] == target_adj[j] */
+	{
+	  int64_t neighbor = source_adj[i];
+	  int64_t my_deg = stinger_outdegree(S, neighbor);
+	  double score = 1.0 / log ((double) my_deg);
+	  adamic_adar_score += score;
+	  i++;
+	  j++;
+	}
       }
-    }
 
-    free (target_adj);
+      free (target_adj);
 
-    /* adamic_adar_score done for (source, vtx) */
-    name.SetInt64(vtx);
-    vtx_id.PushBack(name, allocator);
-    if (strings) {
-      char * physID;
-      uint64_t len;
-      if(-1 == stinger_mapping_physid_direct(S, vtx, &physID, &len)) {
-	physID = (char *) "";
-	len = 0;
+      /* adamic_adar_score done for (source, vtx) */
+      name.SetInt64(vtx);
+      vtx_id.PushBack(name, allocator);
+      if (strings) {
+	char * physID;
+	uint64_t len;
+	if(-1 == stinger_mapping_physid_direct(S, vtx, &physID, &len)) {
+	  physID = (char *) "";
+	  len = 0;
+	}
+	vtx_phys.SetString(physID, len, allocator);
+	vtx_str.PushBack(vtx_phys, allocator);
       }
-      vtx_phys.SetString(physID, len, allocator);
-      vtx_str.PushBack(vtx_phys, allocator);
-    }
-    value.SetDouble(adamic_adar_score);
-    vtx_val.PushBack(value, allocator);
+      value.SetDouble(adamic_adar_score);
+      vtx_val.PushBack(value, allocator);
 
+    }
   }
 
   /* calculate the Adamic-Adar score for each vertex in level 2 */
