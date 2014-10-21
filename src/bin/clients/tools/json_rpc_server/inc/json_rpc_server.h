@@ -76,6 +76,7 @@ private:
 };
 
 
+/* RPC Methods */
 struct JSON_RPC_register: JSON_RPCFunction {
   JSON_RPC_register(JSON_RPCServerState * state) : JSON_RPCFunction(state) { }
   virtual int64_t operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
@@ -156,17 +157,13 @@ struct JSON_RPC_get_data_array_stride : JSON_RPCFunction {
   virtual int64_t operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
 };
 
+struct JSON_RPC_get_data_array_reduction : JSON_RPCFunction {
+  JSON_RPC_get_data_array_reduction(JSON_RPCServerState * state) : JSON_RPCFunction(state) { }
+  virtual int64_t operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
+};
 
-int
-algorithms_to_json (JSON_RPCServerState * server_state,
-  rapidjson::Value& rtn,
-  rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator);
 
-int
-description_string_to_json (const char * description_string,
-  rapidjson::Value& rtn,
-  rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator);
-
+/* Helper Functions */
 int
 array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
 			    rapidjson::Value& rtn,
@@ -194,11 +191,6 @@ array_to_json_monolithic_stinger   (json_rpc_array_meth_t method, stinger_t * S,
 			    const char * order_str = NULL,
 			    int64_t * set = NULL, int64_t set_len = 0
 			    );
-
-struct JSON_RPC_get_data_array_reduction : JSON_RPCFunction {
-  JSON_RPC_get_data_array_reduction(JSON_RPCServerState * state) : JSON_RPCFunction(state) { }
-  virtual int64_t operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
-};
 
 int
 array_to_json_reduction    (stinger_t * S,
