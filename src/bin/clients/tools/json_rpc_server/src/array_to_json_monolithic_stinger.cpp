@@ -43,7 +43,7 @@ array_to_json_monolithic_stinger   (json_rpc_array_meth_t method, stinger_t * S,
       LOG_W_A("Invalid end of range: %ld. Expecting less than %ld.", end, nv);
     }
   }
-  if (!S & strings) {
+  if (!S && strings) {
     LOG_E("STINGER pointer must be valid in order to process strings");
     return json_rpc_error(-32603, rtn, allocator);
   }
