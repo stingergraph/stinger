@@ -10,6 +10,7 @@
 #include "stinger_core/stinger_error.h"
 
 #include "mongoose/mongoose.h"
+#include "stinger_utils/timer.h"
 #include "stinger_core/xmalloc.h"
 #include "rapidjson/document.h"
 #include "rapidjson/rapidjson.h"
@@ -70,6 +71,9 @@ create_error(rapidjson::Document& response)
 static int
 begin_request_handler(struct mg_connection *conn)
 {
+  init_timer;
+  double time = timer();
+
   const struct mg_request_info *request_info = mg_get_request_info(conn);
   LOG_D_A("Receiving request for %s", request_info->uri);
 
@@ -103,6 +107,15 @@ begin_request_handler(struct mg_connection *conn)
 
     /* process the request */
     json_rpc_process_request(input, output);
+    
+    /* calculate execution time and append to response */
+    time = timer() - time;
+    double milliseconds = round(time * 1.0e3f * 100.0f) / 100.0f;
+    rapidjson::Value exec_time;
+    exec_time.SetDouble(milliseconds);
+    rapidjson::Document::AllocatorType& allocator = output.GetAllocator();
+    output.AddMember("millis", exec_time, allocator);
+
     return send_response(conn, output);
   }
 
