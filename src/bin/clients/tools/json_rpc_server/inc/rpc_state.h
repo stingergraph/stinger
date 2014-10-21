@@ -9,7 +9,6 @@
 #include "stinger_core/stinger.h"
 #include "stinger_core/stinger_error.h"
 #include "rapidjson/document.h"
-
 #include "stinger_net/proto/stinger-monitor.pb.h"
 #include "stinger_net/stinger_mon.h"
 
