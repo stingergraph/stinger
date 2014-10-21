@@ -153,6 +153,22 @@ dataType: "json",
 success: function(data) {whatever = data; $(".adamic").append("<p>" + JSON.stringify(data) + "</p>"); }
 });
 
+jQuery.ajax({
+url: "http://localhost:8088/jsonrpc",
+type: "POST",
+dataType: "json",
+success: function(data) {whatever = data; $(".emptyPost").append("<p>" + JSON.stringify(data) + "</p>"); }
+});
+
+data = {"totally_garbage": true};
+jQuery.ajax({
+url: "http://localhost:8088/jsonrpc",
+type: "POST",
+data: JSON.stringify(data),
+dataType: "json",
+success: function(data) {whatever = data; $(".badRequest").append("<p>" + JSON.stringify(data) + "</p>"); }
+});
+
 </script>
 <div class="algorithms">algorithms:&nbsp;</div>
 <div class="description">description:&nbsp;</div>
@@ -170,5 +186,7 @@ success: function(data) {whatever = data; $(".adamic").append("<p>" + JSON.strin
 <div class="reduction">reduction:&nbsp;</div>
 <div class="info">info:&nbsp;</div>
 <div class="adamic">adamic:&nbsp;</div>
+<div class="emptyPost">emptyPost:&nbsp;</div>
+<div class="badRequest">badRequest:&nbsp;</div>
 </body>
 </html>

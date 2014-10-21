@@ -33,15 +33,6 @@ json_rpc_process_request (rapidjson::Document& document, rapidjson::Document& re
 
   rapidjson::Document::AllocatorType& allocator = response.GetAllocator();
 
-  rapidjson::StringBuffer out_buf;
-  rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(out_buf);
-  document.Accept(writer);
-
-  const char * out_ch = out_buf.GetString();
-  int out_len = out_buf.Size();
-
-  LOG_D_A("Sending back response:%d\n%s", out_len, out_ch);
-
   LOG_D("In the json_rpc_process_request function.");
 
   /* Is the input a valid JSON object -- should also check when it's parsed */

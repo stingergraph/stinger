@@ -7,26 +7,63 @@
 #include <stdint.h>
 
 #define LOG_AT_W  /* warning only */
-
-extern "C" {
-#include "stinger_core/xmalloc.h"
 #include "stinger_core/stinger_error.h"
-}
 
+#include "mongoose/mongoose.h"
+#include "stinger_core/xmalloc.h"
 #include "rapidjson/document.h"
 #include "rapidjson/rapidjson.h"
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/prettywriter.h"
-
 #include "json_rpc_server.h"
 #include "json_rpc.h"
 #include "rpc_state.h"
 #include "mon_handling.h"
 #include "session_handling.h"
 
-#include "mongoose/mongoose.h"
-
 using namespace gt::stinger;
+
+
+static int
+send_response(struct mg_connection *conn, rapidjson::Document& response)
+{
+  /* format the response */
+  rapidjson::StringBuffer out_buf;
+  rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(out_buf);
+  response.Accept(writer);
+
+  const char * out_ch = out_buf.GetString();
+  int out_len = out_buf.Size();
+
+  /* send the response */
+  return  mg_printf(conn,
+	    "HTTP/1.1 200 OK\r\n"
+	    "Content-Type: text/plain\r\n"
+	    "Content-Length: %d\r\n"        // Always set Content-Length
+	    "Access-Control-Allow-Origin: *\r\n"
+	    "\r\n"
+	    "%s",
+	    out_len, out_ch);
+}
+
+static int
+create_error(rapidjson::Document& response)
+{
+  rapidjson::Value is_null;
+  is_null.SetNull();
+  rapidjson::Value result;
+  result.SetObject();
+  response.SetObject();
+
+  rapidjson::Document::AllocatorType& allocator = response.GetAllocator();
+
+  response.AddMember("jsonrpc", "2.0", allocator);
+  json_rpc_error (-32700, result, allocator);
+  response.AddMember("error", result, allocator);
+  response.AddMember("id", is_null, allocator);
+ 
+  return 0;
+}
 
 #define MAX_REQUEST_SIZE (1ULL << 22ULL)
 
@@ -41,44 +78,32 @@ begin_request_handler(struct mg_connection *conn)
   }
 
   if (strncmp(request_info->uri, "/jsonrpc", 8)==0) {
+    rapidjson::Document input, output;
+
+    /* read the incoming request into a buffer */
     uint8_t * storage = (uint8_t *) xcalloc (1, MAX_REQUEST_SIZE);
 
     int64_t read = mg_read(conn, storage, MAX_REQUEST_SIZE);
     if (read > MAX_REQUEST_SIZE-2) {
       LOG_E_A("Request was too large: %ld", read);
+      
+      /* send an error back */
+      create_error(output);
+      send_response(conn, output);
+
+      free(storage);
       return -1;
     }
     storage[read] = '\0';
 
+    /* parse the request */
     LOG_D_A("Parsing request:\n%.*s", read, storage);
-    rapidjson::Document input, output;
     input.Parse<0>((char *)storage);
-
-    json_rpc_process_request(input, output);
-
-    rapidjson::StringBuffer out_buf;
-    rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(out_buf);
-    output.Accept(writer);
-
-    const char * out_ch = out_buf.GetString();
-    int out_len = out_buf.Size();
-
-    LOG_D_A("RapidJSON parsed :%d\n%s", out_len, out_ch);
-
-    int code = mg_printf(conn,
-	      "HTTP/1.1 200 OK\r\n"
-	      "Content-Type: text/plain\r\n"
-	      "Content-Length: %d\r\n"        // Always set Content-Length
-	      "Access-Control-Allow-Origin: *\r\n"
-	      "\r\n"
-	      "%s",
-	      out_len, out_ch);
-
-    LOG_D_A("Code was %d", code);
-
     free(storage);
 
-    return 1;
+    /* process the request */
+    json_rpc_process_request(input, output);
+    return send_response(conn, output);
   }
 
   return 0;
@@ -94,7 +119,7 @@ main (int argc, char ** argv)
   while(-1 != (opt = getopt(argc, argv, "h?d"))) {
     switch(opt) {
       default: {
-	LOG_E_A("Unknwon option %c", opt);
+	LOG_E_A("Unknown option %c", opt);
       } /* no break */
       case '?':
       case 'h': {
