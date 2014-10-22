@@ -169,6 +169,9 @@ main(int argc, char *argv[])
 	insertion->set_source(u);
 	insertion->set_destination(v);
       } else {
+	/* Jason Riedy commented these out in d9c4ac2. */
+	/* This switches between generating person-like names for vertices
+	 * and generating strings from vertex IDs. */
 	// insertion->set_source_str(build_name(src, u));
 	// insertion->set_destination_str(build_name(dest, v));
         std::ostringstream foo;
