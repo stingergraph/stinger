@@ -17,9 +17,11 @@ Method Summary
 
 ## get_server_info
 
+This method returns basic information about the STINGER server.
+
 ### Input
 
-This method returns basic information about the STINGER server.
+This method takes no parameters.
 
     {
       "jsonrpc": "2.0",
@@ -41,391 +43,417 @@ pid: The process ID of the STINGER server process.
     }
 
 
-# get_graph_stats
+## get_graph_stats
 
-## Input
+This method returns summary statistics about the current state of the graph.
+
+### Input
+
+get_types: If True, will return strings associated with edge and vertex types.
 
     {
-	"jsonrpc": "2.0",
-	"method": "get_graph_stats",
-	"params" : {
-	    "get_types": Boolean	/* OPTIONAL */
-	},
-	"id": 7
+      "jsonrpc": "2.0",
+      "method": "get_graph_stats",
+      "params" : {
+        "get_types": Boolean                   /* OPTIONAL */
+      },
+      "id": 7
+    }
+
+### Output
+
+    {
+      "jsonrpc": "2.0",
+      "result": {
+        "vertices": 178,
+        "edges": 200,
+        "time": 100,
+        "edge_types": 1,
+        "vertex_types": 1
+      },
+      "id": 7,
+      "millis": 0.38
+    }
+
+    {
+      "jsonrpc": "2.0",
+      "result": {
+        "vertices": 178,
+        "edges": 200,
+        "time": 100,
+        "edge_types": [
+          "None"
+        ],
+        "vertex_types": [
+          "None"
+        ]
+      },
+      "id": 7,
+      "millis": 1.01
+    }
+
+
+## get_algorithms
+
+Returns a list of algorithms currently running and connected to the STINGER server.
+
+### Input
+
+This method takes no parameters.
+
+    {
+      "jsonrpc": "2.0",
+      "method": "get_algorithms",
+      "id": 1
     }
 
 ## Output
 
     {
-	"jsonrpc": "2.0",
-	"result": {
-	    "vertices": 178,
-	    "edges": 200,
-	    "time": 100,
-	    "edge_types": 1,
-	    "vertex_types": 1
-	},
-	"id": 7,
-	"millis": 0.38
+      "jsonrpc": "2.0",
+      "result": {
+        "algorithms": [
+          "pagerank",
+          "rate_monitor",
+          "stinger"
+        ]
+      },
+      "id": 1,
+      "millis": 0.24
     }
+
+## get_data_descriptiona
+
+This method retrieves the data fields published by an algorithm.
+
+### Input
+
+name: String identifier of an algorithm
 
     {
-	"jsonrpc": "2.0",
-	"result": {
-	    "vertices": 178,
-	    "edges": 200,
-	    "time": 100,
-	    "edge_types": [
-		"None"
-	    ],
-	    "vertex_types": [
-		"None"
-	    ]
-	},
-	"id": 7,
-	"millis": 1.01
+      "jsonrpc": "2.0",
+      "method": "get_data_description",
+      "params": {
+        "name": "pagerank"
+      },
+      "id": 2
     }
 
-
-# get_algorithms
-
-## Input
+### Output
 
     {
-	"jsonrpc": "2.0",
-	"method": "get_algorithms",
-	"id": 1
+      "jsonrpc": "2.0",
+      "result": {
+        "alg_data": [ String ]
+      },
+      "id": 2,
+      "millis": 0.71
     }
 
-## Output
+## get_data_array
+
+Returns the entire data array for one algorithm field.
+
+### Input
+
+name: String identifier of an algorithm
+data: String identifier of a data field 
 
     {
-	"jsonrpc": "2.0",
-	"result": {
-	    "algorithms": [
-		"pagerank",
-		"rate_monitor",
-		"stinger"
-	    ]
-	},
-	"id": 1,
-	"millis": 0.24
+      "jsonrpc": "2.0",
+      "method": "get_data_array",
+      "params": {
+        "name": "algorithm_name",
+        "data": "data_array_name",
+        "strings": Boolean,                    /* Optional */
+        "stride": Integer,                     /* Optional */
+        "samples": Integer,                    /* Optional */
+        "log": Boolean                         /* Optional */
+      },
+      "id": 3
     }
 
-# get_data_description
-
-## Input
+### Output
 
     {
-	"jsonrpc": "2.0",
-	"method": "get_data_description",
-	"params": {
-	    "name": "pagerank"
-	},
-	"id": 2
+      "jsonrpc": "2.0",
+      "result": {
+        "time": 100,
+        "pagerank": {
+          "offset": 0,
+          "count": 178,
+          "vertex_id": [ Integer ]
+          "vertex_str": [ String ]
+          "value": [ Number ]
+        }
+      },
+      "id": 5,
+      "millis": 0.3
     }
 
-## Output
+
+## get_data_array_range
+
+Returns a range of data values based on an offset and count.
+
+### Input
 
     {
-	"jsonrpc": "2.0",
-	"result": {
-	    "alg_data": [
-		"pagerank"
-	    ]
-	},
-	"id": 2,
-	"millis": 0.71
+      "jsonrpc": "2.0",
+      "method": "get_data_array_range",
+      "params": {
+        "name": "algorithm_name",
+        "data": "data_array_name",
+        "offset": Integer,
+        "count": Integer,
+        "strings": Boolean,                    /* Optional */
+        "stride": Integer,                     /* Optional */
+        "samples": Integer,                    /* Optional */
+        "log": Boolean                         /* Optional */
+      },
+      "id": 4
     }
 
-# get_data_array
-
-## Input
+### Output
 
     {
-	"jsonrpc": "2.0",
-	"method": "get_data_array",
-	"params": {
-	    "name": "algorithm_name",
-	    "data": "data_array_name",
-	    "strings": Boolean,		/* Optional */
-	    "stride": Integer,		/* Optional */
-	    "samples": Integer,		/* Optional */
-	    "log": Boolean		/* Optional */
-	},
-	"id": 3
+      "jsonrpc": "2.0",
+      "result": {
+        "time": 100,
+        "pagerank": {
+          "offset": 0,
+          "count": 178,
+          "vertex_id": [ Integer ]
+          "vertex_str": [ String ]
+          "value": [ Number ]
+        }
+      },
+      "id": 5,
+      "millis": 0.3
     }
 
-## Output
+
+## get_data_array_sorted_range
+
+Returns a range of data values based on an offset and count in sorted order.
+
+### Input
 
     {
-	"jsonrpc": "2.0",
-	"result": {
-	    "time": 100,
-	    "pagerank": {
-		"offset": 0,
-		"count": 178,
-		"vertex_id": []
-		"vertex_str": []
-		"value": []
-	    }
-	},
-	"id": 5,
-	"millis": 0.3
+      "jsonrpc": "2.0",
+      "method": "get_data_array_sorted_range",
+      "params": {
+        "name": "algorithm_name",
+        "data": "data_array_name",
+        "offset": Integer,
+        "count": Integer,
+        "order": "ASC/DESC",                   /* OPTIONAL - Default: DESC */
+        "strings": Boolean,                    /* OPTIONAL */
+        "stride": Integer,                     /* OPTIONAL */
+        "samples": Integer,                    /* OPTIONAL */
+        "log": Boolean                         /* OPTIONAL */
+      },
+      "id": 5
     }
 
-
-# get_data_array_range
-
-# Input
+### Output
 
     {
-	"jsonrpc": "2.0",
-	"method": "get_data_array_range",
-	"params": {
-	    "name": "algorithm_name",
-	    "data": "data_array_name",
-	    "offset": Integer,
-	    "count": Integer,
-	    "strings": Boolean,		/* Optional */
-	    "stride": Integer,		/* Optional */
-	    "samples": Integer,		/* Optional */
-	    "log": Boolean		/* Optional */
-	},
-	"id": 4
+      "jsonrpc": "2.0",
+      "result": {
+        "time": 100,
+        "pagerank": {
+          "offset": 0,
+          "count": 178,
+          "order": "DESC",
+          "vertex_id": [ Integer ]
+          "vertex_str": [ String ]
+          "value": [ Number ]
+        }
+      },
+      "id": 5,
+      "millis": 0.3
     }
 
-# Output
+
+## get_data_array_set
+
+Returns data values for specific vertices.
+
+### Input
 
     {
-	"jsonrpc": "2.0",
-	"result": {
-	    "time": 100,
-	    "pagerank": {
-		"offset": 0,
-		"count": 178,
-		"vertex_id": []
-		"vertex_str": []
-		"value": []
-	    }
-	},
-	"id": 5,
-	"millis": 0.3
+      "jsonrpc": "2.0",
+      "method": "get_data_array_set",
+      "params": {
+        "name": "algorithm_name",
+        "data": "data_array_name",
+        "set": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "strings": Boolean                     /* OPTIONAL */
+      },
+      "id": 6
     }
 
-
-# get_data_array_sorted_range
-
-## Input
+### Output
 
     {
-	"jsonrpc": "2.0",
-	"method": "get_data_array_sorted_range",
-	"params": {
-	    "name": "algorithm_name",
-	    "data": "data_array_name",
-	    "offset": Integer,
-	    "count": Integer,
-	    "order": "ASC/DESC",	/* OPTIONAL - Default: DESC */
-	    "strings": Boolean,		/* OPTIONAL */
-	    "stride": Integer,		/* OPTIONAL */
-	    "samples": Integer,		/* OPTIONAL */
-	    "log": Boolean		/* OPTIONAL */
-	},
-	"id": 5
+      "jsonrpc": "2.0",
+      "result": {
+        "time": 100,
+        "pagerank": {
+          "vertex_id": [ Integer ]
+          "vertex_str": [ String ]
+          "value": [ Number ]
+        }
+      },
+      "id": 5,
+      "millis": 0.3
     }
 
-## Output
+## get_data_array_reduction
+
+Perform a reduction over the entire data array and return a single value.
+
+### Input
 
     {
-	"jsonrpc": "2.0",
-	"result": {
-	    "time": 100,
-	    "pagerank": {
-		"offset": 0,
-		"count": 178,
-		"order": "DESC",
-		"vertex_id": []
-		"vertex_str": []
-		"value": []
-	    }
-	},
-	"id": 5,
-	"millis": 0.3
+      "jsonrpc": "2.0",
+      "method": "get_data_array_reduction",
+      "params": {
+        "name": "pagerank",
+        "data": "pagerank",
+        "op": "sum"
+      },
+      "id": 12
     }
 
-
-# get_data_array_set
-
-## Input
+### Output
 
     {
-	"jsonrpc": "2.0",
-	"method": "get_data_array_set",
-	"params": {
-	    "name": "algorithm_name",
-	    "data": "data_array_name",
-	    "set": [
-		1,
-		2,
-		3,
-		4,
-		5
-	    ],
-	    "strings": Boolean		/* OPTIONAL */
-	},
-	"id": 6
+      "jsonrpc": "2.0",
+      "result": {
+        "time": 100,
+        "pagerank": [
+          {
+            "field": String,
+            "value": Number 
+          }
+        ]
+      },
+      "id": 12,
+      "millis": 16.71
     }
 
-## Output
+
+On-demand Analytics
+===================
+
+## breadth_first_search
+
+Perform a breadth-first search from _source_ to _target_ and return edges along the shortest paths.
+
+### Input
 
     {
-	"jsonrpc": "2.0",
-	"result": {
-	    "time": 100,
-	    "pagerank": {
-		"vertex_id": []
-		"vertex_str": []
-		"value": []
-	    }
-	},
-	"id": 5,
-	"millis": 0.3
+      "jsonrpc": "2.0",
+      "method": "breadth_first_search",
+      "params": {
+        "source": 27,
+        "target": 151,
+        "strings": Boolean,                    /* OPTIONAL */
+        "get_types": Boolean,                  /* OPTIONAL */
+        "get_etypes": Boolean,                 /* OPTIONAL */
+        "get_vtypes": Boolean                  /* OPTIONAL */
+      },
+      "id": 8
     }
 
-# get_data_array_reduction
-
-## Input
+### Output
 
     {
-	"jsonrpc": "2.0",
-	"method": "get_data_array_reduction",
-	"params": {
-	    "name": "pagerank",
-	    "data": "pagerank",
-	    "op": "sum"
-	},
-	"id": 12
+      "jsonrpc": "2.0",
+      "result": {
+        "subgraph": []
+      },
+      "id": 11,
+      "millis": 5.34
     }
 
-## Output
+## adamic_adar_index
+
+### Input
 
     {
-	"jsonrpc": "2.0",
-	"result": {
-	    "time": 100,
-	    "pagerank": [
-		{
-		    "field": "pagerank",
-		    "value": 1.999858697906
-		}
-	    ]
-	},
-	"id": 12,
-	"millis": 16.71
+      "jsonrpc": "2.0",
+      "method": "adamic_adar_index",
+      "params": {
+        "source": 1,
+        "strings": Boolean,                    /* OPTIONAL */
+        "include_neighbors": Boolean           /* OPTIONAL */
+      },
+      "id": 14
     }
 
-# breadth_first_search
-
-## Input
+### Output
 
     {
-	"jsonrpc": "2.0",
-	"method": "breadth_first_search",
-	"params": {
-	    "source": 27,
-	    "target": 151,
-	    "strings": Boolean,		    /* OPTIONAL */
-	    "get_types": Boolean,	    /* OPTIONAL */
-	    "get_etypes": Boolean,	    /* OPTIONAL */
-	    "get_vtypes": Boolean	    /* OPTIONAL */
-	},
-	"id": 8
+      "jsonrpc": "2.0",
+      "result": {
+        "source": 1,
+        "source_str": "864",
+        "vertex_id": [ Integer ],
+        "vertex_str": [ String ],
+        "value": [ Double ]
+      },
+      "id": 14,
+      "millis": 13.85
     }
 
-## Output
+## label_breadth_first_search
+
+## label_mod_expand
+
+
+Session-based Methods
+=====================
+
+## register
+
+### Input
 
     {
-	"jsonrpc": "2.0",
-	"result": {
-	    "subgraph": []
-	},
-	"id": 11,
-	"millis": 5.34
+      "jsonrpc": "2.0",
+      "method": "register",
+      "params": {
+        "type": "",
+        "strings": Boolean                     /* OPTIONAL */
+      },
+      "id": 9
     }
 
+### Output
 
-# register
 
-## Input
+## request
+
+### Input
 
     {
-	"jsonrpc": "2.0",
-	"method": "register",
-	"params": {
-	    "type": "",
-	    "strings": Boolean		    /* OPTIONAL */
-	},
-	"id": 9
+      "jsonrpc": "2.0",
+      "method": "request",
+      "params": {
+        "session_id": Integer,
+        "strings": Boolean                     /* OPTIONAL */
+      },
+      "id": 10
     }
 
-## Output
+### Output
 
-
-# request
-
-## Input
-
-    {
-	"jsonrpc": "2.0",
-	"method": "request",
-	"params": {
-	    "session_id": Integer,
-	    "strings": Boolean		    /* OPTIONAL */
-	},
-	"id": 10
-    }
-
-## Output
-
-
-# adamic_adar_index
-
-## Input
-
-    {
-	"jsonrpc": "2.0",
-	"method": "adamic_adar_index",
-	"params": {
-	    "source": 1,
-	    "strings": Boolean,		    /* OPTIONAL */
-	    "include_neighbors": Boolean    /* OPTIONAL */
-	},
-	"id": 14
-    }
-
-## Output
-
-    {
-	"jsonrpc": "2.0",
-	"result": {
-	    "source": 1,
-	    "source_str": "864",
-	    "vertex_id": [
-		0
-	    ],
-	    "vertex_str": [
-		"987"
-	    ],
-	    "value": [
-		0
-	    ]
-	},
-	"id": 14,
-	"millis": 13.85
-    }
-
-# label_breadth_first_search
-
-# label_mod_expand
 
