@@ -360,18 +360,25 @@ Perform a breadth-first search from _source_ to _target_ and return edges along 
 
 ### Input
 
+* source: Vertex ID or String
+* target: Vertex ID or String
+* strings: If True, return vertex identifier strings
+* get_types: If True, return string identifiers for edge and vertex types
+* get_etypes: If True, return string identifiers for edge types
+* get_vtypes: If True, return string identifiers for vertex types
+
     {
       "jsonrpc": "2.0",
       "method": "breadth_first_search",
       "params": {
-        "source": 27,
-        "target": 151,
+        "source": Integer/String,
+        "target": Integer/String,
         "strings": Boolean,                    /* OPTIONAL */
         "get_types": Boolean,                  /* OPTIONAL */
         "get_etypes": Boolean,                 /* OPTIONAL */
         "get_vtypes": Boolean                  /* OPTIONAL */
       },
-      "id": 8
+      "id": Integer
     }
 
 ### Output
@@ -381,23 +388,30 @@ Perform a breadth-first search from _source_ to _target_ and return edges along 
       "result": {
         "subgraph": []
       },
-      "id": 11,
-      "millis": 5.34
+      "id": Integer,
+      "millis": Float
     }
+
 
 ## adamic_adar_index
 
+Calculates the Adamic-Adar score for all vertices not adjacent to _source_.
+
 ### Input
+
+* source: Vertex ID or String
+* strings: If True, return vertex identifier strings
+* include_neighbors: Also calculate Adamic-Adar index for neighbors of _source_
 
     {
       "jsonrpc": "2.0",
       "method": "adamic_adar_index",
       "params": {
-        "source": 1,
+        "source": Integer/String,
         "strings": Boolean,                    /* OPTIONAL */
         "include_neighbors": Boolean           /* OPTIONAL */
       },
-      "id": 14
+      "id": Integer
     }
 
 ### Output
@@ -405,17 +419,19 @@ Perform a breadth-first search from _source_ to _target_ and return edges along 
     {
       "jsonrpc": "2.0",
       "result": {
-        "source": 1,
-        "source_str": "864",
+        "source": Integer,
+        "source_str": String,
         "vertex_id": [ Integer ],
         "vertex_str": [ String ],
         "value": [ Double ]
       },
-      "id": 14,
-      "millis": 13.85
+      "id": Integer,
+      "millis": Float
     }
 
+
 ## label_breadth_first_search
+
 
 ## label_mod_expand
 
