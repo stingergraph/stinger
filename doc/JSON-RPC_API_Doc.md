@@ -2,14 +2,17 @@ Overview
 ========
 
 The JSON-RPC server provides a JSON-RPC 2.0 endpoint for client applications to 
-request algorithm and graph data from STINGER.  See the [JSON-RPC Specification](http://www.jsonrpc.org/specification) 
-for more details.
+request algorithm and graph data from STINGER.  See the
+[JSON-RPC Specification](http://www.jsonrpc.org/specification) for more details.
 
 NOTE: This JSON-RPC server only processes parameters by name, not by position.
 
 CAVEAT: This JSON-RPC server does not currently implement notifications.
 
 CAVEAT: This JSON-RPC server does not currently implement batches.
+
+In general, the field "millis" in the response object indicates the execution
+time on the server in milliseconds.
 
 
 Method Summary
@@ -486,6 +489,7 @@ Perform a breadth-first search from _source_ to _target_ and return edges along 
 * get_etypes: If True, return string identifiers for edge types
 * get_vtypes: If True, return string identifiers for vertex types
 
+```
     {
       "jsonrpc": "2.0",
       "method": "breadth_first_search",
@@ -499,6 +503,7 @@ Perform a breadth-first search from _source_ to _target_ and return edges along 
       },
       "id": Integer
     }
+```
 
 ### Output
 
