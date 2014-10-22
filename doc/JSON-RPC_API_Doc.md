@@ -19,22 +19,22 @@ Method Summary
 
 ## Input
 
-  {
-    "jsonrpc": "2.0",
-    "method": "get_server_info",
-    "id": 13
-  }
+    {
+      "jsonrpc": "2.0",
+      "method": "get_server_info",
+      "id": 13
+    }
 
 ## Output
 
-  {
-    "jsonrpc": "2.0",
-    "result": {
-      "pid": 2776392484925547500
-    },
-    "id": 13,
-    "millis": 0.21
-  }
+    {
+      "jsonrpc": "2.0",
+      "result": {
+	"pid": 2776392484925547500
+      },
+      "id": 13,
+      "millis": 0.21
+    }
 
 # get_graph_stats
 
