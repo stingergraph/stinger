@@ -367,6 +367,7 @@ Perform a breadth-first search from _source_ to _target_ and return edges along 
 * get_etypes: If True, return string identifiers for edge types
 * get_vtypes: If True, return string identifiers for vertex types
 
+
     {
       "jsonrpc": "2.0",
       "method": "breadth_first_search",
@@ -402,6 +403,7 @@ Calculates the Adamic-Adar score for all vertices not adjacent to _source_.
 * source: Vertex ID or String
 * strings: If True, return vertex identifier strings
 * include_neighbors: Also calculate Adamic-Adar index for neighbors of _source_
+
 
     {
       "jsonrpc": "2.0",
