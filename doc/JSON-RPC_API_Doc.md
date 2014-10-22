@@ -15,9 +15,11 @@ CAVEAT: This JSON-RPC server does not currently implement batches.
 Method Summary
 ==============
 
-# get_server_info
+## get_server_info
 
-## Input
+### Input
+
+This method returns basic information about the STINGER server.
 
     {
       "jsonrpc": "2.0",
@@ -25,16 +27,19 @@ Method Summary
       "id": 13
     }
 
-## Output
+### Output
+
+pid: The process ID of the STINGER server process.
 
     {
       "jsonrpc": "2.0",
       "result": {
-	"pid": 2776392484925547500
+        "pid": 2776392484925547500
       },
       "id": 13,
       "millis": 0.21
     }
+
 
 # get_graph_stats
 
