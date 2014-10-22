@@ -23,24 +23,28 @@ This method returns basic information about the STINGER server.
 
 This method takes no parameters.
 
+```
     {
       "jsonrpc": "2.0",
       "method": "get_server_info",
-      "id": 13
+      "id": Integer
     }
+```
 
 ### Output
 
-pid: The process ID of the STINGER server process.
+* pid: The process ID of the STINGER server process.
 
+```
     {
       "jsonrpc": "2.0",
       "result": {
-        "pid": 2776392484925547500
+        "pid": Integer 
       },
-      "id": 13,
-      "millis": 0.21
+      "id": Integer,
+      "millis": Float
     }
+```
 
 
 ## get_graph_stats
@@ -49,49 +53,59 @@ This method returns summary statistics about the current state of the graph.
 
 ### Input
 
-get_types: If True, will return strings associated with edge and vertex types.
+* get_types: If True, will return strings associated with edge and vertex types.
 
+```
     {
       "jsonrpc": "2.0",
       "method": "get_graph_stats",
       "params" : {
         "get_types": Boolean                   /* OPTIONAL */
       },
-      "id": 7
+      "id": Integer
     }
+```
 
 ### Output
 
+* vertices: Number of vertices in the graph
+* edges: Number of directed edges in the graph
+* time: Maximum timestamp in STINGER
+* edge_types: Number of edge types in use
+* vertex_types: Number of vertex types in use
+
+```
     {
       "jsonrpc": "2.0",
       "result": {
-        "vertices": 178,
-        "edges": 200,
-        "time": 100,
-        "edge_types": 1,
-        "vertex_types": 1
+        "vertices": Integer,
+        "edges": Integer,
+        "time": Integer,
+        "edge_types": Integer,
+        "vertex_types": Integer
       },
-      "id": 7,
-      "millis": 0.38
+      "id": Integer,
+      "millis": Float
     }
+```
 
+* edge_types: Array of edge type strings
+* vertex_types: Array of vertex type strings
+
+```
     {
       "jsonrpc": "2.0",
       "result": {
-        "vertices": 178,
-        "edges": 200,
-        "time": 100,
-        "edge_types": [
-          "None"
-        ],
-        "vertex_types": [
-          "None"
-        ]
+        "vertices": Integer,
+        "edges": Integer,
+        "time": Integer,
+        "edge_types": [ String ],
+        "vertex_types": [ String ]
       },
-      "id": 7,
-      "millis": 1.01
+      "id": Integer,
+      "millis": Float
     }
-
+```
 
 ## get_algorithms
 
@@ -101,26 +115,29 @@ Returns a list of algorithms currently running and connected to the STINGER serv
 
 This method takes no parameters.
 
+```
     {
       "jsonrpc": "2.0",
       "method": "get_algorithms",
-      "id": 1
+      "id": Integer
     }
+```
 
 ## Output
 
+* algorithms: Array of algorithm string identifiers
+
+```
     {
       "jsonrpc": "2.0",
       "result": {
-        "algorithms": [
-          "pagerank",
-          "rate_monitor",
-          "stinger"
-        ]
+        "algorithms": [ String ]
       },
-      "id": 1,
-      "millis": 0.24
+      "id": Integer,
+      "millis": Float
     }
+```
+
 
 ## get_data_descriptiona
 
@@ -128,27 +145,34 @@ This method retrieves the data fields published by an algorithm.
 
 ### Input
 
-name: String identifier of an algorithm
+* name: String identifier of an algorithm
 
+```
     {
       "jsonrpc": "2.0",
       "method": "get_data_description",
       "params": {
-        "name": "pagerank"
+        "name": String
       },
-      "id": 2
+      "id": Integer
     }
+```
 
 ### Output
 
+* alg_data: Array of data field string identifiers
+
+```
     {
       "jsonrpc": "2.0",
       "result": {
         "alg_data": [ String ]
       },
-      "id": 2,
-      "millis": 0.71
+      "id": Integer,
+      "millis": Float
     }
+```
+
 
 ## get_data_array
 
@@ -156,15 +180,20 @@ Returns the entire data array for one algorithm field.
 
 ### Input
 
-name: String identifier of an algorithm
-data: String identifier of a data field 
+* name: Algorithm string identifier
+* data: Data field string identifier
+* strings: If True, return vertex identifier strings
+* stride: Return every other _stride_ values
+* samples: Return _samples_ number of results selected at even intervals across the data array
+* log: Make the sampling spacing logarithmic
 
+```
     {
       "jsonrpc": "2.0",
       "method": "get_data_array",
       "params": {
-        "name": "algorithm_name",
-        "data": "data_array_name",
+        "name": String,
+        "data": String,
         "strings": Boolean,                    /* Optional */
         "stride": Integer,                     /* Optional */
         "samples": Integer,                    /* Optional */
@@ -172,24 +201,37 @@ data: String identifier of a data field
       },
       "id": 3
     }
+```
 
 ### Output
 
+* time: Maximum timestamp in STINGER
+
+Result will be stored in an object named according to the data field name in the input.
+
+* offset: Offset into the sorted array
+* count: Number of results to return
+* vertex_id: Array of vertex IDs
+* vertex_str: Array of vertex string identifiers
+* value: Array of data results
+
+```
     {
       "jsonrpc": "2.0",
       "result": {
-        "time": 100,
+        "time": Integer,
         "pagerank": {
-          "offset": 0,
-          "count": 178,
+          "offset": Integer,
+          "count": Integer,
           "vertex_id": [ Integer ]
           "vertex_str": [ String ]
           "value": [ Number ]
         }
       },
-      "id": 5,
-      "millis": 0.3
+      "id": Integer,
+      "millis": Integer
     }
+```
 
 
 ## get_data_array_range
@@ -198,12 +240,22 @@ Returns a range of data values based on an offset and count.
 
 ### Input
 
+* name: Algorithm string identifier
+* data: Data field string identifier
+* offset: Offset into the sorted array
+* count: Number of results to return
+* strings: If True, return vertex identifier strings
+* stride: Return every other _stride_ values
+* samples: Return _samples_ number of results selected at even intervals across the data array
+* log: Make the sampling spacing logarithmic
+
+```
     {
       "jsonrpc": "2.0",
       "method": "get_data_array_range",
       "params": {
-        "name": "algorithm_name",
-        "data": "data_array_name",
+        "name": String,
+        "data": String,
         "offset": Integer,
         "count": Integer,
         "strings": Boolean,                    /* Optional */
@@ -211,26 +263,39 @@ Returns a range of data values based on an offset and count.
         "samples": Integer,                    /* Optional */
         "log": Boolean                         /* Optional */
       },
-      "id": 4
+      "id": Integer
     }
+```
 
 ### Output
 
+* time: Maximum timestamp in STINGER
+
+Result will be stored in an object named according to the data field name in the input.
+
+* offset: Offset into the sorted array
+* count: Number of results to return
+* vertex_id: Array of vertex IDs
+* vertex_str: Array of vertex string identifiers
+* value: Array of data results
+
+```
     {
       "jsonrpc": "2.0",
       "result": {
-        "time": 100,
+        "time": Integer,
         "pagerank": {
-          "offset": 0,
-          "count": 178,
+          "offset": Integer,
+          "count": Integer,
           "vertex_id": [ Integer ]
           "vertex_str": [ String ]
           "value": [ Number ]
         }
       },
-      "id": 5,
-      "millis": 0.3
+      "id": Integer,
+      "millis": Float
     }
+```
 
 
 ## get_data_array_sorted_range
@@ -239,12 +304,23 @@ Returns a range of data values based on an offset and count in sorted order.
 
 ### Input
 
+* name: Algorithm string identifier
+* data: Data field string identifier
+* offset: Offset into the sorted array
+* count: Number of results to return
+* order: Sorting order requested (ASC or DESC)
+* strings: If True, return vertex identifier strings
+* stride: Return every other _stride_ values
+* samples: Return _samples_ number of results selected at even intervals across the data array
+* log: Make the sampling spacing logarithmic
+
+```
     {
       "jsonrpc": "2.0",
       "method": "get_data_array_sorted_range",
       "params": {
-        "name": "algorithm_name",
-        "data": "data_array_name",
+        "name": String,
+        "data": String,
         "offset": Integer,
         "count": Integer,
         "order": "ASC/DESC",                   /* OPTIONAL - Default: DESC */
@@ -253,27 +329,41 @@ Returns a range of data values based on an offset and count in sorted order.
         "samples": Integer,                    /* OPTIONAL */
         "log": Boolean                         /* OPTIONAL */
       },
-      "id": 5
+      "id": Number
     }
+```
 
 ### Output
 
+* time: Maximum timestamp in STINGER
+
+Result will be stored in an object named according to the data field name in the input.
+
+* offset: Offset into the sorted array
+* count: Number of results to return
+* order: Sorting order requested (ASC or DESC)
+* vertex_id: Array of vertex IDs
+* vertex_str: Array of vertex string identifiers
+* value: Array of data results
+
+```
     {
       "jsonrpc": "2.0",
       "result": {
-        "time": 100,
+        "time": Integer,
         "pagerank": {
-          "offset": 0,
-          "count": 178,
-          "order": "DESC",
+          "offset": Integer,
+          "count": Integer,
+          "order": String,
           "vertex_id": [ Integer ]
           "vertex_str": [ String ]
           "value": [ Number ]
         }
       },
-      "id": 5,
-      "millis": 0.3
+      "id": Integer,
+      "millis": Float
     }
+```
 
 
 ## get_data_array_set
@@ -282,73 +372,102 @@ Returns data values for specific vertices.
 
 ### Input
 
+* name: Algorithm string identifier
+* data: Data field string identifier
+* set: Array of vertex IDs or string identifiers
+* strings: If True, return vertex identifier strings
+
+```
     {
       "jsonrpc": "2.0",
       "method": "get_data_array_set",
       "params": {
-        "name": "algorithm_name",
-        "data": "data_array_name",
-        "set": [
-          1,
-          2,
-          3,
-          4,
-          5
-        ],
+        "name": String,
+        "data": String,
+        "set": [ Integer/String ],
         "strings": Boolean                     /* OPTIONAL */
       },
-      "id": 6
+      "id": Number
     }
+```
 
 ### Output
 
+* time: Maximum timestamp in STINGER
+
+Result will be stored in an object named according to the data field name in the input.
+
+* vertex_id: Array of vertex IDs
+* vertex_str: Array of vertex string identifiers
+* value: Array of data results
+
+```
     {
       "jsonrpc": "2.0",
       "result": {
-        "time": 100,
+        "time": Number,
         "pagerank": {
           "vertex_id": [ Integer ]
           "vertex_str": [ String ]
           "value": [ Number ]
         }
       },
-      "id": 5,
-      "millis": 0.3
+      "id": Number,
+      "millis": Float
     }
+```
+
 
 ## get_data_array_reduction
 
 Perform a reduction over the entire data array and return a single value.
 
+NOTE:  Currently only "sum" is valid.
+
 ### Input
 
+* name: Algorithm string identifier
+* data: Data field string identifier
+* op: Reduction operation
+
+```
     {
       "jsonrpc": "2.0",
       "method": "get_data_array_reduction",
       "params": {
-        "name": "pagerank",
-        "data": "pagerank",
-        "op": "sum"
+        "name": String,
+        "data": String,
+        "op": String
       },
-      "id": 12
+      "id": Number
     }
+```
 
 ### Output
 
+* time: Maximum timestamp in STINGER
+
+Result will be stored in an object named according to the algorithm name in the input.
+
+* field: Data field name that was reduced
+* value: Reduced value
+
+```
     {
       "jsonrpc": "2.0",
       "result": {
-        "time": 100,
-        "pagerank": [
+        "time": Integer,
+        String: [
           {
             "field": String,
             "value": Number 
           }
         ]
       },
-      "id": 12,
-      "millis": 16.71
+      "id": Integer,
+      "millis": Integer
     }
+```
 
 
 On-demand Analytics
@@ -383,6 +502,9 @@ Perform a breadth-first search from _source_ to _target_ and return edges along 
 
 ### Output
 
+* subgraph: Array of edges
+
+```
     {
       "jsonrpc": "2.0",
       "result": {
@@ -391,6 +513,7 @@ Perform a breadth-first search from _source_ to _target_ and return edges along 
       "id": Integer,
       "millis": Float
     }
+```
 
 
 ## adamic_adar_index
@@ -418,6 +541,13 @@ Calculates the Adamic-Adar score for all vertices not adjacent to _source_.
 
 ### Output
 
+* source: Vertex ID
+* source_str: Vertex string identifier
+* vertex_id: Array of vertex IDs
+* vertex_str: Array of vertex string identifiers
+* value: Array of Adamic-Adar scores
+
+```
     {
       "jsonrpc": "2.0",
       "result": {
@@ -430,7 +560,7 @@ Calculates the Adamic-Adar score for all vertices not adjacent to _source_.
       "id": Integer,
       "millis": Float
     }
-
+```
 
 ## label_breadth_first_search
 
@@ -445,6 +575,7 @@ Session-based Methods
 
 ### Input
 
+```
     {
       "jsonrpc": "2.0",
       "method": "register",
@@ -452,8 +583,10 @@ Session-based Methods
         "type": "",
         "strings": Boolean                     /* OPTIONAL */
       },
-      "id": 9
+      "id": Integer
     }
+```
+
 
 ### Output
 
@@ -462,6 +595,7 @@ Session-based Methods
 
 ### Input
 
+```
     {
       "jsonrpc": "2.0",
       "method": "request",
@@ -469,8 +603,9 @@ Session-based Methods
         "session_id": Integer,
         "strings": Boolean                     /* OPTIONAL */
       },
-      "id": 10
+      "id": Integer
     }
+```
 
 ### Output
 
