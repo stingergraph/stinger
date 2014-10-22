@@ -9,35 +9,64 @@ Directory Structure
 
     .
     ├── CMakeLists.txt
+    ├── doc
+    ├── html
     ├── README.md
     ├── SOURCEME.sh
-    └── src
-	├── bin
-	│   ├── clients
-	│   │   ├── algorithms
-	│   │   ├── streams
-	│   │   └── tools
-	│   ├── server
-	│   └── standalone
-	│       ├── breadth_first_search
-	│       ├── community_reagglomeration
-	│       ├── connected_components
-	│       ├── insert_remove_benchmark
-	│       ├── protobuf_test
-	│       ├── streaming_clustering_coefficients
-	│       └── streaming_connected_components
-	└── lib
-	    ├── fmemopen
-	    ├── int_hm_seq
-	    ├── int_ht_seq
-	    ├── intvec
-	    ├── kv_store
-	    ├── protobuf
-	    ├── pugixml
-	    ├── stinger_core
-	    ├── stinger_utils
-	    ├── string
-	    └── vtx_set
+    ├── src
+    │   ├── bin
+    │   │   ├── clients
+    │   │   │   ├── algorithms
+    │   │   │   │   ├── betweenness
+    │   │   │   │   ├── clustering_coefficients
+    │   │   │   │   ├── kcore
+    │   │   │   │   ├── pagerank
+    │   │   │   │   ├── pagerank_updating
+    │   │   │   │   ├── rate_monitor
+    │   │   │   │   ├── simple_communities
+    │   │   │   │   ├── spmspv_test
+    │   │   │   │   ├── static_components
+    │   │   │   │   └── test_alg
+    │   │   │   ├── streams
+    │   │   │   │   ├── csv_stream
+    │   │   │   │   ├── human_edge_generator
+    │   │   │   │   ├── json_stream
+    │   │   │   │   ├── mongodb_stream
+    │   │   │   │   ├── random_edge_generator
+    │   │   │   │   └── rmat_edge_generator
+    │   │   │   └── tools
+    │   │   │       ├── alg_to_mongo
+    │   │   │       ├── json_rpc_server
+    │   │   │       ├── scrape_alg_data
+    │   │   │       ├── scrape_vertex_data
+    │   │   │       ├── sql_client
+    │   │   │       ├── test_client
+    │   │   │       ├── udp_query
+    │   │   │       └── vquery
+    │   │   ├── server
+    │   │   └── standalone
+    │   ├── lib
+    │   │   ├── compat
+    │   │   ├── fmemopen
+    │   │   ├── int_hm_seq
+    │   │   ├── int_ht_seq
+    │   │   ├── intvec
+    │   │   ├── kv_store
+    │   │   ├── mongo_c_driver
+    │   │   ├── mongoose
+    │   │   ├── protobuf
+    │   │   ├── pugixml
+    │   │   ├── rapidjson
+    │   │   ├── stinger_core
+    │   │   ├── stinger_net
+    │   │   ├── stinger_utils
+    │   │   ├── string
+    │   │   └── vtx_set
+    │   ├── py
+    │   │   └── stinger
+    │   └── templates
+    │       └── json
+
 
 Building
 ========
@@ -199,6 +228,8 @@ Handling Common Errors
 Runtime Issues
 --------------
 
+TODO: This should talk about CMake directives for memory allocation.
+
 The first thing to understand is how STINGER manages memory. When STINGER starts, it allocates one large block of memory (enough to hold its maximum size), and then manages its own memory allocation from that pool.  The server version of STINGER does this in shared memory so that multiple processes can see the graph.  Unfortunately, the error handling for memory allocations is not particularly user-friendly at the moment.  Changing the way that this works is on the issues list (see https://github.com/robmccoll/stinger/issues/8).
 
 - "Bus error" when running the server: The size of STINGER that the server is trying to allocate is too large for your memory.  Reduce the size of your STINGER and recompile.
@@ -238,4 +269,3 @@ Build problems after pulling updates are frequently the result of changes to the
 
 Additionally, this version of the STINGER tool suite is tested almost exclusively on Linux machines running later version of Ubuntu and Fedora.  While we  would like to have multi-platform compatibility with Mac (via "real" GCC) and Windows (via GCC on cygwin), these are lower priority for our team - unless a project sponsor requires it :-)  
 
-Starting a dev branch.
