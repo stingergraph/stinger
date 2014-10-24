@@ -82,14 +82,8 @@ extern "C" {
 #if defined(OMP)
 #undef OMP
 #endif
-#define OMPSTR_(x) #x
-#define OMP(x) OMP_(OMPSTR_(x))
-#define OMP_(x) _Pragma(x)
-#if _OPENMP >= 201307
-#define OMP_SIMD " simd "
-#else
+#define OMP(x) _Pragma(x)
 #define OMP_SIMD
-#endif
 #else
 #if !defined(OMP)
 #define OMP(x)

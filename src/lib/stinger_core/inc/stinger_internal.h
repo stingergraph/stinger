@@ -151,27 +151,12 @@ struct curs
 
 static inline const struct stinger_eb *
 stinger_next_eb (const struct stinger *G,
-                 const struct stinger_eb *eb_)
-{
-  const struct stinger_ebpool * ebpool = (const struct stinger_ebpool *)(G->storage + G->ebpool_start);
-  /*return ebpool->ebpool + readff((uint64_t *)&eb_->next);*/
-  return ebpool->ebpool + eb_->next;
-}
+                 const struct stinger_eb *eb_);
 
-static inline int stinger_eb_high (const struct stinger_eb * eb_)
-{
-  return eb_->high;
-}
-static inline int64_t stinger_eb_type (const struct stinger_eb * eb_)
-{
-  return eb_->etype;
-}
+int stinger_eb_high (const struct stinger_eb * eb_);
+static inline int64_t stinger_eb_type (const struct stinger_eb * eb_);
 
-static inline int stinger_eb_is_blank (const struct stinger_eb * eb_, int k_)
-{
-  return eb_->edges[k_].neighbor < 0;
-}
-
+int stinger_eb_is_blank (const struct stinger_eb * eb_, int k_);
 int64_t stinger_eb_adjvtx (const struct stinger_eb *, int);
 int64_t stinger_eb_weight (const struct stinger_eb *, int);
 int64_t stinger_eb_ts (const struct stinger_eb *, int);

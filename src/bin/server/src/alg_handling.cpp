@@ -1,17 +1,12 @@
-extern "C" {
-  #include "stinger_core/stinger.h"
-  #include "stinger_core/stinger_shared.h"
-  #include "stinger_utils/timer.h"
-  #include "stinger_utils/stinger_utils.h"
-  #include "stinger_core/xmalloc.h"
-  #include "stinger_core/x86_full_empty.h"
-  #include "stinger_core/stinger_error.h"
-}
-
+#include "stinger_core/stinger.h"
+#include "stinger_core/stinger_shared.h"
+#include "stinger_utils/timer.h"
+#include "stinger_utils/stinger_utils.h"
+#include "stinger_core/xmalloc.h"
+#include "stinger_core/x86_full_empty.h"
 #include "stinger_net/proto/stinger-batch.pb.h"
 #include "stinger_net/proto/stinger-connect.pb.h"
 #include "stinger_net/proto/stinger-alg.pb.h"
-
 #include "stinger_net/send_rcv.h"
 #include "stinger_net/stinger_server_state.h"
 #include "server.h"
@@ -30,6 +25,10 @@ extern "C" {
 /* POSIX only for now, note that mongoose would be a good place to 
 get cross-platform threading and sockets code */
 #include <pthread.h> 
+
+/* Must be included last */
+#define LOG_AT_I
+#include "stinger_core/stinger_error.h"
 
 /* A note on the design of this server:
  * Main thread -> starts all other threads, listens to the incoming port and accepts connections.
@@ -486,7 +485,12 @@ process_loop_handler(void * data)
     }
 
     /* update stinger */
+    tic();
     process_batch(server_state.get_stinger(), *batch);
+    double time = toc();
+    int64_t edge_count = batch->insertions_size() + batch->deletions_size();
+    LOG_I_A("Server processed %ld edges in %20.15e seconds", edge_count, time);
+    LOG_I_A("%f edges per second", ((double) edge_count) / time);
 
     /* loop through each algorithm, send start postprocessing message */
     stop_alg_level = server_state.get_num_levels();

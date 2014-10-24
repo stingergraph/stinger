@@ -312,31 +312,31 @@ stinger_num_active_vertices(const struct stinger * S) {
 }
 
 
-/* const struct stinger_eb * */
-/* stinger_next_eb (const struct stinger *G, */
-/*                  const struct stinger_eb *eb_) */
-/* { */
-/*   MAP_STING(G); */
-/*   return ebpool->ebpool + readff((uint64_t *)&eb_->next); */
-/* } */
+const struct stinger_eb *
+stinger_next_eb (const struct stinger *G,
+                 const struct stinger_eb *eb_)
+{
+  const struct stinger_ebpool * ebpool = (const struct stinger_ebpool *)(G->storage + G->ebpool_start);
+  return ebpool->ebpool + readff((uint64_t *)&eb_->next);
+}
 
-/* int64_t */
-/* stinger_eb_type (const struct stinger_eb * eb_) */
-/* { */
-/*   return eb_->etype; */
-/* } */
+int64_t
+stinger_eb_type (const struct stinger_eb * eb_)
+{
+  return eb_->etype;
+}
 
-/* int */
-/* stinger_eb_high (const struct stinger_eb *eb_) */
-/* { */
-/*   return eb_->high; */
-/* } */
+int
+stinger_eb_high (const struct stinger_eb *eb_)
+{
+  return eb_->high;
+}
 
-/* int */
-/* stinger_eb_is_blank (const struct stinger_eb *eb_, int k_) */
-/* { */
-/*   return eb_->edges[k_].neighbor < 0; */
-/* } */
+int
+stinger_eb_is_blank (const struct stinger_eb *eb_, int k_)
+{
+  return eb_->edges[k_].neighbor < 0;
+}
 
 int64_t
 stinger_eb_adjvtx (const struct stinger_eb * eb_, int k_)
