@@ -169,7 +169,17 @@ dataType: "json",
 success: function(data) {whatever = data; $(".badRequest").append("<p>" + JSON.stringify(data) + "</p>"); }
 });
 
+data = {"jsonrpc": "2.0", "method": "get_server_health", "id": 15};
+jQuery.ajax({
+url: "http://localhost:8088/jsonrpc",
+type: "POST",
+data: JSON.stringify(data),
+dataType: "json",
+success: function(data) {whatever = data; $(".health").append("<p>" + JSON.stringify(data) + "</p>"); }
+});
+
 </script>
+<div class="health">health:&nbsp;</div>
 <div class="algorithms">algorithms:&nbsp;</div>
 <div class="description">description:&nbsp;</div>
 <div class="range">range:&nbsp;</div>

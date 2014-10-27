@@ -141,6 +141,8 @@ struct stinger_fragmentation_t {
   uint64_t num_edges;
   uint64_t edge_blocks_in_use;
   double fill_percent;
+  uint64_t num_empty_blocks;
+  double avg_number_of_edges;
 };
 
 struct curs
