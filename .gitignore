@@ -1,3 +1,6 @@
+# STINGER local stuff
+/build
+
 # Compiled Object files
 *.slo
 *.lo
@@ -13,3 +16,7 @@
 
 # Editor temporaries
 *~
+
+# Google Protobufs 
+/src/lib/protobuf/configure
+/src/lib/protobuf/autom4te.cache/
