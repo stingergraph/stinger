@@ -137,7 +137,7 @@ stinger_names_free(stinger_names_t ** sn) {
 *
 * @param sn A pointer to a stinger_names struct
 * @param name The string name of the type you wish to create or lookup.
-* @param out A pointer to hold the return value of the mapping (The type on success of -1 on failure)
+* @param out A pointer to hold the return value of the mapping (The type on creation success or -1 on failure)
 *
 * @return 1 if the creation was successful, 0 if a mapping already exists, -1 if the mapping fails
 */
