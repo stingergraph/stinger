@@ -10,6 +10,7 @@
 
 #include "stinger_core/stinger.h"
 #include "stinger_core/stinger_names.h"
+#include "stinger_utils/stinger_test.h"
 
 
 #endif /* STINGER_NAMES_TEST_H_ */
