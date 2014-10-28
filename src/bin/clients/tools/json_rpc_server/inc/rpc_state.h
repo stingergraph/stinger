@@ -108,6 +108,8 @@ namespace gt {
 	int64_t max_sessions;
 	int64_t next_session_id;
 
+	time_t start_time;
+
       public:
 	static JSON_RPCServerState & get_server_state();
 
@@ -154,6 +156,9 @@ namespace gt {
 
 	JSON_RPCSession *
 	get_session(int64_t sessin_id);
+
+	time_t
+	get_time_since_start();
     };
 
   }

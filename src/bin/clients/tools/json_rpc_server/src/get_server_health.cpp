@@ -16,9 +16,10 @@
 
 using namespace gt::stinger;
 
-static int get_uptime (rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
+static int get_loadavg (rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
 static int get_time (rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
 static int get_rpc_methods (rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
+static int get_uptime (rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
 
 
 int64_t 
@@ -55,8 +56,7 @@ JSON_RPC_get_server_health::operator()(rapidjson::Value * params, rapidjson::Val
   result.AddMember("pid", pid, allocator);
 
   /* Uptime */
-  //rapidjson::Value uptime;
-  //result.AddMember("uptime", uptime, allocator);
+  get_uptime(result, allocator);
   
   /* Local Time */
   get_time(result, allocator);
@@ -155,7 +155,7 @@ JSON_RPC_get_server_health::operator()(rapidjson::Value * params, rapidjson::Val
   //result.AddMember("consistency_check", consistency_check, allocator);
 
   /* Uptime load averages */
-  get_uptime(result, allocator);
+  get_loadavg(result, allocator);
 
   /* Algorithms registered */
 
@@ -171,7 +171,7 @@ JSON_RPC_get_server_health::operator()(rapidjson::Value * params, rapidjson::Val
 
 
 static int
-get_uptime (rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator)
+get_loadavg (rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator)
 {
   std::ifstream myfile;
   std::string line;
@@ -240,4 +240,17 @@ get_rpc_methods (rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapid
   }
 
   result.AddMember("rpc_methods", methods, allocator);
+}
+
+static int
+get_uptime (rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator)
+{
+  JSON_RPCServerState & server_state = JSON_RPCServerState::get_server_state();
+  time_t t = server_state.get_time_since_start();
+
+  rapidjson::Value uptime;
+  uptime.SetInt64(t);
+  result.AddMember("uptime", uptime, allocator);
+
+  return 0;
 }
