@@ -41,6 +41,16 @@ JSON_RPCServerState::has_rpc_function(std::string name) {
   return function_map.count(name) > 0;
 }
 
+std::map<std::string, JSON_RPCFunction *>::iterator
+JSON_RPCServerState::rpc_function_begin(void) {
+  return function_map.begin();
+}
+
+std::map<std::string, JSON_RPCFunction *>::iterator
+JSON_RPCServerState::rpc_function_end(void) {
+  return function_map.end();
+}
+
 void
 JSON_RPCServerState::add_rpc_session(std::string name, JSON_RPCSession * func) {
   LOG_D_A("Adding RPC session type %s", name.c_str());

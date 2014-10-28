@@ -18,6 +18,7 @@ using namespace gt::stinger;
 
 static int get_uptime (rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
 static int get_time (rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
+static int get_rpc_methods (rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
 
 
 int64_t 
@@ -156,6 +157,13 @@ JSON_RPC_get_server_health::operator()(rapidjson::Value * params, rapidjson::Val
   /* Uptime load averages */
   get_uptime(result, allocator);
 
+  /* Algorithms registered */
+
+
+  /* JSON RPC Methods */
+  get_rpc_methods(result, allocator);
+
+
   free(stats);
 
   return 0;
@@ -216,4 +224,20 @@ get_time (rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::C
   result.AddMember("local_time", local_time, allocator);
 
   return 0;
+}
+
+static int
+get_rpc_methods (rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator)
+{
+  std::map<std::string, JSON_RPCFunction *>::iterator it;
+  rapidjson::Value methods(rapidjson::kArrayType);
+  rapidjson::Value method_name;
+
+  JSON_RPCServerState & server_state = JSON_RPCServerState::get_server_state();
+  for (it = server_state.rpc_function_begin(); it != server_state.rpc_function_end(); ++it) {
+    method_name.SetString(it->first.c_str(), strlen(it->first.c_str()));
+    methods.PushBack(method_name, allocator);
+  }
+
+  result.AddMember("rpc_methods", methods, allocator);
 }

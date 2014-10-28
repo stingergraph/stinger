@@ -120,6 +120,12 @@ namespace gt {
 	bool
 	has_rpc_function(std::string name);
 
+	std::map<std::string, JSON_RPCFunction *>::iterator
+	rpc_function_begin(void);
+
+	std::map<std::string, JSON_RPCFunction *>::iterator
+	rpc_function_end(void);
+
 	void
 	add_rpc_session(std::string name, JSON_RPCSession * func);
 
