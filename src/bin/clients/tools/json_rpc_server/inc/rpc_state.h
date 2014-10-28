@@ -123,10 +123,10 @@ namespace gt {
 	has_rpc_function(std::string name);
 
 	std::map<std::string, JSON_RPCFunction *>::iterator
-	rpc_function_begin(void);
+	rpc_function_begin();
 
 	std::map<std::string, JSON_RPCFunction *>::iterator
-	rpc_function_end(void);
+	rpc_function_end();
 
 	void
 	add_rpc_session(std::string name, JSON_RPCSession * func);
@@ -155,7 +155,7 @@ namespace gt {
 	get_num_sessions();
 
 	JSON_RPCSession *
-	get_session(int64_t sessin_id);
+	get_session(int64_t session_id);
 
 	time_t
 	get_time_since_start();
