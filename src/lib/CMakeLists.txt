@@ -120,6 +120,7 @@ ENDFOREACH()
 # Memory size configuration bits for stinger_core
 SET(STINGER_DEFAULT_VERTICES "(1L<<24)" CACHE STRING "Default number of vertices")
 SET(STINGER_DEFAULT_NUMETYPES "5" CACHE STRING "Default number of edge types")
+SET(STINGER_DEFAULT_NUMEETYPES "32768" CACHE STRING "Default number of edge types")
 SET(STINGER_DEFAULT_NUMVTYPES "128" CACHE STRING "Default number of vertex types")
 SET(STINGER_DEFAULT_NEB_FACTOR "4" CACHE STRING "Default number of edge blocks per vertex")
 SET(STINGER_EDGEBLOCKSIZE "14" CACHE STRING "Number of edges per edge block")

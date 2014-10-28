@@ -22,7 +22,7 @@ typedef struct stinger stinger_t;
 /* STINGER creation & deletion */
 struct stinger *stinger_new (void);
 
-struct stinger *stinger_new_full (int64_t nv, int64_t nebs, int64_t netypes, int64_t nvtypes);
+struct stinger *stinger_new_full (int64_t nv, int64_t nebs, int64_t netypes, int64_t neetypes, int64_t nvtypes);
 
 void stinger_set_initial_edges (struct stinger * /* G */ ,
 				const size_t     /* nv */ ,
@@ -122,6 +122,9 @@ stinger_vtype_names_get(const stinger_t * S);
 
 stinger_names_t *
 stinger_etype_names_get(const stinger_t * S);
+
+stinger_names_t *
+stinger_eetype_names_get(const stinger_t * S);
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ * 
  * VERTEX METADATA
@@ -232,6 +235,22 @@ stinger_etype_names_lookup_name(const stinger_t * S, int64_t type);
 
 int64_t
 stinger_etype_names_count(const stinger_t * S);
+
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
+ * ETYPE NAMES
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
+int
+stinger_eetype_names_create_type(stinger_t * S, const char * name, int64_t * out);
+
+int64_t
+stinger_eetype_names_lookup_type(const stinger_t * S, const char * name);
+
+char *
+stinger_eetype_names_lookup_name(const stinger_t * S, int64_t type);
+
+int64_t
+stinger_eetype_names_count(const stinger_t * S);
 
 uint64_t stinger_max_active_vertex(const struct stinger * S);
 
