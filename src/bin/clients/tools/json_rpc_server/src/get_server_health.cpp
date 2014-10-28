@@ -1,6 +1,9 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <sys/types.h>
+#include <unistd.h>
+#include <time.h>
 
 //#define LOG_AT_W  /* warning only */
 #include "stinger_core/stinger_error.h"
@@ -14,6 +17,7 @@
 using namespace gt::stinger;
 
 static int get_uptime (rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
+static int get_time (rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
 
 
 int64_t 
@@ -36,9 +40,25 @@ JSON_RPC_get_server_health::operator()(rapidjson::Value * params, rapidjson::Val
   struct stinger_fragmentation_t * stats = (struct stinger_fragmentation_t *) xmalloc(sizeof(struct stinger_fragmentation_t));
   stinger_fragmentation (S, S->max_nv, stats);
 
+  /* Hostname */
+  char buf[256];
+  gethostname(buf, 127);
+  rapidjson::Value hostname;
+  hostname.SetString(buf, strlen(buf));
+  result.AddMember("host", hostname, allocator);
+
+  /* Process ID */
+  pid_t myPid = getpid();
+  rapidjson::Value pid;
+  pid.SetInt64(myPid);
+  result.AddMember("pid", pid, allocator);
+
   /* Uptime */
-  rapidjson::Value uptime;
-  result.AddMember("uptime", uptime, allocator);
+  //rapidjson::Value uptime;
+  //result.AddMember("uptime", uptime, allocator);
+  
+  /* Local Time */
+  get_time(result, allocator);
 
   /* Most recent timestamp */
   rapidjson::Value max_time_seen;
@@ -182,3 +202,18 @@ get_uptime (rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson:
   return 0;
 }
 
+static int
+get_time (rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator)
+{
+  time_t curtime;
+  time(&curtime);
+
+  char buf[50];
+  ctime_r(&curtime, buf);
+
+  rapidjson::Value local_time;
+  local_time.SetString(buf, 24, allocator);
+  result.AddMember("local_time", local_time, allocator);
+
+  return 0;
+}
