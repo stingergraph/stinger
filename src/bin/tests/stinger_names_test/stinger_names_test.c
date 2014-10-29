@@ -7,46 +7,42 @@
 
 #include "stinger_names_test.h"
 
+struct create_args {
+	char * name;
+	stinger_names_t * stinger_names;
+	int64_t expected_status;
+	int64_t expected_mapping;
+};
+
+struct lookup_args {
+	char * name;
+	stinger_names_t * stinger_names;
+	int64_t expected_mapping;
+};
+
+void test_stinger_names_create(test_harness_t * th, void * arg) {
+	struct create_args * args = (struct create_args *)arg;
+	char * name = args->name;
+	stinger_names_t * stinger_names = args->stinger_names;
+	int64_t out = -1;
+	int64_t status = stinger_names_create_type(stinger_names, name, &out);
+	TEST_ASSERT_EQ(status,args->expected_status);
+	TEST_ASSERT_EQ(out,args->expected_mapping);
+}
+
+void test_stinger_names_lookup(test_harness_t * th, void * arg) {
+	struct lookup_args * args = (struct lookup_args *)arg;
+	char * name = args->name;
+	stinger_names_t * stinger_names = args->stinger_names;
+	int64_t out = -1;
+	out = stinger_names_lookup_type(stinger_names, name);
+	TEST_ASSERT_EQ(out,args->expected_mapping);
+}
+
 int
 main (const int argc, char *argv[])
 {
-	test_harness_t * th = new_test_harness(16);
-
-	add_test_description(th, 0, "Lookup Before Creation");
-	add_expected_value_int(th, 0, -1);
-
-	add_test_description(th, 1, "Alpha create");
-	add_expected_value_int(th, 1, 0);
-	add_test_description(th, 2, "Beta create");
-	add_expected_value_int(th, 2, 1);
-	add_test_description(th, 3, "Gamma create");
-	add_expected_value_int(th, 3, 2);
-	add_test_description(th, 4, "Sigma create");
-	add_expected_value_int(th, 4, 3);
-	add_test_description(th, 5, "Zeta create");
-	add_expected_value_int(th, 5, 4);
-	add_test_description(th, 6, "Tau create");
-	add_expected_value_int(th, 6, 5);
-	add_test_description(th, 7, "Pi create");
-	add_expected_value_int(th, 7, -1);
-
-	add_test_description(th, 8, "Alpha lookup");
-	add_expected_value_int(th, 8, 0);
-	add_test_description(th, 9, "Beta lookup");
-	add_expected_value_int(th, 9, 1);
-	add_test_description(th, 10, "Gamma lookup");
-	add_expected_value_int(th, 10, 2);
-	add_test_description(th, 11, "Sigma lookup");
-	add_expected_value_int(th, 11, 3);
-	add_test_description(th, 12, "Zeta lookup");
-	add_expected_value_int(th, 12, 4);
-	add_test_description(th, 13, "Tau lookup");
-	add_expected_value_int(th, 13, 5);
-	add_test_description(th, 14, "Pi lookup");
-	add_expected_value_int(th, 14, -1);
-
-	add_test_description(th, 15, "Alpha Create Again");
-	add_expected_value_int(th, 15, -1);
+	test_harness_t * th = new_test_harness(32);
 
 	stinger_names_t * names = stinger_names_new(5);
 
@@ -62,31 +58,64 @@ main (const int argc, char *argv[])
 			"Pi"
 	};
 
-	int64_t out = 0;
-	int64_t status = 0;
-
-	int64_t cur_test = 0;
-
-	out = stinger_names_lookup_type(names, test_names[0]);
-	test_expected_value_int(th, cur_test++, out);
+	register_test(th,
+			"Empty stinger_names lookup",
+			&test_stinger_names_lookup,
+			(void*)&(struct lookup_args){test_names[0],names,-1});
 
 	for (int i=0; i < 7; i++) {
-		out = -1;
-		status = 0;
-		status = stinger_names_create_type(names, test_names[i], &out);
-		test_expected_value_int(th, cur_test++, out);
+		int64_t expected_out;
+		int64_t expected_status;
+
+		if (i <= 5) {
+			expected_out = i;
+			expected_status = 1;
+		} else {
+			expected_out = -1;
+			expected_status = -1;
+		}
+
+		struct create_args * create_args = (struct create_args *)malloc(sizeof(struct create_args));
+
+		create_args->name = test_names[i];
+		create_args->stinger_names = names;
+		create_args->expected_status = expected_status;
+		create_args->expected_mapping = expected_out;
+
+		register_test(th,
+					"Create",
+					&test_stinger_names_create,
+					(void*)create_args);
 	}
 
 	for (int i=0; i < 7; i++) {
-		out = -1;
-		out = stinger_names_lookup_type(names, test_names[i]);
-		test_expected_value_int(th, cur_test++, out);
+		int64_t expected_out;
+
+		if (i <= 5) {
+			expected_out = i;
+		} else {
+			expected_out = -1;
+		}
+
+		struct lookup_args * lookup_args = (struct lookup_args *)malloc(sizeof(struct lookup_args));
+
+		lookup_args->name = test_names[i];
+		lookup_args->stinger_names = names;
+		lookup_args->expected_mapping = expected_out;
+
+		register_test(th,
+					"Lookup",
+					&test_stinger_names_lookup,
+					(void*)lookup_args);
 	}
 
-	status = stinger_names_create_type(names, test_names[0], &out);
-	test_expected_value_int(th, cur_test++, out);
+	register_test(th,
+			"Re-create",
+			&test_stinger_names_create,
+			(void*)&(struct create_args){test_names[0],names,-1, -1});
 
-	fini_test_harness(th);
+	run_tests(th,stderr);
+	print_test_summary(th, stderr);
 }
 
 
