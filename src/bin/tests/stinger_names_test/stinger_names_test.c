@@ -28,6 +28,11 @@ void test_stinger_names_create(test_harness_t * th, void * arg) {
 	int64_t status = stinger_names_create_type(stinger_names, name, &out);
 	TEST_ASSERT_EQ(status,args->expected_status);
 	TEST_ASSERT_EQ(out,args->expected_mapping);
+	if (FAILED_TEST) {
+		fprintf(stderr,"Lookup %s\n", name);
+		fprintf(stderr,"status - Observed: %lld, Expected: %lld\n", status, args->expected_status);
+		fprintf(stderr,"mapping - Observed: %lld, Expected: %lld\n", out, args->expected_mapping);
+	}
 }
 
 void test_stinger_names_lookup(test_harness_t * th, void * arg) {
@@ -37,6 +42,10 @@ void test_stinger_names_lookup(test_harness_t * th, void * arg) {
 	int64_t out = -1;
 	out = stinger_names_lookup_type(stinger_names, name);
 	TEST_ASSERT_EQ(out,args->expected_mapping);
+	if (FAILED_TEST) {
+		fprintf(stderr,"Lookup %s\n", name);
+		fprintf(stderr,"mapping - Observed: %lld, Expected: %lld\n", out, args->expected_mapping);
+	}
 }
 
 int

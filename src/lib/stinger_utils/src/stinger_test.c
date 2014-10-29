@@ -57,9 +57,9 @@ void run_test(test_harness_t* th, int64_t test_num, FILE * output) {
 	th->tests[test_num].test_ran = 1;
 	fptr(th, th->tests[test_num].func_arg);
 	if (th->tests[test_num].passed_test) {
-		fprintf(output, "Test %lld PASSED\n", test_num);
+		fprintf(output, "Test %lld PASSED\n\n", test_num);
 	} else {
-		fprintf(output, "Test %lld FAILED\n", test_num);
+		fprintf(output, "Test %lld FAILED\n\n", test_num);
 	}
 }
 

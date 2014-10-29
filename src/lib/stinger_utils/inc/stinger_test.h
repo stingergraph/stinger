@@ -54,7 +54,7 @@ typedef struct test_st {
 		} \
 	} while (0);
 
-
+#define FAILED_TEST (th->tests[th->current_test].passed_test == 0)
 
 
 test_harness_t * new_test_harness(int64_t num_tests);
