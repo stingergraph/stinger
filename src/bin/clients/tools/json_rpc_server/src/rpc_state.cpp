@@ -19,6 +19,7 @@ JSON_RPCServerState::get_server_state() {
 JSON_RPCServerState::JSON_RPCServerState() :
   next_session_id(1), session_lock(0),
   max_sessions(20), StingerMon() {
+    time(&start_time);
 }
 
 JSON_RPCServerState::~JSON_RPCServerState() {
@@ -39,6 +40,16 @@ JSON_RPCServerState::get_rpc_function(std::string name) {
 bool
 JSON_RPCServerState::has_rpc_function(std::string name) {
   return function_map.count(name) > 0;
+}
+
+std::map<std::string, JSON_RPCFunction *>::iterator
+JSON_RPCServerState::rpc_function_begin(void) {
+  return function_map.begin();
+}
+
+std::map<std::string, JSON_RPCFunction *>::iterator
+JSON_RPCServerState::rpc_function_end(void) {
+  return function_map.end();
 }
 
 void
@@ -290,4 +301,13 @@ JSON_RPCServerState::get_session(int64_t session_id) {
     return NULL;
   else
     return tmp->second;
+}
+
+time_t
+JSON_RPCServerState::get_time_since_start()
+{
+  time_t cur_time;
+  time(&cur_time);
+
+  return (cur_time - start_time);
 }
