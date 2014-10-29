@@ -148,6 +148,7 @@ stinger_names_create_type(stinger_names_t * sn, const char * name, int64_t * out
   int64_t init_index = index;
 
   if(sn->next_type > sn->max_types)
+	*out = -1;
     return -1;
 
   while(1) {
