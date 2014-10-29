@@ -24,7 +24,7 @@ void test_stinger_names_create(test_harness_t * th, void * arg) {
 	struct create_args * args = (struct create_args *)arg;
 	char * name = args->name;
 	stinger_names_t * stinger_names = args->stinger_names;
-	int64_t out = -1;
+	int64_t out = 0;
 	int64_t status = stinger_names_create_type(stinger_names, name, &out);
 	TEST_ASSERT_EQ(status,args->expected_status);
 	TEST_ASSERT_EQ(out,args->expected_mapping);
