@@ -76,7 +76,7 @@ main (const int argc, char *argv[])
 		int64_t expected_out;
 		int64_t expected_status;
 
-		if (i <= 5) {
+		if (i < 5) {
 			expected_out = i;
 			expected_status = 1;
 		} else {
@@ -100,7 +100,7 @@ main (const int argc, char *argv[])
 	for (int i=0; i < 7; i++) {
 		int64_t expected_out;
 
-		if (i <= 5) {
+		if (i < 5) {
 			expected_out = i;
 		} else {
 			expected_out = -1;
