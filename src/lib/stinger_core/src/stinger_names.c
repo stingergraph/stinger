@@ -170,13 +170,19 @@ stinger_names_free(stinger_names_t ** sn) {
 int
 stinger_names_create_type(stinger_names_t * sn, const char * name, int64_t * out) {
   MAP_SN(sn)
-      int64_t length = strlen(name); length = length > NAME_STR_MAX ? NAME_STR_MAX : length;
+  int64_t length = strlen(name); length = length > NAME_STR_MAX ? NAME_STR_MAX : length;
   int64_t index = xor_hash(name, length) % (sn->max_types * 2);
   int64_t init_index = index;
 
   if(sn->next_type >= sn->max_types) {
-    *out = -1;
-    return -1;
+    int64_t lookup = stinger_names_lookup_type(sn, name);
+    if (lookup == -1) {
+      *out = -1;
+      return -1;
+    } else {
+      *out = lookup;
+      return 0;
+    }
   }
 
   while(1) {

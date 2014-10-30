@@ -144,7 +144,7 @@ main (const int argc, char *argv[])
   register_test(th,
       "Re-create",
       &test_stinger_names_create,
-      (void*)&(struct create_args){test_names[0],&names,-1, -1});
+      (void*)&(struct create_args){test_names[0],&names, 0, 0});
 
   // Resize the atinger_names
    struct resize_args ra = {&names, 7};
