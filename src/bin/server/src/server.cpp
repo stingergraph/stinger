@@ -23,7 +23,11 @@ extern "C" {
 #include "stinger_utils/csv.h"
 }
 
+#define LOG_AT_D
+#include "stinger_core/stinger_error.h"
+
 using namespace gt::stinger;
+
 
 static char * graph_name = NULL;
 static char * input_file = NULL;
@@ -131,7 +135,7 @@ int main(int argc, char *argv[])
   }
 
   /* print configuration to the terminal */
-  printf("\tName: %s\n", graph_name);
+  LOG_I_A("Name: %s", graph_name);
 
   /* If being a "daemon" (after a fashion), wait on the child to finish initializing and then exit. */
   if (unleash_daemon) {
@@ -149,7 +153,7 @@ int main(int argc, char *argv[])
       int exitcode;
       close (start_pipe[1]);
       read (start_pipe[0], &exitcode, sizeof (exitcode));
-      printf ("Server running.\n");
+      LOG_I ("Server running.");
       close (start_pipe[0]);
       return exitcode;
     }
@@ -164,13 +168,15 @@ int main(int argc, char *argv[])
   }
 
   /* allocate the graph */
+  tic();
   struct stinger * S = stinger_shared_new(&graph_name);
   size_t graph_sz = S->length + sizeof(struct stinger);
+  LOG_V_A("Data structure allocation time: %lf seconds", toc());
 
   /* load edges from disk (if applicable) */
   if (input_file[0] != '\0')
   {
-    printf("\tReading...");
+    LOG_V("Reading...");
     tic ();
     switch (file_type[0])
     {
@@ -212,22 +218,22 @@ int main(int argc, char *argv[])
 		} break;  /* restartable STINGER on disk */
 
       default:	{
-		  printf("Unsupported file type.\n");
+		  LOG_F("Unsupported file type.");
 		  exit(0);
 		} break;
     }
-    printf(" (done: %lf s)\n", toc ());
+    LOG_V_A("Read time: %lf seconds", toc());
   }
 
 
-  printf("Graph created. Running stats...");
+  LOG_V("Graph created. Running stats...");
   tic();
-  printf("\n\tVertices: %ld\n\tEdges: %ld\n",
-      stinger_num_active_vertices(S), stinger_total_edges(S));
+  LOG_V_A("Vertices: %ld", stinger_num_active_vertices(S));
+  LOG_V_A("Edges: %ld", stinger_total_edges(S));
 
   /* consistency check */
-  printf("\tConsistency %ld\n", (long) stinger_consistency_check(S, S->max_nv));
-  printf("\tDone. %lf seconds\n", toc());
+  LOG_V_A("Consistency %ld", (long) stinger_consistency_check(S, S->max_nv));
+  LOG_V_A("Done. %lf seconds", toc());
 
   /* initialize the singleton members */
   server_state.set_stinger(S);
@@ -261,7 +267,7 @@ int main(int argc, char *argv[])
     close (start_pipe[1]);
     while(1) { sleep(10); }
   } else {
-    printf("Press <q> to shut down the server...\n");
+    LOG_I("Press <q> to shut down the server...");
     while (getchar() != 'q');
   }
 
@@ -273,21 +279,21 @@ int main(int argc, char *argv[])
 void
 cleanup (void)
 {
-  printf("Shutting down the name server..."); fflush(stdout);
+  LOG_I("Shutting down the name server..."); fflush(stdout);
   int status;
   kill(name_pid, SIGTERM);
   waitpid(name_pid, &status, 0);
-  printf(" done.\n"); fflush(stdout);
+  LOG_I("done."); fflush(stdout);
 
-  printf("Shutting down the batch server..."); fflush(stdout);
+  LOG_I("Shutting down the batch server..."); fflush(stdout);
   kill(batch_pid, SIGTERM);
   waitpid(batch_pid, &status, 0);
-  printf(" done.\n"); fflush(stdout);
+  LOG_I("done."); fflush(stdout);
 
   struct stinger * S = server_state.get_stinger();
   size_t graph_sz = S->length + sizeof(struct stinger);
   
-  printf("\tConsistency %ld\n", (long) stinger_consistency_check(S, S->max_nv));
+  LOG_V_A("Consistency %ld", (long) stinger_consistency_check(S, S->max_nv));
 
   /* snapshot to disk */
   if (save_to_disk) {

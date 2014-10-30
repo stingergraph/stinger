@@ -64,9 +64,6 @@ vertex_string (const T& in, std::string& out)
   std::transform(out.begin(), out.end(), out.begin(), ascii_tolower);
 }
 
-#define V_A(X,...) do { fprintf(stdout, "%s %s %d:\n\t" #X "\n", __FILE__, __func__, __LINE__, __VA_ARGS__); fflush (stdout); } while (0)
-#define V(X) V_A(X,NULL)
-
 static void
 split_day_in_year (int diy, int * month, int * dom)
 {

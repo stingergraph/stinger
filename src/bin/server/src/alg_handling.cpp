@@ -27,7 +27,7 @@ get cross-platform threading and sockets code */
 #include <pthread.h> 
 
 /* Must be included last */
-#define LOG_AT_I
+#define LOG_AT_V
 #include "stinger_core/stinger_error.h"
 
 /* A note on the design of this server:
@@ -695,13 +695,14 @@ start_alg_handling(void *)
 {
   StingerServerState & server_state = StingerServerState::get_server_state();
 
-  LOG_V("Opening the socket");
+  LOG_D("Opening the socket");
   int sock_handle;
+  int port = server_state.get_port_algs();
 
   struct sockaddr_in sock_addr;
   memset(&sock_addr, 0, sizeof(sock_addr));
   sock_addr.sin_family = AF_INET;
-  sock_addr.sin_port   = htons((in_port_t)server_state.get_port_algs());
+  sock_addr.sin_port   = htons(port);
 
   if(-1 == (sock_handle = socket(AF_INET, SOCK_STREAM, 0))) {
     LOG_F_A("Socket create failed: %s", strerror(errno));
@@ -718,7 +719,7 @@ start_alg_handling(void *)
     exit(-1);
   }
 
-  LOG_V("Spawning the main loop thread");
+  LOG_V_A("Algorithm Server listening on port %d", port);
 
   pthread_t main_loop_thread;
   pthread_create(&main_loop_thread, NULL, &process_loop_handler, NULL);
@@ -733,7 +734,7 @@ start_alg_handling(void *)
   while(1) {
     struct AcceptedSock * accepted_sock = (struct AcceptedSock *)xcalloc(1,sizeof(struct AcceptedSock));
 
-    LOG_V("Waiting for connections...")
+    LOG_D("Waiting for connections...")
     accepted_sock->handle = accept(sock_handle, &(accepted_sock->addr), &(accepted_sock->len));
 
     pthread_t new_thread;

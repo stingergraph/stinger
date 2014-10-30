@@ -10,6 +10,9 @@
 #include "server.h"
 #include "stinger_net/stinger_server_state.h"
 
+#define LOG_AT_D
+#include "stinger_core/stinger_error.h"
+
 void error(const char *msg)
 {
   perror(msg);
@@ -54,7 +57,7 @@ start_udp_graph_name_server (void * args)
 
   fromlen = sizeof(struct sockaddr_in);
 
-  printf("Server listening on port %d\n", port + 1);
+  LOG_V_A("UDP Name Server listening on port %d", port);
 
   while (1) {
     n = recvfrom(sock, buf, 1024, 0, (struct sockaddr *) &from, &fromlen);
