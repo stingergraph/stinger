@@ -108,6 +108,8 @@ namespace gt {
 	int64_t max_sessions;
 	int64_t next_session_id;
 
+	time_t start_time;
+
       public:
 	static JSON_RPCServerState & get_server_state();
 
@@ -119,6 +121,12 @@ namespace gt {
 
 	bool
 	has_rpc_function(std::string name);
+
+	std::map<std::string, JSON_RPCFunction *>::iterator
+	rpc_function_begin();
+
+	std::map<std::string, JSON_RPCFunction *>::iterator
+	rpc_function_end();
 
 	void
 	add_rpc_session(std::string name, JSON_RPCSession * func);
@@ -147,7 +155,10 @@ namespace gt {
 	get_num_sessions();
 
 	JSON_RPCSession *
-	get_session(int64_t sessin_id);
+	get_session(int64_t session_id);
+
+	time_t
+	get_time_since_start();
     };
 
   }

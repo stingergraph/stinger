@@ -622,24 +622,33 @@ stinger_fragmentation (struct stinger *S, uint64_t NV, struct stinger_fragmentat
   uint64_t numSpaces = 0;
   uint64_t numBlocks = 0;
   uint64_t numEdges = 0;
+  uint64_t numEmptyBlocks = 0;
 
   MAP_STING(S);
   struct stinger_eb * ebpool_priv = ebpool->ebpool;
-  OMP ("omp parallel for reduction(+:numSpaces, numBlocks, numEdges)")
+  OMP ("omp parallel for reduction(+:numSpaces, numBlocks, numEdges, numEmptyBlocks)")
   for (uint64_t i = 0; i < NV; i++) {
     const struct stinger_eb *curBlock = ebpool_priv + stinger_vertex_edges_get(vertices, i);
 
     while (curBlock != ebpool_priv) {
       uint64_t found = 0;
-      for (uint64_t j = 0; j < curBlock->high && j < STINGER_EDGEBLOCKSIZE; j++) {
-        if (stinger_eb_is_blank (curBlock, j)) {
-          numSpaces++;
-	  found = 1;
-        }
-	else {
-	  numEdges++;
+
+      if (curBlock->numEdges == 0) {
+	numEmptyBlocks++;
+      }
+      else {
+	/* for each edge in the current block */
+	for (uint64_t j = 0; j < curBlock->high && j < STINGER_EDGEBLOCKSIZE; j++) {
+	  if (stinger_eb_is_blank (curBlock, j)) {
+	    numSpaces++;
+	    found = 1;
+	  }
+	  else {
+	    numEdges++;
+	  }
 	}
       }
+
       numBlocks += found;
       curBlock = ebpool_priv + curBlock->next;
     }
@@ -651,7 +660,8 @@ stinger_fragmentation (struct stinger *S, uint64_t NV, struct stinger_fragmentat
   stats->num_fragmented_blocks = numBlocks;
   stats->num_edges = numEdges;
   stats->edge_blocks_in_use = totalEdgeBlocks;
-
+  stats->avg_number_of_edges = (double) numEdges / (double) (totalEdgeBlocks-numEmptyBlocks);
+  stats->num_empty_blocks = numEmptyBlocks;
 
   double fillPercent = (double) numEdges / (double) (totalEdgeBlocks * STINGER_EDGEBLOCKSIZE);
   stats->fill_percent = fillPercent;
@@ -1546,6 +1556,10 @@ stinger_set_initial_edges (struct stinger *G,
               for (size_t i = 0; i < n_to_copy; ++i) {
                 if (edge[i].timeFirst < tslb)
                   tslb = edge[i].timeFirst;
+                if (edge[i].timeRecent < tslb)
+                  tslb = edge[i].timeRecent;
+                if (edge[i].timeFirst > tsub)
+                  tsub = edge[i].timeFirst;
                 if (edge[i].timeRecent > tsub)
                   tsub = edge[i].timeRecent;
               }
