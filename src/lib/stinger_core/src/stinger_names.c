@@ -39,6 +39,7 @@ xor_hash(uint8_t * byte_string, int64_t length) {
     out ^= *(byte64);
     byte64++;
   }
+
   if(length > 0) {
     uint64_t last = 0;
     uint8_t * cur = (uint8_t *)&last;
@@ -100,6 +101,11 @@ stinger_names_init(stinger_names_t * sn, int64_t max_types) {
   return;
 }
 
+void
+stinger_names_resize(stinger_names_t * old_sn, int64_t max_types) {
+
+}
+
 size_t
 stinger_names_size(int64_t max_types) {
   size_t rtn = sizeof(stinger_names_t) + 
@@ -136,12 +142,12 @@ stinger_names_free(stinger_names_t ** sn) {
 int
 stinger_names_create_type(stinger_names_t * sn, const char * name, int64_t * out) {
   MAP_SN(sn)
-  int64_t length = strlen(name); length = length > NAME_STR_MAX ? NAME_STR_MAX : length;
+      int64_t length = strlen(name); length = length > NAME_STR_MAX ? NAME_STR_MAX : length;
   int64_t index = xor_hash(name, length) % (sn->max_types * 2);
   int64_t init_index = index;
 
   if(sn->next_type >= sn->max_types) {
-	*out = -1;
+    *out = -1;
     return -1;
   }
 
@@ -149,24 +155,24 @@ stinger_names_create_type(stinger_names_t * sn, const char * name, int64_t * out
     if(0 == readff((uint64_t *)from_name + index)) {
       int64_t original = readfe((uint64_t *)from_name + index);
       if(original) {
-	if(strncmp(name,names + original, length) == 0) {
-	  writeef((uint64_t *)from_name + index, original);
-	  *out = to_int[index];
-	  return 0;
-	}
+        if(strncmp(name,names + original, length) == 0) {
+          writeef((uint64_t *)from_name + index, original);
+          *out = to_int[index];
+          return 0;
+        }
       } else {
-	int64_t place = stinger_int64_fetch_add(&(sn->next_string), length+1);
-	if(place + length >= sn->max_names) {
-	  /* abort(); */
-	  *out = INT64_MAX;
-	  return -1;
-	}
-	strncpy(names + place, name, length);
-	to_int[index] = stinger_int64_fetch_add(&(sn->next_type), 1);
-	to_name[to_int[index]] = place;
-	writeef((uint64_t *)from_name + index, (uint64_t)place);
-	*out = to_int[index];
-	return 1;
+        int64_t place = stinger_int64_fetch_add(&(sn->next_string), length+1);
+        if(place + length >= sn->max_names) {
+          /* abort(); */
+          *out = INT64_MAX;
+          return -1;
+        }
+        strncpy(names + place, name, length);
+        to_int[index] = stinger_int64_fetch_add(&(sn->next_type), 1);
+        to_name[to_int[index]] = place;
+        writeef((uint64_t *)from_name + index, (uint64_t)place);
+        *out = to_int[index];
+        return 1;
       }
       writeef((uint64_t *)&from_name + index, original);
     } else if(strncmp(name, names + readff((uint64_t *)from_name + index), length) == 0) {
