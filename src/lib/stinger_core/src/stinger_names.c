@@ -7,25 +7,25 @@
 #include <string.h>
 
 /**
-* @file stinger-names.c
-* @brief A simple hash structure to map strings to integers (permanently). Parallel safe.
-* @author Rob McColl
-*
-* This structure uses one contiguous storage space and indices within that space
-* such that it contains no pointers and makes only one contiguous allocation.
-*
-* Last modified: Fri May 24, 2013  03:42PM
-* Created: Thu May 16, 2013  09:45AM
-*/
+ * @file stinger-names.c
+ * @brief A simple hash structure to map strings to integers (permanently). Parallel safe.
+ * @author Rob McColl
+ *
+ * This structure uses one contiguous storage space and indices within that space
+ * such that it contains no pointers and makes only one contiguous allocation.
+ *
+ * Last modified: Fri May 24, 2013  03:42PM
+ * Created: Thu May 16, 2013  09:45AM
+ */
 
 /* NOTE: this is done so that the stinger_names_t is easier to map accross
   multiple memory spaces */
 
 #define MAP_SN(X) \
-  char * names = (char *)((X)->storage); \
-  int64_t * to_name = (int64_t *)((X)->storage + (X)->to_name_start); \
-  int64_t * from_name= (int64_t *)((X)->storage + (X)->from_name_start); \
-  int64_t * to_int = (int64_t *)((X)->storage + (X)->to_int_start); 
+    char * names = (char *)((X)->storage); \
+    int64_t * to_name = (int64_t *)((X)->storage + (X)->to_name_start); \
+    int64_t * from_name= (int64_t *)((X)->storage + (X)->from_name_start); \
+    int64_t * to_int = (int64_t *)((X)->storage + (X)->to_int_start);
 
 
 static uint64_t
@@ -39,6 +39,7 @@ xor_hash(uint8_t * byte_string, int64_t length) {
     out ^= *(byte64);
     byte64++;
   }
+
   if(length > 0) {
     uint64_t last = 0;
     uint8_t * cur = (uint8_t *)&last;
@@ -63,38 +64,31 @@ xor_hash(uint8_t * byte_string, int64_t length) {
 }
 
 /**
-* @brief Allocates a stinger_names_t and initialzies it.
-*
-* @param max_types The maximum number of types supported.
-*
-* @return A new stinger_names_t.
-*/
+ * @brief Allocates a stinger_names_t and initialzies it.
+ *
+ * @param max_types The maximum number of types supported.
+ *
+ * @return A new stinger_names_t.
+ */
 stinger_names_t * 
 stinger_names_new(int64_t max_types) {
   stinger_names_t * sn = xcalloc(sizeof(stinger_names_t) + 
-		(max_types * (NAME_STR_MAX+1) * sizeof(char)) +  /* strings */
-		(max_types * sizeof(int64_t) * 3) + /* from_name + to_name */
-		(max_types * sizeof(int64_t) * 2), sizeof(uint8_t)); /* to_int */
+      (max_types * (NAME_STR_MAX+1) * sizeof(char)) +  /* strings */
+      (max_types * sizeof(int64_t) * 3) + /* from_name + to_name */
+      (max_types * sizeof(int64_t) * 2), sizeof(uint8_t)); /* to_int */
 
-  sn->to_name_start = max_types * (NAME_STR_MAX+1) * sizeof(char);
-  sn->from_name_start = sn->to_name_start + max_types * sizeof(int64_t);
-  sn->to_int_start = sn->from_name_start + max_types * sizeof(int64_t) * 2;
-
-  sn->next_string = 1;
-  sn->next_type = 0;
-  sn->max_types = max_types;
-  sn->max_names = max_types * (NAME_STR_MAX+1) - 1;
+  stinger_names_init(sn, max_types);
 
   return sn;
 }
 
 void
 stinger_names_init(stinger_names_t * sn, int64_t max_types) {
-//  stinger_names_t * sn = xcalloc(sizeof(stinger_names_t) + 
-//		(max_types * (NAME_STR_MAX+1) * sizeof(char)) +  /* strings */
-//		(max_types * sizeof(int64_t) * 3) + /* from_name + to_name */
-//		(max_types * sizeof(int64_t) * 2), sizeof(uint8_t)); /* to_int */
-//
+  //  stinger_names_t * sn = xcalloc(sizeof(stinger_names_t) +
+  //		(max_types * (NAME_STR_MAX+1) * sizeof(char)) +  /* strings */
+  //		(max_types * sizeof(int64_t) * 3) + /* from_name + to_name */
+  //		(max_types * sizeof(int64_t) * 2), sizeof(uint8_t)); /* to_int */
+  //
   sn->to_name_start = max_types * (NAME_STR_MAX+1) * sizeof(char);
   sn->from_name_start = sn->to_name_start + max_types * sizeof(int64_t);
   sn->to_int_start = sn->from_name_start + max_types * sizeof(int64_t) * 2;
@@ -107,22 +101,55 @@ stinger_names_init(stinger_names_t * sn, int64_t max_types) {
   return;
 }
 
+/**
+ * @brief Resizes a stinger_names to a larger size
+ *
+ * @param double pointer to the stinger_names to resize
+ * @param max_types The maximum number of types supported.
+ */
+void
+stinger_names_resize(stinger_names_t ** sn, int64_t max_types) {
+  stinger_names_t * old_sn = *sn;
+  if (max_types < old_sn->max_types || sn == NULL) {
+    return;
+  }
+
+  stinger_names_t * new_sn = stinger_names_new(max_types);
+
+  int64_t new_mapping;
+
+  for (uint64_t i = 0; i < old_sn->max_types; i++) {
+    char * n;
+    n = stinger_names_lookup_name(old_sn,i);
+    if (n == NULL) {
+      break;
+    }
+    new_sn->next_type = stinger_names_lookup_type(old_sn,n);
+    stinger_names_create_type(new_sn,n, &new_mapping);
+  }
+
+  new_sn->next_type = old_sn->next_type;
+
+  stinger_names_free(&old_sn);
+  *sn = new_sn;
+}
+
 size_t
 stinger_names_size(int64_t max_types) {
   size_t rtn = sizeof(stinger_names_t) + 
-		(max_types * (NAME_STR_MAX+1) * sizeof(char)) +  /* strings */
-		(max_types * sizeof(int64_t) * 3) + /* from_name + to_name */
-		(max_types * sizeof(int64_t) * 2); /* to_int */
+      (max_types * (NAME_STR_MAX+1) * sizeof(char)) +  /* strings */
+      (max_types * sizeof(int64_t) * 3) + /* from_name + to_name */
+      (max_types * sizeof(int64_t) * 2); /* to_int */
   return rtn;
 }
 
 /**
-* @brief Free the stinger_names_t and set the pointer to NULL.
-*
-* @param sn A pointer to a stinger_names struct
-*
-* @return NULL
-*/
+ * @brief Free the stinger_names_t and set the pointer to NULL.
+ *
+ * @param sn A pointer to a stinger_names struct
+ *
+ * @return NULL
+ */
 stinger_names_t *
 stinger_names_free(stinger_names_t ** sn) {
   if(sn && *sn) {
@@ -133,46 +160,54 @@ stinger_names_free(stinger_names_t ** sn) {
 }
 
 /**
-* @brief Create new mapping for a name (if one did not previously exist)
-*
-* @param sn A pointer to a stinger_names struct
-* @param name The string name of the type you wish to create or lookup.
-* @param out A pointer to hold the return value of the mapping (The type on creation success or -1 on failure)
-*
-* @return 1 if the creation was successful, 0 if a mapping already exists, -1 if the mapping fails
-*/
+ * @brief Create new mapping for a name (if one did not previously exist)
+ *
+ * @param sn A pointer to a stinger_names struct
+ * @param name The string name of the type you wish to create or lookup.
+ * @param out A pointer to hold the return value of the mapping (The type on creation success or -1 on failure)
+ *
+ * @return 1 if the creation was successful, 0 if a mapping already exists, -1 if the mapping fails
+ */
 int
 stinger_names_create_type(stinger_names_t * sn, const char * name, int64_t * out) {
   MAP_SN(sn)
-  int64_t length = strlen(name); length = length > NAME_STR_MAX ? NAME_STR_MAX : length;
+      int64_t length = strlen(name); length = length > NAME_STR_MAX ? NAME_STR_MAX : length;
   int64_t index = xor_hash(name, length) % (sn->max_types * 2);
   int64_t init_index = index;
 
-  if(sn->next_type >= sn->max_types)
-    return -1;
+  if(sn->next_type >= sn->max_types) {
+    int64_t lookup = stinger_names_lookup_type(sn, name);
+    if (lookup == -1) {
+      *out = -1;
+      return -1;
+    } else {
+      *out = lookup;
+      return 0;
+    }
+  }
 
   while(1) {
     if(0 == readff((uint64_t *)from_name + index)) {
       int64_t original = readfe((uint64_t *)from_name + index);
       if(original) {
-	if(strncmp(name,names + original, length) == 0) {
-	  writeef((uint64_t *)from_name + index, original);
-	  *out = to_int[index];
-	  return 0;
-	}
+        if(strncmp(name,names + original, length) == 0) {
+          writeef((uint64_t *)from_name + index, original);
+          *out = to_int[index];
+          return 0;
+        }
       } else {
-	int64_t place = stinger_int64_fetch_add(&(sn->next_string), length+1);
-	if(place + length >= sn->max_names) {
-	  /* abort(); */
-	  *out = INT64_MAX;
-	  return -1;
-	}
-	strncpy(names + place, name, length);
-	to_int[index] = stinger_int64_fetch_add(&(sn->next_type), 1);
-	to_name[to_int[index]] = place;
-	writeef((uint64_t *)from_name + index, (uint64_t)place);
-	*out = to_int[index];
-	return 1;
+        int64_t place = stinger_int64_fetch_add(&(sn->next_string), length+1);
+        if(place + length >= sn->max_names) {
+          /* abort(); */
+          *out = INT64_MAX;
+          return -1;
+        }
+        strncpy(names + place, name, length);
+        to_int[index] = stinger_int64_fetch_add(&(sn->next_type), 1);
+        to_name[to_int[index]] = place;
+        writeef((uint64_t *)from_name + index, (uint64_t)place);
+        *out = to_int[index];
+        return 1;
       }
       writeef((uint64_t *)&from_name + index, original);
     } else if(strncmp(name, names + readff((uint64_t *)from_name + index), length) == 0) {
@@ -187,17 +222,17 @@ stinger_names_create_type(stinger_names_t * sn, const char * name, int64_t * out
 }
 
 /**
-* @brief Lookup a type mapping. 
-*
-* @param sn A pointer to a stinger_names struct
-* @param name The string name of the type you wish to lookup.
-*
-* @return The type on success or -1 if the type does not exist.
-*/
+ * @brief Lookup a type mapping.
+ *
+ * @param sn A pointer to a stinger_names struct
+ * @param name The string name of the type you wish to lookup.
+ *
+ * @return The type on success or -1 if the type does not exist.
+ */
 int64_t
 stinger_names_lookup_type(stinger_names_t * sn, const char * name) {
   MAP_SN(sn)
-  int64_t length = strlen(name); length = length > NAME_STR_MAX ? NAME_STR_MAX : length;
+      int64_t length = strlen(name); length = length > NAME_STR_MAX ? NAME_STR_MAX : length;
   int64_t index = xor_hash(name, length) % (sn->max_types * 2);
   int64_t init_index = index;
 
@@ -215,21 +250,21 @@ stinger_names_lookup_type(stinger_names_t * sn, const char * name) {
 }
 
 /**
-* @brief Lookup the corresponding string for a given type
-*
-* @param sn A pointer to a stinger_names struct
-* @param type The integral type you want to look up.
-*
-* @return Returns string if the mapping exists or NULL.
-*/
+ * @brief Lookup the corresponding string for a given type
+ *
+ * @param sn A pointer to a stinger_names struct
+ * @param type The integral type you want to look up.
+ *
+ * @return Returns string if the mapping exists or NULL.
+ */
 char *
 stinger_names_lookup_name(stinger_names_t * sn, int64_t type) {
   MAP_SN(sn)
-  if(type < sn->max_types) {
-    return names + to_name[type];
-  } else {
-    return NULL;
-  }
+      if(type < sn->max_types) {
+        return names + to_name[type];
+      } else {
+        return NULL;
+      }
 }
 
 int64_t
@@ -241,29 +276,29 @@ void
 stinger_names_print(stinger_names_t * sn) {
   MAP_SN(sn)
 
-  for(int64_t i = 0; i < sn->max_types*2; i++) {
-    printf("FROM_NAME %ld %s TO_INT %ld TO_NAME %ld\n", from_name[i], from_name[i] ? names + from_name[i] : "", to_int[i], to_int[i] ? to_name[to_int[i]] : 0);
-  }
+      for(int64_t i = 0; i < sn->max_types*2; i++) {
+        printf("FROM_NAME %ld %s TO_INT %ld TO_NAME %ld\n", from_name[i], from_name[i] ? names + from_name[i] : "", to_int[i], to_int[i] ? to_name[to_int[i]] : 0);
+      }
 }
 
 /**
-* @brief Save the strings stored in this names_t to a binary file.
-*
-* Format: [int64_t NAME_STR_MAX] [int64_t count(names)]
-*	  [int64_t len_0] [chars string_0]
-*	  [int64_t len_1] [chars string_1] 
-*	  ... [chars string_count(names)-1]
-*
-* Strings in the file are not NULL terminated.
-*
-* @param sn The names_t to be written.
-* @param fp The file to write into.
-*/
+ * @brief Save the strings stored in this names_t to a binary file.
+ *
+ * Format: [int64_t NAME_STR_MAX] [int64_t count(names)]
+ *	  [int64_t len_0] [chars string_0]
+ *	  [int64_t len_1] [chars string_1]
+ *	  ... [chars string_count(names)-1]
+ *
+ * Strings in the file are not NULL terminated.
+ *
+ * @param sn The names_t to be written.
+ * @param fp The file to write into.
+ */
 void
 stinger_names_save(stinger_names_t * sn, FILE * fp) {
   MAP_SN(sn)
 
-  int64_t max_len = NAME_STR_MAX;
+      int64_t max_len = NAME_STR_MAX;
   fwrite(&max_len, sizeof(int64_t), 1, fp);
   fwrite(&(sn->next_type), sizeof(int64_t), 1, fp);
 
@@ -275,21 +310,21 @@ stinger_names_save(stinger_names_t * sn, FILE * fp) {
 }
 
 /**
-* @brief Load strings from a binary file into a newly created names_t.
-*
-* Format follows stinger_names_save()
-*
-* @param sn The names_t to write into.
-* @param fp The file containing the data.
-*/
+ * @brief Load strings from a binary file into a newly created names_t.
+ *
+ * Format follows stinger_names_save()
+ *
+ * @param sn The names_t to write into.
+ * @param fp The file containing the data.
+ */
 void
 stinger_names_load(stinger_names_t * sn, FILE * fp) {
   int64_t max_len = NAME_STR_MAX;
   fread(&max_len, sizeof(int64_t), 1, fp);
-  
+
   if(max_len > NAME_STR_MAX) {
     LOG_W_A("Max names length in file (%ld) is greater than the library supports (%ld)."
-    " Names will be truncated\n", (long) max_len, (long) NAME_STR_MAX);
+        " Names will be truncated\n", (long) max_len, (long) NAME_STR_MAX);
   }
 
   int64_t in_file = 0;
@@ -308,7 +343,7 @@ stinger_names_load(stinger_names_t * sn, FILE * fp) {
 
     if(out != i) {
       LOG_W_A("Mapping does not match expected when loading file (%ld != %ld).  Was the names_t "
-	"not empty?", (long) i, (long) out);
+          "not empty?", (long) i, (long) out);
     }
   }
 
