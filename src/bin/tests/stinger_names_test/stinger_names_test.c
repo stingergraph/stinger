@@ -55,8 +55,6 @@ main (const int argc, char *argv[])
 
 	stinger_names_t * names = stinger_names_new(5);
 
-	stinger_names_init(names,5);
-
 	char * test_names [] = {
 			"Alpha",
 			"Beta",
