@@ -26,8 +26,9 @@ extern "C" {
 using namespace gt::stinger;
 
 static char * graph_name = NULL;
-static size_t graph_sz = 0;
-static struct stinger * S = NULL;
+static char * input_file = NULL;
+static char * file_type = NULL;
+static bool save_to_disk = false;
 
 static int start_pipe[2] = {-1, -1};
 
@@ -51,9 +52,9 @@ int main(int argc, char *argv[])
 
   graph_name = (char *) xmalloc (128*sizeof(char));
   sprintf(graph_name, "/stinger-default");
-  char * input_file = (char *) xmalloc (1024*sizeof(char));
+  input_file = (char *) xmalloc (1024*sizeof(char));
   input_file[0] = '\0';
-  char * file_type = (char *) xmalloc (128*sizeof(char));
+  file_type = (char *) xmalloc (128*sizeof(char));
   file_type[0] = '\0';
   int use_numerics = 0;
 
@@ -204,6 +205,12 @@ int main(int argc, char *argv[])
       case 'x': {
 		} break;  /* XML */
 
+      case 'r': {
+		  uint64_t nv;
+		  stinger_open_from_file(input_file, S, &nv);
+		  save_to_disk = true;
+		} break;  /* restartable STINGER on disk */
+
       default:	{
 		  printf("Unsupported file type.\n");
 		  exit(0);
@@ -277,10 +284,22 @@ cleanup (void)
   waitpid(batch_pid, &status, 0);
   printf(" done.\n"); fflush(stdout);
 
+  struct stinger * S = server_state.get_stinger();
+  size_t graph_sz = S->length + sizeof(struct stinger);
+  
+  printf("\tConsistency %ld\n", (long) stinger_consistency_check(S, S->max_nv));
+
+  /* snapshot to disk */
+  if (save_to_disk) {
+    stinger_save_to_file(S, stinger_max_active_vertex(S) + 1, input_file);
+  }
+
   /* clean up */
   stinger_shared_free(S, graph_name, graph_sz);
   shmunlink(graph_name);
   free(graph_name);
+  free(input_file);
+  free(file_type);
 
   /* clean up algorithm data stores */
   for (size_t i = 0; i < server_state.get_num_algs(); i++) {
