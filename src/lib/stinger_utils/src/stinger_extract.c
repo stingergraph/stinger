@@ -96,7 +96,7 @@ stinger_extract_mod (/*const*/ struct stinger *S,
   int64_t * restrict mark = mark_out;
 
   const int64_t label_to_match = (label && nsrc? label[srclist[0]] : -1);
-  const int64_t totvol = S->cur_ne / 2; /* assuming undirected */
+  const int64_t totvol = stinger_total_edges(S) / 2; /* assuming undirected */
 
   int64_t nset, frontier_end;
   double setvol = 0.0;

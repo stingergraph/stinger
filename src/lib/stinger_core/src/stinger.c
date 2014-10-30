@@ -969,7 +969,6 @@ update_edge_data (struct stinger * S, struct stinger_eb *eb,
       /* register new edge */
       stinger_outdegree_increment_atomic(S, eb->vertexID, 1);
       stinger_indegree_increment_atomic(S, neighbor, 1);
-      stinger_int64_fetch_add (&S->cur_ne, 1);
 
       if (index >= eb->high)
 	eb->high = index + 1;
@@ -994,7 +993,6 @@ update_edge_data (struct stinger * S, struct stinger_eb *eb,
     stinger_outdegree_increment_atomic(S, eb->vertexID, -1);
     stinger_indegree_increment_atomic(S, e->neighbor, -1);
     stinger_int64_fetch_add (&(eb->numEdges), -1);
-    stinger_int64_fetch_add (&S->cur_ne, -1);
     e->neighbor = neighbor;
   } 
 
@@ -1422,8 +1420,6 @@ stinger_set_initial_edges (struct stinger *G,
 
   assert (G);
   MAP_STING(G);
-
-  G->cur_ne = off[nv];
 
   blkoff = xcalloc (nv + 1, sizeof (*blkoff));
   OMP ("omp parallel for")
@@ -2049,7 +2045,6 @@ stinger_remove_all_edges_of_type (struct stinger *G, int64_t type)
     current_eb->smallStamp = INT64_MAX;
     current_eb->largeStamp = INT64_MIN;
   }
-  stinger_int64_fetch_add (&G->cur_ne, -ne_removed);
 }
 
 const int64_t endian_check = 0x1234ABCD;

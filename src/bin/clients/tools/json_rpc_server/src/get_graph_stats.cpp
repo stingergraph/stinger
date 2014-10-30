@@ -59,7 +59,7 @@ JSON_RPC_get_graph_stats::operator()(rapidjson::Value * params, rapidjson::Value
 
   int64_t num_vertices = stinger_mapping_nv(S);
   nv.SetInt64(num_vertices);
-  int64_t num_edges = S->cur_ne; //stinger_edges_up_to(S, num_vertices);
+  int64_t num_edges = stinger_total_edges(S);
   ne.SetInt64(num_edges);
   
   max_time_seen.SetInt64(server_state->get_max_time());
