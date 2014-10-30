@@ -18,8 +18,6 @@ extern "C" {
 #define STINGER_DEFAULT_VERTICES @STINGER_DEFAULT_VERTICES@
 /** Default maximum number of edge types in allocated STINGER */
 #define STINGER_DEFAULT_NUMETYPES @STINGER_DEFAULT_NUMETYPES@
-/** Default maximum number of edge types in allocated STINGER */
-#define STINGER_DEFAULT_NUMEETYPES @STINGER_DEFAULT_NUMEETYPES@
 /** Default maximum number of vertex types with names - integer types can be
  *  INT64_MIN to INT64_MAX */
 #define STINGER_DEFAULT_NUMVTYPES @STINGER_DEFAULT_NUMVTYPES@

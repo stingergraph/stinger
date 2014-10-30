@@ -10,7 +10,6 @@ extern "C" {
   stinger_vertices_t * vertices = (stinger_vertices_t *)((X)->storage); \
   stinger_physmap_t * physmap = (stinger_physmap_t *)((X)->storage + (X)->physmap_start); \
   stinger_names_t * etype_names = (stinger_names_t *)((X)->storage + (X)->etype_names_start); \
-  stinger_names_t * eetype_names = (stinger_names_t *)((X)->storage + (X)->eetype_names_start); \
   stinger_names_t * vtype_names = (stinger_names_t *)((X)->storage + (X)->vtype_names_start); \
   uint8_t * _ETA = ((X)->storage + (X)->ETA_start); \
   struct stinger_ebpool * ebpool = (struct stinger_ebpool *)((X)->storage + (X)->ebpool_start);
@@ -19,7 +18,6 @@ extern "C" {
   const stinger_vertices_t * vertices = (const stinger_vertices_t *)((X)->storage); \
   const stinger_physmap_t * physmap = (const stinger_physmap_t *)((X)->storage + (X)->physmap_start); \
   const stinger_names_t * etype_names = (const stinger_names_t *)((X)->storage + (X)->etype_names_start); \
-  const stinger_names_t * eetype_names = (const stinger_names_t *)((X)->storage + (X)->eetype_names_start); \
   const stinger_names_t * vtype_names = (const stinger_names_t *)((X)->storage + (X)->vtype_names_start); \
   const uint8_t * _ETA = ((X)->storage + (X)->ETA_start); \
   const struct stinger_ebpool * ebpool = (const struct stinger_ebpool *)((X)->storage + (X)->ebpool_start);
@@ -121,7 +119,6 @@ struct stinger
   uint64_t max_nv;
   uint64_t max_neblocks;
   uint64_t max_netypes;
-  uint64_t max_neetypes;
   uint64_t max_nvtypes;
 
   /* uint64_t cur_max_nv; Someday... */
@@ -130,7 +127,6 @@ struct stinger
   uint64_t vertices_start;
   uint64_t physmap_start;
   uint64_t etype_names_start;
-  uint64_t eetype_names_start;
   uint64_t vtype_names_start;
   uint64_t ETA_start;
   uint64_t ebpool_start;

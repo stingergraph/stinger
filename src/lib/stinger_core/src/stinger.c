@@ -41,12 +41,6 @@ stinger_etype_names_get(const stinger_t * S) {
   return etype_names;
 }
 
-inline stinger_names_t *
-stinger_eetype_names_get(const stinger_t * S) {
-  MAP_STING(S);
-  return eetype_names;
-}
-
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
  * EXTERNAL INTERFACE FOR VERTICES
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
@@ -217,30 +211,6 @@ stinger_etype_names_lookup_name(const stinger_t * S, int64_t type) {
 int64_t
 stinger_etype_names_count(const stinger_t * S) {
   return stinger_names_count(stinger_etype_names_get(S));
-}
-
-/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
- * EXTERNAL INTERFACE FOR EETYPE NAMES
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
-
-int
-stinger_eetype_names_create_type(stinger_t * S, const char * name, int64_t * out) {
-  return stinger_names_create_type(stinger_eetype_names_get(S), name, out);
-}
-
-int64_t
-stinger_eetype_names_lookup_type(const stinger_t * S, const char * name) {
-  return stinger_names_lookup_type(stinger_eetype_names_get(S), name);
-}
-
-char *
-stinger_eetype_names_lookup_name(const stinger_t * S, int64_t type) {
-  return stinger_names_lookup_name(stinger_eetype_names_get(S), type);
-}
-
-int64_t
-stinger_eetype_names_count(const stinger_t * S) {
-  return stinger_names_count(stinger_eetype_names_get(S));
 }
 
 
@@ -696,12 +666,11 @@ stinger_etype_array_size(int64_t nebs)
  *  @return Pointer to struct stinger
  */
 MTA ("mta inline")
-struct stinger *stinger_new_full (int64_t nv, int64_t nebs, int64_t netypes, int64_t neetypes, int64_t nvtypes)
+struct stinger *stinger_new_full (int64_t nv, int64_t nebs, int64_t netypes, int64_t nvtypes)
 {
   nv      = nv      ? nv      : STINGER_DEFAULT_VERTICES;
   nebs    = nebs    ? nebs    : STINGER_DEFAULT_NEB_FACTOR * nv;
   netypes = netypes ? netypes : STINGER_DEFAULT_NUMETYPES;
-  neetypes = neetypes ? neetypes : STINGER_DEFAULT_NUMEETYPES;
   nvtypes = nvtypes ? nvtypes : STINGER_DEFAULT_NUMVTYPES;
 
   const size_t memory_size = stinger_max_memsize ();
@@ -712,7 +681,7 @@ struct stinger *stinger_new_full (int64_t nv, int64_t nebs, int64_t netypes, int
   int resized   = 0;
 
   size_t vertices_start, physmap_start, ebpool_start, 
-	 etype_names_start, eetype_names_start, vtype_names_start, ETA_start;
+	 etype_names_start, vtype_names_start, ETA_start;
 
   do {
     size_t tmp;
@@ -743,10 +712,6 @@ struct stinger *stinger_new_full (int64_t nv, int64_t nebs, int64_t netypes, int
     sz += (tmp = stinger_names_size(netypes));
     /* fprintf (stderr, " ... etypes %ld\n", (long)tmp); */
 
-    eetype_names_start = sz;
-	sz += (tmp = stinger_names_size(neetypes));
-	/* fprintf (stderr, " ... eetypes %ld\n", (long)tmp); */
-
     vtype_names_start = sz;
     sz += (tmp = stinger_names_size(nvtypes));
     /* fprintf (stderr, " ... vtypes %ld\n", (long)tmp); */
@@ -766,14 +731,12 @@ struct stinger *stinger_new_full (int64_t nv, int64_t nebs, int64_t netypes, int
   G->max_nv       = nv;
   G->max_neblocks = nebs;
   G->max_netypes  = netypes;
-  G->max_neetypes  = neetypes;
   G->max_nvtypes  = nvtypes;
 
   G->length = length;
   G->vertices_start = vertices_start;
   G->physmap_start = physmap_start;
   G->etype_names_start = etype_names_start;
-  G->eetype_names_start = eetype_names_start;
   G->vtype_names_start = vtype_names_start;
   G->ETA_start = ETA_start;
   G->ebpool_start = ebpool_start;
@@ -785,8 +748,6 @@ struct stinger *stinger_new_full (int64_t nv, int64_t nebs, int64_t netypes, int
   stinger_physmap_init(physmap, nv);
   stinger_names_init(etype_names, netypes);
   stinger_names_create_type(etype_names, "None", &zero);
-  stinger_names_init(eetype_names, neetypes);
-  stinger_names_create_type(eetype_names, "None", &zero);
   stinger_names_init(vtype_names, nvtypes);
   stinger_names_create_type(vtype_names, "None", &zero);
 
@@ -816,7 +777,7 @@ struct stinger *stinger_new_full (int64_t nv, int64_t nebs, int64_t netypes, int
 MTA ("mta inline")
 struct stinger *stinger_new (void)
 {
-  return stinger_new_full(0,0,0,0,0);;
+  return stinger_new_full(0,0,0,0);;
 }
 
 /** @brief Free memory allocated to a particular STINGER instance.
