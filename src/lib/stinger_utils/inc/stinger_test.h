@@ -20,48 +20,48 @@ extern "C" {
 struct test_st;
 
 typedef struct test_harness_st {
-	int64_t num_tests;
-	struct test_st * tests;
-	int64_t current_test;
-	int64_t next_test;
+  int64_t num_tests;
+  struct test_st * tests;
+  int64_t current_test;
+  int64_t next_test;
 } test_harness_t;
 
 typedef void testfunc_t(test_harness_t* th, void *);
 
 typedef struct test_st {
-	char * desc;
-	size_t passed_test;
-	size_t test_ran;
-	testfunc_t * func;
-	void * func_arg;
+  char * desc;
+  size_t passed_test;
+  size_t test_ran;
+  testfunc_t * func;
+  void * func_arg;
 } test_t;
 
 #define TEST_ASSERT_EQ(arg1, arg2) \
-	do { \
-		if (arg1 == arg2) { \
-			th->tests[th->current_test].passed_test &= 1; \
-		} else { \
-			th->tests[th->current_test].passed_test &= 0; \
-		} \
-	} while (0);
+    do { \
+      if (arg1 == arg2) { \
+        th->tests[th->current_test].passed_test &= 1; \
+      } else { \
+        th->tests[th->current_test].passed_test &= 0; \
+      } \
+    } while (0);
 
 #define TEST_ASSERT_NEQ(arg1, arg2) \
-  do { \
-    if (arg1 != arg2) { \
-      th->tests[th->current_test].passed_test &= 1; \
-    } else { \
-      th->tests[th->current_test].passed_test &= 0; \
-    } \
-  } while (0);
+    do { \
+      if (arg1 != arg2) { \
+        th->tests[th->current_test].passed_test &= 1; \
+      } else { \
+        th->tests[th->current_test].passed_test &= 0; \
+      } \
+    } while (0);
 
 #define TEST_ASSERT_STRCMP(arg1, arg2) \
-	do { \
-		if (!strcmp(arg1,arg2)) { \
-			th->tests[th->current_test].passed_test &= 1; \
-		} else { \
-			th->tests[th->current_test].passed_test &= 0; \
-		} \
-	} while (0);
+    do { \
+      if (!strcmp(arg1,arg2)) { \
+        th->tests[th->current_test].passed_test &= 1; \
+      } else { \
+        th->tests[th->current_test].passed_test &= 0; \
+      } \
+    } while (0);
 
 #define FAILED_TEST (th->tests[th->current_test].passed_test == 0)
 
