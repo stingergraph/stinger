@@ -164,8 +164,9 @@ stinger_names_free(stinger_names_t ** sn) {
 *
 * @param sn A pointer to a stinger_names struct
 * @param name The string name of the type you wish to create or lookup.
+* @param out The type
 *
-* @return The type on success or -1 on failure.
+* @return 1 if creation successful, 0 if type exists already, -1 on failure.
 */
 int
 stinger_names_create_type(stinger_names_t * sn, const char * name, int64_t * out) {
