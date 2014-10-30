@@ -45,6 +45,15 @@ typedef struct test_st {
 		} \
 	} while (0);
 
+#define TEST_ASSERT_NEQ(arg1, arg2) \
+  do { \
+    if (arg1 != arg2) { \
+      th->tests[th->current_test].passed_test &= 1; \
+    } else { \
+      th->tests[th->current_test].passed_test &= 0; \
+    } \
+  } while (0);
+
 #define TEST_ASSERT_STRCMP(arg1, arg2) \
 	do { \
 		if (!strcmp(arg1,arg2)) { \

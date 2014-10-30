@@ -101,9 +101,37 @@ stinger_names_init(stinger_names_t * sn, int64_t max_types) {
   return;
 }
 
-void
-stinger_names_resize(stinger_names_t * old_sn, int64_t max_types) {
+/**
+* @brief Resizes a stinger_names to a larger size
+*
+* @param max_types The maximum number of types supported.
+*
+* @return A new stinger_names_t. (The old stinger_names is de-allocated
+*/
+stinger_names_t *
+stinger_names_resize(stinger_names_t * sn, int64_t max_types) {
+  if (max_types < sn->max_types || sn == NULL) {
+    return;
+  }
 
+  stinger_names_t * new_sn = stinger_names_new(max_types);
+
+  int64_t new_mapping;
+
+  for (uint64_t i = 0; i < sn->max_types; i++) {
+    char * n;
+    n = stinger_names_lookup_name(sn,i);
+    if (n == NULL) {
+      break;
+    }
+    new_sn->next_type = stinger_names_lookup_type(sn,n);
+    stinger_names_create_type(new_sn,n, &new_mapping);
+  }
+
+  new_sn->next_type = sn->next_type;
+
+  stinger_names_free(&sn);
+  return new_sn;
 }
 
 size_t
