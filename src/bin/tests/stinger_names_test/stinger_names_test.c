@@ -42,10 +42,9 @@ void test_stinger_names_create(test_harness_t * th, void * arg) {
 
 void test_stinger_names_resize(test_harness_t * th, void * arg) {
   struct resize_args * args = (struct resize_args *)arg;
-  stinger_names_t * stinger_names = *args->stinger_names_p;
   int64_t new_size = args->new_size;
-  stinger_names = stinger_names_resize(stinger_names, new_size);
-  *args->stinger_names_p = stinger_names;
+  stinger_names_resize(args->stinger_names_p, new_size);
+  stinger_names_t * stinger_names = *(args->stinger_names_p);
   TEST_ASSERT_NEQ(stinger_names,NULL);
   if (FAILED_TEST) {
     fprintf(stderr,"Failed to resize the stinger_names\n");
