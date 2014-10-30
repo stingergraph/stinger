@@ -1517,6 +1517,10 @@ stinger_set_initial_edges (struct stinger *G,
               for (size_t i = 0; i < n_to_copy; ++i) {
                 if (edge[i].timeFirst < tslb)
                   tslb = edge[i].timeFirst;
+                if (edge[i].timeRecent < tslb)
+                  tslb = edge[i].timeRecent;
+                if (edge[i].timeFirst > tsub)
+                  tsub = edge[i].timeFirst;
                 if (edge[i].timeRecent > tsub)
                   tsub = edge[i].timeRecent;
               }
