@@ -287,12 +287,15 @@ void *
 process_loop_handler(void * data)
 {
   LOG_V("Main loop thread started");
+  double batch_time;
+  double update_time;
 
   StingerServerState & server_state = StingerServerState::get_server_state();
 
   while(1) { /* TODO clean shutdown mechanism */
     StingerBatch * batch = server_state.dequeue_batch();
 
+    batch_time = timer();
     /* loop through each algorithm, blocking init as needed, send start preprocessing message */
     size_t stop_alg_level = server_state.get_num_levels();
     for(size_t cur_level_index = 0; cur_level_index < stop_alg_level; cur_level_index++) {
@@ -485,12 +488,12 @@ process_loop_handler(void * data)
     }
 
     /* update stinger */
-    tic();
+    update_time = timer();
     process_batch(server_state.get_stinger(), *batch);
-    double time = toc();
+    update_time = timer() - update_time;
     int64_t edge_count = batch->insertions_size() + batch->deletions_size();
-    LOG_I_A("Server processed %ld edges in %20.15e seconds", edge_count, time);
-    LOG_I_A("%f edges per second", ((double) edge_count) / time);
+    LOG_I_A("Server processed %ld edges in %20.15e seconds", edge_count, update_time);
+    LOG_I_A("%f edges per second", ((double) edge_count) / update_time);
 
     /* loop through each algorithm, send start postprocessing message */
     stop_alg_level = server_state.get_num_levels();
@@ -683,10 +686,12 @@ process_loop_handler(void * data)
 	}
       }
     }
-
     server_state.write_data();
 
     delete batch;
+    
+    batch_time = timer() - batch_time;
+    LOG_I_A("Algorithm handling loop took %20.15e seconds", batch_time);
   }
 }
 
