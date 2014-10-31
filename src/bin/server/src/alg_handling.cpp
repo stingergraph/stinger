@@ -27,7 +27,7 @@ get cross-platform threading and sockets code */
 #include <pthread.h> 
 
 /* Must be included last */
-#define LOG_AT_V
+#define LOG_AT_I
 #include "stinger_core/stinger_error.h"
 
 /* A note on the design of this server:
