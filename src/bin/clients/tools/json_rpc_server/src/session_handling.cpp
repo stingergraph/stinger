@@ -787,7 +787,7 @@ JSON_RPC_get_latlon_gnip::onRequest(
     lat.SetDouble((*it)._lat);
     lon.SetDouble((*it)._lon);
     sentiment.SetDouble((*it)._sentiment);
-    categories.SetString((*it)._categories.c_str(), (*it)._categories.length());
+    categories.SetString((*it)._categories.c_str(), (*it)._categories.length(), allocator);
     pair.SetObject();
     pair.AddMember("lat", lat, allocator);
     pair.AddMember("lon", lon, allocator);
@@ -921,7 +921,7 @@ JSON_RPC_get_latlon_twitter::onRequest(
     lat.SetDouble((*it)._lat);
     lon.SetDouble((*it)._lon);
     sentiment.SetDouble((*it)._sentiment);
-    categories.SetString((*it)._categories.c_str(), (*it)._categories.length());
+    categories.SetString((*it)._categories.c_str(), (*it)._categories.length(), allocator);
     pair.SetObject();
     pair.AddMember("ref", ref, allocator);
     pair.AddMember("lat", lat, allocator);

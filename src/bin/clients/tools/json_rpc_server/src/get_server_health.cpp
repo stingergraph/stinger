@@ -46,7 +46,7 @@ JSON_RPC_get_server_health::operator()(rapidjson::Value * params, rapidjson::Val
   char buf[256];
   gethostname(buf, 127);
   rapidjson::Value hostname;
-  hostname.SetString(buf, strlen(buf));
+  hostname.SetString(buf, strlen(buf), allocator);
   result.AddMember("host", hostname, allocator);
 
   /* Process ID */
@@ -235,7 +235,7 @@ get_rpc_methods (rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapid
 
   JSON_RPCServerState & server_state = JSON_RPCServerState::get_server_state();
   for (it = server_state.rpc_function_begin(); it != server_state.rpc_function_end(); ++it) {
-    method_name.SetString(it->first.c_str(), strlen(it->first.c_str()));
+    method_name.SetString(it->first.c_str(), strlen(it->first.c_str()), allocator);
     methods.PushBack(method_name, allocator);
   }
 
