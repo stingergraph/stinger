@@ -377,7 +377,7 @@ array_to_json_monolithic_stinger   (json_rpc_array_meth_t method, stinger_t * S,
 	  vtx = i;
 	if (method == SET)
 	  vtx = set[(int64_t)i];
-	value.SetString(stinger_vtype_names_lookup_name(S,stinger_vtype_get(S, vtx)));
+	value.SetString(stinger_vtype_names_lookup_name(S,stinger_vtype_get(S, vtx)), allocator);
 	vtx_val.PushBack(value, allocator);
 	
 	name.SetInt64(vtx);
