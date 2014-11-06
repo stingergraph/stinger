@@ -24,8 +24,9 @@ page_rank(stinger_t * S, int64_t NV, double * pr, double * tmp_pr_in, double eps
       tmp_pr[v] = 0;
 
       STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, v) {
-	tmp_pr[v] += (((double)pr[STINGER_EDGE_DEST]) / 
-	  ((double) stinger_outdegree(S, STINGER_EDGE_DEST)));
+        int64_t outdegree = stinger_outdegree(S, STINGER_EDGE_DEST);
+        tmp_pr[v] += (((double)pr[STINGER_EDGE_DEST]) / 
+          (double)((outdegree)?outdegree:NV-1));
       } STINGER_FORALL_EDGES_OF_VTX_END();
     }
 

@@ -56,7 +56,7 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
   rapidjson::Value src_str, dst_str, etype, vtype, vtx_name;
 
   /* vertex has no edges -- this is easy */
-  if (stinger_outdegree (S, source) == 0 || stinger_outdegree (S, target) == 0) {
+  if (stinger_outdegree (S, source) == 0 || stinger_indegree (S, target) == 0) {
     result.AddMember("subgraph", a, allocator);
     return 0;
   }
