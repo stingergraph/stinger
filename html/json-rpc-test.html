@@ -178,7 +178,7 @@ dataType: "json",
 success: function(data) {whatever = data; $(".health").append("<p>" + JSON.stringify(data) + "</p>"); }
 });
 
-data = {"jsonrpc": "2.0", "method": "egonet", "params": {"source": "1", strings: true}, "id": 15};
+data = {"jsonrpc": "2.0", "method": "egonet", "params": {"source": "1", strings: true, incident_edges: true}, "id": 15};
 jQuery.ajax({
 url: "http://localhost:8088/jsonrpc",
 type: "POST",
