@@ -1,6 +1,3 @@
-#include <queue>
-#include <set>
-
 //#define LOG_AT_W  /* warning only */
 #include "stinger_core/stinger_error.h"
 
