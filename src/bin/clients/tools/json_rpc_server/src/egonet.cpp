@@ -47,18 +47,34 @@ JSON_RPC_egonet::operator()(rapidjson::Value * params, rapidjson::Value & result
     return json_rpc_error(-32603, result, allocator);
   }
 
+  /* array to hold a single edge */
+  rapidjson::Value val(rapidjson::kArrayType);
+
+  /* array to hold all edges (virtually addressed) */
   rapidjson::Value edges(rapidjson::kArrayType);
+
+  /* array to hold all edges (physically addressed) */
   rapidjson::Value edges_str(rapidjson::kArrayType);
+
+  /* array to hold all vertices (virtually addressed) */
   rapidjson::Value vtx(rapidjson::kArrayType);
+
+  /* array to hold all vertices (physically addressed) */
   rapidjson::Value vtx_str(rapidjson::kArrayType);
+
+  /* values to hold vertex information */
+  rapidjson::Value vtype, vtype_str;
   rapidjson::Value center, center_str;
   rapidjson::Value src, dst;
   rapidjson::Value src_str, dst_str;
-  rapidjson::Value val(rapidjson::kArrayType);
-  
-  rapidjson::Value vtypes(rapidjson::kObjectType);
-  rapidjson::Value vtypes_str(rapidjson::kObjectType);
-  rapidjson::Value etype, vtype;
+  rapidjson::Value etype, etype_str;
+
+  /* array to hold vertex types */
+  rapidjson::Value vtypes(rapidjson::kArrayType);
+
+  /* array to hold vertex type strings */
+  rapidjson::Value vtypes_str(rapidjson::kArrayType);
+
 
   /* vertex has no edges -- this is easy */
   if (stinger_outdegree (S, source) == 0) {
@@ -89,6 +105,20 @@ JSON_RPC_egonet::operator()(rapidjson::Value * params, rapidjson::Value & result
       center_str.SetString(physID, len, allocator);
       vtx_str.PushBack(center_str, allocator);
     }
+
+    if (get_vtypes) {
+      int64_t source_type = stinger_vtype_get(S, source);
+      vtype.SetInt64(source_type);
+      vtypes.PushBack(vtype, allocator);
+
+      if (strings) {
+	char * name = NULL;
+	uint64_t len = 0;
+	char * vtype_name = stinger_vtype_names_lookup_name(S, source_type);
+	vtype_str.SetString(vtype_name, strlen(vtype_name), allocator);
+	vtypes_str.PushBack(vtype_str, allocator);
+      }
+    }
   }
 
   /* mark all neighbors of the source vertex */
@@ -115,6 +145,10 @@ JSON_RPC_egonet::operator()(rapidjson::Value * params, rapidjson::Value & result
       val.SetArray();
       val.PushBack(src, allocator);
       val.PushBack(dst, allocator);
+      if (get_etypes) {
+	etype.SetInt64(STINGER_EDGE_TYPE);
+	val.PushBack(etype, allocator);
+      }
       edges.PushBack(val, allocator);
 
       if (strings) {
@@ -135,7 +169,26 @@ JSON_RPC_egonet::operator()(rapidjson::Value * params, rapidjson::Value & result
 	val.SetArray();
 	val.PushBack(src_str, allocator);
 	val.PushBack(dst_str, allocator);
+	if (get_etypes) {
+	  char * etype_str_ptr = stinger_etype_names_lookup_name(S, STINGER_EDGE_TYPE);
+	  etype_str.SetString(etype_str_ptr, strlen(etype_str_ptr), allocator);
+	  val.PushBack(etype_str, allocator);
+	}
 	edges_str.PushBack(val, allocator);
+      }
+    }
+    
+    if (get_vtypes) {
+      int64_t source_type = stinger_vtype_get(S, u);
+      vtype.SetInt64(source_type);
+      vtypes.PushBack(vtype, allocator);
+
+      if (strings) {
+	char * name = NULL;
+	uint64_t len = 0;
+	char * vtype_name = stinger_vtype_names_lookup_name(S, source_type);
+	vtype_str.SetString(vtype_name, strlen(vtype_name), allocator);
+	vtypes_str.PushBack(vtype_str, allocator);
       }
     }
 
@@ -154,6 +207,10 @@ JSON_RPC_egonet::operator()(rapidjson::Value * params, rapidjson::Value & result
 	val.SetArray();
 	val.PushBack(src, allocator);
 	val.PushBack(dst, allocator);
+	if (get_etypes) {
+	  etype.SetInt64(STINGER_EDGE_TYPE);
+	  val.PushBack(etype, allocator);
+	}
 	edges.PushBack(val, allocator);
 	
 	if (strings) {
@@ -173,6 +230,11 @@ JSON_RPC_egonet::operator()(rapidjson::Value * params, rapidjson::Value & result
 	  val.SetArray();
 	  val.PushBack(src_str, allocator);
 	  val.PushBack(dst_str, allocator);
+	  if (get_etypes) {
+	    char * etype_str_ptr = stinger_etype_names_lookup_name(S, STINGER_EDGE_TYPE);
+	    etype_str.SetString(etype_str_ptr, strlen(etype_str_ptr), allocator);
+	    val.PushBack(etype_str, allocator);
+	  }
 	  edges_str.PushBack(val, allocator);
 	}
       }
@@ -185,18 +247,19 @@ JSON_RPC_egonet::operator()(rapidjson::Value * params, rapidjson::Value & result
   if (strings) {
     result.AddMember("vertices_str", vtx_str, allocator);
   }
-
-  result.AddMember("subgraph", edges, allocator);
-  if (strings) {
-    result.AddMember("subgraph_str", edges_str, allocator);
-  }
-
+  
   if (get_vtypes) {
     result.AddMember("vtypes", vtypes, allocator);
     if (strings) {
       result.AddMember("vtypes_str", vtypes_str, allocator);
     }
   }
+
+  result.AddMember("egonet", edges, allocator);
+  if (strings) {
+    result.AddMember("egonet_str", edges_str, allocator);
+  }
+
 
   free(marks);
 
