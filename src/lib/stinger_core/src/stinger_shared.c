@@ -260,8 +260,6 @@ stinger_shared_new_full (char ** out, int64_t nv, int64_t nebs, int64_t netypes,
     ETA(G,i)->high = 0;
   }
 
-  printf("Shared: %s\n", *out);
-
   return G;
 }
 

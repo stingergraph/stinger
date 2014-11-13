@@ -291,12 +291,15 @@ void *
 process_loop_handler(void * data)
 {
   LOG_V("Main loop thread started");
+  double batch_time;
+  double update_time;
 
   StingerServerState & server_state = StingerServerState::get_server_state();
 
   while(1) { /* TODO clean shutdown mechanism */
     StingerBatch * batch = server_state.dequeue_batch();
 
+    batch_time = timer();
     /* loop through each algorithm, blocking init as needed, send start preprocessing message */
     size_t stop_alg_level = server_state.get_num_levels();
     for(size_t cur_level_index = 0; cur_level_index < stop_alg_level; cur_level_index++) {
@@ -489,12 +492,12 @@ process_loop_handler(void * data)
     }
 
     /* update stinger */
-    tic();
+    update_time = timer();
     process_batch(server_state.get_stinger(), *batch);
-    double time = toc();
+    update_time = timer() - update_time;
     int64_t edge_count = batch->insertions_size() + batch->deletions_size();
-    LOG_I_A("Server processed %ld edges in %20.15e seconds", edge_count, time);
-    LOG_I_A("%f edges per second", ((double) edge_count) / time);
+    LOG_I_A("Server processed %ld edges in %20.15e seconds", edge_count, update_time);
+    LOG_I_A("%f edges per second", ((double) edge_count) / update_time);
 
     /* loop through each algorithm, send start postprocessing message */
     stop_alg_level = server_state.get_num_levels();
@@ -687,10 +690,12 @@ process_loop_handler(void * data)
 	}
       }
     }
-
     server_state.write_data();
 
     delete batch;
+    
+    batch_time = timer() - batch_time;
+    LOG_I_A("Algorithm handling loop took %20.15e seconds", batch_time);
   }
 }
 
@@ -699,13 +704,14 @@ start_alg_handling(void *)
 {
   StingerServerState & server_state = StingerServerState::get_server_state();
 
-  LOG_V("Opening the socket");
+  LOG_D("Opening the socket");
   int sock_handle;
+  int port = server_state.get_port_algs();
 
   struct sockaddr_in sock_addr;
   memset(&sock_addr, 0, sizeof(sock_addr));
   sock_addr.sin_family = AF_INET;
-  sock_addr.sin_port   = htons((in_port_t)server_state.get_port_algs());
+  sock_addr.sin_port   = htons(port);
 
   if(-1 == (sock_handle = socket(AF_INET, SOCK_STREAM, 0))) {
     LOG_F_A("Socket create failed: %s", strerror(errno));
@@ -722,7 +728,7 @@ start_alg_handling(void *)
     exit(-1);
   }
 
-  LOG_V("Spawning the main loop thread");
+  LOG_V_A("Algorithm Server listening on port %d", port);
 
   pthread_t main_loop_thread;
   pthread_create(&main_loop_thread, NULL, &process_loop_handler, NULL);
@@ -737,7 +743,7 @@ start_alg_handling(void *)
   while(1) {
     struct AcceptedSock * accepted_sock = (struct AcceptedSock *)xcalloc(1,sizeof(struct AcceptedSock));
 
-    LOG_V("Waiting for connections...")
+    LOG_D("Waiting for connections...")
     accepted_sock->handle = accept(sock_handle, &(accepted_sock->addr), &(accepted_sock->len));
 
     pthread_t new_thread;

@@ -1408,137 +1408,144 @@ stinger_set_initial_edges (struct stinger *G,
                            const int64_t single_ts
                            /* if !ts or !first_ts */ )
 {
-  const int64_t *restrict off = off_in;
-  const int64_t *restrict phys_adj = phys_adj_in;
-  const int64_t *restrict weight = weight_in;
-  const int64_t *restrict ts = ts_in;
-  const int64_t *restrict first_ts = first_ts_in;
+  const int64_t * restrict off = off_in;
+  const int64_t * restrict phys_adj = phys_adj_in;
+  const int64_t * restrict weight = weight_in;
+  const int64_t * restrict ts = ts_in;
+  const int64_t * restrict first_ts = first_ts_in;
 
   size_t nblk_total = 0;
-  size_t *restrict blkoff;
-  eb_index_t *restrict block;
+  size_t * restrict blkoff;
+  eb_index_t * restrict block;
 
   assert (G);
   MAP_STING(G);
 
   blkoff = xcalloc (nv + 1, sizeof (*blkoff));
   OMP ("omp parallel for")
-    for (int64_t v = 0; v < nv; ++v) {
-      const int64_t deg = off[v + 1] - off[v];
-      blkoff[v + 1] = (deg + STINGER_EDGEBLOCKSIZE - 1) / STINGER_EDGEBLOCKSIZE;
-    }
+  for (int64_t v = 0; v < nv; ++v) {
+    const int64_t deg = off[v + 1] - off[v];
+    blkoff[v + 1] = (deg + STINGER_EDGEBLOCKSIZE - 1) / STINGER_EDGEBLOCKSIZE;
+  }
 
-  for (int64_t v = 2; v <= nv; ++v)
+  for (int64_t v = 2; v <= nv; ++v) {
     blkoff[v] += blkoff[v - 1];
+  }
   nblk_total = blkoff[nv];
 
   block = xcalloc (nblk_total, sizeof (*block));
   OMP ("omp parallel for")
-    MTA ("mta assert nodep") MTASTREAMS ()
-    for (int64_t v = 0; v < nv; ++v) {
-      const int64_t from = v;
-      const int64_t deg = off[v + 1] - off[v];
-      if (deg)
-	stinger_vertex_outdegree_increment_atomic(vertices, from, deg);
+  MTA ("mta assert nodep") MTASTREAMS ()
+  for (int64_t v = 0; v < nv; ++v) {
+    const int64_t from = v;
+    const int64_t deg = off[v + 1] - off[v];
+    if (deg) {
+      stinger_vertex_outdegree_increment_atomic(vertices, from, deg);
     }
+  }
 
   new_blk_ebs (&block[0], G, nv, blkoff, etype);
 
   /* XXX: AUGH! I cannot find what really is blocking parallelization. */
   MTA ("mta assert parallel")
-    MTA ("mta dynamic schedule")
-    OMP ("omp parallel for")
-    MTA ("mta assert noalias *block")
+  MTA ("mta dynamic schedule")
+  OMP ("omp parallel for")
+  MTA ("mta assert noalias *block")
+  MTA ("mta assert nodep *block")
+  MTA ("mta assert noalias *G")
+  MTA ("mta assert nodep *G")
+  MTA ("mta assert nodep *phys_adj")
+  MTA ("mta assert nodep *vertices")
+  MTA ("mta assert nodep *blkoff")
+  for (int64_t v = 0; v < nv; ++v) {
+    const size_t nextoff = off[v + 1];
+    size_t kgraph = off[v];
+    MTA ("mta assert may reorder kgraph") int64_t from;
+
+    from = v;
+
+    // Need to assert this loop is not to be parallelized!
     MTA ("mta assert nodep *block")
-    MTA ("mta assert noalias *G")
-    MTA ("mta assert nodep *G")
-    MTA ("mta assert nodep *phys_adj")
     MTA ("mta assert nodep *vertices")
-    MTA ("mta assert nodep *blkoff")
-    for (int64_t v = 0; v < nv; ++v) {
-      const size_t nextoff = off[v + 1];
-      size_t kgraph = off[v];
-      MTA ("mta assert may reorder kgraph") int64_t from;
+    for (size_t kblk = blkoff[v]; kblk < blkoff[v + 1]; ++kblk) {
+      size_t n_to_copy, voff;
+      struct stinger_edge * restrict edge;
+      struct stinger_eb * restrict eb;
+      int64_t tslb = INT64_MAX, tsub = 0;
 
-      from = v;
+      //voff = stinger_size_fetch_add (&kgraph, STINGER_EDGEBLOCKSIZE);
+      {
+	voff = kgraph;
+	kgraph += STINGER_EDGEBLOCKSIZE;
+      }
 
-      // Need to assert this loop is not to be parallelized!
-      MTA ("mta assert nodep *block")
-        MTA ("mta assert nodep *vertices")
-        for (size_t kblk = blkoff[v]; kblk < blkoff[v + 1]; ++kblk) {
-          size_t n_to_copy, voff;
-          struct stinger_edge *restrict edge;
-          struct stinger_eb *restrict eb;
-          int64_t tslb = INT64_MAX, tsub = 0;
+      n_to_copy = STINGER_EDGEBLOCKSIZE;
+      if (voff + n_to_copy >= nextoff)
+	n_to_copy = nextoff - voff;
 
-          //voff = stinger_size_fetch_add (&kgraph, STINGER_EDGEBLOCKSIZE);
-          {
-            voff = kgraph;
-            kgraph += STINGER_EDGEBLOCKSIZE;
-          }
+      eb = ebpool->ebpool + block[kblk];
+      edge = &eb->edges[0];
 
-          n_to_copy = STINGER_EDGEBLOCKSIZE;
-          if (voff + n_to_copy >= nextoff)
-            n_to_copy = nextoff - voff;
-
-          eb = ebpool->ebpool + block[kblk];
-          edge = &eb->edges[0];
-
-          /* XXX: remove the next two asserts once the outer is unlocked. */
-          MTA ("mta assert nodep")
-            MTASTREAMS ()MTA ("mta assert nodep *phys_adj")
-            MTA ("mta assert nodep *edge")
-            MTA ("mta assert nodep *vertices")
-            for (size_t i = 0; i < n_to_copy; ++i) {
-              const int64_t to = phys_adj[voff + i];
+      /* XXX: remove the next two asserts once the outer is unlocked. */
+      MTA ("mta assert nodep")
+      MTASTREAMS ()MTA ("mta assert nodep *phys_adj")
+      MTA ("mta assert nodep *edge")
+      MTA ("mta assert nodep *vertices")
+      for (size_t i = 0; i < n_to_copy; ++i) {
+	const int64_t to = phys_adj[voff + i];
 #if defined(__MTA__)
-	      stinger_vertex_indegree_increment_atomic(vertices, to, 1);
+	stinger_vertex_indegree_increment_atomic(vertices, to, 1);
 #else
-              // Ugh. The MTA compiler can't cope with the inlining.
-	      stinger_vertex_indegree_increment_atomic(vertices, to, 1);
+	// Ugh. The MTA compiler can't cope with the inlining.
+	stinger_vertex_indegree_increment_atomic(vertices, to, 1);
 #endif
-              /* XXX: The next statements block parallelization
-                 of the outer loop. */
-              edge[i].neighbor = to;
-              edge[i].weight = weight[voff + i];
-              edge[i].timeRecent = ts ? ts[voff + i] : single_ts;
-              edge[i].timeFirst = first_ts ? first_ts[voff + i] : single_ts;
-              //assert (edge[i].timeRecent >= edge[i].timeFirst);
-            }
+	/* XXX: The next statements block parallelization
+	   of the outer loop. */
+	edge[i].neighbor = to;
+	edge[i].weight = weight[voff + i];
+	edge[i].timeRecent = ts ? ts[voff + i] : single_ts;
+	edge[i].timeFirst = first_ts ? first_ts[voff + i] : single_ts;
+	//assert (edge[i].timeRecent >= edge[i].timeFirst);
+      }
 
-          if (ts || first_ts) {
-            /* XXX: remove the next two asserts once the outer is unlocked. */
-            MTA ("mta assert nodep")
-              MTASTREAMS ()MTA ("mta assert nodep *edge")
-              for (size_t i = 0; i < n_to_copy; ++i) {
-                if (edge[i].timeFirst < tslb)
-                  tslb = edge[i].timeFirst;
-                if (edge[i].timeRecent < tslb)
-                  tslb = edge[i].timeRecent;
-                if (edge[i].timeFirst > tsub)
-                  tsub = edge[i].timeFirst;
-                if (edge[i].timeRecent > tsub)
-                  tsub = edge[i].timeRecent;
-              }
-          } else
-            tslb = tsub = single_ts;
+      if (ts || first_ts) {
+	/* XXX: remove the next two asserts once the outer is unlocked. */
+	MTA ("mta assert nodep")
+	MTASTREAMS ()MTA ("mta assert nodep *edge")
+	for (size_t i = 0; i < n_to_copy; ++i) {
+	  if (edge[i].timeFirst < tslb) {
+	    tslb = edge[i].timeFirst;
+	  }
+	  if (edge[i].timeRecent < tslb) {
+	    tslb = edge[i].timeRecent;
+	  }
+	  if (edge[i].timeFirst > tsub) {
+	    tsub = edge[i].timeFirst;
+	  }
+	  if (edge[i].timeRecent > tsub) {
+	    tsub = edge[i].timeRecent;
+	  }
+	}
+      } else {
+	tslb = tsub = single_ts;
+      }
 
-          eb->smallStamp = tslb;
-          eb->largeStamp = tsub;
-          eb->numEdges = n_to_copy;
-          eb->high = n_to_copy;
-        }
-
-
-      /* At this point, block[blkoff[v]] is the head of a linked
-         list holding all the blocks of edges of EType from vertex
-         v.  Insert into the graph.  */
-
-      if (blkoff[v] != blkoff[v + 1]) {
-	ebpool->ebpool[block[blkoff[v+1]-1]].next = stinger_vertex_edges_get(vertices, from);
-        stinger_vertex_edges_set(vertices, from, block[blkoff[v]]);
-      } 
+      eb->smallStamp = tslb;
+      eb->largeStamp = tsub;
+      eb->numEdges = n_to_copy;
+      eb->high = n_to_copy;
     }
+
+
+    /* At this point, block[blkoff[v]] is the head of a linked
+       list holding all the blocks of edges of EType from vertex
+       v.  Insert into the graph.  */
+
+    if (blkoff[v] != blkoff[v + 1]) {
+      ebpool->ebpool[block[blkoff[v+1]-1]].next = stinger_vertex_edges_get(vertices, from);
+      stinger_vertex_edges_set(vertices, from, block[blkoff[v]]);
+    } 
+  }
 
   /* Insert into the edge type array */
   push_ebs (G, nblk_total, block);
@@ -2199,12 +2206,12 @@ stinger_save_to_file (struct stinger * S, uint64_t maxVtx, const char * stingerf
 
 /** @brief Restores a STINGER checkpoint from disk.
  * @param stingerfile The path and name of the input file.
- * @param S A double pointer to outpute the new Stinger.
+ * @param S A pointer to an empty STINGER structure.
  * @param maxVtx Output pointer for the the maximum vertex ID + 1.
  * @return 0 on success, -1 on failure.
 */
 int
-stinger_open_from_file (const char * stingerfile, struct stinger ** S, uint64_t * maxVtx)
+stinger_open_from_file (const char * stingerfile, struct stinger * S, uint64_t * maxVtx)
 {
 #if !defined(__MTA__)
   FILE * fp = fopen(stingerfile, "rb");
@@ -2215,7 +2222,9 @@ stinger_open_from_file (const char * stingerfile, struct stinger ** S, uint64_t 
   }
 #endif
 
-  *S = stinger_new();
+  if (!S) {
+    return -1;
+  }
 
   int64_t local_endian;
   int64_t etypes = 0;
@@ -2245,11 +2254,11 @@ stinger_open_from_file (const char * stingerfile, struct stinger ** S, uint64_t 
     etypes = bs64(etypes);
   }
 
-  if(*maxVtx > ((*S)->max_nv)) {
+  if(*maxVtx > (S->max_nv)) {
     fprintf (stderr, "%s %d: Vertices in file \"%s\" larger than the maximum number of vertices.\n", __func__, __LINE__, stingerfile);
     return -1;
   }
-  if(etypes > ((*S)->max_netypes)) {
+  if(etypes > (S->max_netypes)) {
     fprintf (stderr, "%s %d: Edge types in file \"%s\" larger than the maximum number of edge types.\n", __func__, __LINE__, stingerfile);
     return -1;
   }
@@ -2298,7 +2307,7 @@ stinger_open_from_file (const char * stingerfile, struct stinger ** S, uint64_t 
   }
 
   for(int64_t type = 0; type < etypes; type++) {
-    stinger_set_initial_edges(*S, *maxVtx, type, 
+    stinger_set_initial_edges(S, *maxVtx, type, 
 	offsets + type * (*maxVtx+2),
 	ind + type_offsets[type],
 	weight + type_offsets[type],
@@ -2311,13 +2320,13 @@ stinger_open_from_file (const char * stingerfile, struct stinger ** S, uint64_t 
   for(uint64_t v = 0; v < *maxVtx; v++) {
     int64_t vdata[2];
     ignore = fread(vdata, sizeof(int64_t), 2, fp);
-    stinger_vtype_set(*S, v, vdata[0]);
-    stinger_vweight_set(*S, v, vdata[1]);
+    stinger_vtype_set(S, v, vdata[0]);
+    stinger_vweight_set(S, v, vdata[1]);
   }
 
-  stinger_names_load(stinger_physmap_get(*S), fp);
-  stinger_names_load(stinger_vtype_names_get(*S), fp);
-  stinger_names_load(stinger_etype_names_get(*S), fp);
+  stinger_names_load(stinger_physmap_get(S), fp);
+  stinger_names_load(stinger_vtype_names_get(S), fp);
+  stinger_names_load(stinger_etype_names_get(S), fp);
 
 #if !defined(__MTA__)
   fclose(fp);
