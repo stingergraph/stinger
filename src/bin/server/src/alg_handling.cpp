@@ -200,15 +200,19 @@ handle_mon(struct AcceptedSock * sock, StingerServerState & server_state)
       return;
     }
 
+/* Commenting these lines out so that monitors can reconnect easily.
+ * Someone could suggest a more permanent solution.
+ * DE 11/13/2014
+ */
     if(server_state.has_mon(mon_to_server.mon_name())) {
-      if(server_state.get_mon(mon_to_server.mon_name())->state < MON_STATE_DONE) {
-	LOG_E("Monitor already exists");
-	server_to_mon->set_result(MON_FAILURE_NAME_EXISTS);
-	send_message(sock->handle, *server_to_mon);
-	return;
-      } else {
+//      if(server_state.get_mon(mon_to_server.mon_name())->state < MON_STATE_DONE) {
+//	LOG_E("Monitor already exists");
+//	server_to_mon->set_result(MON_FAILURE_NAME_EXISTS);
+//	send_message(sock->handle, *server_to_mon);
+//	return;
+ //     } else {
 	server_state.delete_mon(mon_to_server.mon_name());
-      }
+//      }
     }
 
     LOG_D("Creating monitor structure")
