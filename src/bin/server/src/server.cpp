@@ -23,7 +23,7 @@ extern "C" {
 #include "stinger_utils/csv.h"
 }
 
-#define LOG_AT_D
+//#define LOG_AT_D
 #include "stinger_core/stinger_error.h"
 
 using namespace gt::stinger;

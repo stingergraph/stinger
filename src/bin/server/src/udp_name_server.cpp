@@ -10,7 +10,7 @@
 #include "server.h"
 #include "stinger_net/stinger_server_state.h"
 
-#define LOG_AT_D
+//#define LOG_AT_D
 #include "stinger_core/stinger_error.h"
 
 void error(const char *msg)
