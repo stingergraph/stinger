@@ -24,6 +24,7 @@ extern "C" {
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <sys/un.h>
 #include <unistd.h>
 
 /* POSIX only for now, note that mongoose would be a good place to 
@@ -147,6 +148,8 @@ mon_handler(void * args)
 extern "C" int64_t
 mon_connect(int port, const char * host, const char * name)
 {
+
+#ifdef STINGER_USE_TCP
   struct sockaddr_in sock_addr;
   memset(&sock_addr, 0, sizeof(struct sockaddr_in));
   struct hostent * hp = gethostbyname(host);
@@ -165,13 +168,26 @@ mon_connect(int port, const char * host, const char * name)
   memcpy(&sock_addr.sin_addr.s_addr, hp->h_addr, hp->h_length);
   sock_addr.sin_family = AF_INET;
 
-  LOG_D_A("Socket open, connecting to host %s %s", host, inet_ntoa(**(struct in_addr **)hp->h_addr_list));
-
   if(port) {
     sock_addr.sin_port = htons(port);
   } else {
     sock_addr.sin_port = htons(10103);
   }
+
+  LOG_D_A("Socket open, connecting to host %s %s", host, inet_ntoa(**(struct in_addr **)hp->h_addr_list));
+#else
+  struct sockaddr_un sock_addr;
+  memset(&sock_addr, 0, sizeof(sock_addr));
+  int sock = socket(AF_UNIX, SOCK_STREAM, 0);
+  if(-1 == sock) {
+    LOG_E("Error opening socket");
+    return NULL;
+  }
+  strncpy(sock_addr.sun_path, "socket", sizeof(sock_addr.sun_path)-1);
+  sock_addr.sun_family = AF_UNIX;
+
+  LOG_D_A("Socket open, connecting to host %s", params.host);
+#endif
 
   if(-1 == connect(sock, (sockaddr *)&sock_addr, sizeof(struct sockaddr_in))) {
     LOG_E("Error connecting socket");

@@ -20,6 +20,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <sys/un.h>
 #include <unistd.h>
 
 /* POSIX only for now, note that mongoose would be a good place to 
@@ -708,11 +709,20 @@ start_alg_handling(void *)
   int sock_handle;
   int port = server_state.get_port_algs();
 
+#ifdef STINGER_USE_TCP
   struct sockaddr_in sock_addr;
   memset(&sock_addr, 0, sizeof(sock_addr));
   sock_addr.sin_family = AF_INET;
   sock_addr.sin_port   = htons(port);
+#else
+  struct sockaddr_un sock_addr;
+  memset(&sock_addr, 0, sizeof(sock_addr));
+  sock_addr.sun_family = AF_UNIX;
+  strncpy(sock_addr.sun_path, "socket", sizeof(sock_addr.sun_path)-1);
+  unlink("/tmp/stinger.sock");
+#endif
 
+#ifdef STINGER_USE_TCP
   if(-1 == (sock_handle = socket(AF_INET, SOCK_STREAM, 0))) {
     LOG_F_A("Socket create failed: %s", strerror(errno));
     exit(-1);
@@ -729,6 +739,24 @@ start_alg_handling(void *)
   }
 
   LOG_V_A("Algorithm Server listening on port %d", port);
+#else
+  if(-1 == (sock_handle = socket(AF_UNIX, SOCK_STREAM, 0))) {
+    LOG_F_A("Socket create failed: %s", strerror(errno));
+    exit(-1);
+  }
+
+  if(-1 == bind(sock_handle, (const sockaddr *)&sock_addr, sizeof(sock_addr))) {
+    LOG_F_A("Socket bind failed: %s", strerror(errno));
+    exit(-1);
+  }
+
+  if(-1 == listen(sock_handle, 16)) {
+    LOG_F_A("Socket listen failed: %s", strerror(errno));
+    exit(-1);
+  }
+
+  LOG_V_A("Algorithm Server listening on port %d", port);
+#endif
 
   pthread_t main_loop_thread;
   pthread_create(&main_loop_thread, NULL, &process_loop_handler, NULL);
