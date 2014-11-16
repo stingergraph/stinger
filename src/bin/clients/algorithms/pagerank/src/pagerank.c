@@ -4,6 +4,7 @@
 #include "stinger_core/xmalloc.h"
 #include "stinger_core/stinger_error.h"
 #include "stinger_net/stinger_alg.h"
+#include "stinger_utils/timer.h"
 
 int64_t
 page_rank(stinger_t * S, int64_t NV, double * pr, double * tmp_pr_in, double epsilon, double dampingfactor, int64_t maxiter)
@@ -133,6 +134,9 @@ main(int argc, char *argv[])
   }
 
   double * tmp_pr = (double *)xcalloc(alg->stinger->max_nv, sizeof(double));
+
+  double time;
+  init_timer();
   
   /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
    * Initial static computation
@@ -154,12 +158,16 @@ main(int argc, char *argv[])
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
   while(alg->enabled) {
     /* Pre processing */
+      time = timer();
     if(stinger_alg_begin_pre(alg)) {
       /* nothing to do */
       stinger_alg_end_pre(alg);
     }
+      time = timer() - time;
+      LOG_I_A("Pre time: %20.15e", time);
 
     /* Post processing */
+      time = timer();
     if(stinger_alg_begin_post(alg)) {
       int64_t type = -1;
       if(argc > 1) {
@@ -178,6 +186,8 @@ main(int argc, char *argv[])
       }
       stinger_alg_end_post(alg);
     }
+      time = timer() - time;
+      LOG_I_A("Post time: %20.15e", time);
   }
 
   LOG_I("Algorithm complete... shutting down");
