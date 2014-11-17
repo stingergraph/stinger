@@ -121,6 +121,9 @@ namespace gt {
 	dequeue_batch();
 
 	size_t
+	get_queue_size() { return batches.size(); }
+
+	size_t
 	get_num_streams();
 
 	StingerStreamState *
