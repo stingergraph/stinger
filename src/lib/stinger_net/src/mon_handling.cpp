@@ -183,13 +183,13 @@ mon_connect(int port, const char * host, const char * name)
     LOG_E("Error opening socket");
     return NULL;
   }
-  strncpy(sock_addr.sun_path, "socket", sizeof(sock_addr.sun_path)-1);
+  strncpy(sock_addr.sun_path, "/tmp/stinger.sock", sizeof(sock_addr.sun_path)-1);
   sock_addr.sun_family = AF_UNIX;
 
   LOG_D_A("Socket open, connecting to host %s", params.host);
 #endif
 
-  if(-1 == connect(sock, (sockaddr *)&sock_addr, sizeof(struct sockaddr_in))) {
+  if(-1 == connect(sock, (sockaddr *)&sock_addr, sizeof(sock_addr))) {
     LOG_E("Error connecting socket");
     return -1;
   }

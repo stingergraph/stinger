@@ -63,14 +63,14 @@ stinger_register_alg_impl(stinger_register_alg_params params)
     LOG_E("Error opening socket");
     return NULL;
   }
-  strncpy(sock_addr.sun_path, "socket", sizeof(sock_addr.sun_path)-1);
+  strncpy(sock_addr.sun_path, "/tmp/stinger.sock", sizeof(sock_addr.sun_path)-1);
   sock_addr.sun_family = AF_UNIX;
 
   LOG_D_A("Socket open, connecting to host %s", params.host);
 #endif
 
-  if(-1 == connect(sock, (sockaddr *)&sock_addr, sizeof(struct sockaddr_in))) {
-    LOG_E_A("Error connecting socket [%d]", params.port);
+  if(-1 == connect(sock, (sockaddr *)&sock_addr, sizeof(sock_addr))) {
+    LOG_E("Error connecting socket");
     return NULL;
   }
 

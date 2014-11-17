@@ -728,7 +728,7 @@ start_alg_handling(void *)
   struct sockaddr_un sock_addr;
   memset(&sock_addr, 0, sizeof(sock_addr));
   sock_addr.sun_family = AF_UNIX;
-  strncpy(sock_addr.sun_path, "socket", sizeof(sock_addr.sun_path)-1);
+  strncpy(sock_addr.sun_path, "/tmp/stinger.sock", sizeof(sock_addr.sun_path)-1);
   unlink("/tmp/stinger.sock");
 #endif
 
