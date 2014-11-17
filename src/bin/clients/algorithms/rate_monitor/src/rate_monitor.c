@@ -6,6 +6,7 @@
 #include "stinger_core/xmalloc.h"
 #include "stinger_core/stinger_error.h"
 #include "stinger_net/stinger_alg.h"
+#include "stinger_utils/timer.h"
 
 void
 update_rates(stinger_registered_alg * a, int64_t nv, double * vel, double * accel, double vel_keep, double accel_keep)
@@ -59,6 +60,7 @@ main(int argc, char *argv[])
   bzero(alg->alg_data, sizeof(double) * 2 * alg->stinger->max_nv);
   double * vel	  = (double *)alg->alg_data;
   double * accel  = vel + alg->stinger->max_nv;
+  double time;
 
   
   /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
@@ -79,7 +81,10 @@ main(int argc, char *argv[])
 
     /* Post processing */
     if(stinger_alg_begin_post(alg)) {
+      time = timer();
       update_rates(alg, stinger_max_active_vertex(alg->stinger)+1, vel, accel, vel_keep, accel_keep);
+      time = timer() - time;
+      LOG_I_A("Update time : %20.15e sec", time);
       stinger_alg_end_post(alg);
     }
   }

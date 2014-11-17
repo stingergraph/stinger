@@ -164,7 +164,7 @@ main(int argc, char *argv[])
       stinger_alg_end_pre(alg);
     }
       time = timer() - time;
-      LOG_I_A("Pre time: %20.15e", time);
+      LOG_I_A("Pre time : %20.15e", time);
 
     /* Post processing */
       time = timer();
@@ -187,7 +187,7 @@ main(int argc, char *argv[])
       stinger_alg_end_post(alg);
     }
       time = timer() - time;
-      LOG_I_A("Post time: %20.15e", time);
+      LOG_I_A("Post time : %20.15e", time);
   }
 
   LOG_I("Algorithm complete... shutting down");
