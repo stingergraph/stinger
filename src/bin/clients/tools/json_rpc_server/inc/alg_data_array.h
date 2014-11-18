@@ -1,8 +1,6 @@
 #ifndef _ALG_DATA_ARRAY_H
 #define _ALG_DATA_ARRAY_H
 
-//#include <cstdio>
-//#include "stinger_core/stinger_error.h"
 #include "rapidjson/document.h"
 #include "stinger_net/stinger_alg_state.h"
 #include "rpc_state.h"

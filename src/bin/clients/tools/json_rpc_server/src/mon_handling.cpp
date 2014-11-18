@@ -3,7 +3,6 @@ extern "C" {
   #include "stinger_core/stinger_shared.h"
   #include "stinger_utils/stinger_utils.h"
   #include "stinger_core/xmalloc.h"
-  #include "stinger_core/stinger_error.h"
 }
 
 #include "stinger_net/proto/stinger-batch.pb.h"
@@ -31,6 +30,9 @@ extern "C" {
 /* POSIX only for now, note that mongoose would be a good place to 
 get cross-platform threading and sockets code */
 #include <pthread.h> 
+
+#define LOG_AT_W
+#include "stinger_core/stinger_error.h"
 
 using namespace gt::stinger;
 

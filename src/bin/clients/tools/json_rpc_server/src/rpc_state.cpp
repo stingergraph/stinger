@@ -7,6 +7,8 @@
 #include "rpc_state.h"
 #include "stinger_core/stinger.h"
 
+#define LOG_AT_W
+#include "stinger_core/stinger_error.h"
 
 using namespace gt::stinger;
 

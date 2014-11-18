@@ -6,9 +6,6 @@
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
 
-#define LOG_AT_W  /* warning only */
-#include "stinger_core/stinger_error.h"
-
 #include "mongoose/mongoose.h"
 #include "stinger_utils/timer.h"
 #include "stinger_core/xmalloc.h"
@@ -21,6 +18,9 @@
 #include "rpc_state.h"
 #include "mon_handling.h"
 #include "session_handling.h"
+
+#define LOG_AT_W  /* warning only */
+#include "stinger_core/stinger_error.h"
 
 using namespace gt::stinger;
 

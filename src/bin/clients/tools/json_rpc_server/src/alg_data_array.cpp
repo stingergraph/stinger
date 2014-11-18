@@ -1,7 +1,9 @@
-
-#include "stinger_core/stinger_error.h"
+#include "json_rpc_server.h"
 #include "stinger_core/xmalloc.h"
 #include "alg_data_array.h"
+
+#define LOG_AT_W  /* warning only */
+#include "stinger_core/stinger_error.h"
 
 namespace {
   template <typename T> struct tc_info { static const char tc; static const char * tname; };

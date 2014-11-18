@@ -4,16 +4,15 @@
 
 //#define LOG_AT_W  /* warning only */
 
-extern "C" {
 #include "stinger_core/xmalloc.h"
-#include "stinger_core/stinger_error.h"
-}
-
 #include "rapidjson/document.h"
 
 #include "session_handling.h"
 #include "json_rpc.h"
 #include "alg_data_array.h"
+
+#define LOG_AT_W
+#include "stinger_core/stinger_error.h"
 
 using namespace gt::stinger;
 

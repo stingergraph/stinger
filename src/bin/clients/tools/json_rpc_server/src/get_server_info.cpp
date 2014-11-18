@@ -1,12 +1,12 @@
+#include "json_rpc_server.h"
+#include "json_rpc.h"
 #include <sys/types.h>
 #include <unistd.h>
 
-//#define LOG_AT_W  /* warning only */
-#include "stinger_core/stinger_error.h"
-
 #include "rapidjson/document.h"
-#include "json_rpc_server.h"
-#include "json_rpc.h"
+
+#define LOG_AT_W  /* warning only */
+#include "stinger_core/stinger_error.h"
 
 using namespace gt::stinger;
 
