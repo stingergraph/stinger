@@ -110,7 +110,7 @@ StingerMon::update_algs(stinger_t * stinger_copy, std::string new_loc, int64_t n
   stinger_sz = new_sz;
 
   /* unmap / delete existing algs */
-  if(algs) {
+  if(stinger && algs) {
     for(int64_t i = 0; i < algs->size(); i++) {
       StingerAlgState * cur_alg = (*algs)[i];
       if(cur_alg) {
