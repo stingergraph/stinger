@@ -103,6 +103,12 @@ JSON_RPCFunction::contains_params(rpc_params_t * p, rapidjson::Value * params) {
 
   if (!(params->IsObject()))
     return false;
+  
+  stinger_t * S = server_state->get_stinger();
+  if (!S) {
+    LOG_E ("STINGER pointer is invalid");
+    return false;
+  }
 
   while(p->name) {
     if(!params->HasMember(p->name)) {
@@ -136,7 +142,6 @@ JSON_RPCFunction::contains_params(rpc_params_t * p, rapidjson::Value * params) {
       }
     } else {
 
-      stinger_t * S = server_state->get_stinger();
       switch(p->type) {
         case TYPE_VERTEX: {
           if((*params)[p->name].IsInt64()) {
