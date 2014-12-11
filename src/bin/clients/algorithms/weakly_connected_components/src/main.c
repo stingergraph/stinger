@@ -10,9 +10,17 @@
  * Perform a shiloach vishkin connected components calculation in parallel on a stinger graph
  */
 int64_t
-parallel_shiloach_vishkin_components (struct stinger * S,  int64_t * component_map)
+parallel_shiloach_vishkin_components_of_type (struct stinger * S,  int64_t * component_map, int64_t type)
 {
   int64_t nv = S->max_nv;
+
+  if (type < 0) {
+    return -1;
+  }
+
+  if (type >= S->max_netypes) {
+    return -1;
+  }
 
   /* Initialize each vertex with its own component label in parallel */
   OMP ("omp parallel for")
@@ -24,23 +32,21 @@ parallel_shiloach_vishkin_components (struct stinger * S,  int64_t * component_m
   while (1) {
     int changed = 0;
 
-    /* For all edges in the STINGER graph of type 0 in parallel, attempt to assign
+    /* For all edges in the STINGER graph of type in parallel, attempt to assign
        lesser component IDs to neighbors with greater component IDs */
-    for (int64_t t = 0; t < S->max_netypes; t++) {
-      STINGER_PARALLEL_FORALL_EDGES_BEGIN (S, t) {
-	int64_t c_src  = component_map[STINGER_EDGE_SOURCE];
-	int64_t c_dest = component_map[STINGER_EDGE_DEST];
-	/* handles both edge directions */
-	if (c_dest < c_src) {
-	  component_map[STINGER_EDGE_SOURCE] = c_dest;
-	  changed++;
-	}
-	if (c_src < c_dest) {
-	  component_map[STINGER_EDGE_DEST] = c_src;
-	  changed++;
-	}
-      } STINGER_PARALLEL_FORALL_EDGES_END ();
-    }
+    STINGER_PARALLEL_FORALL_EDGES_BEGIN (S, type) {
+      int64_t c_src  = component_map[STINGER_EDGE_SOURCE];
+      int64_t c_dest = component_map[STINGER_EDGE_DEST];
+      /* handles both edge directions */
+      if (c_dest < c_src) {
+	component_map[STINGER_EDGE_SOURCE] = c_dest;
+	changed++;
+      }
+      if (c_src < c_dest) {
+	component_map[STINGER_EDGE_DEST] = c_src;
+	changed++;
+      }
+    } STINGER_PARALLEL_FORALL_EDGES_END ();
 
     /* if nothing changed */
     if (!changed) {
@@ -110,7 +116,14 @@ main (int argc, char *argv[])
    * Initial static computation
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
   stinger_alg_begin_init(alg); {
-    parallel_shiloach_vishkin_components(alg->stinger, components);
+    /* find the type */
+    int64_t type = -1;
+    if (argc > 1) {
+      type = stinger_etype_names_lookup_type(alg->stinger, argv[1]);
+    }
+    /* calculate connected components */
+    parallel_shiloach_vishkin_components_of_type(alg->stinger, components, type);
+    /* summarize the data */
     compute_component_sizes (alg->stinger, components, component_size);
   } stinger_alg_end_init(alg);
 
@@ -126,7 +139,12 @@ main (int argc, char *argv[])
 
     /* Post processing */
     if(stinger_alg_begin_post(alg)) {
-      parallel_shiloach_vishkin_components(alg->stinger, components);
+      /* find the type */
+      int64_t type = -1;
+      if (argc > 1) {
+	type = stinger_etype_names_lookup_type(alg->stinger, argv[1]);
+      }
+      parallel_shiloach_vishkin_components_of_type(alg->stinger, components, type);
       compute_component_sizes (alg->stinger, components, component_size);
       stinger_alg_end_post(alg);
     }
