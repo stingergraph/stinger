@@ -110,6 +110,14 @@ JSON_RPCFunction::contains_params(rpc_params_t * p, rapidjson::Value * params) {
             *((int64_t *)p->output) = p->def;
           }
           break;
+          case TYPE_EDGE_TYPE: {
+            *((int64_t *)p->output) = p->def;
+          }
+          break;
+          case TYPE_VERTEX_TYPE: {
+            *((int64_t *)p->output) = p->def;
+          }
+          break;
           case TYPE_STRING: {
             *((char **)p->output) = (char *) p->def;
           }
@@ -144,6 +152,38 @@ JSON_RPCFunction::contains_params(rpc_params_t * p, rapidjson::Value * params) {
             *((int64_t *)p->output) = tmp;
           } else if((*params)[p->name].IsString()) {
             int64_t tmp = stinger_mapping_lookup(S, (*params)[p->name].GetString(), (*params)[p->name].GetStringLength());
+            if (tmp == -1)
+              return false;
+            *((int64_t *)p->output) = tmp;
+          } else {
+            return false;
+          }
+        }
+        break;
+        case TYPE_EDGE_TYPE: {
+          if((*params)[p->name].IsInt64()) {
+            int64_t tmp = (*params)[p->name].GetInt64();
+            if (tmp < 0 || tmp >= S->max_netypes)
+              return false;
+            *((int64_t *)p->output) = tmp;
+          } else if((*params)[p->name].IsString()) {
+            int64_t tmp = stinger_etype_names_lookup_type(S, (*params)[p->name].GetString());
+            if (tmp == -1)
+              return false;
+            *((int64_t *)p->output) = tmp;
+          } else {
+            return false;
+          }
+        }
+        break;
+        case TYPE_VERTEX_TYPE: {
+          if((*params)[p->name].IsInt64()) {
+            int64_t tmp = (*params)[p->name].GetInt64();
+            if (tmp < 0 || tmp >= S->max_nvtypes)
+              return false;
+            *((int64_t *)p->output) = tmp;
+          } else if((*params)[p->name].IsString()) {
+            int64_t tmp = stinger_vtype_names_lookup_type(S, (*params)[p->name].GetString());
             if (tmp == -1)
               return false;
             *((int64_t *)p->output) = tmp;
