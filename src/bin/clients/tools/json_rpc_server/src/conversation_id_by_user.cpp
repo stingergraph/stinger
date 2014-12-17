@@ -26,7 +26,7 @@ JSON_RPC_conversation_id_by_user::operator()(rapidjson::Value * params, rapidjso
     return json_rpc_error(-32602, result, allocator);
   }
   
-  StingerAlgState * alg_state = server_state->get_alg("influence_aggregator");
+  StingerAlgState * alg_state = server_state->get_alg("weakly_connected_components");
   if (!alg_state) {
     LOG_E ("Algorithm is not running");
     return json_rpc_error(-32003, result, allocator);
