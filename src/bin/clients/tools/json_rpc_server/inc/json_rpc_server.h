@@ -187,6 +187,11 @@ struct JSON_RPC_user_id_by_conversation : JSON_RPCFunction {
   virtual int64_t operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
 };
 
+struct JSON_RPC_bfs_edges: JSON_RPCFunction {
+  JSON_RPC_bfs_edges(JSON_RPCServerState * state) : JSON_RPCFunction(state) { }
+  virtual int64_t operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
+};
+
 
 /* Helper Functions */
 int
