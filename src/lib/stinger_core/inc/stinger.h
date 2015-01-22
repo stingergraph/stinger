@@ -51,7 +51,7 @@ int stinger_save_to_file (struct stinger * /* STINGER */,
 			  const char * /* directory name */);
 
 int stinger_open_from_file (const char * /* directory */, 
-			    struct stinger ** /* reference for empty output pointer */, 
+			    struct stinger * /* reference for empty STINGER */, 
 			    uint64_t * /* reference for output max vtx */);
 
 /* Edge insertion and deletion */
