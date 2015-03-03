@@ -216,7 +216,7 @@ Using a Standalone Client
 -------------------------
 To create a toy R-MAT graph (256K vertices and 2M undirected edges) and run the insert-remove benchmark:
 
-    term1:build$ rmat_graph_generator -s 18 -e 8
+    term1:build$ rmat_graph_generator -s 18 -e 8 -n 100000
     term1:build$ insert_remove_benchmark -n 1 -b 100000 g.18.8.bin a.18.8.100000.bin
     
     
