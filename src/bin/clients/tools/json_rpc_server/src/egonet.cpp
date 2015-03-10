@@ -2,7 +2,6 @@
 #include "json_rpc.h"
 #include "stinger_core/xmalloc.h"
 #include "rapidjson/document.h"
-#include "time.h"
 
 #define LOG_AT_W  /* warning only */
 #include "stinger_core/stinger_error.h"
@@ -48,29 +47,14 @@ JSON_RPC_egonet::operator()(rapidjson::Value * params, rapidjson::Value & result
   /* find a vertex with more than 10 edges and less than 50 */
   int64_t max_nv = S->max_nv;
   int64_t selected_vertex = -1;
-  srand(time(NULL));
-  int64_t start = rand() % max_nv;
-  for (int64_t i = start; i < max_nv; i++) {
+  for (int64_t i = 0; i < max_nv; i++) {
     int64_t outdegree = stinger_outdegree(S, i);
     if (outdegree < 50 && outdegree > 10) {
       selected_vertex = i;
       break;
     }
   }
-  if (selected_vertex == -1) {
-    for (int64_t i = 0; i < max_nv; i++) {
-      int64_t outdegree = stinger_outdegree(S, i);
-      if (outdegree < 50 && outdegree > 10) {
-	selected_vertex = i;
-	break;
-      }
-    }
-  }
-  if (selected_vertex == -1) {
-    selected_vertex = 7;
-  }
   source = selected_vertex;
-
 
   /* array to hold a single edge */
   rapidjson::Value val(rapidjson::kArrayType);
@@ -88,7 +72,6 @@ JSON_RPC_egonet::operator()(rapidjson::Value * params, rapidjson::Value & result
   rapidjson::Value vtx_str(rapidjson::kArrayType);
 
   /* values to hold vertex information */
-  rapidjson::Value source_v, source_v_str;
   rapidjson::Value vtype, vtype_str;
   rapidjson::Value center, center_str;
   rapidjson::Value src, dst;
@@ -101,19 +84,6 @@ JSON_RPC_egonet::operator()(rapidjson::Value * params, rapidjson::Value & result
   /* array to hold vertex type strings */
   rapidjson::Value vtypes_str(rapidjson::kArrayType);
 
-  /* source info */
-  source_v.SetInt64(source);
-  result.AddMember("source", source_v, allocator);
-  if (strings) {
-    char * physID;
-    uint64_t len;
-    if (-1 == stinger_mapping_physid_direct(S, source, &physID, &len)) {
-      physID = (char *) "";
-      len = 0;
-    }
-    source_v_str.SetString(physID, len, allocator);
-    result.AddMember("source_str", source_v_str, allocator);
-  }
 
   /* vertex has no edges -- this is easy */
   if (stinger_outdegree (S, source) == 0) {
