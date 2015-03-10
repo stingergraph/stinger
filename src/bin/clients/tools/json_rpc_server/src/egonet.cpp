@@ -44,18 +44,6 @@ JSON_RPC_egonet::operator()(rapidjson::Value * params, rapidjson::Value & result
     return json_rpc_error(-32603, result, allocator);
   }
 
-  /* find a vertex with more than 10 edges and less than 50 */
-  int64_t max_nv = S->max_nv;
-  int64_t selected_vertex = -1;
-  for (int64_t i = 0; i < max_nv; i++) {
-    int64_t outdegree = stinger_outdegree(S, i);
-    if (outdegree < 50 && outdegree > 10) {
-      selected_vertex = i;
-      break;
-    }
-  }
-  source = selected_vertex;
-
   /* array to hold a single edge */
   rapidjson::Value val(rapidjson::kArrayType);
 
