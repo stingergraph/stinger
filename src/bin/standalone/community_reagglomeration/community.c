@@ -435,7 +435,7 @@ contract_el (int64_t NE, intvtx_t * restrict el /* 3 x oldNE */,
 
   /* fprintf (stderr, "from %ld => %ld\n", old_nv, new_nv); */
 
-  OMP("omp parallel")
+  OMP("omp parallel") 
   {
 #if !defined(NDEBUG)
     OMP("omp for reduction(+:w_in) schedule(static)") MTA_STREAMS
@@ -2532,7 +2532,7 @@ contract_self_el (int64_t NE, intvtx_t * restrict el /* 3 x oldNE */,
 
   /* fprintf (stderr, "from %ld => %ld\n", old_nv, nv); */
 
-  OMP("omp parallel")
+  OMP("omp parallel") 
   {
 #if !defined(NDEBUG)
     OMP("omp for reduction(+:w_in) schedule(static)")
