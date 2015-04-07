@@ -74,7 +74,7 @@ Building
 STINGER is built using [CMake](http://www.cmake.org).  From the root of STINGER, first create a build directory:
 
     mkdir build && cd build
-    . ../SOURCME.sh
+    . ../SOURCEME.sh
 
 Then call CMake from that build directory to automatically configure the build and to create a Makefile:
 
@@ -216,7 +216,7 @@ Using a Standalone Client
 -------------------------
 To create a toy R-MAT graph (256K vertices and 2M undirected edges) and run the insert-remove benchmark:
 
-    term1:build$ rmat_graph_generator -s 18 -e 8
+    term1:build$ rmat_graph_generator -s 18 -e 8 -n 100000
     term1:build$ insert_remove_benchmark -n 1 -b 100000 g.18.8.bin a.18.8.100000.bin
     
     
