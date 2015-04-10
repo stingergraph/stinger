@@ -113,6 +113,7 @@ main(int argc, char *argv[])
   }
 
   int sock_handle = connect_to_batch_server (server, stinger_port);
+  if (sock_handle == -1) exit(-1);
   /* End STINGER */
 
 #endif
