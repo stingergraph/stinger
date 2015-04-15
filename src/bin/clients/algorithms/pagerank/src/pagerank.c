@@ -13,39 +13,45 @@ page_rank (stinger_t * S, int64_t NV, double * pr, double * tmp_pr_in, double ep
   if (tmp_pr_in) {
     tmp_pr = tmp_pr_in;
   } else {
-    LOG_W("Did not pass a buffer, so we allocate one");
     tmp_pr = (double *)xmalloc(sizeof(double) * NV);
   }
 
   int64_t iter = maxiter;
   double delta = 1;
   int64_t iter_count = 0;
-  double damping_vec = ( ( (double) (1-dampingfactor) ) / ( (double) NV ) );
 
   while (delta > epsilon && iter > 0) {
     iter_count++;
-    delta = 0;
 
     OMP("omp parallel for")
     for (uint64_t v = 0; v < NV; v++) {
-      double partial = 0;
+      tmp_pr[v] = 0;
 
-      STINGER_PARALLEL_FORALL_EDGES_OF_VTX_BEGIN(S, v) {
+      STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, v) {
         int64_t outdegree = stinger_outdegree (S, STINGER_EDGE_DEST);
-        partial += ( ( (double) pr[STINGER_EDGE_DEST] ) / ( (double) (outdegree ? outdegree : NV-1) ) );
-      } STINGER_PARALLEL_FORALL_EDGES_OF_VTX_END();
+        tmp_pr[v] += (((double) pr[STINGER_EDGE_DEST]) / 
+          ((double) (outdegree ? outdegree : NV-1)));
+      } STINGER_FORALL_EDGES_OF_VTX_END();
+    }
 
-      partial = partial * dampingfactor + damping_vec;
+    OMP("omp parallel for")
+    for (uint64_t v = 0; v < NV; v++) {
+      tmp_pr[v] = tmp_pr[v] * dampingfactor + (((double)(1-dampingfactor)) / ((double)NV));
+    }
 
-      /* epsilon check */
-      double mydelta = partial - pr[v];
-      if (mydelta < 0) {
+    delta = 0;
+    OMP("omp parallel for reduction(+:delta)")
+    for (uint64_t v = 0; v < NV; v++) {
+      double mydelta = tmp_pr[v] - pr[v];
+      if (mydelta < 0)
 	mydelta = -mydelta;
-      }
       delta += mydelta;
+    }
+    //LOG_I_A("delta : %20.15e", delta);
 
-      /* write back result */
-      pr[v] = partial;
+    OMP("omp parallel for")
+    for (uint64_t v = 0; v < NV; v++) {
+      pr[v] = tmp_pr[v];
     }
 
     iter--;
@@ -188,7 +194,7 @@ main(int argc, char *argv[])
 	  }
 	}
       } else {
-	page_rank(alg->stinger, stinger_mapping_nv(alg->stinger), pr, tmp_pr, 1e-8, 0.85, 10);
+	page_rank(alg->stinger, stinger_mapping_nv(alg->stinger), pr, tmp_pr, 1e-8, 0.85, 20);
       }
       stinger_alg_end_post(alg);
     }
