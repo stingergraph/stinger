@@ -21,7 +21,7 @@ connect_to_batch_server (struct hostent * server, int port)
 
   if (-1 == (sock_handle = socket(AF_INET, SOCK_STREAM, 0))) {
     perror("Socket create failed");
-    exit(-1);
+    return -1;
   }
 
   bzero ((char *) &serv_addr, sizeof(serv_addr));
@@ -31,7 +31,7 @@ connect_to_batch_server (struct hostent * server, int port)
 
   if(-1 == connect(sock_handle, (const struct sockaddr_in *) &serv_addr, sizeof(serv_addr))) {
     perror("Connection failed");
-    exit(-1);
+    return -1;
   }
 
   return sock_handle;
