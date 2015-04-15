@@ -164,7 +164,7 @@ JSON_RPC_get_server_health::operator()(rapidjson::Value * params, rapidjson::Val
   get_rpc_methods(result, allocator);
 
 
-  /* SC14 performance stats */
+  /* Performance stats */
   rapidjson::Value num_insertions;
   num_insertions.SetInt64(S->num_insertions);
   result.AddMember("num_insertions", num_insertions, allocator);

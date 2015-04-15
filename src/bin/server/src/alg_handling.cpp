@@ -294,7 +294,6 @@ process_loop_handler(void * data)
   LOG_V("Main loop thread started");
   double batch_time;
   double update_time;
-  double test_time;
 
   StingerServerState & server_state = StingerServerState::get_server_state();
   struct stinger * S = server_state.get_stinger();
@@ -607,7 +606,6 @@ process_loop_handler(void * data)
     }
 
     /* Look through each monitor and send an update message (using a copy of the cached message for dependencies) */
-    test_time = timer();
     size_t stop_mon_index = server_state.get_num_mons();
     {
       int64_t timeout = 0;
@@ -657,13 +655,10 @@ process_loop_handler(void * data)
 
       delete server_to_mon;
     }
-    test_time = timer() - test_time;
-    LOG_I_A("test_time :  %20.15e", test_time);
 
     /* TODO timeout */
 
     /* loop through each monitor and wait for message indicating finished postprocesing */
-    test_time = timer();
     int64_t timeout = 0;
     for(size_t cur_mon_index = 0; cur_mon_index < stop_mon_index; cur_mon_index++) {
       StingerMonState * cur_mon = server_state.get_mon(cur_mon_index);
@@ -708,8 +703,6 @@ process_loop_handler(void * data)
     server_state.write_data();
 
     delete batch;
-    test_time = timer() - test_time;
-    LOG_I_A("test_time2 :  %20.15e", test_time);
     
     batch_time = timer() - batch_time;
     LOG_I_A("Algorithm handling loop took %20.15e seconds", batch_time);
