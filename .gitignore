@@ -20,3 +20,8 @@
 # Google Protobufs 
 /src/lib/protobuf/configure
 /src/lib/protobuf/autom4te.cache/
+
+/src/py/stinger/*.pyc
+
+.project
+.cproject
