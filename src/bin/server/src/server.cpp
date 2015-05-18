@@ -7,6 +7,7 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <signal.h>
+#include <sys/syscall.h>
 
 #include "server.h"
 #include "stinger_net/stinger_server_state.h"
@@ -37,6 +38,7 @@ static bool save_to_disk = false;
 static int start_pipe[2] = {-1, -1};
 
 /* we need a socket that can reply with the shmem name & size of the graph */
+pid_t master_pid;
 static pthread_t name_pid, batch_pid;
 
 static StingerServerState & server_state = StingerServerState::get_server_state();
@@ -136,6 +138,7 @@ int main(int argc, char *argv[])
 
   /* print configuration to the terminal */
   LOG_I_A("Name: %s", graph_name);
+  master_pid = getpid();
 
   /* If being a "daemon" (after a fashion), wait on the child to finish initializing and then exit. */
   if (unleash_daemon) {
@@ -279,39 +282,44 @@ int main(int argc, char *argv[])
 void
 cleanup (void)
 {
-  LOG_I("Shutting down the name server..."); fflush(stdout);
-  int status;
-  kill(name_pid, SIGTERM);
-  waitpid(name_pid, &status, 0);
-  LOG_I("done."); fflush(stdout);
+  pid_t tid;
+  tid = syscall(SYS_gettid);
+  /* Only the main thread executes */
+  if (tid == master_pid) {
+    LOG_I("Shutting down the name server..."); fflush(stdout);
+    int status;
+    pthread_cancel(name_pid);
+    pthread_join(name_pid, NULL);
+    LOG_I("done."); fflush(stdout);
 
-  LOG_I("Shutting down the batch server..."); fflush(stdout);
-  kill(batch_pid, SIGTERM);
-  waitpid(batch_pid, &status, 0);
-  LOG_I("done."); fflush(stdout);
+    LOG_I("Shutting down the batch server..."); fflush(stdout);
+    pthread_cancel(batch_pid);
+    pthread_join(batch_pid, NULL);
+    LOG_I("done."); fflush(stdout);
 
-  struct stinger * S = server_state.get_stinger();
-  size_t graph_sz = S->length + sizeof(struct stinger);
-  
-  LOG_V_A("Consistency %ld", (long) stinger_consistency_check(S, S->max_nv));
+    struct stinger * S = server_state.get_stinger();
+    size_t graph_sz = S->length + sizeof(struct stinger);
+    
+    LOG_V_A("Consistency %ld", (long) stinger_consistency_check(S, S->max_nv));
 
-  /* snapshot to disk */
-  if (save_to_disk) {
-    stinger_save_to_file(S, stinger_max_active_vertex(S) + 1, input_file);
-  }
+    /* snapshot to disk */
+    if (save_to_disk) {
+      stinger_save_to_file(S, stinger_max_active_vertex(S) + 1, input_file);
+    }
 
-  /* clean up */
-  stinger_shared_free(S, graph_name, graph_sz);
-  shmunlink(graph_name);
-  free(graph_name);
-  free(input_file);
-  free(file_type);
+    /* clean up */
+    stinger_shared_free(S, graph_name, graph_sz);
+    shmunlink(graph_name);
+    free(graph_name);
+    free(input_file);
+    free(file_type);
 
-  /* clean up algorithm data stores */
-  for (size_t i = 0; i < server_state.get_num_algs(); i++) {
-    StingerAlgState * alg_state = server_state.get_alg(i);
-    const char * alg_data_loc = alg_state->data_loc.c_str();
-    shmunlink(alg_data_loc);
+    /* clean up algorithm data stores */
+    for (size_t i = 0; i < server_state.get_num_algs(); i++) {
+      StingerAlgState * alg_state = server_state.get_alg(i);
+      const char * alg_data_loc = alg_state->data_loc.c_str();
+      shmunlink(alg_data_loc);
+    }
   }
 }
 
