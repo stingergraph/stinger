@@ -1,10 +1,10 @@
-//#define LOG_AT_W  /* warning only */
-#include "stinger_core/stinger_error.h"
-
-#include "stinger_core/xmalloc.h"
-#include "rapidjson/document.h"
 #include "json_rpc_server.h"
 #include "json_rpc.h"
+#include "stinger_core/xmalloc.h"
+#include "rapidjson/document.h"
+
+#define LOG_AT_W  /* warning only */
+#include "stinger_core/stinger_error.h"
 
 using namespace gt::stinger;
 

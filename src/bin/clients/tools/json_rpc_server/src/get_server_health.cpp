@@ -5,14 +5,14 @@
 #include <unistd.h>
 #include <time.h>
 
-//#define LOG_AT_W  /* warning only */
-#include "stinger_core/stinger_error.h"
-
 #include "stinger_core/stinger.h"
 #include "stinger_core/xmalloc.h"
 #include "rapidjson/document.h"
 #include "json_rpc_server.h"
 #include "json_rpc.h"
+
+#define LOG_AT_W  /* warning only */
+#include "stinger_core/stinger_error.h"
 
 using namespace gt::stinger;
 
@@ -162,6 +162,40 @@ JSON_RPC_get_server_health::operator()(rapidjson::Value * params, rapidjson::Val
 
   /* JSON RPC Methods */
   get_rpc_methods(result, allocator);
+
+
+  /* Performance stats */
+  rapidjson::Value num_insertions;
+  num_insertions.SetInt64(S->num_insertions);
+  result.AddMember("num_insertions", num_insertions, allocator);
+
+  rapidjson::Value num_deletions;
+  num_deletions.SetInt64(S->num_deletions);
+  result.AddMember("num_deletions", num_deletions, allocator);
+
+  rapidjson::Value num_insertions_last_batch;
+  num_insertions_last_batch.SetInt64(S->num_insertions_last_batch);
+  result.AddMember("num_insertions_last_batch", num_insertions_last_batch, allocator);
+
+  rapidjson::Value num_deletions_last_batch;
+  num_deletions_last_batch.SetInt64(S->num_deletions_last_batch);
+  result.AddMember("num_deletions_last_batch", num_deletions_last_batch, allocator);
+
+  rapidjson::Value batch_time;
+  batch_time.SetDouble(S->batch_time);
+  result.AddMember("batch_time", batch_time, allocator);
+
+  rapidjson::Value update_time;
+  update_time.SetDouble(S->update_time);
+  result.AddMember("update_time", update_time, allocator);
+
+  rapidjson::Value queue_size;
+  queue_size.SetInt64(S->queue_size);
+  result.AddMember("queue_size", queue_size, allocator);
+
+  rapidjson::Value dropped_batches;
+  dropped_batches.SetInt64(S->dropped_batches);
+  result.AddMember("dropped_batches", dropped_batches, allocator);
 
 
   free(stats);

@@ -20,6 +20,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <sys/un.h>
 #include <unistd.h>
 
 /* POSIX only for now, note that mongoose would be a good place to 
@@ -295,6 +296,7 @@ process_loop_handler(void * data)
   double update_time;
 
   StingerServerState & server_state = StingerServerState::get_server_state();
+  struct stinger * S = server_state.get_stinger();
 
   while(1) { /* TODO clean shutdown mechanism */
     StingerBatch * batch = server_state.dequeue_batch();
@@ -499,6 +501,14 @@ process_loop_handler(void * data)
     LOG_I_A("Server processed %ld edges in %20.15e seconds", edge_count, update_time);
     LOG_I_A("%f edges per second", ((double) edge_count) / update_time);
 
+    /* update performance stats */
+    S->num_insertions += batch->insertions_size();
+    S->num_deletions += batch->deletions_size();
+    S->num_insertions_last_batch = batch->insertions_size();
+    S->num_deletions_last_batch = batch->deletions_size();
+    S->update_time = update_time;
+    S->queue_size = server_state.get_queue_size();
+
     /* loop through each algorithm, send start postprocessing message */
     stop_alg_level = server_state.get_num_levels();
     for(size_t cur_level_index = 0; cur_level_index < stop_alg_level; cur_level_index++) {
@@ -696,6 +706,7 @@ process_loop_handler(void * data)
     
     batch_time = timer() - batch_time;
     LOG_I_A("Algorithm handling loop took %20.15e seconds", batch_time);
+    S->batch_time = batch_time;
   }
 }
 
@@ -708,11 +719,20 @@ start_alg_handling(void *)
   int sock_handle;
   int port = server_state.get_port_algs();
 
+#ifdef STINGER_USE_TCP
   struct sockaddr_in sock_addr;
   memset(&sock_addr, 0, sizeof(sock_addr));
   sock_addr.sin_family = AF_INET;
   sock_addr.sin_port   = htons(port);
+#else
+  struct sockaddr_un sock_addr;
+  memset(&sock_addr, 0, sizeof(sock_addr));
+  sock_addr.sun_family = AF_UNIX;
+  strncpy(sock_addr.sun_path, "/tmp/stinger.sock", sizeof(sock_addr.sun_path)-1);
+  unlink("/tmp/stinger.sock");
+#endif
 
+#ifdef STINGER_USE_TCP
   if(-1 == (sock_handle = socket(AF_INET, SOCK_STREAM, 0))) {
     LOG_F_A("Socket create failed: %s", strerror(errno));
     exit(-1);
@@ -729,6 +749,24 @@ start_alg_handling(void *)
   }
 
   LOG_V_A("Algorithm Server listening on port %d", port);
+#else
+  if(-1 == (sock_handle = socket(AF_UNIX, SOCK_STREAM, 0))) {
+    LOG_F_A("Socket create failed: %s", strerror(errno));
+    exit(-1);
+  }
+
+  if(-1 == bind(sock_handle, (const sockaddr *)&sock_addr, sizeof(sock_addr))) {
+    LOG_F_A("Socket bind failed: %s", strerror(errno));
+    exit(-1);
+  }
+
+  if(-1 == listen(sock_handle, 16)) {
+    LOG_F_A("Socket listen failed: %s", strerror(errno));
+    exit(-1);
+  }
+
+  LOG_V_A("Algorithm Server listening on port %d", port);
+#endif
 
   pthread_t main_loop_thread;
   pthread_create(&main_loop_thread, NULL, &process_loop_handler, NULL);

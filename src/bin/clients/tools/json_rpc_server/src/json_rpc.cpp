@@ -6,7 +6,6 @@
 
 extern "C" {
 #include "stinger_core/xmalloc.h"
-#include "stinger_core/stinger_error.h"
 }
 
 #include "rapidjson/document.h"
@@ -17,6 +16,9 @@ extern "C" {
 
 #include "json_rpc.h"
 #include "rpc_state.h"
+
+#define LOG_AT_W
+#include "stinger_core/stinger_error.h"
 
 using namespace gt::stinger;
 

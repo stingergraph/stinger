@@ -1,3 +1,5 @@
+#include "json_rpc_server.h"
+#include "json_rpc.h"
 #include <climits>
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
@@ -5,15 +7,13 @@
 #define INT64_MAX 9223372036854775807 /* sometimes c++ just doesn't want this to work */
 #endif
 
-//#define LOG_AT_W  /* warning only */
-#include "stinger_core/stinger_error.h"
-
 #include "stinger_core/xmalloc.h"
 #include "stinger_utils/stinger_utils.h"
 #include "rapidjson/document.h"
-#include "json_rpc_server.h"
-#include "json_rpc.h"
 #include "session_handling.h"
+
+#define LOG_AT_W  /* warning only */
+#include "stinger_core/stinger_error.h"
 
 using namespace gt::stinger;
 

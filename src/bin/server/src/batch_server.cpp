@@ -9,10 +9,13 @@
 #include <errno.h>
 
 #include "server.h"
+#include "stinger_core/stinger_atomics.h"
 #include "stinger_net/stinger_server_state.h"
 
 //#define LOG_AT_D
 #include "stinger_core/stinger_error.h"
+
+#define STINGER_MAX_BATCHES 100
 
 typedef struct {
   struct stinger * S;
@@ -51,6 +54,12 @@ handle_stream(void * args)
 	}
       }
 
+      if (server_state.get_queue_size() >= STINGER_MAX_BATCHES) {
+	LOG_W("Dropping a batch");
+	stinger_uint64_fetch_add(&(S->dropped_batches), 1);
+	delete batch;
+	continue;
+      }
       server_state.enqueue_batch(batch);
 
       if(!batch->keep_alive()) {

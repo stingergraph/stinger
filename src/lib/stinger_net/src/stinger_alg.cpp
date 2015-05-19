@@ -3,6 +3,7 @@
 #include <limits>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/un.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
@@ -28,6 +29,7 @@ stinger_register_alg_impl(stinger_register_alg_params params)
 {
   LOG_D_A("Registering alg %s", params.name);
 
+#ifdef STINGER_USE_TCP
   struct sockaddr_in sock_addr;
   memset(&sock_addr, 0, sizeof(struct sockaddr_in));
   struct hostent * hp = gethostbyname(params.host);
@@ -46,16 +48,29 @@ stinger_register_alg_impl(stinger_register_alg_params params)
   memcpy(&sock_addr.sin_addr.s_addr, hp->h_addr, hp->h_length);
   sock_addr.sin_family = AF_INET;
 
-  LOG_D_A("Socket open, connecting to host %s %s", params.host, inet_ntoa(**(struct in_addr **)hp->h_addr_list));
-
   if(params.port) {
     sock_addr.sin_port = htons(params.port);
   } else {
     sock_addr.sin_port = htons(10103);
   }
 
-  if(-1 == connect(sock, (sockaddr *)&sock_addr, sizeof(struct sockaddr_in))) {
-    LOG_E_A("Error connecting socket [%d]", params.port);
+  LOG_D_A("Socket open, connecting to host %s %s", params.host, inet_ntoa(**(struct in_addr **)hp->h_addr_list));
+#else
+  struct sockaddr_un sock_addr;
+  memset(&sock_addr, 0, sizeof(sock_addr));
+  int sock = socket(AF_UNIX, SOCK_STREAM, 0);
+  if(-1 == sock) {
+    LOG_E("Error opening socket");
+    return NULL;
+  }
+  strncpy(sock_addr.sun_path, "/tmp/stinger.sock", sizeof(sock_addr.sun_path)-1);
+  sock_addr.sun_family = AF_UNIX;
+
+  LOG_D_A("Socket open, connecting to host %s", params.host);
+#endif
+
+  if(-1 == connect(sock, (sockaddr *)&sock_addr, sizeof(sock_addr))) {
+    LOG_E("Error connecting socket");
     return NULL;
   }
 
@@ -317,7 +332,7 @@ stinger_alg_begin_pre(stinger_registered_alg * alg)
   switch(server_to_alg->batch().type()) {
     case NUMBERS_ONLY: {
       alg->batch_type = BATCH_NUMBERS_ONLY;
-      OMP("omp for")
+      OMP("omp parallel for")
 	for (size_t i = 0; i < server_to_alg->batch().insertions_size(); i++) {
 	  const EdgeInsertion & in = server_to_alg->batch().insertions(i);
 	  alg->insertions[i].type	  = in.type();
@@ -329,7 +344,7 @@ stinger_alg_begin_pre(stinger_registered_alg * alg)
 	  alg->insertions[i].meta_index	  = in.meta_index();
 	}
 
-      OMP("omp for")
+      OMP("omp parallel for")
 	for(size_t d = 0; d < server_to_alg->batch().deletions_size(); d++) {
 	  const EdgeDeletion & del	= server_to_alg->batch().deletions(d);
 	  alg->deletions[d].type	= del.type();
@@ -342,7 +357,7 @@ stinger_alg_begin_pre(stinger_registered_alg * alg)
 
     case STRINGS_ONLY: {
       alg->batch_type = BATCH_STRINGS_ONLY;
-      OMP("omp for")
+      OMP("omp parallel for")
 	for (size_t i = 0; i < server_to_alg->batch().insertions_size(); i++) {
 	  const EdgeInsertion & in = server_to_alg->batch().insertions(i);
 	  alg->insertions[i].type_str	      = in.type_str().c_str();
@@ -354,7 +369,7 @@ stinger_alg_begin_pre(stinger_registered_alg * alg)
 	  alg->insertions[i].meta_index	      = in.meta_index();
 	}
 
-      OMP("omp for")
+      OMP("omp parallel for")
 	for(size_t d = 0; d < server_to_alg->batch().deletions_size(); d++) {
 	  const EdgeDeletion & del = server_to_alg->batch().deletions(d);
 	  alg->deletions[d].type_str	      = del.type_str().c_str();
@@ -367,7 +382,7 @@ stinger_alg_begin_pre(stinger_registered_alg * alg)
 
     case MIXED: {
       alg->batch_type = BATCH_MIXED;
-      OMP("omp for")
+      OMP("omp parallel for")
 	for (size_t i = 0; i < server_to_alg->batch().insertions_size(); i++) {
 	  const EdgeInsertion & in = server_to_alg->batch().insertions(i);
           if(in.has_type_str()) {
@@ -394,7 +409,7 @@ stinger_alg_begin_pre(stinger_registered_alg * alg)
 	  alg->insertions[i].meta_index	      = in.meta_index();
 	}
 
-      OMP("omp for")
+      OMP("omp parallel for")
 	for(size_t d = 0; d < server_to_alg->batch().deletions_size(); d++) {
 	  const EdgeDeletion & del = server_to_alg->batch().deletions(d);
           if(del.has_type_str()) {
@@ -421,7 +436,7 @@ stinger_alg_begin_pre(stinger_registered_alg * alg)
     } break;
   }
 
-  OMP("omp for")
+  OMP("omp parallel for")
   for(size_t v = 0; v < server_to_alg->batch().vertex_updates_size(); v++) {
     const VertexUpdate & up = server_to_alg->batch().vertex_updates(v);
     if(up.has_type_str()) {
@@ -441,7 +456,7 @@ stinger_alg_begin_pre(stinger_registered_alg * alg)
     alg->vertex_updates[v].meta_index	        = up.meta_index();
   }
 
-  OMP("omp for")
+  OMP("omp parallel for")
   for(size_t m = 0; m < server_to_alg->batch().metadata_size(); m++) {
     const std::string & meta = server_to_alg->batch().metadata(m);
     alg->metadata[m]         = (uint8_t *)meta.c_str();
@@ -594,7 +609,7 @@ stinger_alg_begin_post(stinger_registered_alg * alg)
 
   switch(server_to_alg->batch().type()) {
     case NUMBERS_ONLY: {
-      OMP("omp for")
+      OMP("omp parallel for")
 	for (size_t i = 0; i < server_to_alg->batch().insertions_size(); i++) {
 	  const EdgeInsertion & in	      = server_to_alg->batch().insertions(i);
 	  alg->insertions[i].type_str	      = in.type_str().c_str();
@@ -603,7 +618,7 @@ stinger_alg_begin_post(stinger_registered_alg * alg)
 	  alg->insertions[i].result	      = in.result();
 	}
 
-      OMP("omp for")
+      OMP("omp parallel for")
 	for(size_t d = 0; d < server_to_alg->batch().deletions_size(); d++) {
 	  const EdgeDeletion & del	      = server_to_alg->batch().deletions(d);
 	  alg->deletions[d].type_str	      = del.type_str().c_str();
@@ -614,7 +629,7 @@ stinger_alg_begin_post(stinger_registered_alg * alg)
     } break;
 
     case STRINGS_ONLY: {
-      OMP("omp for")
+      OMP("omp parallel for")
 	for (size_t i = 0; i < server_to_alg->batch().insertions_size(); i++) {
 	  const EdgeInsertion & in	      = server_to_alg->batch().insertions(i);
 	  alg->insertions[i].type	      = in.type();
@@ -626,7 +641,7 @@ stinger_alg_begin_post(stinger_registered_alg * alg)
 	  alg->insertions[i].result	      = in.result();
 	}
 
-      OMP("omp for")
+      OMP("omp parallel for")
 	for(size_t d = 0; d < server_to_alg->batch().deletions_size(); d++) {
 	  const EdgeDeletion & del	      = server_to_alg->batch().deletions(d);
 	  alg->deletions[d].type	      = del.type();
@@ -640,7 +655,7 @@ stinger_alg_begin_post(stinger_registered_alg * alg)
     } break;
 
     case MIXED: {
-      OMP("omp for")
+      OMP("omp parallel for")
 	for (size_t i = 0; i < server_to_alg->batch().insertions_size(); i++) {
 	  const EdgeInsertion & in		= server_to_alg->batch().insertions(i);
 	  alg->insertions[i].type_str		= in.type_str().c_str();
@@ -654,7 +669,7 @@ stinger_alg_begin_post(stinger_registered_alg * alg)
 	  alg->insertions[i].result	        = in.result();
 	}
 
-      OMP("omp for")
+      OMP("omp parallel for")
 	for(size_t d = 0; d < server_to_alg->batch().deletions_size(); d++) {
 	  const EdgeDeletion & del		= server_to_alg->batch().deletions(d);
 	  alg->deletions[d].type_str		= del.type_str().c_str();
@@ -670,7 +685,7 @@ stinger_alg_begin_post(stinger_registered_alg * alg)
     } break;
   }
 
-  OMP("omp for")
+  OMP("omp parallel for")
   for(size_t v = 0; v < server_to_alg->batch().vertex_updates_size(); v++) {
     const VertexUpdate & up = server_to_alg->batch().vertex_updates(v);
     alg->vertex_updates[v].type_str		= up.type_str().c_str();
