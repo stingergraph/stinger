@@ -138,7 +138,11 @@ int main(int argc, char *argv[])
 
   /* print configuration to the terminal */
   LOG_I_A("Name: %s", graph_name);
+#ifdef __APPLE__
+  master_pid = syscall(SYS_thread_selfid);
+#else
   master_pid = getpid();
+#endif
 
   /* If being a "daemon" (after a fashion), wait on the child to finish initializing and then exit. */
   if (unleash_daemon) {
@@ -283,7 +287,11 @@ void
 cleanup (void)
 {
   pid_t tid;
+#ifdef __APPLE__
+  tid = syscall(SYS_thread_selfid);
+#else
   tid = syscall(SYS_gettid);
+#endif
   /* Only the main thread executes */
   if (tid == master_pid) {
     LOG_I("Shutting down the name server..."); fflush(stdout);
