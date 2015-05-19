@@ -22,10 +22,10 @@ extern "C" int stream_connect(char * host, int port) {
 
 extern "C" void stream_send_batch(int sock_handle, int only_strings,
     stinger_edge_update * insertions, int64_t num_insertions,
-    stinger_edge_update * deletions, int64_t num_deletions) {
+    stinger_edge_update * deletions, int64_t num_deletions, bool directed) {
 
   StingerBatch batch;
-  batch.set_make_undirected(true);
+  batch.set_make_undirected(directed);
   batch.set_keep_alive(true);
   batch.set_type(only_strings ? STRINGS_ONLY : NUMBERS_ONLY);
 
