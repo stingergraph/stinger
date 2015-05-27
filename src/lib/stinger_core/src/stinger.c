@@ -1584,8 +1584,8 @@ stinger_gather_typed_predecessors (const struct stinger *G,
 
   STINGER_PARALLEL_FORALL_EDGES_BEGIN(G, type) {
     const int64_t u = STINGER_EDGE_SOURCE;
-    const int64_t v = STINGER_EDGE_DEST;
-    if (v >= 0) {
+    const int64_t d = STINGER_EDGE_DEST;
+    if (v == d) {
       size_t where = stinger_size_fetch_add (&kout, 1);
       if (where < max_outlen) {
         out[where] = u;
