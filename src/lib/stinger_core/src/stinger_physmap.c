@@ -100,7 +100,7 @@ stinger_physmap_id_get(stinger_physmap_t * p, stinger_vertices_t * v, vindex_t v
 	return -1;
       }
     }
-    memcpy(*outbuffer, name, len);
+    memcpy(*outbuffer, name, len+1);
     *outbufferlength = len;
     return 0;
   }
