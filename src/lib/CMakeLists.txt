@@ -2,7 +2,13 @@ include(ExternalProject)
 
 ##################################################
 # Add library dependencies here as libdep_<folder>
-SET(libdep_stinger_core compat)
+IF(STINGER_NAME_USE_SQLITE)
+  SET(libdep_sqlite dl pthread)
+  SET(libdep_stinger_core compat sqlite)
+ELSE()
+  SET(libdep_stinger_core compat)
+ENDIF()
+
 SET(libdep_stinger_utils stinger_core int_hm_seq string fmemopen compat)
 SET(libdep_kv_store string)
 SET(libdep_mongoose dl pthread)
@@ -17,6 +23,7 @@ ENDIF()
 #################################################
 # Add target dependencies here as tgtdep_<folder>
 SET(tgtdep_default protobuf)
+SET(tgtdep_stinger_core sqlite)
 SET(tgtdep_stinger_utils rapidjson)
 SET(tgtdep_stinger_net stinger_core stinger_utils)
 
@@ -77,6 +84,9 @@ FOREACH(subdir ${subs})
 
 	# Build the shared library
 	ADD_LIBRARY(${subdir} SHARED ${srcs} ${realprotosrc})
+      if (${subdir} STREQUAL "sqlite")
+        target_compile_definitions(${subdir} PUBLIC SQLITE_USE_URI=1)
+      endif()
       TARGET_LINK_LIBRARIES(${subdir} ${libdep_${subdir}})
       ADD_DEPENDENCIES(${subdir} ${tgtdep_default})
       FOREACH(dep_target ${tgtdep_${subdir}})

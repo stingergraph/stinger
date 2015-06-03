@@ -2062,6 +2062,52 @@ stinger_remove_all_edges_of_type (struct stinger *G, int64_t type)
   }
 }
 
+/** @brief Removes a vertex and all incident edges from the graph
+ *
+ *  Removes all edges incident to the vertex and unmaps the vertex
+ *  in the physmap.  This algorithm first removes all out edges. During
+ *  this pass it will assume an undirected graph and attempt to remove
+ *  all reverse edges if they exist.  In the case of an undirected graph
+ *  the algorithm will be complete and will terminate quickly.
+ *
+ *  If, however, the graph is a directed graph and there are incident edges
+ *  still pointing to the vertex (stinger_indegree_get for the vtx > 0).  Then
+ *  all edges are traversed looking for incident edges until the indegree is 0.
+ *
+ *  As a final step, the vertex is removed from the physmap, freeing this vertex
+ *  to be re-assigned to a new vertex string.
+ *
+ *  @param G The STINGER data structure
+ *  @param vtx_id The vertex to remove
+ *  @return 0 if deletion is successful, -1 if it fails
+ */
+int64_t
+stinger_remove_vertex (struct stinger *G, int64_t vtx_id)
+{
+  // Remove out edges
+  STINGER_PARALLEL_FORALL_EDGES_OF_VTX_BEGIN(G,vtx_id) {
+    stinger_remove_edge_pair(G,STINGER_EDGE_TYPE,STINGER_EDGE_SOURCE,STINGER_EDGE_DEST);
+  } STINGER_PARALLEL_FORALL_EDGES_OF_VTX_END();
+
+  // Remove remaining in edges
+  if (stinger_indegree_get(G,vtx_id) > 0) {
+    STINGER_FORALL_EDGES_OF_ALL_TYPES_BEGIN(G) {
+      int64_t from = STINGER_EDGE_SOURCE;
+      int64_t to = STINGER_EDGE_DEST;
+      int64_t type = STINGER_EDGE_TYPE;
+      if (to == vtx_id) {
+        stinger_remove_edge(G,type,from,to);
+        if (stinger_indegree_get(G,vtx_id) == 0) {
+          break;
+        }
+      }
+    } STINGER_FORALL_EDGES_OF_ALL_TYPES_END();
+  }
+
+  // Remove from physmap
+  return stinger_physmap_vtx_remove_id(stinger_physmap_get(G),stinger_vertices_get(G),vtx_id);
+}
+
 const int64_t endian_check = 0x1234ABCD;
 /** @brief Checkpoint a STINGER data structure to disk.
  *  Format (64-bit words):

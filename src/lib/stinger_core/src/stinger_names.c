@@ -6,6 +6,8 @@
 #include <stdint.h>
 #include <string.h>
 
+#ifndef NAME_USE_SQLITE
+
 /**
  * @file stinger-names.c
  * @brief A simple hash structure to map strings to integers (permanently). Parallel safe.
@@ -281,6 +283,18 @@ stinger_names_print(stinger_names_t * sn) {
       }
 }
 
+int64_t
+stinger_names_remove_type(stinger_names_t * sn, int64_t type) {
+  LOG_E("Deleting of stinger names is unsupported in base mode");
+  return -1;
+}
+
+int64_t
+stinger_names_remove_name(stinger_names_t * sn, const char * name) {
+  LOG_E("Deleting of stinger names is unsupported in base mode");
+  return -1;
+}
+
 /**
  * @brief Save the strings stored in this names_t to a binary file.
  *
@@ -398,3 +412,4 @@ int main(int argc, char *argv[]) {
 }
 #endif
 
+#endif

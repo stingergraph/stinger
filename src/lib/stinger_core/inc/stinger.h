@@ -86,6 +86,8 @@ int stinger_remove_edge_pair (struct stinger *, int64_t /* type */ ,
 
 void stinger_remove_all_edges_of_type (struct stinger *G, int64_t type);
 
+int64_t stinger_remove_vertex(struct stinger *G, int64_t vtx_id);
+
 /* Edge metadata (directed)*/
 int64_t stinger_edgeweight (const struct stinger *, int64_t /* vtx 1 */ ,
 			    int64_t /* vtx 2 */ ,
@@ -327,6 +329,9 @@ stinger_etype_array_size(int64_t nebs);
 
 #define STINGER_PARALLEL_FORALL_EDGES_BEGIN(STINGER_,TYPE_) do {
 #define STINGER_PARALLEL_FORALL_EDGES_END() } while (0)
+
+#define STINGER_FORALL_EDGES_OF_ALL_TYPES_BEGIN(STINGER_) do {
+#define STINGER_FORALL_EDGES_OF_ALL_TYPES_END() } while (0)
 
 /* read-only traversal macros *
  * These should be safe even when the graph is being modified elsewhere. All 

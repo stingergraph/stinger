@@ -68,6 +68,16 @@ stinger_physmap_vtx_lookup(stinger_physmap_t * p, stinger_vertices_t * v, const 
   return stinger_names_lookup_type(p, byte_string);
 }
 
+int64_t
+stinger_physmap_vtx_remove_id(stinger_physmap_t *p, stinger_vertices_t * v, vindex_t vertexID) {
+  return stinger_names_remove_type(p, vertexID);
+}
+
+int64_t
+stinger_physmap_vtx_remove_name(stinger_physmap_t *p, stinger_vertices_t * v, const char * byte_string, int64_t length) {
+  return stinger_names_remove_name(p, byte_string);
+}
+
 /**
  * @brief Get the mapping between the input vertex in the space space 0 .. stinger_vertices_max_vertices_get()-1 and its representative
  *	string if it exists.
