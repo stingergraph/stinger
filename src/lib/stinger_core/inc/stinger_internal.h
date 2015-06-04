@@ -120,26 +120,28 @@ struct stinger
   uint64_t max_neblocks;
   uint64_t max_netypes;
   uint64_t max_nvtypes;
-
   uint64_t num_insertions;
   uint64_t num_deletions;
   uint64_t num_insertions_last_batch;
   uint64_t num_deletions_last_batch;
+
   double batch_time;
   double update_time;
   /* number of edges per edge type */
   /* number of insertions per edge type */
   uint64_t queue_size;
   uint64_t dropped_batches;
-
   uint64_t vertices_start;
   uint64_t physmap_start;
   uint64_t etype_names_start;
   uint64_t vtype_names_start;
+
   uint64_t ETA_start;
   uint64_t ebpool_start;
-
   size_t length;
+
+  uint64_t cache_pad[5]; /* Force storage[0] to be cache-block aligned */
+
   uint8_t storage[0];
 };
 
