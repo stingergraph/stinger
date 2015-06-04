@@ -18,6 +18,8 @@ namespace gt {
 
     typedef enum {
       TYPE_VERTEX,
+      TYPE_EDGE_TYPE,
+      TYPE_VERTEX_TYPE,
       TYPE_INT64,
       TYPE_STRING,
       TYPE_DOUBLE,

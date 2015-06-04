@@ -172,6 +172,16 @@ struct JSON_RPC_egonet : JSON_RPCFunction {
   virtual int64_t operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
 };
 
+struct JSON_RPC_get_connected_component : JSON_RPCFunction {
+  JSON_RPC_get_connected_component(JSON_RPCServerState * state) : JSON_RPCFunction(state) { }
+  virtual int64_t operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
+};
+
+struct JSON_RPC_bfs_edges: JSON_RPCFunction {
+  JSON_RPC_bfs_edges(JSON_RPCServerState * state) : JSON_RPCFunction(state) { }
+  virtual int64_t operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
+};
+
 
 /* Helper Functions */
 int

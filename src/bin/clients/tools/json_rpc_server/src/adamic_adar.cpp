@@ -22,11 +22,13 @@ JSON_RPC_adamic_adar::operator()(rapidjson::Value * params, rapidjson::Value & r
   int64_t source;
   bool strings;
   bool include_neighbors;
+  int64_t etype;
 
   rpc_params_t p[] = {
     {"source", TYPE_VERTEX, &source, false, 0},
     {"strings", TYPE_BOOL, &strings, true, 0},
     {"include_neighbors", TYPE_BOOL, &include_neighbors, true, 0},
+    {"etype", TYPE_EDGE_TYPE , &etype, true, -1},
     {NULL, TYPE_NONE, NULL, false, 0}
   };
 
@@ -76,7 +78,12 @@ JSON_RPC_adamic_adar::operator()(rapidjson::Value * params, rapidjson::Value & r
 
   /* extract and sort the neighborhood of SOURCE */
   size_t res;
-  stinger_gather_successors (S, source, &res, source_adj, NULL, NULL, NULL, NULL, source_deg);
+  if (etype == -1) {
+    stinger_gather_successors (S, source, &res, source_adj, NULL, NULL, NULL, NULL, source_deg);
+  } else {
+    stinger_gather_typed_successors (S, etype, source, &res, source_adj, source_deg);
+    source_deg = res;
+  }
   qsort (source_adj, source_deg, sizeof(int64_t), compare);
 
   /* create a marks array to unique-ify the vertex list */
@@ -126,7 +133,12 @@ JSON_RPC_adamic_adar::operator()(rapidjson::Value * params, rapidjson::Value & r
 
       int64_t * target_adj = (int64_t *) xmalloc (v_deg * sizeof(int64_t));
       size_t res;
-      stinger_gather_successors (S, vtx, &res, target_adj, NULL, NULL, NULL, NULL, v_deg);
+      if (etype == -1) {
+	stinger_gather_successors (S, vtx, &res, target_adj, NULL, NULL, NULL, NULL, v_deg);
+      } else {
+	stinger_gather_typed_successors (S, etype, vtx, &res, target_adj, v_deg);
+	v_deg = res;
+      }
       qsort (target_adj, v_deg, sizeof(int64_t), compare);
 
       int64_t i = 0, j = 0;
@@ -178,7 +190,12 @@ JSON_RPC_adamic_adar::operator()(rapidjson::Value * params, rapidjson::Value & r
 
     int64_t * target_adj = (int64_t *) xmalloc (v_deg * sizeof(int64_t));
     size_t res;
-    stinger_gather_successors (S, vtx, &res, target_adj, NULL, NULL, NULL, NULL, v_deg);
+    if (etype == -1) {
+      stinger_gather_successors (S, vtx, &res, target_adj, NULL, NULL, NULL, NULL, v_deg);
+    } else {
+      stinger_gather_typed_successors (S, etype, vtx, &res, target_adj, v_deg);
+      v_deg = res;
+    }
     qsort (target_adj, v_deg, sizeof(int64_t), compare);
 
     int64_t i = 0, j = 0;
