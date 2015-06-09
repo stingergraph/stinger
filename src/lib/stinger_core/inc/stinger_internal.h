@@ -160,7 +160,7 @@ int64_t stinger_count_outdeg (struct stinger *G, int64_t v);
 struct curs etype_begin (stinger_t * S, int64_t v, int etype);
 
 void update_edge_data (struct stinger * S, struct stinger_eb *eb,
-                  uint64_t index, int64_t neighbor, int64_t weight, int64_t ts);
+                  uint64_t index, int64_t neighbor, int64_t weight, int64_t ts, int64_t operation);
 
 void remove_edge (struct stinger * S, struct stinger_eb *eb, uint64_t index);
 
