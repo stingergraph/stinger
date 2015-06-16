@@ -138,7 +138,7 @@ stinger_remove_and_insert_edges (struct stinger *G,
 		  has_slot[which] = tmp;
 		  kslot[which] = k;
 		}
-		update_edge_data(G, tmp, k, ~w, 0, timestamp);
+		update_edge_data(G, tmp, k, ~w, 0, timestamp, EDGE_WEIGHT_SET);
 		stinger_int64_fetch_add (&nrem, 1);
 	      }
 	    }
@@ -148,7 +148,7 @@ stinger_remove_and_insert_edges (struct stinger *G,
 	      while (off >= 0) {
 		stinger_int64_fetch_add (&ninsert_remaining, -1);
 		insert[off] = ~insert[off];
-		update_edge_data(G, tmp, k, w, (weight ? weight[off] : 1), timestamp);
+		update_edge_data(G, tmp, k, w, (weight ? weight[off] : 1), timestamp, EDGE_WEIGHT_SET);
 		qsort (insert, ninsert, sizeof (*insert), i64_cmp);  /* Must maintain sorted order here. */
 		off = find_in_sorted (w, ninsert, insert);   /* Gotta check if there's another one. */
 	      }
@@ -231,7 +231,7 @@ stinger_remove_and_insert_edges (struct stinger *G,
         assert (eb);
         /* Breaking atomicity => assert may break. */
         update_edge_data (G, eb, ks, w,
-                          (weight ? weight[k] : 1), timestamp);
+                          (weight ? weight[k] : 1), timestamp, EDGE_WEIGHT_SET);
       }
     }
   }
