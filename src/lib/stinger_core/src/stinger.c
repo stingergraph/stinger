@@ -949,15 +949,23 @@ etype_begin (stinger_t * S, int64_t v, int etype)
 MTA ("mta inline")
 void
 update_edge_data (struct stinger * S, struct stinger_eb *eb,
-                  uint64_t index, int64_t neighbor, int64_t weight, int64_t ts)
+                  uint64_t index, int64_t neighbor, int64_t weight,
+		  int64_t ts, int64_t operation)
 {
   struct stinger_edge * e = eb->edges + index;
 
   /* insertion */
-  if(neighbor >= 0) {
-    e->weight = weight;
+  if (neighbor >= 0) {
+    switch (operation) {
+      case EDGE_WEIGHT_SET:
+	e->weight = weight;
+	break;
+      case EDGE_WEIGHT_INCR:
+	stinger_int64_fetch_add(&(e->weight), weight);
+	break;
+    }
     /* is this a new edge */
-    if(e->neighbor < 0 || index >= eb->high) {
+    if (e->neighbor < 0 || index >= eb->high) {
       e->neighbor = neighbor;
 
       /* only edge in block? - assuming we have block effectively locked */
@@ -1042,7 +1050,7 @@ stinger_insert_edge (struct stinger *G,
 
       for (k = 0; k < endk; ++k) {
 	if (to == tmp->edges[k].neighbor) {
-	  update_edge_data (G, tmp, k, to, weight, timestamp);
+	  update_edge_data (G, tmp, k, to, weight, timestamp, EDGE_WEIGHT_SET);
 	  return 0;
 	}
       }
@@ -1061,7 +1069,7 @@ stinger_insert_edge (struct stinger *G,
 	for (k = 0; k < STINGER_EDGEBLOCKSIZE; ++k) {
 	  int64_t myNeighbor = tmp->edges[k].neighbor;
 	  if (to == myNeighbor && k < endk) {
-	    update_edge_data (G, tmp, k, to, weight, timestamp);
+	    update_edge_data (G, tmp, k, to, weight, timestamp, EDGE_WEIGHT_SET);
 	    return 0;
 	  }
 
@@ -1071,10 +1079,10 @@ stinger_insert_edge (struct stinger *G,
 	    endk = tmp->high;
 
 	    if (thisEdge < 0 || k >= endk) {
-	      update_edge_data (G, tmp, k, to, weight, timestamp);
+	      update_edge_data (G, tmp, k, to, weight, timestamp, EDGE_WEIGHT_SET);
 	      return 1;
 	    } else if (to == thisEdge) {
-	      update_edge_data (G, tmp, k, to, weight, timestamp);
+	      update_edge_data (G, tmp, k, to, weight, timestamp, EDGE_WEIGHT_SET);
 	      writexf ( &(tmp->edges[k].timeFirst), timefirst);
 	      return 0;
 	    } else {
@@ -1094,7 +1102,7 @@ stinger_insert_edge (struct stinger *G,
 	writeef ((uint64_t *)block_ptr, (uint64_t)old_eb);
 	return -1;
       } else {
-	update_edge_data (G, ebpool_priv + newBlock, 0, to, weight, timestamp);
+	update_edge_data (G, ebpool_priv + newBlock, 0, to, weight, timestamp, EDGE_WEIGHT_SET);
 	ebpool_priv[newBlock].next = 0;
 	push_ebs (G, 1, &newBlock);
       }
@@ -1173,7 +1181,7 @@ stinger_incr_edge (struct stinger *G,
 
       for (k = 0; k < endk; ++k) {
 	if (to == tmp->edges[k].neighbor) {
-	  update_edge_data (G, tmp, k, to, tmp->edges[k].weight + weight, timestamp);
+	  update_edge_data (G, tmp, k, to, weight, timestamp, EDGE_WEIGHT_INCR);
 	  return 0;
 	}
       }
@@ -1192,7 +1200,7 @@ stinger_incr_edge (struct stinger *G,
 	for (k = 0; k < STINGER_EDGEBLOCKSIZE; ++k) {
 	  int64_t myNeighbor = tmp->edges[k].neighbor;
 	  if (to == myNeighbor && k < endk) {
-	    update_edge_data (G, tmp, k, to, tmp->edges[k].weight + weight, timestamp);
+	    update_edge_data (G, tmp, k, to, weight, timestamp, EDGE_WEIGHT_INCR);
 	    return 0;
 	  }
 
@@ -1202,10 +1210,10 @@ stinger_incr_edge (struct stinger *G,
 	    endk = tmp->high;
 
 	    if (thisEdge < 0 || k >= endk) {
-	      update_edge_data (G, tmp, k, to, weight, timestamp);
+	      update_edge_data (G, tmp, k, to, weight, timestamp, EDGE_WEIGHT_SET);
 	      return 1;
 	    } else if (to == thisEdge) {
-	      update_edge_data (G, tmp, k, to, tmp->edges[k].weight + weight, timestamp);
+	      update_edge_data (G, tmp, k, to, weight, timestamp, EDGE_WEIGHT_INCR);
 	      writexf ( &(tmp->edges[k].timeFirst), timefirst);
 	      return 0;
 	    } else {
@@ -1225,7 +1233,7 @@ stinger_incr_edge (struct stinger *G,
 	writeef ((uint64_t *)block_ptr, (uint64_t)old_eb);
 	return -1;
       } else {
-	update_edge_data (G, ebpool_priv + newBlock, 0, to, weight, timestamp);
+	update_edge_data (G, ebpool_priv + newBlock, 0, to, weight, timestamp, EDGE_WEIGHT_SET);
 	ebpool_priv[newBlock].next = 0;
 	push_ebs (G, 1, &newBlock);
       }
@@ -1334,7 +1342,7 @@ stinger_remove_edge (struct stinger *G,
 	if (to == tmp->edges[k].neighbor) {
 	  int64_t weight = readfe (&(tmp->edges[k].weight));
 	  if(to == tmp->edges[k].neighbor) {
-	    update_edge_data (G, tmp, k, ~to, weight, 0);
+	    update_edge_data (G, tmp, k, ~to, weight, 0, EDGE_WEIGHT_SET);
 	    return 1;
 	  } else {
 	    writeef((uint64_t *)&(tmp->edges[k].weight), (uint64_t)weight);

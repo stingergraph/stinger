@@ -13,6 +13,9 @@ extern "C" {
 #include "stinger_physmap.h"
 #include "stinger_defs.h"
 
+#define EDGE_WEIGHT_SET 0
+#define EDGE_WEIGHT_INCR 1
+
 /* User-accessible data structures */
 struct stinger_edge;
 typedef struct stinger stinger_t;
