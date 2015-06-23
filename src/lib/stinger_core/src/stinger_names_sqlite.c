@@ -33,11 +33,16 @@ stinger_names_new(int64_t max_types) {
 void
 stinger_names_init(stinger_names_t * sn, int64_t max_types) {
   // Open the database
-  int rc = sqlite3_open("file:namesdb?mode=memory&cache=shared", &sn->db);
+  int rc = sqlite3_open("file:namesdb?mode=memory&cache=private", &sn->db);
 
   if ( rc ) {
     LOG_E_A("Can't open names database: %s\n", sqlite3_errmsg(sn->db));    
   }
+
+  const char * drop_sql = 
+      "DROP TABLE IF EXISTS NAMES";
+
+  sqlite3_exec(sn->db, drop_sql, NULL, NULL, NULL);
 
   char * create_db = "CREATE TABLE IF NOT EXISTS NAMES(uid INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, NAME TEXT NOT NULL, ID BIGINT NOT NULL)";
 
@@ -125,6 +130,11 @@ stinger_names_size(int64_t max_types) {
 stinger_names_t *
 stinger_names_free(stinger_names_t ** sn) {
   if(sn && *sn) {
+    const char * drop_sql = 
+      "DROP TABLE IF EXISTS NAMES";
+
+    sqlite3_exec((*sn)->db, drop_sql, NULL, NULL, NULL);
+
     sqlite3_close((*sn)->db);
     free(*sn);
     *sn = NULL;
@@ -151,16 +161,21 @@ stinger_names_create_type(stinger_names_t * sn, const char * name, int64_t * out
     return 0;
   }
 
-  int64_t next_type = readfe((uint64_t *)next_type_arr + sn->next_type_idx);
-  writeef((uint64_t *)next_type_arr + sn->next_type_idx,NAME_EMPTY_TYPE);
+  int64_t next_type_idx = readfe(&sn->next_type_idx);
+  int64_t next_type = *(next_type_arr + next_type_idx);
 
   if (next_type == NAME_EMPTY_TYPE) {
+    writeef(&sn->next_type_idx,next_type_idx);
     *out = -1;
     return -1;
   } else {
-    sn->next_type_idx = (sn->next_type_idx + 1) % (sn->max_types + 1);
+    *(next_type_arr + next_type_idx) = NAME_EMPTY_TYPE;
+    next_type_idx = (next_type_idx + 1) % (sn->max_types + 1);
+    writeef(&sn->next_type_idx,next_type_idx);
 
     *out = next_type;
+
+    //fprintf(stderr,"SQLITE insert - %s - %ld\n",name,next_type);
 
     const char * create_sql = 
       "INSERT OR IGNORE INTO NAMES "
@@ -216,6 +231,7 @@ stinger_names_lookup_type(stinger_names_t * sn, const char * name) {
 
   if (rc == SQLITE_ROW) {
     int64_t id = sqlite3_column_int64(lookup_id_stmt,0);
+    //fprintf(stderr,"SQLITE - %s - %ld\n",name,id);
     sqlite3_finalize(lookup_id_stmt);
     return id;
   } else {
