@@ -2,4 +2,11 @@ language: cpp
 compiler:
   - gcc
   - clang
-script: mkdir build && cd build && cmake .. && make
+before_install:
+  - wget http://www.cmake.org/files/v3.3/cmake-3.3.0-rc3-Linux-x86_64.sh
+  - sudo sh cmake-3.3.0-rc3-Linux-x86_64.sh --skip-license --prefix=/usr
+before_script:
+  - mkdir build
+  - cd build
+  - cmake ..
+script: make
