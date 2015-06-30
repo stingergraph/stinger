@@ -35,6 +35,12 @@ stinger_physmap_mapping_create(stinger_physmap_t * p, stinger_vertices_t * v, co
 vindex_t
 stinger_physmap_vtx_lookup(stinger_physmap_t * p, stinger_vertices_t * v, const char * byte_string, int64_t length);
 
+int64_t
+stinger_physmap_vtx_remove_id(stinger_physmap_t *p, stinger_vertices_t * v, vindex_t vertexID);
+
+int64_t
+stinger_physmap_vtx_remove_name(stinger_physmap_t *p, stinger_vertices_t * v, const char * byte_string, int64_t length);
+
 int
 stinger_physmap_id_get(stinger_physmap_t * p, stinger_vertices_t * v, vindex_t vertexID, char ** outbuffer, int64_t * outbufferlength);
 
