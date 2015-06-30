@@ -1,4 +1,4 @@
-CMAKE_MINIMUM_REQUIRED (VERSION 2.6)
+CMAKE_MINIMUM_REQUIRED (VERSION 2.8.11)
 
 PROJECT (STINGER)
 SET(STINGER_VERSION_MAJOR 2013)
@@ -56,14 +56,14 @@ function(CUST_PROTOBUF_GENERATE_CPP SUBDIR SRCS HDRS)
   foreach(FIL ${ARGN})
     get_filename_component(ABS_FIL ${FIL} ABSOLUTE)
     get_filename_component(FIL_WE ${FIL} NAME_WE)
-    
+
     list(APPEND ${SRCS} "${CMAKE_CURRENT_BINARY_DIR}/${SUBDIR}/proto/${FIL_WE}.pb.cc")
     list(APPEND ${HDRS} "${CMAKE_CURRENT_BINARY_DIR}/${SUBDIR}/proto/${FIL_WE}.pb.h")
 
     add_custom_command(
       OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${SUBDIR}/proto/${FIL_WE}.pb.cc"
              "${CMAKE_CURRENT_BINARY_DIR}/${SUBDIR}/proto/${FIL_WE}.pb.h"
-      COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/protoc     
+      COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/protoc
       ARGS --cpp_out  ${CMAKE_CURRENT_BINARY_DIR} --proto_path ${CMAKE_CURRENT_SOURCE_DIR} ${ABS_FIL}
       DEPENDS ${ABS_FIL}
       COMMENT "Running C++ protocol buffer compiler on ${FIL}"
