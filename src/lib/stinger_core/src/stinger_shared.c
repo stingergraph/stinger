@@ -231,6 +231,15 @@ stinger_shared_new_full (char ** out, int64_t nv, int64_t nebs, int64_t netypes,
   G->max_netypes  = netypes;
   G->max_nvtypes  = nvtypes;
 
+  G->num_insertions = 0;
+  G->num_deletions = 0;
+  G->num_insertions_last_batch = 0;
+  G->num_deletions_last_batch = 0;
+  G->batch_time = 0;
+  G->update_time = 0;
+  G->queue_size = 0;
+  G->dropped_batches = 0;
+
   G->length = length;
   G->vertices_start = vertices_start;
   G->physmap_start = physmap_start;
@@ -259,8 +268,6 @@ stinger_shared_new_full (char ** out, int64_t nv, int64_t nebs, int64_t netypes,
     ETA(G,i)->length = nebs;
     ETA(G,i)->high = 0;
   }
-
-  printf("Shared: %s\n", *out);
 
   return G;
 }

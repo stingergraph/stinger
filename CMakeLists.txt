@@ -1,4 +1,4 @@
-CMAKE_MINIMUM_REQUIRED (VERSION 2.6)
+CMAKE_MINIMUM_REQUIRED (VERSION 2.8.11)
 
 PROJECT (STINGER)
 SET(STINGER_VERSION_MAJOR 2013)
@@ -7,6 +7,16 @@ SET(STINGER_VERSION_MINOR 06)
 SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
+
+SET(STINGER_NAME_USE_SQLITE FALSE CACHE BOOL "Use sqlite for virtual to physmap")
+IF(STINGER_NAME_USE_SQLITE)
+  add_definitions(-DNAME_USE_SQLITE)
+ENDIF()
+
+SET(STINGER_USE_TCP FALSE CACHE BOOL "Use TCP instead of Unix Sockets")
+IF(STINGER_USE_TCP)
+  add_definitions(-DSTINGER_USE_TCP)
+ENDIF()
 
 FIND_PACKAGE( OpenMP )
 if(OPENMP_FOUND)
@@ -30,7 +40,7 @@ ENDIF()
 # Doxygen
 find_package(Doxygen)
 if (DOXYGEN_FOUND)
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doxygen/Doxyfile.in
     ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
   add_custom_target(doc
     ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
@@ -51,14 +61,14 @@ function(CUST_PROTOBUF_GENERATE_CPP SUBDIR SRCS HDRS)
   foreach(FIL ${ARGN})
     get_filename_component(ABS_FIL ${FIL} ABSOLUTE)
     get_filename_component(FIL_WE ${FIL} NAME_WE)
-    
+
     list(APPEND ${SRCS} "${CMAKE_CURRENT_BINARY_DIR}/${SUBDIR}/proto/${FIL_WE}.pb.cc")
     list(APPEND ${HDRS} "${CMAKE_CURRENT_BINARY_DIR}/${SUBDIR}/proto/${FIL_WE}.pb.h")
 
     add_custom_command(
       OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${SUBDIR}/proto/${FIL_WE}.pb.cc"
              "${CMAKE_CURRENT_BINARY_DIR}/${SUBDIR}/proto/${FIL_WE}.pb.h"
-      COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/protoc     
+      COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/protoc
       ARGS --cpp_out  ${CMAKE_CURRENT_BINARY_DIR} --proto_path ${CMAKE_CURRENT_SOURCE_DIR} ${ABS_FIL}
       DEPENDS ${ABS_FIL}
       COMMENT "Running C++ protocol buffer compiler on ${FIL}"

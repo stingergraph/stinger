@@ -144,7 +144,52 @@ dataType: "json",
 success: function(data) {whatever = data; $(".info").append("<p>" + JSON.stringify(data) + "</p>");}
 });
 
+data = {"jsonrpc": "2.0", "method": "adamic_adar_index", "params": {"source": 1, "strings": true, "include_neighbors": true}, "id": 14};
+jQuery.ajax({
+url: "http://localhost:8088/jsonrpc",
+type: "POST",
+data: JSON.stringify(data),
+dataType: "json",
+success: function(data) {whatever = data; $(".adamic").append("<p>" + JSON.stringify(data) + "</p>"); }
+});
+
+jQuery.ajax({
+url: "http://localhost:8088/jsonrpc",
+type: "POST",
+dataType: "json",
+success: function(data) {whatever = data; $(".emptyPost").append("<p>" + JSON.stringify(data) + "</p>"); }
+});
+
+data = {"totally_garbage": true};
+jQuery.ajax({
+url: "http://localhost:8088/jsonrpc",
+type: "POST",
+data: JSON.stringify(data),
+dataType: "json",
+success: function(data) {whatever = data; $(".badRequest").append("<p>" + JSON.stringify(data) + "</p>"); }
+});
+
+data = {"jsonrpc": "2.0", "method": "get_server_health", "id": 15};
+jQuery.ajax({
+url: "http://localhost:8088/jsonrpc",
+type: "POST",
+data: JSON.stringify(data),
+dataType: "json",
+success: function(data) {whatever = data; $(".health").append("<p>" + JSON.stringify(data) + "</p>"); }
+});
+
+data = {"jsonrpc": "2.0", "method": "egonet", "params": {"source": "1", strings: true, incident_edges: false, get_etypes:true}, "id": 16};
+jQuery.ajax({
+url: "http://localhost:8088/jsonrpc",
+type: "POST",
+data: JSON.stringify(data),
+dataType: "json",
+success: function(data) {whatever = data; $(".egonet").append("<p>" + JSON.stringify(data) + "</p>"); }
+});
+
+
 </script>
+<div class="health">health:&nbsp;</div>
 <div class="algorithms">algorithms:&nbsp;</div>
 <div class="description">description:&nbsp;</div>
 <div class="range">range:&nbsp;</div>
@@ -160,5 +205,9 @@ success: function(data) {whatever = data; $(".info").append("<p>" + JSON.stringi
 <div class="bfs">bfs:&nbsp;</div>
 <div class="reduction">reduction:&nbsp;</div>
 <div class="info">info:&nbsp;</div>
+<div class="adamic">adamic:&nbsp;</div>
+<div class="emptyPost">emptyPost:&nbsp;</div>
+<div class="badRequest">badRequest:&nbsp;</div>
+<div class="egonet">egonet:&nbsp;</div>
 </body>
 </html>

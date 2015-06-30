@@ -1,15 +1,15 @@
 #ifndef RPC_STATE_H_
 #define RPC_STATE_H_
 
+#include <cstdlib>
+#include <cstdio>
 #include <map>
 #include <string>
 #include <stdint.h>
 #include <semaphore.h>
 #include "stinger_net/stinger_alg_state.h"
 #include "stinger_core/stinger.h"
-#include "stinger_core/stinger_error.h"
 #include "rapidjson/document.h"
-
 #include "stinger_net/proto/stinger-monitor.pb.h"
 #include "stinger_net/stinger_mon.h"
 
@@ -18,6 +18,8 @@ namespace gt {
 
     typedef enum {
       TYPE_VERTEX,
+      TYPE_EDGE_TYPE,
+      TYPE_VERTEX_TYPE,
       TYPE_INT64,
       TYPE_STRING,
       TYPE_DOUBLE,
@@ -109,6 +111,8 @@ namespace gt {
 	int64_t max_sessions;
 	int64_t next_session_id;
 
+	time_t start_time;
+
       public:
 	static JSON_RPCServerState & get_server_state();
 
@@ -120,6 +124,12 @@ namespace gt {
 
 	bool
 	has_rpc_function(std::string name);
+
+	std::map<std::string, JSON_RPCFunction *>::iterator
+	rpc_function_begin();
+
+	std::map<std::string, JSON_RPCFunction *>::iterator
+	rpc_function_end();
 
 	void
 	add_rpc_session(std::string name, JSON_RPCSession * func);
@@ -148,7 +158,10 @@ namespace gt {
 	get_num_sessions();
 
 	JSON_RPCSession *
-	get_session(int64_t sessin_id);
+	get_session(int64_t session_id);
+
+	time_t
+	get_time_since_start();
     };
 
   }

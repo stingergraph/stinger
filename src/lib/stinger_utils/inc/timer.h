@@ -7,6 +7,7 @@ extern "C" {
 #endif
 
 void init_timer (void);
+double timer (void);
 double timer_getres (void);
 void tic (void);
 double toc (void);

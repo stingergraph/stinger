@@ -14,12 +14,20 @@ extern "C" {
   uint8_t * _ETA = ((X)->storage + (X)->ETA_start); \
   struct stinger_ebpool * ebpool = (struct stinger_ebpool *)((X)->storage + (X)->ebpool_start);
 	  
+#define CONST_MAP_STING(X) \
+  const stinger_vertices_t * vertices = (const stinger_vertices_t *)((X)->storage); \
+  const stinger_physmap_t * physmap = (const stinger_physmap_t *)((X)->storage + (X)->physmap_start); \
+  const stinger_names_t * etype_names = (const stinger_names_t *)((X)->storage + (X)->etype_names_start); \
+  const stinger_names_t * vtype_names = (const stinger_names_t *)((X)->storage + (X)->vtype_names_start); \
+  const uint8_t * _ETA = ((X)->storage + (X)->ETA_start); \
+  const struct stinger_ebpool * ebpool = (const struct stinger_ebpool *)((X)->storage + (X)->ebpool_start);
+
 #define ETA(X,Y) ((struct stinger_etype_array *)(_ETA + ((Y)*stinger_etype_array_size((X)->max_neblocks))))
 
 
 #define STINGER_FORALL_EB_BEGIN(STINGER_,STINGER_SRCVTX_,STINGER_EBNM_)	\
   do {									\
-    MAP_STING(STINGER_); \
+    CONST_MAP_STING(STINGER_); \
     const struct stinger_eb * ebpool_priv = ebpool->ebpool;                    \
     const struct stinger * stinger__ = (STINGER_);			\
     const int64_t stinger_srcvtx__ = (STINGER_SRCVTX_);			\
@@ -112,15 +120,28 @@ struct stinger
   uint64_t max_neblocks;
   uint64_t max_netypes;
   uint64_t max_nvtypes;
+  uint64_t num_insertions;
+  uint64_t num_deletions;
+  uint64_t num_insertions_last_batch;
+  uint64_t num_deletions_last_batch;
 
+  double batch_time;
+  double update_time;
+  /* number of edges per edge type */
+  /* number of insertions per edge type */
+  uint64_t queue_size;
+  uint64_t dropped_batches;
   uint64_t vertices_start;
   uint64_t physmap_start;
   uint64_t etype_names_start;
   uint64_t vtype_names_start;
+
   uint64_t ETA_start;
   uint64_t ebpool_start;
-
   size_t length;
+
+  uint64_t cache_pad[5]; /* Force storage[0] to be cache-block aligned */
+
   uint8_t storage[0];
 };
 
@@ -130,6 +151,8 @@ struct stinger_fragmentation_t {
   uint64_t num_edges;
   uint64_t edge_blocks_in_use;
   double fill_percent;
+  uint64_t num_empty_blocks;
+  double avg_number_of_edges;
 };
 
 struct curs
@@ -138,18 +161,14 @@ struct curs
 };
 
 
-static inline const struct stinger_eb *stinger_edgeblocks (const struct
-							   stinger *,
-							   int64_t);
+static inline const struct stinger_eb *
+stinger_next_eb (const struct stinger *G,
+                 const struct stinger_eb *eb_);
 
-static inline const struct stinger_eb *stinger_next_eb (const struct stinger
-							*,
-							const struct
-							stinger_eb *);
-int stinger_eb_high (const struct stinger_eb *);
-static inline int64_t stinger_eb_type (const struct stinger_eb *);
+int stinger_eb_high (const struct stinger_eb * eb_);
+static inline int64_t stinger_eb_type (const struct stinger_eb * eb_);
 
-int stinger_eb_is_blank (const struct stinger_eb *, int);
+int stinger_eb_is_blank (const struct stinger_eb * eb_, int k_);
 int64_t stinger_eb_adjvtx (const struct stinger_eb *, int);
 int64_t stinger_eb_weight (const struct stinger_eb *, int);
 int64_t stinger_eb_ts (const struct stinger_eb *, int);
@@ -168,16 +187,6 @@ void new_ebs (struct stinger * S, eb_index_t *out, size_t neb, int64_t etype, in
 
 void push_ebs (struct stinger *G, size_t neb,
           eb_index_t * eb);
-
-const struct stinger_eb *
-stinger_edgeblocks (const struct stinger *s_, int64_t i_);
-
-const struct stinger_eb *
-stinger_next_eb (const struct stinger *G /*UNUSED*/,
-                 const struct stinger_eb *eb_);
-
-int64_t
-stinger_eb_type (const struct stinger_eb * eb_);
 
 void stinger_fragmentation (struct stinger *S, uint64_t NV, struct stinger_fragmentation_t *frag);
 

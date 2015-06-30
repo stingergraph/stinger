@@ -6,7 +6,6 @@
 
 extern "C" {
 #include "stinger_core/xmalloc.h"
-#include "stinger_core/stinger_error.h"
 }
 
 #include "rapidjson/document.h"
@@ -17,6 +16,9 @@ extern "C" {
 
 #include "json_rpc.h"
 #include "rpc_state.h"
+
+#define LOG_AT_W
+#include "stinger_core/stinger_error.h"
 
 using namespace gt::stinger;
 
@@ -32,15 +34,6 @@ json_rpc_process_request (rapidjson::Document& document, rapidjson::Document& re
   response.SetObject();
 
   rapidjson::Document::AllocatorType& allocator = response.GetAllocator();
-
-  rapidjson::StringBuffer out_buf;
-  rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(out_buf);
-  document.Accept(writer);
-
-  const char * out_ch = out_buf.GetString();
-  int out_len = out_buf.Size();
-
-  LOG_D_A("Sending back response:%d\n%s", out_len, out_ch);
 
   LOG_D("In the json_rpc_process_request function.");
 

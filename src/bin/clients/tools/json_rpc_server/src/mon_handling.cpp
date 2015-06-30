@@ -3,7 +3,6 @@ extern "C" {
   #include "stinger_core/stinger_shared.h"
   #include "stinger_utils/stinger_utils.h"
   #include "stinger_core/xmalloc.h"
-  #include "stinger_core/stinger_error.h"
 }
 
 #include "stinger_net/proto/stinger-batch.pb.h"
@@ -24,12 +23,16 @@ extern "C" {
 #include <limits>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/un.h>
 #include <netinet/in.h>
 #include <unistd.h>
 
 /* POSIX only for now, note that mongoose would be a good place to 
 get cross-platform threading and sockets code */
 #include <pthread.h> 
+
+#define LOG_AT_W
+#include "stinger_core/stinger_error.h"
 
 using namespace gt::stinger;
 
@@ -47,12 +50,17 @@ map_update(ServerToMon & server_to_mon, stinger_t ** stinger_copy,
   LOG_D_A("Mapping stinger %s %ld", server_to_mon.stinger_loc().c_str(), server_to_mon.stinger_size());
   *stinger_copy = stinger_shared_private(server_to_mon.stinger_loc().c_str(), server_to_mon.stinger_size());
 
+  if (!(*stinger_copy)) {
+    LOG_E("Failed to map STINGER");
+    return false;
+  }
+
   LOG_D("Mapping all algs");
   for(int64_t d = 0; d < server_to_mon.dep_name_size(); d++) {
     StingerAlgState * alg_state = new StingerAlgState();
     
     alg_state->data = shmmap(
-      server_to_mon.dep_data_loc(d).c_str(), O_RDWR, S_IRUSR | S_IWUSR, PROT_READ | PROT_WRITE, 
+      server_to_mon.dep_data_loc(d).c_str(), O_RDONLY, S_IRUSR, PROT_READ, 
       server_to_mon.dep_data_per_vertex(d) * ((*stinger_copy)->max_nv), MAP_PRIVATE);
 
     if(!alg_state->data) {
@@ -148,6 +156,7 @@ mon_handler(void * args)
 int64_t
 mon_connect(int port, const char * host, const char * name)
 {
+#ifdef STINGER_USE_TCP
   struct sockaddr_in sock_addr;
   memset(&sock_addr, 0, sizeof(struct sockaddr_in));
   struct hostent * hp = gethostbyname(host);
@@ -166,15 +175,28 @@ mon_connect(int port, const char * host, const char * name)
   memcpy(&sock_addr.sin_addr.s_addr, hp->h_addr, hp->h_length);
   sock_addr.sin_family = AF_INET;
 
-  LOG_D_A("Socket open, connecting to host %s %s", host, inet_ntoa(**(struct in_addr **)hp->h_addr_list));
-
   if(port) {
     sock_addr.sin_port = htons(port);
   } else {
     sock_addr.sin_port = htons(10103);
   }
 
-  if(-1 == connect(sock, (sockaddr *)&sock_addr, sizeof(struct sockaddr_in))) {
+  LOG_D_A("Socket open, connecting to host %s %s", host, inet_ntoa(**(struct in_addr **)hp->h_addr_list));
+#else
+  struct sockaddr_un sock_addr;
+  memset(&sock_addr, 0, sizeof(sock_addr));
+  int sock = socket(AF_UNIX, SOCK_STREAM, 0);
+  if(-1 == sock) {
+    LOG_E("Error opening socket");
+    return NULL;
+  }
+  strncpy(sock_addr.sun_path, "/tmp/stinger.sock", sizeof(sock_addr.sun_path)-1);
+  sock_addr.sun_family = AF_UNIX;
+
+  LOG_D_A("Socket open, connecting to host %s", host);
+#endif
+
+  if(-1 == connect(sock, (sockaddr *)&sock_addr, sizeof(sock_addr))) {
     LOG_E("Error connecting socket");
     return -1;
   }

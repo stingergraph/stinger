@@ -78,9 +78,19 @@ extern "C" {
 #endif
 
 #if defined(_OPENMP)
+#include <omp.h>
+#if defined(OMP)
+#undef OMP
+#endif
 #define OMP(x) _Pragma(x)
+#define OMP_SIMD
 #else
+#if !defined(OMP)
 #define OMP(x)
+#define OMP_SIMD
+#endif
+static inline int omp_get_num_threads (void) { return 1; }
+static inline int omp_get_thread_num (void) { return 0; }
 #endif
 
 #if defined(__GNUC__)

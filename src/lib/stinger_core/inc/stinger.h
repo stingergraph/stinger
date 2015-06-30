@@ -20,6 +20,8 @@ extern "C" {
 struct stinger_edge;
 typedef struct stinger stinger_t;
 
+#include "stinger_internal.h"
+
 /* STINGER creation & deletion */
 struct stinger *stinger_new (void);
 
@@ -52,7 +54,7 @@ int stinger_save_to_file (struct stinger * /* STINGER */,
 			  const char * /* directory name */);
 
 int stinger_open_from_file (const char * /* directory */, 
-			    struct stinger ** /* reference for empty output pointer */, 
+			    struct stinger * /* reference for empty STINGER */, 
 			    uint64_t * /* reference for output max vtx */);
 
 /* Edge insertion and deletion */
@@ -83,6 +85,8 @@ int stinger_remove_edge_pair (struct stinger *, int64_t /* type */ ,
 			      int64_t /* from */ , int64_t /* to */ );
 
 void stinger_remove_all_edges_of_type (struct stinger *G, int64_t type);
+
+int64_t stinger_remove_vertex(struct stinger *G, int64_t vtx_id);
 
 /* Edge metadata (directed)*/
 int64_t stinger_edgeweight (const struct stinger *, int64_t /* vtx 1 */ ,
@@ -144,8 +148,10 @@ stinger_indegree_increment_atomic(const stinger_t * S, vindex_t v, vdegree_t d);
 
 /* OUT DEGREE */
 
-vdegree_t
-stinger_outdegree_get(const stinger_t * S, vindex_t v);
+static inline vdegree_t
+stinger_outdegree_get(const stinger_t * S, vindex_t v) {
+     return ((const stinger_vertices_t*)(S->storage))->vertices[v].outDegree;
+}
 
 vdegree_t
 stinger_outdegree_set(const stinger_t * S, vindex_t v, vdegree_t d);
@@ -310,19 +316,22 @@ stinger_etype_array_size(int64_t nebs);
 #define STINGER_FORALL_EDGES_OF_VTX_END() } while (0)
 
 #define STINGER_FORALL_EDGES_OF_TYPE_OF_VTX_BEGIN(STINGER_,TYPE_,VTX_) do {
-#define STINGER_FORALL_EDGES_OF_TYPE_OF_VTX_END() while (0)
+#define STINGER_FORALL_EDGES_OF_TYPE_OF_VTX_END() } while (0)
 
 #define STINGER_PARALLEL_FORALL_EDGES_OF_VTX_BEGIN(STINGER_,VTX_) do {
-#define STINGER_PARALLEL_FORALL_EDGES_OF_VTX_END() while (0)
+#define STINGER_PARALLEL_FORALL_EDGES_OF_VTX_END() } while (0)
 
 #define STINGER_PARALLEL_FORALL_EDGES_OF_TYPE_OF_VTX_BEGIN(STINGER_,TYPE_,VTX_) do {
-#define STINGER_PARALLEL_FORALL_EDGES_OF_TYPE_OF_VTX_END() while (0)
+#define STINGER_PARALLEL_FORALL_EDGES_OF_TYPE_OF_VTX_END() } while (0)
 
 #define STINGER_FORALL_EDGES_BEGIN(STINGER_,TYPE_) do {
-#define STINGER_FORALL_EDGES_END() while (0)
+#define STINGER_FORALL_EDGES_END() } while (0)
 
 #define STINGER_PARALLEL_FORALL_EDGES_BEGIN(STINGER_,TYPE_) do {
-#define STINGER_PARALLEL_FORALL_EDGES_END() while (0)
+#define STINGER_PARALLEL_FORALL_EDGES_END() } while (0)
+
+#define STINGER_FORALL_EDGES_OF_ALL_TYPES_BEGIN(STINGER_) do {
+#define STINGER_FORALL_EDGES_OF_ALL_TYPES_END() } while (0)
 
 /* read-only traversal macros *
  * These should be safe even when the graph is being modified elsewhere. All 
@@ -332,19 +341,19 @@ stinger_etype_array_size(int64_t nebs);
 #define STINGER_READ_ONLY_FORALL_EDGES_OF_VTX_END() } while (0)
 
 #define STINGER_READ_ONLY_FORALL_EDGES_OF_TYPE_OF_VTX_BEGIN(STINGER_,TYPE_,VTX_) do {
-#define STINGER_READ_ONLY_FORALL_EDGES_OF_TYPE_OF_VTX_END() while (0)
+#define STINGER_READ_ONLY_FORALL_EDGES_OF_TYPE_OF_VTX_END() } while (0)
 
 #define STINGER_READ_ONLY_PARALLEL_FORALL_EDGES_OF_VTX_BEGIN(STINGER_,VTX_) do {
-#define STINGER_READ_ONLY_PARALLEL_FORALL_EDGES_OF_VTX_END() while (0)
+#define STINGER_READ_ONLY_PARALLEL_FORALL_EDGES_OF_VTX_END() } while (0)
 
 #define STINGER_READ_ONLY_PARALLEL_FORALL_EDGES_OF_TYPE_OF_VTX_BEGIN(STINGER_,TYPE_,VTX_) do {
-#define STINGER_READ_ONLY_PARALLEL__FORALL_EDGES_OF_TYPE_OF_VTX_END() while (0)
+#define STINGER_READ_ONLY_PARALLEL__FORALL_EDGES_OF_TYPE_OF_VTX_END() } while (0)
 
 #define STINGER_READ_ONLY_FORALL_EDGES_BEGIN(STINGER_,TYPE_) do {
-#define STINGER_READ_ONLY_FORALL_EDGES_END() while (0)
+#define STINGER_READ_ONLY_FORALL_EDGES_END() } while (0)
 
 #define STINGER_READ_ONLY_PARALLEL_FORALL_EDGES_BEGIN(STINGER_,TYPE_) do {
-#define STINGER_READ_ONLY_PARALLEL_FORALL_EDGES_END() while (0)
+#define STINGER_READ_ONLY_PARALLEL_FORALL_EDGES_END() } while (0)
 
 /* Use these to access the current edge inside the above macros */
 #define STINGER_EDGE_SOURCE /* always read-only */

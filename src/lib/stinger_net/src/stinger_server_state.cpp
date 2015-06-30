@@ -79,7 +79,6 @@ StingerServerState::get_server_state()
 int
 StingerServerState::get_port_names() 
 {
-  LOG_D_A("returning %ld", (long) port_names);
   return port_names;
 }
 
@@ -91,7 +90,6 @@ StingerServerState::get_port_names()
 int
 StingerServerState::get_port_streams() 
 {
-  LOG_D_A("returning %ld", (long) port_streams);
   return port_streams;
 }
 
@@ -103,7 +101,6 @@ StingerServerState::get_port_streams()
 int
 StingerServerState::get_port_algs() 
 {
-  LOG_D_A("returning %ld", (long) port_algs);
   return port_algs;
 }
 
@@ -122,8 +119,6 @@ StingerServerState::get_port_algs()
 int
 StingerServerState::set_port(int new_port_names, int new_port_streams, int new_port_algs)
 {
-  LOG_D_A("called with %ld, %ld, %ld", (long) new_port_names, (long) new_port_streams, (long) new_port_algs);
-
   if (new_port_names > 0 && new_port_names < 65535) {
     port_names = new_port_names;
   } else {

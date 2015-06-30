@@ -68,10 +68,10 @@ stinger_indegree_increment_atomic(const stinger_t * S, vindex_t v, vdegree_t d) 
 
 /* OUT DEGREE */
 
-inline vdegree_t
-stinger_outdegree_get(const stinger_t * S, vindex_t v) {
-  return stinger_vertex_outdegree_get(stinger_vertices_get(S), v);
-}
+/* inline vdegree_t */
+/* stinger_outdegree_get(const stinger_t * S, vindex_t v) { */
+/*   return stinger_vertex_outdegree_get(stinger_vertices_get(S), v); */
+/* } */
 
 inline vdegree_t
 stinger_outdegree_set(const stinger_t * S, vindex_t v, vdegree_t d) {
@@ -316,7 +316,7 @@ const struct stinger_eb *
 stinger_next_eb (const struct stinger *G,
                  const struct stinger_eb *eb_)
 {
-  MAP_STING(G);
+  const struct stinger_ebpool * ebpool = (const struct stinger_ebpool *)(G->storage + G->ebpool_start);
   return ebpool->ebpool + readff((uint64_t *)&eb_->next);
 }
 
@@ -592,24 +592,33 @@ stinger_fragmentation (struct stinger *S, uint64_t NV, struct stinger_fragmentat
   uint64_t numSpaces = 0;
   uint64_t numBlocks = 0;
   uint64_t numEdges = 0;
+  uint64_t numEmptyBlocks = 0;
 
   MAP_STING(S);
   struct stinger_eb * ebpool_priv = ebpool->ebpool;
-  OMP ("omp parallel for reduction(+:numSpaces, numBlocks, numEdges)")
+  OMP ("omp parallel for reduction(+:numSpaces, numBlocks, numEdges, numEmptyBlocks)")
   for (uint64_t i = 0; i < NV; i++) {
     const struct stinger_eb *curBlock = ebpool_priv + stinger_vertex_edges_get(vertices, i);
 
     while (curBlock != ebpool_priv) {
       uint64_t found = 0;
-      for (uint64_t j = 0; j < curBlock->high && j < STINGER_EDGEBLOCKSIZE; j++) {
-        if (stinger_eb_is_blank (curBlock, j)) {
-          numSpaces++;
-	  found = 1;
-        }
-	else {
-	  numEdges++;
+
+      if (curBlock->numEdges == 0) {
+	numEmptyBlocks++;
+      }
+      else {
+	/* for each edge in the current block */
+	for (uint64_t j = 0; j < curBlock->high && j < STINGER_EDGEBLOCKSIZE; j++) {
+	  if (stinger_eb_is_blank (curBlock, j)) {
+	    numSpaces++;
+	    found = 1;
+	  }
+	  else {
+	    numEdges++;
+	  }
 	}
       }
+
       numBlocks += found;
       curBlock = ebpool_priv + curBlock->next;
     }
@@ -621,7 +630,8 @@ stinger_fragmentation (struct stinger *S, uint64_t NV, struct stinger_fragmentat
   stats->num_fragmented_blocks = numBlocks;
   stats->num_edges = numEdges;
   stats->edge_blocks_in_use = totalEdgeBlocks;
-
+  stats->avg_number_of_edges = (double) numEdges / (double) (totalEdgeBlocks-numEmptyBlocks);
+  stats->num_empty_blocks = numEmptyBlocks;
 
   double fillPercent = (double) numEdges / (double) (totalEdgeBlocks * STINGER_EDGEBLOCKSIZE);
   stats->fill_percent = fillPercent;
@@ -1385,7 +1395,7 @@ MTA("mta parallel default")
  *  @param G STINGER data structure
  *  @param nv Number of vertices
  *  @param etype Edge type
- *  @param off_in Array of length nv containing the adjacency offset for each vertex
+ *  @param off_in Array of length nv+1 containing the adjacency offset for each vertex
  *  @param phys_adj_in Array containing the destination vertex of each edge
  *  @param weight_in Array containing integer weight of each edge
  *  @param ts_in Array containing recent timestamp of edge edge (or NULL)
@@ -1406,133 +1416,144 @@ stinger_set_initial_edges (struct stinger *G,
                            const int64_t single_ts
                            /* if !ts or !first_ts */ )
 {
-  const int64_t *restrict off = off_in;
-  const int64_t *restrict phys_adj = phys_adj_in;
-  const int64_t *restrict weight = weight_in;
-  const int64_t *restrict ts = ts_in;
-  const int64_t *restrict first_ts = first_ts_in;
+  const int64_t * restrict off = off_in;
+  const int64_t * restrict phys_adj = phys_adj_in;
+  const int64_t * restrict weight = weight_in;
+  const int64_t * restrict ts = ts_in;
+  const int64_t * restrict first_ts = first_ts_in;
 
   size_t nblk_total = 0;
-  size_t *restrict blkoff;
-  eb_index_t *restrict block;
+  size_t * restrict blkoff;
+  eb_index_t * restrict block;
 
   assert (G);
   MAP_STING(G);
 
   blkoff = xcalloc (nv + 1, sizeof (*blkoff));
   OMP ("omp parallel for")
-    for (int64_t v = 0; v < nv; ++v) {
-      const int64_t deg = off[v + 1] - off[v];
-      blkoff[v + 1] = (deg + STINGER_EDGEBLOCKSIZE - 1) / STINGER_EDGEBLOCKSIZE;
-    }
+  for (int64_t v = 0; v < nv; ++v) {
+    const int64_t deg = off[v + 1] - off[v];
+    blkoff[v + 1] = (deg + STINGER_EDGEBLOCKSIZE - 1) / STINGER_EDGEBLOCKSIZE;
+  }
 
-  for (int64_t v = 2; v <= nv; ++v)
+  for (int64_t v = 2; v <= nv; ++v) {
     blkoff[v] += blkoff[v - 1];
+  }
   nblk_total = blkoff[nv];
 
   block = xcalloc (nblk_total, sizeof (*block));
   OMP ("omp parallel for")
-    MTA ("mta assert nodep") MTASTREAMS ()
-    for (int64_t v = 0; v < nv; ++v) {
-      const int64_t from = v;
-      const int64_t deg = off[v + 1] - off[v];
-      if (deg)
-	stinger_vertex_outdegree_increment_atomic(vertices, from, deg);
+  MTA ("mta assert nodep") MTASTREAMS ()
+  for (int64_t v = 0; v < nv; ++v) {
+    const int64_t from = v;
+    const int64_t deg = off[v + 1] - off[v];
+    if (deg) {
+      stinger_vertex_outdegree_increment_atomic(vertices, from, deg);
     }
+  }
 
   new_blk_ebs (&block[0], G, nv, blkoff, etype);
 
   /* XXX: AUGH! I cannot find what really is blocking parallelization. */
   MTA ("mta assert parallel")
-    MTA ("mta dynamic schedule")
-    OMP ("omp parallel for")
-    MTA ("mta assert noalias *block")
+  MTA ("mta dynamic schedule")
+  OMP ("omp parallel for")
+  MTA ("mta assert noalias *block")
+  MTA ("mta assert nodep *block")
+  MTA ("mta assert noalias *G")
+  MTA ("mta assert nodep *G")
+  MTA ("mta assert nodep *phys_adj")
+  MTA ("mta assert nodep *vertices")
+  MTA ("mta assert nodep *blkoff")
+  for (int64_t v = 0; v < nv; ++v) {
+    const size_t nextoff = off[v + 1];
+    size_t kgraph = off[v];
+    MTA ("mta assert may reorder kgraph") int64_t from;
+
+    from = v;
+
+    // Need to assert this loop is not to be parallelized!
     MTA ("mta assert nodep *block")
-    MTA ("mta assert noalias *G")
-    MTA ("mta assert nodep *G")
-    MTA ("mta assert nodep *phys_adj")
     MTA ("mta assert nodep *vertices")
-    MTA ("mta assert nodep *blkoff")
-    for (int64_t v = 0; v < nv; ++v) {
-      const size_t nextoff = off[v + 1];
-      size_t kgraph = off[v];
-      MTA ("mta assert may reorder kgraph") int64_t from;
+    for (size_t kblk = blkoff[v]; kblk < blkoff[v + 1]; ++kblk) {
+      size_t n_to_copy, voff;
+      struct stinger_edge * restrict edge;
+      struct stinger_eb * restrict eb;
+      int64_t tslb = INT64_MAX, tsub = 0;
 
-      from = v;
+      //voff = stinger_size_fetch_add (&kgraph, STINGER_EDGEBLOCKSIZE);
+      {
+	voff = kgraph;
+	kgraph += STINGER_EDGEBLOCKSIZE;
+      }
 
-      // Need to assert this loop is not to be parallelized!
-      MTA ("mta assert nodep *block")
-        MTA ("mta assert nodep *vertices")
-        for (size_t kblk = blkoff[v]; kblk < blkoff[v + 1]; ++kblk) {
-          size_t n_to_copy, voff;
-          struct stinger_edge *restrict edge;
-          struct stinger_eb *restrict eb;
-          int64_t tslb = INT64_MAX, tsub = 0;
+      n_to_copy = STINGER_EDGEBLOCKSIZE;
+      if (voff + n_to_copy >= nextoff)
+	n_to_copy = nextoff - voff;
 
-          //voff = stinger_size_fetch_add (&kgraph, STINGER_EDGEBLOCKSIZE);
-          {
-            voff = kgraph;
-            kgraph += STINGER_EDGEBLOCKSIZE;
-          }
+      eb = ebpool->ebpool + block[kblk];
+      edge = &eb->edges[0];
 
-          n_to_copy = STINGER_EDGEBLOCKSIZE;
-          if (voff + n_to_copy >= nextoff)
-            n_to_copy = nextoff - voff;
-
-          eb = ebpool->ebpool + block[kblk];
-          edge = &eb->edges[0];
-
-          /* XXX: remove the next two asserts once the outer is unlocked. */
-          MTA ("mta assert nodep")
-            MTASTREAMS ()MTA ("mta assert nodep *phys_adj")
-            MTA ("mta assert nodep *edge")
-            MTA ("mta assert nodep *vertices")
-            for (size_t i = 0; i < n_to_copy; ++i) {
-              const int64_t to = phys_adj[voff + i];
+      /* XXX: remove the next two asserts once the outer is unlocked. */
+      MTA ("mta assert nodep")
+      MTASTREAMS ()MTA ("mta assert nodep *phys_adj")
+      MTA ("mta assert nodep *edge")
+      MTA ("mta assert nodep *vertices")
+      for (size_t i = 0; i < n_to_copy; ++i) {
+	const int64_t to = phys_adj[voff + i];
 #if defined(__MTA__)
-	      stinger_vertex_indegree_increment_atomic(vertices, to, 1);
+	stinger_vertex_indegree_increment_atomic(vertices, to, 1);
 #else
-              // Ugh. The MTA compiler can't cope with the inlining.
-	      stinger_vertex_indegree_increment_atomic(vertices, to, 1);
+	// Ugh. The MTA compiler can't cope with the inlining.
+	stinger_vertex_indegree_increment_atomic(vertices, to, 1);
 #endif
-              /* XXX: The next statements block parallelization
-                 of the outer loop. */
-              edge[i].neighbor = to;
-              edge[i].weight = weight[voff + i];
-              edge[i].timeRecent = ts ? ts[voff + i] : single_ts;
-              edge[i].timeFirst = first_ts ? first_ts[voff + i] : single_ts;
-              //assert (edge[i].timeRecent >= edge[i].timeFirst);
-            }
+	/* XXX: The next statements block parallelization
+	   of the outer loop. */
+	edge[i].neighbor = to;
+	edge[i].weight = weight[voff + i];
+	edge[i].timeRecent = ts ? ts[voff + i] : single_ts;
+	edge[i].timeFirst = first_ts ? first_ts[voff + i] : single_ts;
+	//assert (edge[i].timeRecent >= edge[i].timeFirst);
+      }
 
-          if (ts || first_ts) {
-            /* XXX: remove the next two asserts once the outer is unlocked. */
-            MTA ("mta assert nodep")
-              MTASTREAMS ()MTA ("mta assert nodep *edge")
-              for (size_t i = 0; i < n_to_copy; ++i) {
-                if (edge[i].timeFirst < tslb)
-                  tslb = edge[i].timeFirst;
-                if (edge[i].timeRecent > tsub)
-                  tsub = edge[i].timeRecent;
-              }
-          } else
-            tslb = tsub = single_ts;
+      if (ts || first_ts) {
+	/* XXX: remove the next two asserts once the outer is unlocked. */
+	MTA ("mta assert nodep")
+	MTASTREAMS ()MTA ("mta assert nodep *edge")
+	for (size_t i = 0; i < n_to_copy; ++i) {
+	  if (edge[i].timeFirst < tslb) {
+	    tslb = edge[i].timeFirst;
+	  }
+	  if (edge[i].timeRecent < tslb) {
+	    tslb = edge[i].timeRecent;
+	  }
+	  if (edge[i].timeFirst > tsub) {
+	    tsub = edge[i].timeFirst;
+	  }
+	  if (edge[i].timeRecent > tsub) {
+	    tsub = edge[i].timeRecent;
+	  }
+	}
+      } else {
+	tslb = tsub = single_ts;
+      }
 
-          eb->smallStamp = tslb;
-          eb->largeStamp = tsub;
-          eb->numEdges = n_to_copy;
-          eb->high = n_to_copy;
-        }
-
-
-      /* At this point, block[blkoff[v]] is the head of a linked
-         list holding all the blocks of edges of EType from vertex
-         v.  Insert into the graph.  */
-
-      if (blkoff[v] != blkoff[v + 1]) {
-	ebpool->ebpool[block[blkoff[v+1]-1]].next = stinger_vertex_edges_get(vertices, from);
-        stinger_vertex_edges_set(vertices, from, block[blkoff[v]]);
-      } 
+      eb->smallStamp = tslb;
+      eb->largeStamp = tsub;
+      eb->numEdges = n_to_copy;
+      eb->high = n_to_copy;
     }
+
+
+    /* At this point, block[blkoff[v]] is the head of a linked
+       list holding all the blocks of edges of EType from vertex
+       v.  Insert into the graph.  */
+
+    if (blkoff[v] != blkoff[v + 1]) {
+      ebpool->ebpool[block[blkoff[v+1]-1]].next = stinger_vertex_edges_get(vertices, from);
+      stinger_vertex_edges_set(vertices, from, block[blkoff[v]]);
+    } 
+  }
 
   /* Insert into the edge type array */
   push_ebs (G, nblk_total, block);
@@ -1571,8 +1592,8 @@ stinger_gather_typed_predecessors (const struct stinger *G,
 
   STINGER_PARALLEL_FORALL_EDGES_BEGIN(G, type) {
     const int64_t u = STINGER_EDGE_SOURCE;
-    const int64_t v = STINGER_EDGE_DEST;
-    if (v >= 0) {
+    const int64_t d = STINGER_EDGE_DEST;
+    if (v == d) {
       size_t where = stinger_size_fetch_add (&kout, 1);
       if (where < max_outlen) {
         out[where] = u;
@@ -2011,10 +2032,11 @@ stinger_sort_actions (int64_t nactions, int64_t * actions,
 void
 stinger_remove_all_edges_of_type (struct stinger *G, int64_t type)
 {
+  int64_t ne_removed = 0;
   MAP_STING(G);
   /* TODO fix bugs here */
   MTA("mta assert parallel")
-  OMP("omp parallel for")
+  OMP("omp parallel for reduction(+: ne_removed)")
   for (uint64_t p = 0; p < ETA(G, type)->high; p++) {
     struct stinger_eb *current_eb = ebpool->ebpool + ETA(G,type)->blocks[p];
     int64_t thisVertex = current_eb->vertexID;
@@ -2032,11 +2054,58 @@ stinger_remove_all_edges_of_type (struct stinger *G, int64_t type)
       }
     }
     stinger_outdegree_increment_atomic(G, thisVertex, -removed);
+    ne_removed += removed;
     current_eb->high = 0;
     current_eb->numEdges = 0;
     current_eb->smallStamp = INT64_MAX;
     current_eb->largeStamp = INT64_MIN;
   }
+}
+
+/** @brief Removes a vertex and all incident edges from the graph
+ *
+ *  Removes all edges incident to the vertex and unmaps the vertex
+ *  in the physmap.  This algorithm first removes all out edges. During
+ *  this pass it will assume an undirected graph and attempt to remove
+ *  all reverse edges if they exist.  In the case of an undirected graph
+ *  the algorithm will be complete and will terminate quickly.
+ *
+ *  If, however, the graph is a directed graph and there are incident edges
+ *  still pointing to the vertex (stinger_indegree_get for the vtx > 0).  Then
+ *  all edges are traversed looking for incident edges until the indegree is 0.
+ *
+ *  As a final step, the vertex is removed from the physmap, freeing this vertex
+ *  to be re-assigned to a new vertex string.
+ *
+ *  @param G The STINGER data structure
+ *  @param vtx_id The vertex to remove
+ *  @return 0 if deletion is successful, -1 if it fails
+ */
+int64_t
+stinger_remove_vertex (struct stinger *G, int64_t vtx_id)
+{
+  // Remove out edges
+  STINGER_PARALLEL_FORALL_EDGES_OF_VTX_BEGIN(G,vtx_id) {
+    stinger_remove_edge_pair(G,STINGER_EDGE_TYPE,STINGER_EDGE_SOURCE,STINGER_EDGE_DEST);
+  } STINGER_PARALLEL_FORALL_EDGES_OF_VTX_END();
+
+  // Remove remaining in edges
+  if (stinger_indegree_get(G,vtx_id) > 0) {
+    STINGER_FORALL_EDGES_OF_ALL_TYPES_BEGIN(G) {
+      int64_t from = STINGER_EDGE_SOURCE;
+      int64_t to = STINGER_EDGE_DEST;
+      int64_t type = STINGER_EDGE_TYPE;
+      if (to == vtx_id) {
+        stinger_remove_edge(G,type,from,to);
+        if (stinger_indegree_get(G,vtx_id) == 0) {
+          break;
+        }
+      }
+    } STINGER_FORALL_EDGES_OF_ALL_TYPES_END();
+  }
+
+  // Remove from physmap
+  return stinger_physmap_vtx_remove_id(stinger_physmap_get(G),stinger_vertices_get(G),vtx_id);
 }
 
 const int64_t endian_check = 0x1234ABCD;
@@ -2191,12 +2260,12 @@ stinger_save_to_file (struct stinger * S, uint64_t maxVtx, const char * stingerf
 
 /** @brief Restores a STINGER checkpoint from disk.
  * @param stingerfile The path and name of the input file.
- * @param S A double pointer to outpute the new Stinger.
+ * @param S A pointer to an empty STINGER structure.
  * @param maxVtx Output pointer for the the maximum vertex ID + 1.
  * @return 0 on success, -1 on failure.
 */
 int
-stinger_open_from_file (const char * stingerfile, struct stinger ** S, uint64_t * maxVtx)
+stinger_open_from_file (const char * stingerfile, struct stinger * S, uint64_t * maxVtx)
 {
 #if !defined(__MTA__)
   FILE * fp = fopen(stingerfile, "rb");
@@ -2207,7 +2276,9 @@ stinger_open_from_file (const char * stingerfile, struct stinger ** S, uint64_t 
   }
 #endif
 
-  *S = stinger_new();
+  if (!S) {
+    return -1;
+  }
 
   int64_t local_endian;
   int64_t etypes = 0;
@@ -2237,11 +2308,11 @@ stinger_open_from_file (const char * stingerfile, struct stinger ** S, uint64_t 
     etypes = bs64(etypes);
   }
 
-  if(*maxVtx > ((*S)->max_nv)) {
+  if(*maxVtx > (S->max_nv)) {
     fprintf (stderr, "%s %d: Vertices in file \"%s\" larger than the maximum number of vertices.\n", __func__, __LINE__, stingerfile);
     return -1;
   }
-  if(etypes > ((*S)->max_netypes)) {
+  if(etypes > (S->max_netypes)) {
     fprintf (stderr, "%s %d: Edge types in file \"%s\" larger than the maximum number of edge types.\n", __func__, __LINE__, stingerfile);
     return -1;
   }
@@ -2290,7 +2361,7 @@ stinger_open_from_file (const char * stingerfile, struct stinger ** S, uint64_t 
   }
 
   for(int64_t type = 0; type < etypes; type++) {
-    stinger_set_initial_edges(*S, *maxVtx, type, 
+    stinger_set_initial_edges(S, *maxVtx, type, 
 	offsets + type * (*maxVtx+2),
 	ind + type_offsets[type],
 	weight + type_offsets[type],
@@ -2303,13 +2374,13 @@ stinger_open_from_file (const char * stingerfile, struct stinger ** S, uint64_t 
   for(uint64_t v = 0; v < *maxVtx; v++) {
     int64_t vdata[2];
     ignore = fread(vdata, sizeof(int64_t), 2, fp);
-    stinger_vtype_set(*S, v, vdata[0]);
-    stinger_vweight_set(*S, v, vdata[1]);
+    stinger_vtype_set(S, v, vdata[0]);
+    stinger_vweight_set(S, v, vdata[1]);
   }
 
-  stinger_names_load(stinger_physmap_get(*S), fp);
-  stinger_names_load(stinger_vtype_names_get(*S), fp);
-  stinger_names_load(stinger_etype_names_get(*S), fp);
+  stinger_names_load(stinger_physmap_get(S), fp);
+  stinger_names_load(stinger_vtype_names_get(S), fp);
+  stinger_names_load(stinger_etype_names_get(S), fp);
 
 #if !defined(__MTA__)
   fclose(fp);

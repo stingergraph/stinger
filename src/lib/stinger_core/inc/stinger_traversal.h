@@ -23,6 +23,9 @@ extern "C" {
 #undef STINGER_FORALL_EDGES_BEGIN
 #undef STINGER_FORALL_EDGES_END
 
+#undef STINGER_FORALL_EDGES_OF_ALL_TYPES_BEGIN
+#undef STINGER_FORALL_EDGES_OF_ALL_TYPES_END
+
 #undef STINGER_PARALLEL_FORALL_EDGES_BEGIN
 #undef STINGER_PARALLEL_FORALL_EDGES_END
 
@@ -167,6 +170,27 @@ extern "C" {
     }									\
   } while (0)
 
+  /* all edges */
+#define STINGER_FORALL_EDGES_OF_ALL_TYPES_BEGIN(STINGER_) \
+  do {                  \
+    MAP_STING(STINGER_); \
+    for (uint64_t t__ = 1; t__ < stinger_max_num_etypes(STINGER_); t__++) { \
+      struct stinger_eb * ebpool_priv = ebpool->ebpool; \
+      for(uint64_t p__ = 0; p__ < ETA((STINGER_),(t__))->high; p__++) { \
+        struct stinger_eb *  current_eb__ = ebpool_priv+ ETA((STINGER_),(t__))->blocks[p__]; \
+        int64_t source__ = current_eb__->vertexID;      \
+        int64_t type__ = current_eb__->etype;       \
+        for(uint64_t i__ = 0; i__ < stinger_eb_high(current_eb__); i__++) { \
+          if(!stinger_eb_is_blank(current_eb__, i__)) {                   \
+            struct stinger_edge * current_edge__ = current_eb__->edges + i__;
+
+#define STINGER_FORALL_EDGES_OF_ALL_TYPES_END()          \
+          }               \
+        }                 \
+      }                 \
+    }                   \
+  } while (0)
+
 #define STINGER_PARALLEL_FORALL_EDGES_BEGIN(STINGER_,TYPE_)		\
   do {									\
     MAP_STING(STINGER_); \
@@ -192,7 +216,7 @@ extern "C" {
 /* source vertex based */
 #define STINGER_READ_ONLY_FORALL_EDGES_OF_VTX_BEGIN(STINGER_,VTX_)      \
   do {                                                                  \
-    MAP_STING(STINGER_); \
+    CONST_MAP_STING(STINGER_); \
     const struct stinger * restrict S__ = (STINGER_);			\
     const struct stinger_eb * restrict ebp__ = ebpool->ebpool;	\
     const int64_t source__ = (VTX_);                                    \
@@ -214,7 +238,7 @@ extern "C" {
 
 #define STINGER_READ_ONLY_FORALL_EDGES_OF_TYPE_OF_VTX_BEGIN(STINGER_,TYPE_,VTX_)      \
   do {                                                                  \
-    MAP_STING(STINGER_); \
+    CONST_MAP_STING(STINGER_); \
     const struct stinger * restrict S__ = (STINGER_);			\
     const struct stinger_eb * restrict ebp__ = ebpool->ebpool;	\
     const int64_t source__ = (VTX_);                                    \
@@ -241,7 +265,7 @@ extern "C" {
 
 #define STINGER_READ_ONLY_PARALLEL_FORALL_EDGES_OF_VTX_BEGIN(STINGER_,VTX_) \
   do {                                                                  \
-    MAP_STING(STINGER_); \
+    CONST_MAP_STING(STINGER_); \
     const struct stinger * restrict S__ = (STINGER_);			\
     const struct stinger_eb * restrict ebp__ = ebpool->ebpool;	\
     const int64_t source__ = (VTX_);					\
@@ -268,7 +292,7 @@ extern "C" {
 
 #define STINGER_READ_ONLY_PARALLEL_FORALL_EDGES_OF_TYPE_OF_VTX_BEGIN(STINGER_,VTX_) \
   do {                                                                  \
-    MAP_STING(STINGER_); \
+    CONST_MAP_STING(STINGER_); \
     const struct stinger * restrict S__ = (STINGER_);			\
     struct stinger_eb * ebpool_priv = ebpool->ebpool;		\
     OMP("omp parallel") {                                               \
@@ -301,7 +325,7 @@ extern "C" {
 /* all edges of a given type */
 #define STINGER_READ_ONLY_FORALL_EDGES_BEGIN(STINGER_,TYPE_)            \
       do {                                                              \
-	MAP_STING(STINGER_); \
+	CONST_MAP_STING(STINGER_); \
         const struct stinger * restrict S__ = (STINGER_);               \
         struct stinger_eb * restrict ebp__ = ebpool->ebpool;	\
         const int64_t etype__ = (TYPE_);                                \
@@ -324,7 +348,7 @@ extern "C" {
 
 #define STINGER_READ_ONLY_PARALLEL_FORALL_EDGES_BEGIN(STINGER_,TYPE_)   \
       do {                                                              \
-	MAP_STING(STINGER_); \
+	CONST_MAP_STING(STINGER_); \
         const struct stinger * restrict S__ = (STINGER_);             \
         const int64_t etype__ = (TYPE_);                              \
 	const struct stinger_eb * restrict ebp__ = ebpool->ebpool;	\

@@ -626,7 +626,7 @@ update_el (struct el * el,
     struct el g = *el;
     CDECL(g);
     for (int64_t k = 0; k < g.ne; ++k) {
-      if (I(g, k) >= g.nv) fprintf (stderr, "ugh2 %ld (%ld, %ld; %ld) %ld\n", (long)k, (long)I(g,k), (long)J(g,k), (long)W(g,k), (long)g.nv);
+      if (I(g, k) >= g.nv || J(g, k) >= g.nv) fprintf (stderr, "ugh2 %ld (%ld, %ld; %ld) %ld\n", (long)k, (long)I(g,k), (long)J(g,k), (long)W(g,k), (long)g.nv);
       assert (I(g, k) < g.nv);
       assert (J(g, k) < g.nv);
       assert (I(g, k) >= 0);
@@ -640,6 +640,21 @@ update_el (struct el * el,
   OMP("omp parallel for")
     for (int64_t k = 0; k < el->nv_orig; ++k)
       assert(mark[k] == -1);
+#endif
+
+#if !defined(NDEBUG)
+  {
+    struct el g = *el;
+    CDECL(g);
+    fprintf(stderr, "wtf1 %ld\n", (long)g.ne);
+    for (int64_t k = 0; k < g.ne; ++k) {
+      if (I(g, k) >= g.nv || J(g, k) >= g.nv) fprintf (stderr, "ugh3 %ld (%ld, %ld; %ld) %ld\n", (long)k, (long)I(g,k), (long)J(g,k), (long)W(g,k), (long)g.nv);
+      assert (I(g, k) < g.nv);
+      assert (J(g, k) < g.nv);
+      assert (I(g, k) >= 0);
+      assert (J(g, k) >= 0);
+    }
+  }
 #endif
 
 #if !defined(NDEBUG)

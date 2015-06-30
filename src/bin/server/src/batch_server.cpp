@@ -9,7 +9,13 @@
 #include <errno.h>
 
 #include "server.h"
+#include "stinger_core/stinger_atomics.h"
 #include "stinger_net/stinger_server_state.h"
+
+//#define LOG_AT_D
+#include "stinger_core/stinger_error.h"
+
+#define STINGER_MAX_BATCHES 100
 
 typedef struct {
   struct stinger * S;
@@ -28,17 +34,17 @@ handle_stream(void * args)
 
   int nfail = 0;
 
-  V("Ready to accept messages.");
+  LOG_V("Ready to accept messages.");
   while(1)
   {
     StingerBatch * batch = new StingerBatch();
     if (recv_message(sock, *batch)) {
       nfail = 0;
 
-      V_A("Received message of size %ld", (long)batch->ByteSize());
+      LOG_V_A("Received message of size %ld", (long)batch->ByteSize());
 
       if (0 == batch->insertions_size () && 0 == batch->deletions_size ()) {
-	V("Empty batch.");
+	LOG_V("Empty batch.");
 	if (!batch->keep_alive ()) {
 	  delete batch;
 	  break;
@@ -48,6 +54,12 @@ handle_stream(void * args)
 	}
       }
 
+      if (server_state.get_queue_size() >= STINGER_MAX_BATCHES) {
+	LOG_W("Dropping a batch");
+	stinger_uint64_fetch_add(&(S->dropped_batches), 1);
+	delete batch;
+	continue;
+      }
       server_state.enqueue_batch(batch);
 
       if(!batch->keep_alive()) {
@@ -57,7 +69,7 @@ handle_stream(void * args)
 
     } else {
       ++nfail;
-      V("ERROR Parsing failed.\n");
+      LOG_E("Parsing failed.");
       if (nfail > 2) break;
     }
   }
@@ -99,7 +111,7 @@ start_tcp_batch_server (void * args)
 
   clilen = sizeof(cli_addr);
 
-  V_A("STINGER server listening for input on port %d",
+  LOG_V_A("STINGER server listening for input on port %d",
       (int)port_streams);
 
   pthread_t alg_handling;

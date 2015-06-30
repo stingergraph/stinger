@@ -1,17 +1,12 @@
-extern "C" {
-  #include "stinger_core/stinger.h"
-  #include "stinger_core/stinger_shared.h"
-  #include "stinger_utils/timer.h"
-  #include "stinger_utils/stinger_utils.h"
-  #include "stinger_core/xmalloc.h"
-  #include "stinger_core/x86_full_empty.h"
-  #include "stinger_core/stinger_error.h"
-}
-
+#include "stinger_core/stinger.h"
+#include "stinger_core/stinger_shared.h"
+#include "stinger_utils/timer.h"
+#include "stinger_utils/stinger_utils.h"
+#include "stinger_core/xmalloc.h"
+#include "stinger_core/x86_full_empty.h"
 #include "stinger_net/proto/stinger-batch.pb.h"
 #include "stinger_net/proto/stinger-connect.pb.h"
 #include "stinger_net/proto/stinger-alg.pb.h"
-
 #include "stinger_net/send_rcv.h"
 #include "stinger_net/stinger_server_state.h"
 #include "server.h"
@@ -25,11 +20,16 @@ extern "C" {
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <sys/un.h>
 #include <unistd.h>
 
 /* POSIX only for now, note that mongoose would be a good place to 
 get cross-platform threading and sockets code */
 #include <pthread.h> 
+
+/* Must be included last */
+#define LOG_AT_I
+#include "stinger_core/stinger_error.h"
 
 /* A note on the design of this server:
  * Main thread -> starts all other threads, listens to the incoming port and accepts connections.
@@ -201,15 +201,19 @@ handle_mon(struct AcceptedSock * sock, StingerServerState & server_state)
       return;
     }
 
+/* Commenting these lines out so that monitors can reconnect easily.
+ * Someone could suggest a more permanent solution.
+ * DE 11/13/2014
+ */
     if(server_state.has_mon(mon_to_server.mon_name())) {
-      if(server_state.get_mon(mon_to_server.mon_name())->state < MON_STATE_DONE) {
-	LOG_E("Monitor already exists");
-	server_to_mon->set_result(MON_FAILURE_NAME_EXISTS);
-	send_message(sock->handle, *server_to_mon);
-	return;
-      } else {
+//      if(server_state.get_mon(mon_to_server.mon_name())->state < MON_STATE_DONE) {
+//	LOG_E("Monitor already exists");
+//	server_to_mon->set_result(MON_FAILURE_NAME_EXISTS);
+//	send_message(sock->handle, *server_to_mon);
+//	return;
+ //     } else {
 	server_state.delete_mon(mon_to_server.mon_name());
-      }
+//      }
     }
 
     LOG_D("Creating monitor structure")
@@ -288,12 +292,16 @@ void *
 process_loop_handler(void * data)
 {
   LOG_V("Main loop thread started");
+  double batch_time;
+  double update_time;
 
   StingerServerState & server_state = StingerServerState::get_server_state();
+  struct stinger * S = server_state.get_stinger();
 
   while(1) { /* TODO clean shutdown mechanism */
     StingerBatch * batch = server_state.dequeue_batch();
 
+    batch_time = timer();
     /* loop through each algorithm, blocking init as needed, send start preprocessing message */
     size_t stop_alg_level = server_state.get_num_levels();
     for(size_t cur_level_index = 0; cur_level_index < stop_alg_level; cur_level_index++) {
@@ -486,7 +494,20 @@ process_loop_handler(void * data)
     }
 
     /* update stinger */
+    update_time = timer();
     process_batch(server_state.get_stinger(), *batch);
+    update_time = timer() - update_time;
+    int64_t edge_count = batch->insertions_size() + batch->deletions_size();
+    LOG_I_A("Server processed %ld edges in %20.15e seconds", edge_count, update_time);
+    LOG_I_A("%f edges per second", ((double) edge_count) / update_time);
+
+    /* update performance stats */
+    S->num_insertions += batch->insertions_size();
+    S->num_deletions += batch->deletions_size();
+    S->num_insertions_last_batch = batch->insertions_size();
+    S->num_deletions_last_batch = batch->deletions_size();
+    S->update_time = update_time;
+    S->queue_size = server_state.get_queue_size();
 
     /* loop through each algorithm, send start postprocessing message */
     stop_alg_level = server_state.get_num_levels();
@@ -679,10 +700,13 @@ process_loop_handler(void * data)
 	}
       }
     }
-
     server_state.write_data();
 
     delete batch;
+    
+    batch_time = timer() - batch_time;
+    LOG_I_A("Algorithm handling loop took %20.15e seconds", batch_time);
+    S->batch_time = batch_time;
   }
 }
 
@@ -691,14 +715,24 @@ start_alg_handling(void *)
 {
   StingerServerState & server_state = StingerServerState::get_server_state();
 
-  LOG_V("Opening the socket");
+  LOG_D("Opening the socket");
   int sock_handle;
+  int port = server_state.get_port_algs();
 
+#ifdef STINGER_USE_TCP
   struct sockaddr_in sock_addr;
   memset(&sock_addr, 0, sizeof(sock_addr));
   sock_addr.sin_family = AF_INET;
-  sock_addr.sin_port   = htons((in_port_t)server_state.get_port_algs());
+  sock_addr.sin_port   = htons(port);
+#else
+  struct sockaddr_un sock_addr;
+  memset(&sock_addr, 0, sizeof(sock_addr));
+  sock_addr.sun_family = AF_UNIX;
+  strncpy(sock_addr.sun_path, "/tmp/stinger.sock", sizeof(sock_addr.sun_path)-1);
+  unlink("/tmp/stinger.sock");
+#endif
 
+#ifdef STINGER_USE_TCP
   if(-1 == (sock_handle = socket(AF_INET, SOCK_STREAM, 0))) {
     LOG_F_A("Socket create failed: %s", strerror(errno));
     exit(-1);
@@ -714,7 +748,25 @@ start_alg_handling(void *)
     exit(-1);
   }
 
-  LOG_V("Spawning the main loop thread");
+  LOG_V_A("Algorithm Server listening on port %d", port);
+#else
+  if(-1 == (sock_handle = socket(AF_UNIX, SOCK_STREAM, 0))) {
+    LOG_F_A("Socket create failed: %s", strerror(errno));
+    exit(-1);
+  }
+
+  if(-1 == bind(sock_handle, (const sockaddr *)&sock_addr, sizeof(sock_addr))) {
+    LOG_F_A("Socket bind failed: %s", strerror(errno));
+    exit(-1);
+  }
+
+  if(-1 == listen(sock_handle, 16)) {
+    LOG_F_A("Socket listen failed: %s", strerror(errno));
+    exit(-1);
+  }
+
+  LOG_V_A("Algorithm Server listening on port %d", port);
+#endif
 
   pthread_t main_loop_thread;
   pthread_create(&main_loop_thread, NULL, &process_loop_handler, NULL);
@@ -729,7 +781,7 @@ start_alg_handling(void *)
   while(1) {
     struct AcceptedSock * accepted_sock = (struct AcceptedSock *)xcalloc(1,sizeof(struct AcceptedSock));
 
-    LOG_V("Waiting for connections...")
+    LOG_D("Waiting for connections...")
     accepted_sock->handle = accept(sock_handle, &(accepted_sock->addr), &(accepted_sock->len));
 
     pthread_t new_thread;

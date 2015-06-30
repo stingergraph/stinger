@@ -6,6 +6,7 @@ SET(libdep_default stinger_core stinger_utils)
 SET(libdep_web_server string mongoose kv_store)
 SET(libdep_sql_client stinger_net)
 SET(libdep_alg_to_mongo stinger_net mongo_c_driver)
+SET(libdep_dump_graph_to_disk stinger_net mongo_c_driver)
 
 IF(APPLE)
   SET(libdep_json_rpc_server ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib stinger_net pthread mongoose)
@@ -62,15 +63,15 @@ FOREACH(subdir ${subs})
       # Glob the c++ source
       FILE(GLOB srcs RELATIVE ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_CURRENT_LIST_DIR}/${subdir}/src/*)
       INCLUDE_DIRECTORIES(${subdir}/inc)
-      ADD_EXECUTABLE(${subdir} ${srcs} ${realprotosrc} ${protohead})
+      ADD_EXECUTABLE(stinger_${subdir} ${srcs} ${realprotosrc} ${protohead})
 
-      ADD_DEPENDENCIES(${subdir} ${tgtdep_default})
-      TARGET_LINK_LIBRARIES(${subdir} ${libdep_default})
+      ADD_DEPENDENCIES(stinger_${subdir} ${tgtdep_default})
+      TARGET_LINK_LIBRARIES(stinger_${subdir} ${libdep_default})
 
       FOREACH(dep_target ${tgtdep_${subdir}})
-	ADD_DEPENDENCIES(${subdir} ${dep_target})
+	ADD_DEPENDENCIES(stinger_${subdir} ${dep_target})
       ENDFOREACH()
-      TARGET_LINK_LIBRARIES(${subdir} ${libdep_${subdir}})
+      TARGET_LINK_LIBRARIES(stinger_${subdir} ${libdep_${subdir}})
 
     ENDIF()
   ENDIF()

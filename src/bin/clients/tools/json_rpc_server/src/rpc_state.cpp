@@ -7,6 +7,8 @@
 #include "rpc_state.h"
 #include "stinger_core/stinger.h"
 
+#define LOG_AT_W
+#include "stinger_core/stinger_error.h"
 
 using namespace gt::stinger;
 
@@ -19,6 +21,7 @@ JSON_RPCServerState::get_server_state() {
 JSON_RPCServerState::JSON_RPCServerState() :
   next_session_id(1), session_lock(0),
   max_sessions(20), StingerMon() {
+    time(&start_time);
 }
 
 JSON_RPCServerState::~JSON_RPCServerState() {
@@ -39,6 +42,16 @@ JSON_RPCServerState::get_rpc_function(std::string name) {
 bool
 JSON_RPCServerState::has_rpc_function(std::string name) {
   return function_map.count(name) > 0;
+}
+
+std::map<std::string, JSON_RPCFunction *>::iterator
+JSON_RPCServerState::rpc_function_begin(void) {
+  return function_map.begin();
+}
+
+std::map<std::string, JSON_RPCFunction *>::iterator
+JSON_RPCServerState::rpc_function_end(void) {
+  return function_map.end();
 }
 
 void
@@ -88,14 +101,28 @@ JSON_RPCFunction::contains_params(rpc_params_t * p, rapidjson::Value * params) {
   if (!params)
     return true; //shouldn't this be return false?
 
-  if (params->IsArray())
+  if (!(params->IsObject()))
     return false;
+  
+  stinger_t * S = server_state->get_stinger();
+  if (!S) {
+    LOG_E ("STINGER pointer is invalid");
+    return false;
+  }
 
   while(p->name) {
     if(!params->HasMember(p->name)) {
       if(p->optional) {
         switch(p->type) {
           case TYPE_INT64: {
+            *((int64_t *)p->output) = p->def;
+          }
+          break;
+          case TYPE_EDGE_TYPE: {
+            *((int64_t *)p->output) = p->def;
+          }
+          break;
+          case TYPE_VERTEX_TYPE: {
             *((int64_t *)p->output) = p->def;
           }
           break;
@@ -123,7 +150,6 @@ JSON_RPCFunction::contains_params(rpc_params_t * p, rapidjson::Value * params) {
       }
     } else {
 
-      stinger_t * S = server_state->get_stinger();
       switch(p->type) {
         case TYPE_VERTEX: {
           if((*params)[p->name].IsInt64()) {
@@ -133,6 +159,38 @@ JSON_RPCFunction::contains_params(rpc_params_t * p, rapidjson::Value * params) {
             *((int64_t *)p->output) = tmp;
           } else if((*params)[p->name].IsString()) {
             int64_t tmp = stinger_mapping_lookup(S, (*params)[p->name].GetString(), (*params)[p->name].GetStringLength());
+            if (tmp == -1)
+              return false;
+            *((int64_t *)p->output) = tmp;
+          } else {
+            return false;
+          }
+        }
+        break;
+        case TYPE_EDGE_TYPE: {
+          if((*params)[p->name].IsInt64()) {
+            int64_t tmp = (*params)[p->name].GetInt64();
+            if (tmp < 0 || tmp >= S->max_netypes)
+              return false;
+            *((int64_t *)p->output) = tmp;
+          } else if((*params)[p->name].IsString()) {
+            int64_t tmp = stinger_etype_names_lookup_type(S, (*params)[p->name].GetString());
+            if (tmp == -1)
+              return false;
+            *((int64_t *)p->output) = tmp;
+          } else {
+            return false;
+          }
+        }
+        break;
+        case TYPE_VERTEX_TYPE: {
+          if((*params)[p->name].IsInt64()) {
+            int64_t tmp = (*params)[p->name].GetInt64();
+            if (tmp < 0 || tmp >= S->max_nvtypes)
+              return false;
+            *((int64_t *)p->output) = tmp;
+          } else if((*params)[p->name].IsString()) {
+            int64_t tmp = stinger_vtype_names_lookup_type(S, (*params)[p->name].GetString());
             if (tmp == -1)
               return false;
             *((int64_t *)p->output) = tmp;
@@ -290,4 +348,13 @@ JSON_RPCServerState::get_session(int64_t session_id) {
     return NULL;
   else
     return tmp->second;
+}
+
+time_t
+JSON_RPCServerState::get_time_since_start()
+{
+  time_t cur_time;
+  time(&cur_time);
+
+  return (cur_time - start_time);
 }

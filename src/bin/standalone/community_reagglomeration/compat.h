@@ -1,6 +1,8 @@
 #if !defined(COMPAT_HEADER_)
 #define COMPAT_HEADER_
 
+#include "stinger_core/stinger.h"
+
 #if defined(USE32BIT)
 typedef int32_t intvtx_t;
 typedef uint32_t uintvtx_t;
@@ -27,20 +29,6 @@ typedef uint64_t uintvtx_t;
 #endif
 #define MTA_NODEP
 #define nonMTA_break break
-#endif
-
-#if defined(_OPENMP)
-#include <omp.h>
-#if !defined(OMP)
-#define OMP(x) OMP_(x)
-#define OMP_(x) _Pragma(x)
-#endif
-#else
-#if !defined(OMP)
-#define OMP(x)
-#endif
-static inline int omp_get_num_threads (void) { return 1; }
-static inline int omp_get_thread_num (void) { return 0; }
 #endif
 
 #if defined(__GNUC__)

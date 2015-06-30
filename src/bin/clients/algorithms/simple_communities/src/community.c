@@ -434,7 +434,8 @@ contract_el (int64_t NE, intvtx_t * restrict el /* 3 x oldNE */,
 
   /* fprintf (stderr, "from %ld => %ld\n", old_nv, new_nv); */
 
-  OMP("omp parallel") {
+  OMP("omp parallel") 
+  {
 #if !defined(NDEBUG)
     OMP("omp for reduction(+:w_in) schedule(static)") MTA_STREAMS
       for (intvtx_t i = 0; i < old_nv; ++i)
@@ -2340,7 +2341,7 @@ update_community (int64_t * restrict cmap_global, const int64_t nv_global,
           const intvtx_t z = ws_inner[i];
           csize[i] = z;
         }
-#if !defined(NDEBUG)
+#if 0&&!defined(NDEBUG)
       OMP("omp for reduction(+: totsz)") MTA_STREAMS
         for (intvtx_t i = 0; i < new_nv; ++i) {
           const intvtx_t z = csize[i];
@@ -2504,7 +2505,8 @@ contract_self_el (int64_t NE, intvtx_t * restrict el /* 3 x oldNE */,
 
   /* fprintf (stderr, "from %ld => %ld\n", old_nv, nv); */
 
-  OMP("omp parallel") {
+  OMP("omp parallel") 
+  {
 #if !defined(NDEBUG)
     OMP("omp for reduction(+:w_in) schedule(static)")
       for (intvtx_t i = 0; i < nv; ++i)
