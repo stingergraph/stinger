@@ -128,7 +128,7 @@ mon_handler(void * args)
 	} else if((!recv_message(params->sock, server_to_mon)) || server_to_mon.result() != MON_SUCCESS) {
 	  LOG_E_A("Error updating - communication to server failed: %s", server_to_mon.DebugString().c_str());
 	} else {
-	  stinger_t * new_stinger;
+	  // stinger_t * new_stinger;
 	  std::vector<StingerAlgState *> * algs = new std::vector<StingerAlgState *>();
 	  std::map<std::string, StingerAlgState *> * alg_map = new std::map<std::string, StingerAlgState *>();
 	  map_update(server_to_mon, &new_stinger, *algs, *alg_map);
