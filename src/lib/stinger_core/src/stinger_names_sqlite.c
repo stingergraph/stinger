@@ -22,9 +22,9 @@
  *
  * @return A new stinger_names_t.
  */
-stinger_names_t * 
+stinger_names_t *
 stinger_names_new(int64_t max_types) {
-  stinger_names_t * sn = xcalloc(sizeof(stinger_names_t) + 
+  stinger_names_t * sn = xcalloc(sizeof(stinger_names_t) +
     ((max_types+1) * sizeof(int64_t) * 1), sizeof(uint8_t));
   stinger_names_init(sn,max_types);
   return sn;
@@ -36,10 +36,10 @@ stinger_names_init(stinger_names_t * sn, int64_t max_types) {
   int rc = sqlite3_open("file:namesdb?mode=memory&cache=private", &sn->db);
 
   if ( rc ) {
-    LOG_E_A("Can't open names database: %s\n", sqlite3_errmsg(sn->db));    
+    LOG_E_A("Can't open names database: %s\n", sqlite3_errmsg(sn->db));
   }
 
-  const char * drop_sql = 
+  const char * drop_sql =
       "DROP TABLE IF EXISTS NAMES";
 
   sqlite3_exec(sn->db, drop_sql, NULL, NULL, NULL);
@@ -115,7 +115,7 @@ stinger_names_resize(stinger_names_t ** sn, int64_t max_types) {
 
 size_t
 stinger_names_size(int64_t max_types) {
-  size_t rtn = sizeof(stinger_names_t) + 
+  size_t rtn = sizeof(stinger_names_t) +
     (max_types * sizeof(int64_t) * 1); /* to_int */
   return rtn;
 }
@@ -130,7 +130,7 @@ stinger_names_size(int64_t max_types) {
 stinger_names_t *
 stinger_names_free(stinger_names_t ** sn) {
   if(sn && *sn) {
-    const char * drop_sql = 
+    const char * drop_sql =
       "DROP TABLE IF EXISTS NAMES";
 
     sqlite3_exec((*sn)->db, drop_sql, NULL, NULL, NULL);
@@ -177,7 +177,7 @@ stinger_names_create_type(stinger_names_t * sn, const char * name, int64_t * out
 
     //fprintf(stderr,"SQLITE insert - %s - %ld\n",name,next_type);
 
-    const char * create_sql = 
+    const char * create_sql =
       "INSERT OR IGNORE INTO NAMES "
           "(NAME, ID)"
       " VALUES "
@@ -187,13 +187,13 @@ stinger_names_create_type(stinger_names_t * sn, const char * name, int64_t * out
 
     int rc;
 
-    rc = sqlite3_prepare_v2(sn->db, create_sql, -1, &create_stmt, NULL);  
-    
+    rc = sqlite3_prepare_v2(sn->db, create_sql, -1, &create_stmt, NULL);
+
     rc = sqlite3_bind_text(create_stmt,1,name,-1,SQLITE_STATIC);
     rc = sqlite3_bind_int64(create_stmt,2,next_type);
     rc = sqlite3_step(create_stmt);
     if ( rc != SQLITE_DONE && rc != SQLITE_OK) {
-      LOG_E_A("Can't insert data: %d", rc);    
+      LOG_E_A("Can't insert data: %d", rc);
     }
     sqlite3_finalize(create_stmt);
     return 1;
@@ -212,7 +212,7 @@ int64_t
 stinger_names_lookup_type(stinger_names_t * sn, const char * name) {
   MAP_SN(sn)
 
-  const char * lookup_id_sql = 
+  const char * lookup_id_sql =
     "SELECT "
         " ID "
     " FROM "
@@ -252,7 +252,7 @@ char *
 stinger_names_lookup_name(stinger_names_t * sn, int64_t type) {
   MAP_SN(sn)
 
-  const char * lookup_name_sql = 
+  const char * lookup_name_sql =
     "SELECT "
         "NAME "
     "FROM "
@@ -275,7 +275,7 @@ stinger_names_lookup_name(stinger_names_t * sn, int64_t type) {
     strcpy(name,s_name);
     sqlite3_finalize(lookup_name_stmt);
     return name;
-  } else {    
+  } else {
     sqlite3_finalize(lookup_name_stmt);
     return NULL;
   }
@@ -345,10 +345,10 @@ int64_t
 stinger_names_count(stinger_names_t * sn) {
   sqlite3_stmt * stmt;
 
-  const char * count_sql = 
-      "SELECT"
-          "COUNT(*)"
-      "FROM"
+  const char * count_sql =
+      "SELECT "
+          "COUNT(*) "
+      "FROM "
         "NAMES";
 
   sqlite3_prepare_v2(sn->db, count_sql, -1, &stmt, NULL);
@@ -370,7 +370,7 @@ stinger_names_print(stinger_names_t * sn) {
 
   sqlite3_stmt * stmt;
 
-  const char * lookup_sql = 
+  const char * lookup_sql =
     "SELECT "
       "NAME, ID "
     "FROM "
