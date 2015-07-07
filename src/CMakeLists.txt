@@ -1,3 +1,6 @@
-
-ADD_SUBDIRECTORY(lib)
-ADD_SUBDIRECTORY(bin)
+add_subdirectory(clients/algorithms)
+add_subdirectory(clients/streams)
+add_subdirectory(clients/tools)
+add_subdirectory(server)
+add_subdirectory(standalone)
+add_subdirectory(tests)

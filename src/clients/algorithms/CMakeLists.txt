@@ -1,0 +1,29 @@
+add_executable(stinger_betweenness betweenness/src/betweenness.c)
+target_link_libraries(stinger_betweenness stinger_net stinger_alg)
+
+add_executable(stinger_clustering_coefficients clustering_coefficients/src/clustering.c)
+target_link_libraries(stinger_clustering_coefficients stinger_net stinger_alg)
+
+add_executable(stinger_kcore kcore/src/kcore.c)
+target_link_libraries(stinger_kcore stinger_net stinger_alg)
+
+add_executable(stinger_pagerank pagerank/src/pagerank.c)
+target_link_libraries(stinger_pagerank stinger_net stinger_alg)
+
+add_subdirectory(pagerank_updating)
+
+add_executable(stinger_rate_monitor rate_monitor/src/rate_monitor.c)
+target_link_libraries(stinger_rate_monitor stinger_net stinger_alg)
+
+add_subdirectory(simple_communities)
+
+add_subdirectory(spmspv_test)
+
+add_executable(stinger_static_components static_components/src/static_components.c)
+target_link_libraries(stinger_static_components stinger_net stinger_alg)
+
+add_executable(stinger_test_alg test_alg/src/test_alg.cpp)
+target_link_libraries(stinger_test_alg stinger_net stinger_alg)
+
+add_executable(stinger_weakly_connected_components weakly_connected_components/src/main.c)
+target_link_libraries(stinger_weakly_connected_components stinger_net stinger_alg)
