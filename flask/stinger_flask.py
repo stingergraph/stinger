@@ -54,7 +54,7 @@ def insert():
 
     # send immediately if the batch is now large
     current_batch_size = s.insertions_count + s.deletions_count
-    if current_batch_size > BATCH_THRESHOLD:
+    if current_batch_size > BATCH_THRESHOLD and BATCH_THRESHOLD > 0:
       s.send_batch()
       print "Sending  batch of size", current_batch_size, 'at', strftime("%Y%m%d%H%M%S", gmtime()),""
 
