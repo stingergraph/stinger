@@ -48,6 +48,12 @@ stinger_names_init(stinger_names_t * sn, int64_t max_types) {
 
   rc = sqlite3_exec(sn->db, create_db, NULL, NULL, NULL);
 
+  char * index_sql = "CREATE INDEX IF NOT EXISTS NameIdx ON NAMES (NAME)";
+  char * index_sql1 = "CREATE INDEX IF NOT EXISTS IDIdx on NAMES (ID)";
+
+  rc = sqlite3_exec(sn->db, index_sql, NULL, NULL, NULL);
+  rc = sqlite3_exec(sn->db, index_sql1, NULL, NULL, NULL);
+
   sn->max_types = max_types;
   sn->num_types = 0;
   sn->next_type_idx = 0;
