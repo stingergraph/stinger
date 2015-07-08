@@ -1,11 +1,11 @@
-import requests, argparse, numpy, json, time
+import requests, argparse, numpy, json
 from time import gmtime, strftime
 
 TEST_URL = 'http://localhost:5000/insert'
 
 parser = argparse.ArgumentParser(description="Test script for STINGER Flask Relay Server")
 parser.add_argument('--batch_size', help="Number of edges to send per batch", default=1000, type=int)
-parser.add_argument('--batch_rate', help="Seconds between sending a batch", default=5, type=int)
+parser.add_argument('--batch_rate', help="Seconds between sending a batch", default=4, type=int)
 parser.add_argument('--edge_types', help="Number of different edge types", default=2, type=int)
 args = parser.parse_args()
 
@@ -16,6 +16,8 @@ while True:
     typ = numpy.random.randint(0,args.edge_types,args.batch_size)
     exec_time = time.time()
     for i in range(0,args.batch_size):
+        if dst[i] == src[i]:
+            src += 1
         e = {'src':str(src[i]),'dest':str(dst[i]),'type':str(typ[i]),'time':int(strftime("%Y%m%d%H%M%S", gmtime()))}
         edges.append(e)
 

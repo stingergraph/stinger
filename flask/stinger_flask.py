@@ -1,5 +1,7 @@
 import sys, os, time, requests, json, threading, signal, logging, argparse, traceback
 from flask import Flask, request, jsonify
+from time import gmtime, strftime
+
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 logging.basicConfig(stream=sys.stderr)
@@ -35,17 +37,17 @@ def insert():
 
   try:
     data = request.json
-    print len(data['edges']), "Edges received"
     if isinstance(data["edges"], list):
       edges = data["edges"]
+      print "Received batch of size", len(edges), 'at', strftime("%Y%m%d%H%M%S", gmtime()),""
       for x in edges:
         try:
-          source = int(x["src"])
-          destination = int(x["dest"])
+          source = str(x["src"])
+          destination = str(x["dest"])
           edge_type = x["type"]
           timestamp = int(x["time"])
           s.add_insert(source, destination, edge_type, ts=timestamp)
-          # print "added edge", source, destination, edge_type, timestamp
+        #   print "added edge", source, destination, edge_type, timestamp
         except Exception as e:
           print(traceback.format_exc())
           pass
@@ -54,9 +56,10 @@ def insert():
     current_batch_size = s.insertions_count + s.deletions_count
     if current_batch_size > BATCH_THRESHOLD:
       s.send_batch()
-      print "Sending batch of size", current_batch_size
+      print "Sending  batch of size", current_batch_size, 'at', strftime("%Y%m%d%H%M%S", gmtime()),""
 
   except:
+    print(traceback.format_exc())
     return jsonify({"error": "invalid input"})
 
   # end critical section
@@ -90,9 +93,9 @@ def stingerRPC(payload):
 #
 # Initialize the connection to STINGER server
 #
-def connect(directed=False):
+def connect(directed=True,strings=True):
   global s
-  s = sn.StingerStream(STINGER_HOST, 10102, directed)
+  s = sn.StingerStream(STINGER_HOST, 10102, strings, directed)
 
   global counter_lock
   counter_lock = threading.Lock()
@@ -101,7 +104,8 @@ def connect(directed=False):
 # attempt to send a batch every TIMEOUT_SECS seconds
 #
 def sendBatch():
-  if s.insertions_count > 0 or s.deletions_count > 0:
+  current_batch_size = s.insertions_count + s.deletions_count
+  if current_batch_size > 0:
     counter_lock.acquire()
     try:
       s.send_batch()
@@ -122,20 +126,6 @@ def signal_handler(signal, frame):
   sys.exit(0)
 
 
-if not 's' in globals():
-  print 'Connecting to STINGER'
-  try:
-    connect()
-  except e as Exception:
-    print str(e)
-  print 'Connected to STINGER'
-if not 't' in globals():
-  print 'STINGER timer setup started'
-  try:
-    sendBatch()
-  except e as Exception:
-    print str(e)
-  print 'STINGER timer setup finished'
 #
 # main
 #
@@ -144,6 +134,16 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="STINGER Flask Relay Server")
     parser.add_argument('--directed', action="store_true")
     args = parser.parse_args()
-    #connect(args.directed)
-    sendBatch()
+    if not 's' in globals():
+      try:
+        connect(args.directed)
+        print 'STINGER connection successful'
+      except e as Exception:
+        print str(e)
+    if not 't' in globals():
+      try:
+        sendBatch()
+        print 'STINGER timer setup successful'
+      except e as Exception:
+        print str(e)
     app.run(debug=True)
