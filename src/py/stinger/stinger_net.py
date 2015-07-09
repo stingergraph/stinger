@@ -81,7 +81,7 @@ class StingerRegisteredAlg(Structure):
     return Stinger(s=self.stinger)
 
 class StingerStream():
-  def __init__(self, host, port, strings=True, directed=False):
+  def __init__(self, host, port, strings=True, undirected=False):
     self.sock_handle = libstinger_net['stream_connect'](c_char_p(host), c_int(port))
     self.insertions_size = 5000
     self.insertions = (StingerEdgeUpdate * self.insertions_size)()
@@ -92,7 +92,7 @@ class StingerStream():
     self.deletions_refs = []
     self.deletions_count = 0
     self.only_strings = strings
-    self.directed = directed
+    self.undirected = undirected
 
   def add_insert(self, vfrom, vto, etype=0, weight=0, ts=0):
     if(self.insertions_count >= self.insertions_size):
@@ -147,7 +147,7 @@ class StingerStream():
 
   def send_batch(self):
     libstinger_net['stream_send_batch'](self.sock_handle, c_int(self.only_strings), 
-	self.insertions, self.insertions_count, self.deletions, self.deletions_count, self.directed)
+	     self.insertions, self.insertions_count, self.deletions, self.deletions_count, self.undirected)
     self.insertions_count = 0
     self.deletions_count = 0
     self.insertions_refs = []
