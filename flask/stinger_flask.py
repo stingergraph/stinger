@@ -6,8 +6,8 @@ log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 logging.basicConfig(stream=sys.stderr)
 
-sys.path.append("/home/tgoodyear/projects/blueprints/src/py/")
-os.environ['STINGER_LIB_PATH'] = "/home/tgoodyear/projects/blueprints/build/lib/"
+sys.path.append("/path/to/stinger/python_lib/src/py/")
+os.environ['STINGER_LIB_PATH'] = "/path/to/stinger_libs/build/lib/"
 
 import stinger.stinger_net as sn
 import stinger.stinger_core as sc
