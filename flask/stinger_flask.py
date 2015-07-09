@@ -15,8 +15,8 @@ log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 logging.basicConfig(stream=sys.stderr)
 
-sys.path.append("/home/user/stinger/src/py/")
-os.environ['STINGER_LIB_PATH'] = "/home/user/stinger/build/lib/"
+sys.path.append("/home/tgoodyear/projects/stinger/src/py/")
+os.environ['STINGER_LIB_PATH'] = "/home/tgoodyear/projects/stinger/build/lib/"
 
 import stinger.stinger_net as sn
 import stinger.stinger_core as sc
@@ -27,7 +27,6 @@ BATCH_THRESHOLD = 500
 
 STINGER_HOST = 'localhost'
 STINGER_PORT = '8088'
-
 
 app = Flask(__name__)
 
@@ -144,6 +143,8 @@ if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal_handler)
     parser = argparse.ArgumentParser(description="STINGER Flask Relay Server")
     parser.add_argument('--undirected', action="store_true")
+    parser.add_argument('--flask_host', default="0.0.0.0")
+    parser.add_argument('--flask_port', default=5000, type=int)
     args = parser.parse_args()
     if not 's' in globals():
       try:
@@ -157,4 +158,4 @@ if __name__ == '__main__':
         print 'STINGER timer setup successful'
       except e as Exception:
         print str(e)
-    app.run(debug=True)
+    app.run(debug=True,host=args.flask_host,port=args.flask_port)
