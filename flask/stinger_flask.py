@@ -6,8 +6,8 @@ log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 logging.basicConfig(stream=sys.stderr)
 
-sys.path.append("/path/to/stinger/python_lib/src/py/")
-os.environ['STINGER_LIB_PATH'] = "/path/to/stinger_libs/build/lib/"
+sys.path.append("/home/user/stinger/src/py/")
+os.environ['STINGER_LIB_PATH'] = "/home/user/stinger/build/lib/"
 
 import stinger.stinger_net as sn
 import stinger.stinger_core as sc
@@ -93,9 +93,11 @@ def stingerRPC(payload):
 #
 # Initialize the connection to STINGER server
 #
-def connect(directed=True,strings=True):
+def connect(undirected=False,strings=True):
   global s
-  s = sn.StingerStream(STINGER_HOST, 10102, strings, directed)
+  s = sn.StingerStream(STINGER_HOST, 10102, strings, undirected)
+  directedness = 'UNdirected' if undirected else 'directed'
+  print "Inserting into",directedness,"graph"
 
   global counter_lock
   counter_lock = threading.Lock()
@@ -109,7 +111,7 @@ def sendBatch():
     counter_lock.acquire()
     try:
       s.send_batch()
-      print "Sending batch with", s.insertions_count, "insertions and", s.deletions_count, "deletions"
+      print "Sending  batch of size", current_batch_size, 'at', strftime("%Y%m%d%H%M%S", gmtime()),""
     finally:
       counter_lock.release()
 
@@ -132,11 +134,11 @@ def signal_handler(signal, frame):
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal_handler)
     parser = argparse.ArgumentParser(description="STINGER Flask Relay Server")
-    parser.add_argument('--directed', action="store_true")
+    parser.add_argument('--undirected', action="store_true")
     args = parser.parse_args()
     if not 's' in globals():
       try:
-        connect(args.directed)
+        connect(args.undirected)
         print 'STINGER connection successful'
       except e as Exception:
         print str(e)

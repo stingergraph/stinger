@@ -1,4 +1,4 @@
-import requests, argparse, numpy, json
+import requests, argparse, numpy, json, time
 from time import gmtime, strftime
 
 TEST_URL = 'http://localhost:5000/insert'
@@ -18,7 +18,7 @@ while True:
     for i in range(0,args.batch_size):
         if dst[i] == src[i]:
             src += 1
-        e = {'src':str(src[i]),'dest':str(dst[i]),'type':str(typ[i]),'time':int(strftime("%Y%m%d%H%M%S", gmtime()))}
+        e = {'src':str(src[i]),'dest':str(dst[i]),'type':str(typ[i]),'time':int(time.strftime("%Y%m%d%H%M%S", gmtime()))}
         edges.append(e)
 
     payload = {'edges':edges}
