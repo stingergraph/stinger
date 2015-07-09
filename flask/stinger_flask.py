@@ -15,8 +15,8 @@ log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 logging.basicConfig(stream=sys.stderr)
 
-sys.path.append("/home/tgoodyear/projects/stinger/src/py/")
-os.environ['STINGER_LIB_PATH'] = "/home/tgoodyear/projects/stinger/build/lib/"
+sys.path.append("/home/user/stinger/src/py/")
+os.environ['STINGER_LIB_PATH'] = "/home/user/stinger/build/lib/"
 
 import stinger.stinger_net as sn
 import stinger.stinger_core as sc
