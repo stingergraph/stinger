@@ -1,4 +1,8 @@
-import requests, argparse, numpy, json, time
+import requests
+import argparse
+import numpy
+import json
+import time
 from time import gmtime, strftime
 
 TEST_URL = 'http://localhost:5000/insert'
