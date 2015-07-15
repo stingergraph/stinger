@@ -4,6 +4,10 @@
 #include "stinger_net/stinger_alg.h"
 #include "stinger_utils/timer.h"
 
+#define EPSILON_DEFAULT 1e-8
+#define DAMPINGFACTOR_DEFAULT 0.85
+#define MAXITER_DEFAULT 20
+
 double * set_tmp_pr(double * tmp_pr_in, int64_t NV);
 void unset_tmp_pr(double * tmp_pr, double * tmp_pr_in);
 
