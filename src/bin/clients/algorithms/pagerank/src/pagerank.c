@@ -116,6 +116,55 @@ page_rank (stinger_t * S, int64_t NV, double * pr, double * tmp_pr_in, double ep
 }
 
 int64_t
+page_rank_type_directed(stinger_t * S, int64_t NV, double * pr, double * tmp_pr_in, double epsilon, double dampingfactor, int64_t maxiter, int64_t type)
+{
+  double * tmp_pr = set_tmp_pr(tmp_pr_in, NV);
+
+  int64_t iter = maxiter;
+  double delta = 1;
+  int64_t iter_count = 0;
+
+  while (delta > epsilon && iter > 0) {
+    iter_count++;
+
+    for (uint64_t v = 0; v < NV; v++) {
+      tmp_pr[v] = 0;
+    }
+
+    STINGER_FORALL_EDGES_BEGIN(S,type) {
+      /* TODO: this should be typed outdegree */
+      int64_t outdegree = stinger_outdegree(S, STINGER_EDGE_SOURCE);
+      tmp_pr[STINGER_EDGE_DEST] += (((double)pr[STINGER_EDGE_SOURCE]) /
+        ((double) (outdegree ? outdegree : NV -1)));
+    } STINGER_FORALL_EDGES_END();
+
+    OMP("omp parallel for")
+    for (uint64_t v = 0; v < NV; v++) {
+      tmp_pr[v] = tmp_pr[v] * dampingfactor + (((double)(1-dampingfactor)) / ((double)NV));
+    }
+
+    delta = 0;
+    OMP("omp parallel for reduction(+:delta)")
+    for (uint64_t v = 0; v < NV; v++) {
+      double mydelta = tmp_pr[v] - pr[v];
+      if (mydelta < 0)
+        mydelta = -mydelta;
+      delta += mydelta;
+    }
+    //LOG_I_A("delta : %20.15e", delta);
+
+    OMP("omp parallel for")
+    for (uint64_t v = 0; v < NV; v++) {
+      pr[v] = tmp_pr[v];
+    }
+
+    iter--;
+  }
+
+  unset_tmp_pr(tmp_pr,tmp_pr_in);
+}
+
+int64_t
 page_rank_type(stinger_t * S, int64_t NV, double * pr, double * tmp_pr_in, double epsilon, double dampingfactor, int64_t maxiter, int64_t type)
 {
   double * tmp_pr = set_tmp_pr(tmp_pr_in, NV);
