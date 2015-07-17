@@ -10,6 +10,7 @@ ELSE()
 ENDIF()
 
 SET(libdep_stinger_utils stinger_core int_hm_seq string fmemopen compat)
+SET(libdep_stinger_alg stinger_core int_hm_seq string fmemopen compat)
 SET(libdep_kv_store string)
 SET(libdep_mongoose dl pthread)
 IF(APPLE)
@@ -26,6 +27,7 @@ SET(tgtdep_default protobuf)
 SET(tgtdep_stinger_core sqlite)
 SET(tgtdep_stinger_utils rapidjson)
 SET(tgtdep_stinger_net stinger_core stinger_utils)
+SET(tgtdep_stinger_alg stinger_core stinger_utils)
 
 ################################################
 # make sure full-empty emulation isn't optimized
