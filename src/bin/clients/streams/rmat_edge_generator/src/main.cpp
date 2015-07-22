@@ -12,7 +12,8 @@ extern "C" {
 #include "stinger_utils/csv.h"
 #include "stinger_utils/timer.h"
 #include "stinger_utils/stinger_sockets.h"
-#include "random.h"
+#include "stinger_alg/random.h"
+#include "stinger_alg/rmat.h"
 }
 
 #include "rmat_edge_generator.h"
