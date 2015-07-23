@@ -81,10 +81,11 @@ int main(int argc, char * argv[]) {
 
 	FILE * fp = fopen("pagerank.csv", "w");
 
-	fprintf(fp,"vertex,pagerank_directed,pagerank_undirected");
+	fprintf(fp,"vertex,pagerank_directed,pagerank_undirected\n");
 
 	for (int64_t z=0; z < nv; z++) {
-		fprintf(fp,"%ld,%lf,%lf\n",z,pr_d[z],pr_u[z]);
+		fprintf(fp,"%ld,%lf,%lf",z,pr_d[z],pr_u[z]);
+		fprintf(fp,"\n");
 	}
 
 	fclose(fp);
