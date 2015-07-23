@@ -1,8 +1,10 @@
+include(ExternalProject)
 
 ###############################################
 # Add library dependencies here as dep_<folder>
 SET(libdep_default int_hm_seq int_ht_seq stinger_core stinger_utils string)
 SET(libdep_depold_community int_hm_seq int_ht_seq)
+SET(libdep_pagerank_test stinger_alg)
 
 IF(APPLE)
   SET(libdep_protobuf_test ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib)
@@ -15,6 +17,7 @@ ENDIF()
 SET(tgtdep_default int_hm_seq int_ht_seq stinger_core stinger_utils rt string)
 SET(tgtdep_protobuf_test protobuf)
 SET(tgtdep_depold_community int_hm_seq int_ht_seq)
+SET(tgtdep_pagerank_test stinger_alg)
 
 #################################################################
 # Iterate over each project and build appropriately based on type
@@ -35,6 +38,11 @@ FOREACH(subdir ${subs})
 
       ADD_DEPENDENCIES(stinger_${subdir} ${tgtdep_default})
       TARGET_LINK_LIBRARIES(stinger_${subdir} ${libdep_default})
+
+      get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+      foreach(dir ${dirs})
+        message(STATUS "dir='${dir}'")
+      endforeach()
 
       FOREACH(dep_library ${tgtdep_${subdir}})
         MESSAGE("dependency: ${dep_library}")
