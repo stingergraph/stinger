@@ -10,7 +10,7 @@ ELSE()
 ENDIF()
 
 SET(libdep_stinger_utils stinger_core int_hm_seq string fmemopen compat)
-SET(libdep_stinger_alg stinger_core int_hm_seq string fmemopen compat)
+SET(libdep_stinger_alg stinger_core stinger_net int_hm_seq string fmemopen compat)
 SET(libdep_kv_store string)
 SET(libdep_mongoose dl pthread)
 IF(APPLE)
