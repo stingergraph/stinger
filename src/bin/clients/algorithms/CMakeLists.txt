@@ -3,11 +3,11 @@ include(ExternalProject)
 ###############################################
 # Add library dependencies here as dep_<folder>
 IF(APPLE)
-  SET(libdep_default stinger_core stinger_utils stinger_net ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib)
+  SET(libdep_default stinger_alg stinger_core stinger_utils stinger_net ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib)
 ELSEIF(CYGWIN OR WIN32)
-  SET(libdep_default stinger_core stinger_utils stinger_net ${CMAKE_BINARY_DIR}/lib/libprotobuf.dll.a)
+  SET(libdep_default stinger_alg stinger_core stinger_utils stinger_net ${CMAKE_BINARY_DIR}/lib/libprotobuf.dll.a)
 ELSE()
-  SET(libdep_default stinger_core stinger_utils stinger_net ${CMAKE_BINARY_DIR}/lib/libprotobuf.so)
+  SET(libdep_default stinger_alg stinger_core stinger_utils stinger_net ${CMAKE_BINARY_DIR}/lib/libprotobuf.so)
 ENDIF()
 
 
