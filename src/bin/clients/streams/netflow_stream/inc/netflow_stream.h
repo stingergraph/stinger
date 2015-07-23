@@ -32,7 +32,7 @@ struct NetflowParse {
 	bool isHeader(char * line){
 		return !isdigit(line[0]);
 	}
-	
+
 	void parseLine(char *line) {
 		// Split netflow line into tokens, space-delimited
 		std::string str(line);
@@ -41,7 +41,7 @@ struct NetflowParse {
 		std::copy(std::istream_iterator<std::string>(iss),
 			 std::istream_iterator<std::string>(),
 			 std::back_inserter<std::vector<std::string> >(tokens));
-		
+
 		// Get Source/Destination address and port
 		int position = tokens[6].find(':');
 		this->dest = tokens[6].substr(0, position);
@@ -49,26 +49,26 @@ struct NetflowParse {
 		position = tokens[4].find(':');
 		this->src = tokens[4].substr(0, position);
 		this->src_port = tokens[4].substr(position, tokens[4].length() - position);
-		
+
 		this->protocol = tokens[3];
 		this->bytes = atoi(tokens[8].c_str());
 		this->duration = atol(tokens[2].c_str());
 		this->time = this->parseDatetime(tokens[0],tokens[1]);
-		
+
 	}
-	
+
 	uint64_t parseDatetime(std::string date, std::string time){
 		uint64_t ret = 0;
 		std::string intermediate = date.substr(0,4) + date.substr(5,2) + date.substr(8,2);
 		intermediate += time.substr(0,2) + time.substr(3,2) + time.substr(6,2);
 		ret = atoll(intermediate.c_str());
-		/* 
+		/*
 		std::cout << intermediate.c_str() << "\n";
 		std::cout << ret << "\n";
 		*/
 		return ret;
 	}
-	
+
 };
 double dpc_tic(void);
 double dpc_toc(double);
