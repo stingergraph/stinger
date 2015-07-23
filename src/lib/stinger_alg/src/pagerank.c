@@ -21,6 +21,8 @@ int64_t
 page_rank_directed(stinger_t * S, int64_t NV, double * pr, double * tmp_pr_in, double epsilon, double dampingfactor, int64_t maxiter) {
   double * tmp_pr = set_tmp_pr(tmp_pr_in, NV);
 
+  int64_t * pr_lock = (int64_t *)xcalloc(NV,sizeof(double));
+
   int64_t iter = maxiter;
   double delta = 1;
   int64_t iter_count = 0;
@@ -32,11 +34,13 @@ page_rank_directed(stinger_t * S, int64_t NV, double * pr, double * tmp_pr_in, d
       tmp_pr[v] = 0;
     }
 
-    STINGER_FORALL_EDGES_OF_ALL_TYPES_BEGIN(S) {
+    STINGER_PARALLEL_FORALL_EDGES_OF_ALL_TYPES_BEGIN(S) {
       int64_t outdegree = stinger_outdegree(S, STINGER_EDGE_SOURCE);
+      int64_t count = readfe(&pr_lock[STINGER_EDGE_DEST]);
       tmp_pr[STINGER_EDGE_DEST] += (((double)pr[STINGER_EDGE_SOURCE]) /
         ((double) (outdegree ? outdegree : NV -1)));
-    } STINGER_FORALL_EDGES_OF_ALL_TYPES_END();
+      writeef(&pr_lock[STINGER_EDGE_DEST],count+1);
+    } STINGER_PARALLEL_FORALL_EDGES_OF_ALL_TYPES_END();
 
     OMP("omp parallel for")
     for (uint64_t v = 0; v < NV; v++) {
@@ -62,6 +66,7 @@ page_rank_directed(stinger_t * S, int64_t NV, double * pr, double * tmp_pr_in, d
   }
 
   unset_tmp_pr(tmp_pr,tmp_pr_in);
+  xfree(pr_lock);
 }
 
 int64_t
