@@ -40,7 +40,7 @@ JSON_RPC_get_data_array_sorted_range::operator()(rapidjson::Value * params, rapi
     }
     if (!alg_state) {
       if(0 != strcmp("stinger", algorithm_name)) {
-	LOG_E ("Algorithm is not running");
+	LOG_E_A ("Algorithm is not running: %s", algorithm_name);
 	return json_rpc_error(-32003, result, allocator);
       } else {
 	result.AddMember("time", max_time_seen, allocator);
