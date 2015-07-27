@@ -83,5 +83,13 @@ JSON_RPC_adamic_adar::operator()(rapidjson::Value * params, rapidjson::Value & r
     result.AddMember("vertex_str", vtx_str, allocator);
   result.AddMember("value", vtx_val, allocator);
 
+  if (candidates != NULL) {
+    xfree(candidates);
+  }
+
+  if (scores != NULL) {
+    xfree(scores);
+  }
+
   return 0;
 }
