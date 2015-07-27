@@ -5,6 +5,7 @@ include(ExternalProject)
 SET(libdep_default int_hm_seq int_ht_seq stinger_core stinger_utils string)
 SET(libdep_depold_community int_hm_seq int_ht_seq)
 SET(libdep_pagerank_test stinger_alg)
+SET(libdep_adamic_adar_test stinger_alg)
 
 IF(APPLE)
   SET(libdep_protobuf_test ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib)
@@ -18,6 +19,7 @@ SET(tgtdep_default int_hm_seq int_ht_seq stinger_core stinger_utils rt string)
 SET(tgtdep_protobuf_test protobuf)
 SET(tgtdep_depold_community int_hm_seq int_ht_seq)
 SET(tgtdep_pagerank_test stinger_alg)
+SET(tgtdep_adamic_adar_test stinger_alg)
 
 #################################################################
 # Iterate over each project and build appropriately based on type
