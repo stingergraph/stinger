@@ -9,17 +9,17 @@ SET(libdep_alg_to_mongo stinger_net mongo_c_driver)
 SET(libdep_dump_graph_to_disk stinger_net mongo_c_driver)
 
 IF(APPLE)
-  SET(libdep_json_rpc_server ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib stinger_net pthread mongoose)
+  SET(libdep_json_rpc_server ${CMAKE_BINARY_DIR}/lib/libprotobuf.dylib stinger_alg stinger_net pthread mongoose)
 ELSEIF(CYGWIN OR WIN32)
-  SET(libdep_json_rpc_server ${CMAKE_BINARY_DIR}/lib/libprotobuf.dll.a stinger_net pthread mongoose)
+  SET(libdep_json_rpc_server ${CMAKE_BINARY_DIR}/lib/libprotobuf.dll.a stinger_alg stinger_net pthread mongoose)
 ELSE()
-  SET(libdep_json_rpc_server ${CMAKE_BINARY_DIR}/lib/libprotobuf.so stinger_net pthread mongoose)
+  SET(libdep_json_rpc_server ${CMAKE_BINARY_DIR}/lib/libprotobuf.so stinger_alg stinger_net pthread mongoose)
 ENDIF()
 
 SET(tgtdep_default stinger_core stinger_utils rt)
 SET(tgtdep_alg_data_to_json protobuf stinger_net)
 SET(tgtdep_web_server string rapidjson mongoose kv_store)
-SET(tgtdep_json_rpc_server rapidjson)
+SET(tgtdep_json_rpc_server rapidjson stinger_alg)
 SET(tgtdep_sql_client stinger_net)
 
 #################################################################

@@ -47,8 +47,10 @@ map_update(ServerToMon & server_to_mon, stinger_t ** stinger_copy,
   std::map<std::string, StingerAlgState *> & alg_map)
 {
 
-  LOG_D_A("Mapping stinger %s %ld", server_to_mon.stinger_loc().c_str(), server_to_mon.stinger_size());
-  *stinger_copy = stinger_shared_private(server_to_mon.stinger_loc().c_str(), server_to_mon.stinger_size());
+  if (!(*stinger_copy)) {
+    LOG_D_A("Mapping stinger %s %ld", server_to_mon.stinger_loc().c_str(), server_to_mon.stinger_size());
+    *stinger_copy = stinger_shared_private(server_to_mon.stinger_loc().c_str(), server_to_mon.stinger_size());
+  }
 
   if (!(*stinger_copy)) {
     LOG_E("Failed to map STINGER");
@@ -114,7 +116,7 @@ mon_handler(void * args)
       free(args);
       return NULL;
     } else {
-      stinger_t * new_stinger;
+      stinger_t * new_stinger = NULL;
       std::vector<StingerAlgState *> * algs = new std::vector<StingerAlgState *>();
       std::map<std::string, StingerAlgState *> * alg_map = new std::map<std::string, StingerAlgState *>();
       map_update(server_to_mon, &new_stinger, *algs, *alg_map);
@@ -128,7 +130,7 @@ mon_handler(void * args)
 	} else if((!recv_message(params->sock, server_to_mon)) || server_to_mon.result() != MON_SUCCESS) {
 	  LOG_E_A("Error updating - communication to server failed: %s", server_to_mon.DebugString().c_str());
 	} else {
-	  stinger_t * new_stinger;
+	  // stinger_t * new_stinger;
 	  std::vector<StingerAlgState *> * algs = new std::vector<StingerAlgState *>();
 	  std::map<std::string, StingerAlgState *> * alg_map = new std::map<std::string, StingerAlgState *>();
 	  map_update(server_to_mon, &new_stinger, *algs, *alg_map);

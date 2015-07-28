@@ -333,6 +333,9 @@ stinger_etype_array_size(int64_t nebs);
 #define STINGER_FORALL_EDGES_OF_ALL_TYPES_BEGIN(STINGER_) do {
 #define STINGER_FORALL_EDGES_OF_ALL_TYPES_END() } while (0)
 
+#define STINGER_PARALLEL_FORALL_EDGES_OF_ALL_TYPES_BEGIN(STINGER_) do {
+#define STINGER_PARALLEL_FORALL_EDGES_OF_ALL_TYPES_END() } while (0)
+
 /* read-only traversal macros *
  * These should be safe even when the graph is being modified elsewhere. All 
  * variables are local and will not be stored back in the graph.
@@ -347,7 +350,7 @@ stinger_etype_array_size(int64_t nebs);
 #define STINGER_READ_ONLY_PARALLEL_FORALL_EDGES_OF_VTX_END() } while (0)
 
 #define STINGER_READ_ONLY_PARALLEL_FORALL_EDGES_OF_TYPE_OF_VTX_BEGIN(STINGER_,TYPE_,VTX_) do {
-#define STINGER_READ_ONLY_PARALLEL__FORALL_EDGES_OF_TYPE_OF_VTX_END() } while (0)
+#define STINGER_READ_ONLY_PARALLEL_FORALL_EDGES_OF_TYPE_OF_VTX_END() } while (0)
 
 #define STINGER_READ_ONLY_FORALL_EDGES_BEGIN(STINGER_,TYPE_) do {
 #define STINGER_READ_ONLY_FORALL_EDGES_END() } while (0)

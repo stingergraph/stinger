@@ -182,7 +182,7 @@ connected_components (const size_t nv, const size_t ne,
     if (change == 0)
       break;
 
-    MTA ("mta assert nodep");
+    MTA ("mta assert nodep")
     for (i = 0; i < nv; i++) {
       while (d[i] != d[d[i]])
         d[i] = d[d[i]];

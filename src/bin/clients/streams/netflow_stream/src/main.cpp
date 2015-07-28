@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
 	if(batch_size == 0){
 		batch_size = NETFLOW_BATCH_SIZE;
 	}
-	LOG_D_A ("Sending batches every %d seconds", batch_time);	
+	LOG_D_A ("Sending batches every %d seconds", batch_time);
 
 	/* start the connection */
 	int sock_handle = connect_to_batch_server (server, port);
@@ -98,33 +98,33 @@ int main(int argc, char *argv[])
 	batch.set_type(STRINGS_ONLY);
 	batch.set_keep_alive(true);
 	std::vector<EdgeInsertion> batch_buffer;
-	
+
 	int64_t insertIdx =0;
 	int64_t edgeIdx =0;
 
 	double global_start = dpc_tic();
 	double start = dpc_tic();
 	double timeInSeconds = dpc_toc(start);
-	while((result = fgets(input_line, MAX_LINE, stdin )) != NULL) {	
+	while((result = fgets(input_line, MAX_LINE, stdin )) != NULL) {
 		NetflowParse p;
 		if(p.isHeader(input_line)) {
 			continue;
 		}
-		
+
 		p.parseLine(input_line);
-		
+
 		/*
 		// DEBUG Ensure unique entry
 		std::stringstream bnum;
 		bnum << batch_num;
-		
+
 		if(batch_num % 3 == 0) {
 			p.src += bnum.str();
 			p.dest += bnum.str();
 		}
 		// END Unique
 		*/
-		
+
 		EdgeInsertion * insertion = batch.add_insertions();
 		insertion->set_source_str(p.src);
 		insertion->set_destination_str(p.dest);
@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
 		if (ferror(stdin)) {
 			perror("Error reading stdin.");
 		}
-				
+
 		// Assume batches are separated by number of insertions if batch_time is 0 or negative
 		if(batch_time <= 0) {
 			if (batch_num == 0 || batch_num % batch_size == 0) {
@@ -169,7 +169,7 @@ int main(int argc, char *argv[])
 	}
 
 	LOG_D_A("Sent %ld batches in %f seconds. Constructing last batch from buffer ", batch_num, dpc_toc(global_start));
-	
+
 	batch.clear_insertions();
 	for (std::vector<EdgeInsertion>::iterator it = batch_buffer.begin() ; it != batch_buffer.end(); ++it) {
 		EdgeInsertion * insertion = batch.add_insertions();
@@ -188,22 +188,13 @@ int main(int argc, char *argv[])
 }
 
 double dpc_tic(void) {
-    struct timespec t;
+    double start = timer();
 
-    clock_gettime(CLOCK_MONOTONIC, &t);
-
-    double start = (double)t.tv_sec + (double)t.tv_nsec/1e9;
- 	
  	return start;
 }
- 
+
 double dpc_toc (double start) {
-        struct timespec t;
-        double stop;
- 
-        clock_gettime(CLOCK_MONOTONIC, &t);
- 
-        stop = (double)t.tv_sec + (double)t.tv_nsec/1e9;
- 
+        double stop = timer();
+
         return (stop-start);
 }

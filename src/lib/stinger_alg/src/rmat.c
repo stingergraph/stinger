@@ -1,8 +1,6 @@
 #include <stdlib.h>
-extern "C" {
 #include "random.h"
-}
-#include "rmat_edge_generator.h"
+#include "rmat.h"
 
 
 void
