@@ -18,8 +18,8 @@ log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 logging.basicConfig(stream=sys.stderr)
 
-sys.path.append("/home/tgoodyear/projects/stinger/src/py/")
-os.environ['STINGER_LIB_PATH'] = "/home/tgoodyear/projects/stinger/build/lib/"
+sys.path.append("/home/path/stinger/src/py/")
+os.environ['STINGER_LIB_PATH'] = "/home/path/stinger/build/lib/"
 
 import stinger.stinger_net as sn
 import stinger.stinger_core as sc
@@ -114,7 +114,7 @@ class StingerProxy(Resource):
         'jsonrpc': fields.String(description='JSON-RPC Version', required=True, default="2.0"),
         'method': fields.String(description='Method for RPC server to execute', required=True),
         'params': fields.Raw(description='JSON object describing parameters for the requested method', required=False),
-        'id': fields.Raw(description='User-specified ID of the request', required=False, default=False)
+        'id': fields.Arbitrary(description='User-specified ID of the request', required=True, default=False)
     })
     @api.expect(jsonSpec)
     def post(self):
@@ -138,6 +138,17 @@ class Algorithm(Resource):
     })
     def get(self):
         return stingerRPC({"jsonrpc": "2.0", "method": "get_algorithms", "id": 1})
+
+@api.route('/stat/<string:stat>', methods=['GET','POST'])
+class Stat(Resource):
+    @api.doc(responses={
+        200: 'Success',
+        503: 'Unable to reach STINGER'
+    })
+    def get(self,stat):
+        stat_data = "bc" if stat == "betweenness_centrality" else stat
+        payload = {"jsonrpc": "2.0", "method": "get_data_array_sorted_range", "params": {"name": stat, "strings": True, "data": stat_data, "offset": 0, "count": 30, "order":"DESC"}, "id": 1}
+        return stingerRPC(payload)
 
 @api.route('/health', methods=['GET'])
 class Health(Resource):
