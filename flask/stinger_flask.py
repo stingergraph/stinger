@@ -18,8 +18,8 @@ log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 logging.basicConfig(stream=sys.stderr)
 
-sys.path.append("/home/path/stinger/src/py/")
-os.environ['STINGER_LIB_PATH'] = "/home/path/stinger/build/lib/"
+sys.path.append("/home/tgoodyear/projects/stinger/src/py/")
+os.environ['STINGER_LIB_PATH'] = "/home/tgoodyear/projects/stinger/build/lib/"
 
 import stinger.stinger_net as sn
 import stinger.stinger_core as sc
@@ -27,9 +27,6 @@ import stinger.stinger_core as sc
 # Value of -1 in either field disables its use as a threshold
 TIMEOUT_SECS = 5
 BATCH_THRESHOLD = 500
-
-STINGER_HOST = 'localhost'
-STINGER_PORT = '8088'
 
 app = Flask(__name__)
 api = Api(app, version='1.0', title='STINGER API',
@@ -162,7 +159,8 @@ class Health(Resource):
 
 def stingerRPC(payload):
     try:
-        r = requests.post('http://'+ STINGER_HOST +':'+ STINGER_PORT +'/jsonrpc', data=json.dumps(payload))
+        urlstr = 'http://{}:{}/jsonrpc'.format(STINGER_HOST,STINGER_RPC_PORT)
+        r = requests.post(urlstr, data=json.dumps(payload))
     except:
         print(traceback.format_exc())
         return Response(response=json.dumps({"error": "JSON-RPC down"}),status=503,mimetype="application/json")
@@ -226,11 +224,17 @@ def setupSTINGERConnection():
 # main
 #
 if __name__ == '__main__':
+    global STINGER_HOST
+    global STINGER_RPC_PORT
     signal.signal(signal.SIGINT, signal_handler)
     parser = argparse.ArgumentParser(description="STINGER Flask Relay Server")
     parser.add_argument('--undirected', action="store_true")
     parser.add_argument('--flask_host', default="0.0.0.0")
     parser.add_argument('--flask_port', default=5000, type=int)
+    parser.add_argument('--stinger_host', default="localhost")
+    parser.add_argument('--stinger_rpc_port', default=8088, type=int)
     args = parser.parse_args()
+    STINGER_HOST = args.stinger_host
+    STINGER_RPC_PORT = args.stinger_rpc_port
     setupSTINGERConnection()
     app.run(debug=True,host=args.flask_host,port=args.flask_port)
