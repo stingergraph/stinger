@@ -7,7 +7,6 @@
 
 using namespace gt::stinger;
 
-
 int64_t 
 JSON_RPC_get_data_array_sorted_range::operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator)
 {
@@ -40,44 +39,44 @@ JSON_RPC_get_data_array_sorted_range::operator()(rapidjson::Value * params, rapi
     }
     if (!alg_state) {
       if(0 != strcmp("stinger", algorithm_name)) {
-	LOG_E_A ("Algorithm is not running: %s", algorithm_name);
-	return json_rpc_error(-32003, result, allocator);
+        LOG_E_A ("Algorithm is not running: %s", algorithm_name);
+        return json_rpc_error(-32003, result, allocator);
       } else {
-	result.AddMember("time", max_time_seen, allocator);
-	return array_to_json_monolithic_stinger (
-	  SORTED,
-	  server_state->get_stinger(),
-	  result,
-	  allocator,
-	  NULL, // alg_state->data_description.c_str(),
-	  stinger_mapping_nv(server_state->get_stinger()),
-	  NULL, // (uint8_t *) alg_state->data,
-	  strings,
-	  data_array_name,
-	  stride,
-	  logscale,
-	  offset,
-	  offset+count,
-	  order
-	);
+        result.AddMember("time", max_time_seen, allocator);
+        return array_to_json_monolithic_stinger (
+          SORTED,
+          server_state->get_stinger(),
+          result,
+          allocator,
+          NULL, // alg_state->data_description.c_str(),
+          stinger_mapping_nv(server_state->get_stinger()),
+          NULL, // (uint8_t *) alg_state->data,
+          strings,
+          data_array_name,
+          stride,
+          logscale,
+          offset,
+          offset+count,
+          order
+      	);
       }
     }
     result.AddMember("time", max_time_seen, allocator);
     return array_to_json_monolithic (
-	SORTED,
-	server_state->get_stinger(),
-	result,
-	allocator,
-	alg_state->data_description.c_str(),
-	stinger_mapping_nv(server_state->get_stinger()),
-	(uint8_t *) alg_state->data,
-	strings,
-	data_array_name,
-	stride,
-	logscale,
-	offset,
-	offset+count,
-	order
+      SORTED,
+      server_state->get_stinger(),
+      result,
+      allocator,
+      alg_state->data_description.c_str(),
+      stinger_mapping_nv(server_state->get_stinger()),
+      (uint8_t *) alg_state->data,
+      strings,
+      data_array_name,
+      stride,
+      logscale,
+      offset,
+      offset+count,
+      order
     );
   } else {
     return json_rpc_error(-32602, result, allocator);

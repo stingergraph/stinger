@@ -13,17 +13,17 @@ using namespace gt::stinger;
 /* Big monolithic function that does everything related to the data array */
 int
 array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
-			    rapidjson::Value& rtn,
-			    rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator,
-			    const char * description_string, int64_t nv, uint8_t * data,
-			    bool strings,
-			    const char * search_string,
-			    int64_t stride,
-			    bool logscale,
-			    int64_t start, int64_t end,
-			    const char * order_str,
-			    int64_t * set, int64_t set_len
-			    )
+                            rapidjson::Value& rtn,
+                            rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator,
+                            const char * description_string, int64_t nv, uint8_t * data,
+                            bool strings,
+                            const char * search_string,
+                            int64_t stride,
+                            bool logscale,
+                            int64_t start, int64_t end,
+                            const char * order_str,
+                            int64_t * set, int64_t set_len
+                            )
 {
   if (method == SET) {
     if (set_len < 1) {
@@ -105,376 +105,372 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
     if (strcmp(pch, search_string) == 0) {
       LOG_D_A ("%s: matches", search_string);
       switch (description_string[off]) {
-	case 'f':
-	  {
-	    LOG_D_A ("%s: case f", search_string);
-	    int64_t * idx;
-	    if (method == SORTED) {
-	      idx = (int64_t *) xmalloc (nv * sizeof(int64_t));
-	      for (int64_t i = 0; i < nv; i++) {
-		idx[i] = i;
-	      }
+        case 'f':
+        {
+          LOG_D_A ("%s: case f", search_string);
+          int64_t * idx;
+          if (method == SORTED) {
+            idx = (int64_t *) xmalloc (nv * sizeof(int64_t));
+            for (int64_t i = 0; i < nv; i++) {
+              idx[i] = i;
+            }
 
-	      if (asc) {
-		compare_pair_asc<float> comparator((float *) data);
-		std::sort(idx, idx + nv, comparator);
-	      } else {
-		compare_pair_desc<float> comparator((float *) data);
-		std::sort(idx, idx + nv, comparator);
-	      }
-	    }
+            if (asc) {
+              compare_pair_asc<float> comparator((float *) data);
+              std::sort(idx, idx + nv, comparator);
+            } else {
+              compare_pair_desc<float> comparator((float *) data);
+              std::sort(idx, idx + nv, comparator);
+            }
+          }
 
-	    rapidjson::Value value, name, vtx_phys;
-	    double factor = pow((double)(end - start), 1.0 /(double)nsamples);
-	    for (double i = start; i < end; i += stride) {
-	      if (logscale) {
-		if (i != start) {
-		  i -= stride;
-		  int64_t prev = i;
-		  if (i != start) {
-		    i = pow (factor, log((double) (i - start)) / log (factor) + 1);
-		  } else {
-		    i = pow (factor, 1);
-		  }
-		  if (prev == ((int64_t) i))
-		    continue;
-		} 
-	      }
+          rapidjson::Value value, name, vtx_phys;
+          double factor = pow((double)(end - start), 1.0 /(double)nsamples);
+          for (double i = start; i < end; i += stride) {
+            if (logscale) {
+              if (i != start) {
+                i -= stride;
+                int64_t prev = i;
+                if (i != start) {
+                  i = pow (factor, log((double) (i - start)) / log (factor) + 1);
+                } else {
+                  i = pow (factor, 1);
+                }
+                if (prev == ((int64_t) i))
+                  continue;
+              } 
+            }
 
-	      int64_t vtx;
-	      if (method == SORTED)
-		vtx = idx[(int64_t)i];
-	      if (method == RANGE)
-		vtx = i;
-	      if (method == SET)
-		vtx = set[(int64_t)i];
-	      value.SetDouble((double)((float *) data)[vtx]);
-	      vtx_val.PushBack(value, allocator);
-	      
-	      name.SetInt64(vtx);
-	      vtx_id.PushBack(name, allocator);
+            int64_t vtx;
+            if (method == SORTED)
+              vtx = idx[(int64_t)i];
+            if (method == RANGE)
+              vtx = i;
+            if (method == SET)
+              vtx = set[(int64_t)i];
+            value.SetDouble((double)((float *) data)[vtx]);
+            vtx_val.PushBack(value, allocator);
+            
+            name.SetInt64(vtx);
+            vtx_id.PushBack(name, allocator);
 
-	      if (strings) {
-		char * physID;
-		uint64_t len;
-		if(-1 == stinger_mapping_physid_direct(S, vtx, &physID, &len)) {
-		  physID = (char *) "";
-		  len = 0;
-		}
-		vtx_phys.SetString(physID, len, allocator);
-		vtx_str.PushBack(vtx_phys, allocator);
-	      }
-	    }
+            if (strings) {
+              char * physID;
+              uint64_t len;
+              if(-1 == stinger_mapping_physid_direct(S, vtx, &physID, &len)) {
+                physID = (char *) "";
+                len = 0;
+              }
+              vtx_phys.SetString(physID, len, allocator);
+              vtx_str.PushBack(vtx_phys, allocator);
+            }
+          }
 
-	    if (method == SORTED)
-	      free(idx);
-	    done = 1;
-	    break;
-	  }
+          if (method == SORTED)
+            free(idx);
+          done = 1;
+          break;
+        }
 
-	case 'd':
-	  {
-	    LOG_D_A ("%s: case d", search_string);
-	    int64_t * idx;
-	    if (method == SORTED) {
-	      idx = (int64_t *) xmalloc (nv * sizeof(int64_t));
-	      for (int64_t i = 0; i < nv; i++) {
-		idx[i] = i;
-	      }
+        case 'd':
+        {
+          LOG_D_A ("%s: case d", search_string);
+          int64_t * idx;
+          if (method == SORTED) {
+            idx = (int64_t *) xmalloc (nv * sizeof(int64_t));
+            for (int64_t i = 0; i < nv; i++) {
+              idx[i] = i;
+            }
 
-	      if (asc) {
-		compare_pair_asc<double> comparator((double *) data);
-		std::sort(idx, idx + nv, comparator);
-	      } else {
-		compare_pair_desc<double> comparator((double *) data);
-		std::sort(idx, idx + nv, comparator);
-	      }
-	    }
+            if (asc) {
+              compare_pair_asc<double> comparator((double *) data);
+              std::sort(idx, idx + nv, comparator);
+            } else {
+              compare_pair_desc<double> comparator((double *) data);
+              std::sort(idx, idx + nv, comparator);
+            }
+          }
 
-	    rapidjson::Value value, name, vtx_phys;
-	    double factor = pow((double)(end - start), 1.0 /(double)nsamples);
-	    for (double i = start; i < end; i += stride) {
-	      if (logscale) {
-		if (i != start) {
-		  i -= stride;
-		  int64_t prev = i;
-		  if (i != start) {
-		    i = pow (factor, log ((double) (i - start)) / log (factor) + 1);
-		  } else {
-		    i = pow (factor, 1);
-		  }
-		  if (prev == ((int64_t) i))
-		    continue;
-		} 
-	      }
+          rapidjson::Value value, name, vtx_phys;
+          double factor = pow((double)(end - start), 1.0 /(double)nsamples);
+          for (double i = start; i < end; i += stride) {
+            if (logscale) {
+              if (i != start) {
+                i -= stride;
+                int64_t prev = i;
+                if (i != start) {
+                  i = pow (factor, log ((double) (i - start)) / log (factor) + 1);
+                } else {
+                  i = pow (factor, 1);
+                }
+                if (prev == ((int64_t) i))
+                  continue;
+              } 
+            }
 
-	      int64_t vtx;
-	      if (method == SORTED)
-		vtx = idx[(int64_t)i];
-	      if (method == RANGE)
-		vtx = i;
-	      if (method == SET)
-		vtx = set[(int64_t)i];
-	      value.SetDouble((double)((double *) data)[vtx]);
-	      vtx_val.PushBack(value, allocator);
+            int64_t vtx;
+            if (method == SORTED)
+              vtx = idx[(int64_t)i];
+            if (method == RANGE)
+              vtx = i;
+            if (method == SET)
+              vtx = set[(int64_t)i];
+            value.SetDouble((double)((double *) data)[vtx]);
+            vtx_val.PushBack(value, allocator);
 
-	      name.SetInt64(vtx);
-	      vtx_id.PushBack(name, allocator);
+            name.SetInt64(vtx);
+            vtx_id.PushBack(name, allocator);
 
-	      if (strings) {
-		char * physID;
-		uint64_t len;
-		if(-1 == stinger_mapping_physid_direct(S, vtx, &physID, &len)) {
-		  physID = (char *) "";
-		  len = 0;
-		}
-		vtx_phys.SetString(physID, len, allocator);
-		vtx_str.PushBack(vtx_phys, allocator);
-	      }
-	    }
+            if (strings) {
+              char * physID;
+              uint64_t len;
+              if(-1 == stinger_mapping_physid_direct(S, vtx, &physID, &len)) {
+                physID = (char *) "";
+                len = 0;
+              }
+              vtx_phys.SetString(physID, len, allocator);
+              vtx_str.PushBack(vtx_phys, allocator);
+            }
+          }
 
-	    if (method == SORTED)
-	      free(idx);
-	    done = 1;
-	    break;
-	  }
+          if (method == SORTED)
+            free(idx);
+          done = 1;
+          break;
+        }
 
-	case 'i':
-	  {
-	    LOG_D_A ("%s: case i", search_string);
-	    int64_t * idx;
-	    if (method == SORTED) {
-	      idx = (int64_t *) xmalloc (nv * sizeof(int64_t));
-	      for (int64_t i = 0; i < nv; i++) {
-		idx[i] = i;
-	      }
+        case 'i':
+        {
+          LOG_D_A ("%s: case i", search_string);
+          int64_t * idx;
+          if (method == SORTED) {
+            idx = (int64_t *) xmalloc (nv * sizeof(int64_t));
+            for (int64_t i = 0; i < nv; i++) {
+              idx[i] = i;
+            }
 
-	      if (asc) {
-		compare_pair_asc<int32_t> comparator((int32_t *) data);
-		std::sort(idx, idx + nv, comparator);
-	      } else {
-		compare_pair_desc<int32_t> comparator((int32_t *) data);
-		std::sort(idx, idx + nv, comparator);
-	      }
-	    }
+            if (asc) {
+              compare_pair_asc<int32_t> comparator((int32_t *) data);
+              std::sort(idx, idx + nv, comparator);
+            } else {
+              compare_pair_desc<int32_t> comparator((int32_t *) data);
+              std::sort(idx, idx + nv, comparator);
+            }
+          }
 
-	    rapidjson::Value value, name, vtx_phys;
-	    double factor = pow((double)(end - start), 1.0 /(double)nsamples);
-	    for (double i = start; i < end; i += stride) {
-	      if (logscale) {
-		if (i != start) {
-		  i -= stride;
-		  int64_t prev = i;
-		  if (i != start) {
-		    i = pow (factor, log ((double) (i - start)) / log (factor) + 1);
-		  } else {
-		    i = pow (factor, 1);
-		  }
-		  if (prev == ((int64_t) i))
-		    continue;
-		} 
-	      }
+          rapidjson::Value value, name, vtx_phys;
+          double factor = pow((double)(end - start), 1.0 /(double)nsamples);
+          for (double i = start; i < end; i += stride) {
+            if (logscale) {
+              if (i != start) {
+                i -= stride;
+                int64_t prev = i;
+                if (i != start) {
+                  i = pow (factor, log ((double) (i - start)) / log (factor) + 1);
+                } else {
+                  i = pow (factor, 1);
+                }
+                if (prev == ((int64_t) i))
+                  continue;
+              } 
+            }
 
-	      int64_t vtx;
-	      if (method == SORTED)
-		vtx = idx[(int64_t)i];
-	      if (method == RANGE)
-		vtx = i;
-	      if (method == SET)
-		vtx = set[(int64_t)i];
-	      value.SetInt((int)((int32_t *) data)[vtx]);
-	      vtx_val.PushBack(value, allocator);
+            int64_t vtx;
+            if (method == SORTED)
+              vtx = idx[(int64_t)i];
+            if (method == RANGE)
+              vtx = i;
+            if (method == SET)
+              vtx = set[(int64_t)i];
+            value.SetInt((int)((int32_t *) data)[vtx]);
+            vtx_val.PushBack(value, allocator);
 
-	      name.SetInt64(vtx);
-	      vtx_id.PushBack(name, allocator);
+            name.SetInt64(vtx);
+            vtx_id.PushBack(name, allocator);
 
-	      if (strings) {
-		char * physID;
-		uint64_t len;
-		if(-1 == stinger_mapping_physid_direct(S, vtx, &physID, &len)) {
-		  physID = (char *) "";
-		  len = 0;
-		}
-		vtx_phys.SetString(physID, len, allocator);
-		vtx_str.PushBack(vtx_phys, allocator);
-	      }
-	    }
+            if (strings) {
+              char * physID;
+              uint64_t len;
+              if(-1 == stinger_mapping_physid_direct(S, vtx, &physID, &len)) {
+                physID = (char *) "";
+                len = 0;
+              }
+              vtx_phys.SetString(physID, len, allocator);
+              vtx_str.PushBack(vtx_phys, allocator);
+            }
+          }
 
-	    if (method == SORTED)
-	      free(idx);
-	    done = 1;
-	    break;
-	  }
+          if (method == SORTED)
+            free(idx);
+          done = 1;
+          break;
+        }
 
-	case 'l':
-	  {
-	    LOG_D_A ("%s: case l", search_string);
-	    int64_t * idx;
-	    if (method == SORTED) {
-	      idx = (int64_t *) xmalloc (nv * sizeof(int64_t));
-	      for (int64_t i = 0; i < nv; i++) {
-		idx[i] = i;
-	      }
+        case 'l':
+        {
+          LOG_D_A ("%s: case l", search_string);
+          int64_t * idx;
+          if (method == SORTED) {
+            idx = (int64_t *) xmalloc (nv * sizeof(int64_t));
+            for (int64_t i = 0; i < nv; i++) {
+              idx[i] = i;
+            }
 
-	      if (asc) {
-		compare_pair_asc<int64_t> comparator((int64_t *) data);
-		std::sort(idx, idx + nv, comparator);
-	      } else {
-		compare_pair_desc<int64_t> comparator((int64_t *) data);
-		std::sort(idx, idx + nv, comparator);
-	      }
-	    }
+            if (asc) {
+              compare_pair_asc<int64_t> comparator((int64_t *) data);
+              std::sort(idx, idx + nv, comparator);
+            } else {
+              compare_pair_desc<int64_t> comparator((int64_t *) data);
+              std::sort(idx, idx + nv, comparator);
+            }
+          }
 
-	    rapidjson::Value value, name, vtx_phys;
-	    double factor = pow((double)(end - start), 1.0 /(double)nsamples);
-	    for (double i = start; i < end; i += stride) {
-	      if (logscale) {
-		if (i != start) {
-		  i -= stride;
-		  int64_t prev = i;
-		  if (i != start) {
-		    i = pow (factor, log ((double) (i - start)) / log (factor) + 1);
-		  } else {
-		    i = pow (factor, 1);
-		  }
-		  if (prev == ((int64_t) i))
-		    continue;
-		} 
-	      }
+          rapidjson::Value value, name, vtx_phys;
+          double factor = pow((double)(end - start), 1.0 /(double)nsamples);
+          for (double i = start; i < end; i += stride) {
+            if (logscale) {
+              if (i != start) {
+                i -= stride;
+                int64_t prev = i;
+                if (i != start) {
+                  i = pow (factor, log ((double) (i - start)) / log (factor) + 1);
+                } else {
+                  i = pow (factor, 1);
+                }
+                if (prev == ((int64_t) i))
+                  continue;
+              } 
+            }
 
-	      int64_t vtx;
-	      if (method == SORTED)
-		vtx = idx[(int64_t)i];
-	      if (method == RANGE)
-		vtx = i;
-	      if (method == SET)
-		vtx = set[(int64_t)i];
-	      value.SetInt64((int64_t)((int64_t *) data)[vtx]);
-	      vtx_val.PushBack(value, allocator);
+            int64_t vtx;
+            if (method == SORTED)
+              vtx = idx[(int64_t)i];
+            if (method == RANGE)
+              vtx = i;
+            if (method == SET)
+              vtx = set[(int64_t)i];
+            value.SetInt64((int64_t)((int64_t *) data)[vtx]);
+            vtx_val.PushBack(value, allocator);
 
-	      name.SetInt64(vtx);
-	      vtx_id.PushBack(name, allocator);
+            name.SetInt64(vtx);
+            vtx_id.PushBack(name, allocator);
 
-	      if (strings) {
-		char * physID;
-		uint64_t len;
-		if(-1 == stinger_mapping_physid_direct(S, vtx, &physID, &len)) {
-		  physID = (char *) "";
-		  len = 0;
-		}
-		vtx_phys.SetString(physID, len, allocator);
-		vtx_str.PushBack(vtx_phys, allocator);
-	      }
-	    }
+            if (strings) {
+              char * physID;
+              uint64_t len;
+              if(-1 == stinger_mapping_physid_direct(S, vtx, &physID, &len)) {
+                physID = (char *) "";
+                len = 0;
+              }
+              vtx_phys.SetString(physID, len, allocator);
+              vtx_str.PushBack(vtx_phys, allocator);
+            }
+          }
 
-	    if (method == SORTED)
-	      free(idx);
-	    done = 1;
-	    break;
-	  }
+          if (method == SORTED)
+            free(idx);
+          done = 1;
+          break;
+        }
 
-	case 'b':
-	  {
-	    LOG_D_A ("%s: case b", search_string);
-	    int64_t * idx;
-	    if (method == SORTED) {
-	      idx = (int64_t *) xmalloc (nv * sizeof(int64_t));
-	      for (int64_t i = 0; i < nv; i++) {
-		idx[i] = i;
-	      }
+        case 'b':
+        {
+          LOG_D_A ("%s: case b", search_string);
+          int64_t * idx;
+          if (method == SORTED) {
+            idx = (int64_t *) xmalloc (nv * sizeof(int64_t));
+            for (int64_t i = 0; i < nv; i++) {
+              idx[i] = i;
+            }
 
-	      if (asc) {
-		compare_pair_asc<uint8_t> comparator((uint8_t *) data);
-		std::sort(idx, idx + nv, comparator);
-	      } else {
-		compare_pair_desc<uint8_t> comparator((uint8_t *) data);
-		std::sort(idx, idx + nv, comparator);
-	      }
-	    }
+            if (asc) {
+              compare_pair_asc<uint8_t> comparator((uint8_t *) data);
+              std::sort(idx, idx + nv, comparator);
+            } else {
+              compare_pair_desc<uint8_t> comparator((uint8_t *) data);
+              std::sort(idx, idx + nv, comparator);
+            }
+          }
 
-	    rapidjson::Value value, name, vtx_phys;
-	    double factor = pow((double)(end - start), 1.0 /(double)nsamples);
-	    for (double i = start; i < end; i += stride) {
-	      if (logscale) {
-		if (i != start) {
-		  i -= stride;
-		  int64_t prev = i;
-		  if(i != start) {
-		    i = pow (factor, log ((double) (i - start)) / log (factor) + 1);
-		  } else {
-		    i = pow (factor, 1);
-		  }
-		  if (prev == ((int64_t) i))
-		    continue;
-		} 
-	      }
+          rapidjson::Value value, name, vtx_phys;
+          double factor = pow((double)(end - start), 1.0 /(double)nsamples);
+          for (double i = start; i < end; i += stride) {
+            if (logscale) {
+              if (i != start) {
+                i -= stride;
+                int64_t prev = i;
+                if(i != start) {
+                  i = pow (factor, log ((double) (i - start)) / log (factor) + 1);
+                } else {
+                  i = pow (factor, 1);
+                }
+                if (prev == ((int64_t) i))
+                  continue;
+              } 
+            }
 
-	      int64_t vtx;
-	      if (method == SORTED)
-		vtx = idx[(int64_t)i];
-	      if (method == RANGE)
-		vtx = i;
-	      if (method == SET)
-		vtx = set[(int64_t)i];
-	      value.SetInt((int)((uint8_t *) data)[vtx]);
-	      vtx_val.PushBack(value, allocator);
+            int64_t vtx;
+            if (method == SORTED)
+              vtx = idx[(int64_t)i];
+            if (method == RANGE)
+             vtx = i;
+            if (method == SET)
+              vtx = set[(int64_t)i];
+            value.SetInt((int)((uint8_t *) data)[vtx]);
+            vtx_val.PushBack(value, allocator);
 
-	      name.SetInt64(vtx);
-	      vtx_id.PushBack(name, allocator);
+            name.SetInt64(vtx);
+            vtx_id.PushBack(name, allocator);
 
-	      if (strings) {
-		char * physID;
-		uint64_t len;
-		if(-1 == stinger_mapping_physid_direct(S, vtx, &physID, &len)) {
-		  physID = (char *) "";
-		  len = 0;
-		}
-		vtx_phys.SetString(physID, len, allocator);
-		vtx_str.PushBack(vtx_phys, allocator);
-	      }
-	    }
+            if (strings) {
+              char * physID;
+              uint64_t len;
+              if(-1 == stinger_mapping_physid_direct(S, vtx, &physID, &len)) {
+                physID = (char *) "";
+                len = 0;
+              }
+              vtx_phys.SetString(physID, len, allocator);
+              vtx_str.PushBack(vtx_phys, allocator);
+            }
+          }
 
-	    if (method == SORTED)
-	      free(idx);
-	    done = 1;
-	    break;
-	  }
+          if (method == SORTED)
+            free(idx);
+          done = 1;
+          break;
+        }
 
-	default:
-	  LOG_W_A("Umm...what letter was that?\ndescription_string: %s", description_string);
-	  return json_rpc_error(-32603, rtn, allocator);
+      	default:
+      	  LOG_W_A("Umm...what letter was that?\ndescription_string: %s", description_string);
+      	  return json_rpc_error(-32603, rtn, allocator);
 
       }
-      
-
-
     } else {
       LOG_D_A ("%s: does not match %d", search_string, nv);
       switch (description_string[off]) {
-	case 'f':
-	  data += (S->max_nv * sizeof(float));
-	  break;
+        case 'f':
+          data += (S->max_nv * sizeof(float));
+          break;
 
-	case 'd':
-	  data += (S->max_nv * sizeof(double));
-	  break;
+        case 'd':
+          data += (S->max_nv * sizeof(double));
+          break;
 
-	case 'i':
-	  data += (S->max_nv * sizeof(int32_t));
-	  break;
+        case 'i':
+          data += (S->max_nv * sizeof(int32_t));
+          break;
 
-	case 'l':
-	  data += (S->max_nv * sizeof(int64_t));
-	  break;
+        case 'l':
+          data += (S->max_nv * sizeof(int64_t));
+          break;
 
-	case 'b':
-	  data += (S->max_nv * sizeof(uint8_t));
-	  break;
+        case 'b':
+          data += (S->max_nv * sizeof(uint8_t));
+          break;
 
-	default:
-	  LOG_W_A("Umm...what letter was that?\ndescription_string: %s", description_string);
-	  return json_rpc_error(-32603, rtn, allocator);
-
+        default:
+          LOG_W_A("Umm...what letter was that?\ndescription_string: %s", description_string);
+          return json_rpc_error(-32603, rtn, allocator);
       }
       off++;
     }
