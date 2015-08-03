@@ -84,12 +84,12 @@ handle_alg(struct AcceptedSock * sock, StingerServerState & server_state)
 
     if(server_state.has_alg(alg_to_server.alg_name())) {
       if(server_state.get_alg(alg_to_server.alg_name())->state < ALG_STATE_DONE) {
-	LOG_E("Algorithm already exists");
-	server_to_alg.set_result(ALG_FAILURE_NAME_EXISTS);
-	send_message(sock->handle, server_to_alg);
-	return;
+        LOG_E("Algorithm already exists");
+        server_to_alg.set_result(ALG_FAILURE_NAME_EXISTS);
+        send_message(sock->handle, server_to_alg);
+        return;
       } else {
-	server_state.delete_alg(alg_to_server.alg_name());
+        server_state.delete_alg(alg_to_server.alg_name());
       }
     }
 
@@ -100,19 +100,19 @@ handle_alg(struct AcceptedSock * sock, StingerServerState & server_state)
       char map_name[256] = "";
 
       if(data_total) {
-	sprintf(map_name, "/%s", alg_to_server.alg_name().c_str());
-	LOG_D_A("Attempting to map %ld at %s", data_total, map_name);
-	data = shmmap(map_name, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, PROT_READ | PROT_WRITE, data_total, MAP_SHARED);
+        sprintf(map_name, "/%s", alg_to_server.alg_name().c_str());
+        LOG_D_A("Attempting to map %ld at %s", data_total, map_name);
+        data = shmmap(map_name, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, PROT_READ | PROT_WRITE, data_total, MAP_SHARED);
 
-	if(!data) {
-	  LOG_E_A("Error, mapping storage for algorithm %s failed (%ld bytes per vertex)", 
-	    alg_to_server.alg_name().c_str(), alg_to_server.data_per_vertex());
-	  server_to_alg.set_result(ALG_FAILURE_GENERIC);
-	  send_message(sock->handle, server_to_alg);
-	  return;
-	}
-	server_to_alg.set_alg_data_loc(map_name);
-	LOG_D("Map success")
+        if(!data) {
+          LOG_E_A("Error, mapping storage for algorithm %s failed (%ld bytes per vertex)", 
+            alg_to_server.alg_name().c_str(), alg_to_server.data_per_vertex());
+          server_to_alg.set_result(ALG_FAILURE_GENERIC);
+          send_message(sock->handle, server_to_alg);
+          return;
+        }
+        server_to_alg.set_alg_data_loc(map_name);
+        LOG_D("Map success")
       }
 
       LOG_D("Creating algorithm structure")
@@ -130,33 +130,33 @@ handle_alg(struct AcceptedSock * sock, StingerServerState & server_state)
       int64_t max_level = 0;
       bool deps_resolved = true;
       for(int64_t i = 0; i < alg_to_server.req_dep_name_size(); i++) {
-	const std::string & req_dep_name = alg_to_server.req_dep_name(i);
-	if(server_state.has_alg(req_dep_name)) {
-	  StingerAlgState * dep_state = server_state.get_alg(req_dep_name);
-	  int64_t dep_level = dep_state->level;
-	  if(dep_level >= max_level) {
-	    max_level = dep_level + 1;
-	  }
-	  server_to_alg.add_dep_name(dep_state->name);
-	  server_to_alg.add_dep_description(dep_state->data_description);
-	  server_to_alg.add_dep_data_per_vertex(dep_state->data_per_vertex);
-	  server_to_alg.add_dep_data_loc(dep_state->data_loc);
-	} else {
-	  LOG_E_A("Algorithm <%s> requested non-existant dependency <%s>.", 
-	    alg_to_server.alg_name().c_str(), req_dep_name.c_str());
+        const std::string & req_dep_name = alg_to_server.req_dep_name(i);
+        if(server_state.has_alg(req_dep_name)) {
+          StingerAlgState * dep_state = server_state.get_alg(req_dep_name);
+          int64_t dep_level = dep_state->level;
+          if(dep_level >= max_level) {
+            max_level = dep_level + 1;
+          }
+          server_to_alg.add_dep_name(dep_state->name);
+          server_to_alg.add_dep_description(dep_state->data_description);
+          server_to_alg.add_dep_data_per_vertex(dep_state->data_per_vertex);
+          server_to_alg.add_dep_data_loc(dep_state->data_loc);
+        } else {
+          LOG_E_A("Algorithm <%s> requested non-existant dependency <%s>.", 
+            alg_to_server.alg_name().c_str(), req_dep_name.c_str());
 
-	  ServerToAlg server_to_alg;
-	  server_to_alg.set_alg_name(alg_to_server.alg_name());
-	  server_to_alg.set_action(alg_to_server.action());
-	  server_to_alg.set_result(ALG_FAILURE_DEPENDENCY);
+          ServerToAlg server_to_alg;
+          server_to_alg.set_alg_name(alg_to_server.alg_name());
+          server_to_alg.set_action(alg_to_server.action());
+          server_to_alg.set_result(ALG_FAILURE_DEPENDENCY);
 
-	  deps_resolved = false;
-          shmunmap(map_name, data, data_total);
-          shmunlink(map_name);
+          deps_resolved = false;
+                shmunmap(map_name, data, data_total);
+                shmunlink(map_name);
 
-	  delete alg_state;
-	  return;
-	}
+          delete alg_state;
+          return;
+        }
       }
 
       alg_state->level = max_level;
@@ -170,7 +170,7 @@ handle_alg(struct AcceptedSock * sock, StingerServerState & server_state)
       send_message(sock->handle, server_to_alg);
     } else {
       LOG_E_A("Error, requested name is not valid: %s",
-	alg_to_server.alg_name().c_str());
+      alg_to_server.alg_name().c_str());
 
       ServerToAlg server_to_alg;
       server_to_alg.set_alg_name(alg_to_server.alg_name());
@@ -307,94 +307,94 @@ process_loop_handler(void * data)
     for(size_t cur_level_index = 0; cur_level_index < stop_alg_level; cur_level_index++) {
       size_t stop_alg_index = server_state.get_num_algs(cur_level_index);
       for(size_t cur_alg_index = 0; cur_alg_index < stop_alg_index; cur_alg_index++) {
-	StingerAlgState * cur_alg = server_state.get_alg(cur_level_index, cur_alg_index);
+        StingerAlgState * cur_alg = server_state.get_alg(cur_level_index, cur_alg_index);
 
-	/* for algorithms in the error state, eat the next message and assume that 
-	 * it will go back to trying to init */
-	if(cur_alg->state == ALG_STATE_ERROR && can_be_read(cur_alg->sock_handle)) {
-	  AlgToServer alg_to_server;
+        /* for algorithms in the error state, eat the next message and assume that 
+         * it will go back to trying to init */
+        if(cur_alg->state == ALG_STATE_ERROR && can_be_read(cur_alg->sock_handle)) {
+          AlgToServer alg_to_server;
 
-	  if(recv_message(cur_alg->sock_handle, alg_to_server) &&
-	    alg_to_server.alg_name().compare(cur_alg->name) == 0) {
-	    
-	    cur_alg->state = ALG_STATE_READY_INIT;
-	  }
-	}
+          if(recv_message(cur_alg->sock_handle, alg_to_server) &&
+            alg_to_server.alg_name().compare(cur_alg->name) == 0) {
+            
+              cur_alg->state = ALG_STATE_READY_INIT;
+          }
+        }
 
-	if(cur_alg->state == ALG_STATE_READY_INIT) {
-	  AlgToServer alg_to_server;
+        if(cur_alg->state == ALG_STATE_READY_INIT) {
+          AlgToServer alg_to_server;
 
-	  int64_t timeout = 0;
-	  while(!can_be_read(cur_alg->sock_handle) && timeout < server_state.alg_timeout(ALG_STATE_READY_INIT)) {
-	    usleep(server_state.time_granularity());
-	    //timeout += server_state.time_granularity();
-	  }
+          int64_t timeout = 0;
+          while(!can_be_read(cur_alg->sock_handle) && timeout < server_state.alg_timeout(ALG_STATE_READY_INIT)) {
+            usleep(server_state.time_granularity());
+            //timeout += server_state.time_granularity();
+          }
 
-	  if(!can_be_read(cur_alg->sock_handle)) {
-	    LOG_E_A("Algorithm <%s> has timed out while waiting for a BEGIN_INIT message", cur_alg->name.c_str());
-	    cur_alg->state = ALG_STATE_ERROR;
-	    ServerToAlg server_to_alg;
-	    server_to_alg.set_alg_name(cur_alg->name);
-	    server_to_alg.set_action(BEGIN_INIT);
-	    server_to_alg.set_result(ALG_FAILURE_TIMEOUT);
-	    send_message(cur_alg->sock_handle, server_to_alg);
-	  } else {
-	    LOG_I_A("Beginning init for Algorithm <%s>", cur_alg->name.c_str());
+          if(!can_be_read(cur_alg->sock_handle)) {
+            LOG_E_A("Algorithm <%s> has timed out while waiting for a BEGIN_INIT message", cur_alg->name.c_str());
+            cur_alg->state = ALG_STATE_ERROR;
+            ServerToAlg server_to_alg;
+            server_to_alg.set_alg_name(cur_alg->name);
+            server_to_alg.set_action(BEGIN_INIT);
+            server_to_alg.set_result(ALG_FAILURE_TIMEOUT);
+            send_message(cur_alg->sock_handle, server_to_alg);
+          } else {
+            LOG_I_A("Beginning init for Algorithm <%s>", cur_alg->name.c_str());
 
-	    if(recv_message(cur_alg->sock_handle, alg_to_server) &&
-	      alg_to_server.alg_name().compare(cur_alg->name) == 0 &&
-	      alg_to_server.action() == BEGIN_INIT) {
-	      
-	      ServerToAlg server_to_alg;
-	      server_to_alg.set_alg_name(alg_to_server.alg_name());
-	      server_to_alg.set_action(BEGIN_INIT);
-	      server_to_alg.set_result(ALG_SUCCESS);
+            if(recv_message(cur_alg->sock_handle, alg_to_server) &&
+              alg_to_server.alg_name().compare(cur_alg->name) == 0 &&
+              alg_to_server.action() == BEGIN_INIT) {
+              
+              ServerToAlg server_to_alg;
+              server_to_alg.set_alg_name(alg_to_server.alg_name());
+              server_to_alg.set_action(BEGIN_INIT);
+              server_to_alg.set_result(ALG_SUCCESS);
 
-	      send_message(cur_alg->sock_handle, server_to_alg);
-	      cur_alg->state = ALG_STATE_PERFORMING_INIT;
+              send_message(cur_alg->sock_handle, server_to_alg);
+              cur_alg->state = ALG_STATE_PERFORMING_INIT;
 
-	      while(!can_be_read(cur_alg->sock_handle) && timeout < server_state.alg_timeout(ALG_STATE_PERFORMING_INIT)) {
-		LOG_V_A("Waiting on Algorithm <%s> for an END INIT message", cur_alg->name.c_str());
-		usleep(server_state.time_granularity());
-		//timeout += server_state.time_granularity();
-	      }
+      	      while(!can_be_read(cur_alg->sock_handle) && timeout < server_state.alg_timeout(ALG_STATE_PERFORMING_INIT)) {
+                LOG_V_A("Waiting on Algorithm <%s> for an END INIT message", cur_alg->name.c_str());
+                usleep(server_state.time_granularity());
+                //timeout += server_state.time_granularity();
+              }
 
-	      if(!can_be_read(cur_alg->sock_handle)) {
-		LOG_E_A("Algorithm <%s> has timed out while waiting for a END INIT message", cur_alg->name.c_str());
-		cur_alg->state = ALG_STATE_ERROR;
-		ServerToAlg server_to_alg;
-		server_to_alg.set_alg_name(cur_alg->name);
-		server_to_alg.set_action(END_INIT);
-		server_to_alg.set_result(ALG_FAILURE_TIMEOUT);
-		send_message(cur_alg->sock_handle, server_to_alg);
-	      } else {
-		if(recv_message(cur_alg->sock_handle, alg_to_server) && alg_to_server.alg_name().compare(cur_alg->name) == 0 &&
-		  alg_to_server.action() == END_INIT) {
-		  server_to_alg.set_action(END_INIT);
-		  server_to_alg.set_result(ALG_SUCCESS);
-		  send_message(cur_alg->sock_handle, server_to_alg);
-		  cur_alg->state = ALG_STATE_READY_PRE;
-		} else {
-		  LOG_E_A("Algorithm <%s> sent invalid message. Expected end of init", alg_to_server.alg_name().c_str());
-		  cur_alg->state = ALG_STATE_ERROR;
-		  ServerToAlg server_to_alg;
-		  server_to_alg.set_alg_name(alg_to_server.alg_name());
-		  server_to_alg.set_action(alg_to_server.action());
-		  server_to_alg.set_result(ALG_FAILURE_UNEXPECTED_MESSAGE);
-		  send_message(cur_alg->sock_handle, server_to_alg);
-		}
-	      }
-	    } else {
-	      LOG_E_A("Algorithm <%s> sent invalid message. Expected begin init", alg_to_server.alg_name().c_str());
-	      cur_alg->state = ALG_STATE_ERROR;
-	      ServerToAlg server_to_alg;
-	      server_to_alg.set_alg_name(alg_to_server.alg_name());
-	      server_to_alg.set_action(alg_to_server.action());
-	      server_to_alg.set_result(ALG_FAILURE_UNEXPECTED_MESSAGE);
-	      send_message(cur_alg->sock_handle, server_to_alg);
-	    }
-	  }
-	}
+      	      if(!can_be_read(cur_alg->sock_handle)) {
+                LOG_E_A("Algorithm <%s> has timed out while waiting for a END INIT message", cur_alg->name.c_str());
+                cur_alg->state = ALG_STATE_ERROR;
+                ServerToAlg server_to_alg;
+                server_to_alg.set_alg_name(cur_alg->name);
+                server_to_alg.set_action(END_INIT);
+                server_to_alg.set_result(ALG_FAILURE_TIMEOUT);
+                send_message(cur_alg->sock_handle, server_to_alg);
+              } else {
+                if(recv_message(cur_alg->sock_handle, alg_to_server) && alg_to_server.alg_name().compare(cur_alg->name) == 0 &&
+                  alg_to_server.action() == END_INIT) {
+                  server_to_alg.set_action(END_INIT);
+                  server_to_alg.set_result(ALG_SUCCESS);
+                  send_message(cur_alg->sock_handle, server_to_alg);
+                  cur_alg->state = ALG_STATE_READY_PRE;
+                } else {
+                  LOG_E_A("Algorithm <%s> sent invalid message. Expected end of init", alg_to_server.alg_name().c_str());
+                  cur_alg->state = ALG_STATE_ERROR;
+                  ServerToAlg server_to_alg;
+                  server_to_alg.set_alg_name(alg_to_server.alg_name());
+                  server_to_alg.set_action(alg_to_server.action());
+                  server_to_alg.set_result(ALG_FAILURE_UNEXPECTED_MESSAGE);
+                  send_message(cur_alg->sock_handle, server_to_alg);
+                }
+              }
+            } else {
+              LOG_E_A("Algorithm <%s> sent invalid message. Expected begin init", alg_to_server.alg_name().c_str());
+              cur_alg->state = ALG_STATE_ERROR;
+              ServerToAlg server_to_alg;
+              server_to_alg.set_alg_name(alg_to_server.alg_name());
+              server_to_alg.set_action(alg_to_server.action());
+              server_to_alg.set_result(ALG_FAILURE_UNEXPECTED_MESSAGE);
+              send_message(cur_alg->sock_handle, server_to_alg);
+            }
+          }
+        }
       }
     }
 
@@ -404,92 +404,92 @@ process_loop_handler(void * data)
 
       int64_t timeout = 0;
       for(size_t cur_alg_index = 0; cur_alg_index < stop_alg_index; cur_alg_index++) {
-	StingerAlgState * cur_alg = server_state.get_alg(cur_level_index, cur_alg_index);
+        StingerAlgState * cur_alg = server_state.get_alg(cur_level_index, cur_alg_index);
 
-	/* send init preprocessing message to each ready algorithm in this level */
-	if(cur_alg->state == ALG_STATE_READY_PRE) {
-	  AlgToServer alg_to_server;
+        /* send init preprocessing message to each ready algorithm in this level */
+        if(cur_alg->state == ALG_STATE_READY_PRE) {
+          AlgToServer alg_to_server;
 
-	  while(!can_be_read(cur_alg->sock_handle) && timeout < server_state.alg_timeout(ALG_STATE_READY_PRE)) {
-	    usleep(server_state.time_granularity());
-	    //timeout += server_state.time_granularity();
-	  }
+          while(!can_be_read(cur_alg->sock_handle) && timeout < server_state.alg_timeout(ALG_STATE_READY_PRE)) {
+            usleep(server_state.time_granularity());
+            //timeout += server_state.time_granularity();
+          }
 
-	  if(!can_be_read(cur_alg->sock_handle)) {
-	    LOG_E_A("Algorithm <%s> has timed out while waiting for a BEGIN_PREPROCESS message", cur_alg->name.c_str());
-	    cur_alg->state = ALG_STATE_ERROR;
-	    ServerToAlg server_to_alg;
-	    server_to_alg.set_alg_name(cur_alg->name);
-	    server_to_alg.set_action(BEGIN_PREPROCESS);
-	    server_to_alg.set_result(ALG_FAILURE_TIMEOUT);
-	    send_message(cur_alg->sock_handle, server_to_alg);
-	  } else {
+          if(!can_be_read(cur_alg->sock_handle)) {
+            LOG_E_A("Algorithm <%s> has timed out while waiting for a BEGIN_PREPROCESS message", cur_alg->name.c_str());
+            cur_alg->state = ALG_STATE_ERROR;
+            ServerToAlg server_to_alg;
+            server_to_alg.set_alg_name(cur_alg->name);
+            server_to_alg.set_action(BEGIN_PREPROCESS);
+            server_to_alg.set_result(ALG_FAILURE_TIMEOUT);
+            send_message(cur_alg->sock_handle, server_to_alg);
+          } else {
 
-	    if(recv_message(cur_alg->sock_handle, alg_to_server) && alg_to_server.alg_name().compare(cur_alg->name) == 0 &&
-	      alg_to_server.action() == BEGIN_PREPROCESS) {
-	      
-	      ServerToAlg server_to_alg;
-	      server_to_alg.set_alg_name(alg_to_server.alg_name());
-	      server_to_alg.set_action(BEGIN_PREPROCESS);
-	      server_to_alg.set_result(ALG_SUCCESS);
-	      server_to_alg.set_allocated_batch(batch);
-	      send_message(cur_alg->sock_handle, server_to_alg);
-	      server_to_alg.release_batch();
-	      cur_alg->state = ALG_STATE_PERFORMING_PRE;
-	    } else {
-	      LOG_E_A("Algorithm <%s> sent invalid message. Expected begin preprocess", alg_to_server.alg_name().c_str());
-	      cur_alg->state = ALG_STATE_ERROR;
-	      ServerToAlg server_to_alg;
-	      server_to_alg.set_alg_name(alg_to_server.alg_name());
-	      server_to_alg.set_action(alg_to_server.action());
-	      server_to_alg.set_result(ALG_FAILURE_UNEXPECTED_MESSAGE);
-	      send_message(cur_alg->sock_handle, server_to_alg);
-	    }
-	  }
-	}
+            if(recv_message(cur_alg->sock_handle, alg_to_server) && alg_to_server.alg_name().compare(cur_alg->name) == 0 &&
+              alg_to_server.action() == BEGIN_PREPROCESS) {
+              
+              ServerToAlg server_to_alg;
+              server_to_alg.set_alg_name(alg_to_server.alg_name());
+              server_to_alg.set_action(BEGIN_PREPROCESS);
+              server_to_alg.set_result(ALG_SUCCESS);
+              server_to_alg.set_allocated_batch(batch);
+              send_message(cur_alg->sock_handle, server_to_alg);
+              server_to_alg.release_batch();
+              cur_alg->state = ALG_STATE_PERFORMING_PRE;
+            } else {
+              LOG_E_A("Algorithm <%s> sent invalid message. Expected begin preprocess", alg_to_server.alg_name().c_str());
+              cur_alg->state = ALG_STATE_ERROR;
+              ServerToAlg server_to_alg;
+              server_to_alg.set_alg_name(alg_to_server.alg_name());
+              server_to_alg.set_action(alg_to_server.action());
+              server_to_alg.set_result(ALG_FAILURE_UNEXPECTED_MESSAGE);
+              send_message(cur_alg->sock_handle, server_to_alg);
+            }
+          }
+        }
       }
 
       /* for each alg in this level that is processing: wait for message indicating finished */
       timeout = 0;
       for(size_t cur_alg_index = 0; cur_alg_index < stop_alg_index; cur_alg_index++) {
-	StingerAlgState * cur_alg = server_state.get_alg(cur_level_index, cur_alg_index);
+        StingerAlgState * cur_alg = server_state.get_alg(cur_level_index, cur_alg_index);
 
-	if(cur_alg->state == ALG_STATE_PERFORMING_PRE) {
-	  AlgToServer alg_to_server;
+        if(cur_alg->state == ALG_STATE_PERFORMING_PRE) {
+          AlgToServer alg_to_server;
 
-	  while(!can_be_read(cur_alg->sock_handle) && timeout < server_state.alg_timeout(ALG_STATE_PERFORMING_PRE)) {
-	    usleep(server_state.time_granularity());
-	    //timeout += server_state.time_granularity();
-	  }
+          while(!can_be_read(cur_alg->sock_handle) && timeout < server_state.alg_timeout(ALG_STATE_PERFORMING_PRE)) {
+            usleep(server_state.time_granularity());
+            //timeout += server_state.time_granularity();
+          }
 
-	  if(!can_be_read(cur_alg->sock_handle)) {
-	    LOG_E_A("Algorithm <%s> has timed out while waiting for a END_PREPROCESS message", cur_alg->name.c_str());
-	    cur_alg->state = ALG_STATE_ERROR;
-	    ServerToAlg server_to_alg;
-	    server_to_alg.set_alg_name(cur_alg->name);
-	    server_to_alg.set_action(END_PREPROCESS);
-	    server_to_alg.set_result(ALG_FAILURE_TIMEOUT);
-	    send_message(cur_alg->sock_handle, server_to_alg);
-	  } else {
+          if(!can_be_read(cur_alg->sock_handle)) {
+            LOG_E_A("Algorithm <%s> has timed out while waiting for a END_PREPROCESS message", cur_alg->name.c_str());
+            cur_alg->state = ALG_STATE_ERROR;
+            ServerToAlg server_to_alg;
+            server_to_alg.set_alg_name(cur_alg->name);
+            server_to_alg.set_action(END_PREPROCESS);
+            server_to_alg.set_result(ALG_FAILURE_TIMEOUT);
+            send_message(cur_alg->sock_handle, server_to_alg);
+          } else {
 
-	    if(recv_message(cur_alg->sock_handle, alg_to_server) && alg_to_server.alg_name().compare(cur_alg->name) == 0 &&
-	      alg_to_server.action() == END_PREPROCESS) {
+            if(recv_message(cur_alg->sock_handle, alg_to_server) && alg_to_server.alg_name().compare(cur_alg->name) == 0 &&
+              alg_to_server.action() == END_PREPROCESS) {
 
-	      ServerToAlg server_to_alg;
-	      server_to_alg.set_action(END_PREPROCESS);
-	      server_to_alg.set_result(ALG_SUCCESS);
-	      send_message(cur_alg->sock_handle, server_to_alg);
-	      cur_alg->state = ALG_STATE_READY_POST;
-	    } else {
-	      LOG_E_A("Algorithm <%s> sent invalid message. Expected end of preprocess", alg_to_server.alg_name().c_str());
-	      cur_alg->state = ALG_STATE_ERROR;
-	      ServerToAlg server_to_alg;
-	      server_to_alg.set_alg_name(alg_to_server.alg_name());
-	      server_to_alg.set_action(alg_to_server.action());
-	      server_to_alg.set_result(ALG_FAILURE_UNEXPECTED_MESSAGE);
-	    }
-	  }
-	}
+              ServerToAlg server_to_alg;
+              server_to_alg.set_action(END_PREPROCESS);
+              server_to_alg.set_result(ALG_SUCCESS);
+              send_message(cur_alg->sock_handle, server_to_alg);
+              cur_alg->state = ALG_STATE_READY_POST;
+            } else {
+              LOG_E_A("Algorithm <%s> sent invalid message. Expected end of preprocess", alg_to_server.alg_name().c_str());
+              cur_alg->state = ALG_STATE_ERROR;
+              ServerToAlg server_to_alg;
+              server_to_alg.set_alg_name(alg_to_server.alg_name());
+              server_to_alg.set_action(alg_to_server.action());
+              server_to_alg.set_result(ALG_FAILURE_UNEXPECTED_MESSAGE);
+            }
+          }
+        }
       }
     }
 
@@ -516,47 +516,47 @@ process_loop_handler(void * data)
 
       int64_t timeout = 0;
       for(size_t cur_alg_index = 0; cur_alg_index < stop_alg_index; cur_alg_index++) {
-	StingerAlgState * cur_alg = server_state.get_alg(cur_level_index, cur_alg_index);
+        StingerAlgState * cur_alg = server_state.get_alg(cur_level_index, cur_alg_index);
 
-	if(cur_alg->state == ALG_STATE_READY_POST) {
-	  AlgToServer alg_to_server;
+        if(cur_alg->state == ALG_STATE_READY_POST) {
+          AlgToServer alg_to_server;
 
-	  while(!can_be_read(cur_alg->sock_handle) && timeout < server_state.alg_timeout(ALG_STATE_READY_POST)) {
-	    usleep(server_state.time_granularity());
-	    //timeout += server_state.time_granularity();
-	  }
+          while(!can_be_read(cur_alg->sock_handle) && timeout < server_state.alg_timeout(ALG_STATE_READY_POST)) {
+            usleep(server_state.time_granularity());
+            //timeout += server_state.time_granularity();
+          }
 
-	  if(!can_be_read(cur_alg->sock_handle)) {
-	    LOG_E_A("Algorithm <%s> has timed out while waiting for a BEGIN_POSTPROCESS message", cur_alg->name.c_str());
-	    cur_alg->state = ALG_STATE_ERROR;
-	    ServerToAlg server_to_alg;
-	    server_to_alg.set_alg_name(cur_alg->name);
-	    server_to_alg.set_action(BEGIN_POSTPROCESS);
-	    server_to_alg.set_result(ALG_FAILURE_TIMEOUT);
-	    send_message(cur_alg->sock_handle, server_to_alg);
-	  } else {
-	    if(recv_message(cur_alg->sock_handle, alg_to_server) && alg_to_server.alg_name().compare(cur_alg->name) == 0&&
-	      alg_to_server.action() == BEGIN_POSTPROCESS) {
-	      
-	      ServerToAlg server_to_alg;
-	      server_to_alg.set_alg_name(alg_to_server.alg_name());
-	      server_to_alg.set_action(BEGIN_POSTPROCESS);
-	      server_to_alg.set_result(ALG_SUCCESS);
-	      server_to_alg.set_allocated_batch(batch);
-	      send_message(cur_alg->sock_handle, server_to_alg);
-	      server_to_alg.release_batch();
-	      cur_alg->state = ALG_STATE_PERFORMING_POST;
-	    } else {
-	      LOG_E_A("Algorithm <%s> sent invalid message. Expected begin postprocess", alg_to_server.alg_name().c_str());
-	      cur_alg->state = ALG_STATE_ERROR;
-	      ServerToAlg server_to_alg;
-	      server_to_alg.set_alg_name(alg_to_server.alg_name());
-	      server_to_alg.set_action(alg_to_server.action());
-	      server_to_alg.set_result(ALG_FAILURE_UNEXPECTED_MESSAGE);
-	      send_message(cur_alg->sock_handle, server_to_alg);
-	    }
-	  }
-	}
+          if(!can_be_read(cur_alg->sock_handle)) {
+            LOG_E_A("Algorithm <%s> has timed out while waiting for a BEGIN_POSTPROCESS message", cur_alg->name.c_str());
+            cur_alg->state = ALG_STATE_ERROR;
+            ServerToAlg server_to_alg;
+            server_to_alg.set_alg_name(cur_alg->name);
+            server_to_alg.set_action(BEGIN_POSTPROCESS);
+            server_to_alg.set_result(ALG_FAILURE_TIMEOUT);
+            send_message(cur_alg->sock_handle, server_to_alg);
+          } else {
+            if(recv_message(cur_alg->sock_handle, alg_to_server) && alg_to_server.alg_name().compare(cur_alg->name) == 0&&
+              alg_to_server.action() == BEGIN_POSTPROCESS) {
+              
+              ServerToAlg server_to_alg;
+              server_to_alg.set_alg_name(alg_to_server.alg_name());
+              server_to_alg.set_action(BEGIN_POSTPROCESS);
+              server_to_alg.set_result(ALG_SUCCESS);
+              server_to_alg.set_allocated_batch(batch);
+              send_message(cur_alg->sock_handle, server_to_alg);
+              server_to_alg.release_batch();
+              cur_alg->state = ALG_STATE_PERFORMING_POST;
+            } else {
+              LOG_E_A("Algorithm <%s> sent invalid message. Expected begin postprocess", alg_to_server.alg_name().c_str());
+              cur_alg->state = ALG_STATE_ERROR;
+              ServerToAlg server_to_alg;
+              server_to_alg.set_alg_name(alg_to_server.alg_name());
+              server_to_alg.set_action(alg_to_server.action());
+              server_to_alg.set_result(ALG_FAILURE_UNEXPECTED_MESSAGE);
+              send_message(cur_alg->sock_handle, server_to_alg);
+            }
+          }
+        }
       }
 
       /* TODO timeout */
@@ -564,44 +564,44 @@ process_loop_handler(void * data)
       /* loop through each algorithm and wait for message indicating finished postprocesing */
       timeout = 0;
       for(size_t cur_alg_index = 0; cur_alg_index < stop_alg_index; cur_alg_index++) {
-	StingerAlgState * cur_alg = server_state.get_alg(cur_level_index, cur_alg_index);
+        StingerAlgState * cur_alg = server_state.get_alg(cur_level_index, cur_alg_index);
 
-	if(cur_alg->state == ALG_STATE_PERFORMING_POST) {
-	  AlgToServer alg_to_server;
+        if(cur_alg->state == ALG_STATE_PERFORMING_POST) {
+          AlgToServer alg_to_server;
 
-	  while(!can_be_read(cur_alg->sock_handle) && timeout < server_state.alg_timeout(ALG_STATE_PERFORMING_POST)) {
-	    usleep(server_state.time_granularity());
-	    //timeout += server_state.time_granularity();
-	  }
+          while(!can_be_read(cur_alg->sock_handle) && timeout < server_state.alg_timeout(ALG_STATE_PERFORMING_POST)) {
+            usleep(server_state.time_granularity());
+            //timeout += server_state.time_granularity();
+          }
 
-	  if(!can_be_read(cur_alg->sock_handle)) {
-	    LOG_E_A("Algorithm <%s> has timed out while waiting for a END_POSTPROCESS message", cur_alg->name.c_str());
-	    cur_alg->state = ALG_STATE_ERROR;
-	    ServerToAlg server_to_alg;
-	    server_to_alg.set_alg_name(cur_alg->name);
-	    server_to_alg.set_action(END_POSTPROCESS);
-	    server_to_alg.set_result(ALG_FAILURE_TIMEOUT);
-	    send_message(cur_alg->sock_handle, server_to_alg);
-	  } else {
-	    if(recv_message(cur_alg->sock_handle, alg_to_server) && alg_to_server.alg_name().compare(cur_alg->name) == 0 &&
-	      alg_to_server.action() == END_POSTPROCESS) {
+          if(!can_be_read(cur_alg->sock_handle)) {
+            LOG_E_A("Algorithm <%s> has timed out while waiting for a END_POSTPROCESS message", cur_alg->name.c_str());
+            cur_alg->state = ALG_STATE_ERROR;
+            ServerToAlg server_to_alg;
+            server_to_alg.set_alg_name(cur_alg->name);
+            server_to_alg.set_action(END_POSTPROCESS);
+            server_to_alg.set_result(ALG_FAILURE_TIMEOUT);
+            send_message(cur_alg->sock_handle, server_to_alg);
+          } else {
+            if(recv_message(cur_alg->sock_handle, alg_to_server) && alg_to_server.alg_name().compare(cur_alg->name) == 0 &&
+              alg_to_server.action() == END_POSTPROCESS) {
 
-	      ServerToAlg server_to_alg;
-	      server_to_alg.set_action(END_POSTPROCESS);
-	      server_to_alg.set_result(ALG_SUCCESS);
-	      send_message(cur_alg->sock_handle, server_to_alg);
-	      cur_alg->state = ALG_STATE_READY_PRE;
-	    } else {
-	      LOG_E_A("Algorithm <%s> sent invalid message. Expected end postprocess", alg_to_server.alg_name().c_str());
-	      cur_alg->state = ALG_STATE_ERROR;
-	      ServerToAlg server_to_alg;
-	      server_to_alg.set_alg_name(alg_to_server.alg_name());
-	      server_to_alg.set_action(alg_to_server.action());
-	      server_to_alg.set_result(ALG_FAILURE_UNEXPECTED_MESSAGE);
-	      send_message(cur_alg->sock_handle, server_to_alg);
-	    }
-	  }
-	}
+              ServerToAlg server_to_alg;
+              server_to_alg.set_action(END_POSTPROCESS);
+              server_to_alg.set_result(ALG_SUCCESS);
+              send_message(cur_alg->sock_handle, server_to_alg);
+              cur_alg->state = ALG_STATE_READY_PRE;
+            } else {
+              LOG_E_A("Algorithm <%s> sent invalid message. Expected end postprocess", alg_to_server.alg_name().c_str());
+              cur_alg->state = ALG_STATE_ERROR;
+              ServerToAlg server_to_alg;
+              server_to_alg.set_alg_name(alg_to_server.alg_name());
+              server_to_alg.set_action(alg_to_server.action());
+              server_to_alg.set_result(ALG_FAILURE_UNEXPECTED_MESSAGE);
+              send_message(cur_alg->sock_handle, server_to_alg);
+            }
+          }
+        }
       }
     }
 
@@ -611,46 +611,46 @@ process_loop_handler(void * data)
       int64_t timeout = 0;
       ServerToMon * server_to_mon = server_state.get_server_to_mon_copy();
       for(size_t cur_mon_index = 0; cur_mon_index < stop_mon_index; cur_mon_index++) {
-	StingerMonState * cur_mon = server_state.get_mon(cur_mon_index);
+        StingerMonState * cur_mon = server_state.get_mon(cur_mon_index);
 
-	if(cur_mon->state == MON_STATE_READY_UPDATE) {
-	  MonToServer mon_to_server;
+        if(cur_mon->state == MON_STATE_READY_UPDATE) {
+          MonToServer mon_to_server;
 
-	  while(!can_be_read(cur_mon->sock_handle) && timeout < server_state.mon_timeout(MON_STATE_READY_UPDATE)) {
-	    usleep(server_state.time_granularity());
-	    //timeout += server_state.time_granularity();
-	  }
+          while(!can_be_read(cur_mon->sock_handle) && timeout < server_state.mon_timeout(MON_STATE_READY_UPDATE)) {
+            usleep(server_state.time_granularity());
+            //timeout += server_state.time_granularity();
+          }
 
-	  if(!can_be_read(cur_mon->sock_handle)) {
-	    LOG_E_A("Monitor <%s> has timed out while waiting for a BEGIN_UPDATE message", cur_mon->name.c_str());
-	    cur_mon->state = MON_STATE_ERROR;
-	    ServerToMon server_to_mon;
-	    server_to_mon.set_mon_name(cur_mon->name);
-	    server_to_mon.set_action(BEGIN_UPDATE);
-	    server_to_mon.set_result(MON_FAILURE_TIMEOUT);
-	    send_message(cur_mon->sock_handle, server_to_mon);
-	  } else {
+          if(!can_be_read(cur_mon->sock_handle)) {
+            LOG_E_A("Monitor <%s> has timed out while waiting for a BEGIN_UPDATE message", cur_mon->name.c_str());
+            cur_mon->state = MON_STATE_ERROR;
+            ServerToMon server_to_mon;
+            server_to_mon.set_mon_name(cur_mon->name);
+            server_to_mon.set_action(BEGIN_UPDATE);
+            server_to_mon.set_result(MON_FAILURE_TIMEOUT);
+            send_message(cur_mon->sock_handle, server_to_mon);
+          } else {
 
-	    if(recv_message(cur_mon->sock_handle, mon_to_server) && (mon_to_server.mon_name().compare(cur_mon->name) == 0) &&
-	      mon_to_server.action() == BEGIN_UPDATE) {
-	      
-	      server_to_mon->set_mon_name(mon_to_server.mon_name());
-	      server_to_mon->set_action(BEGIN_UPDATE);
-	      server_to_mon->set_result(MON_SUCCESS);
-	      server_to_mon->set_allocated_batch(batch);
-	      send_message(cur_mon->sock_handle, *server_to_mon);
-	      server_to_mon->release_batch();
-	      cur_mon->state = MON_STATE_PERFORMING_UPDATE;
-	    } else {
-	      LOG_E_A("Monitor <%s> sent invalid message. Expected begin postprocess", cur_mon->name.c_str());
-	      cur_mon->state = MON_STATE_ERROR;
-	      server_to_mon->set_mon_name(mon_to_server.mon_name());
-	      server_to_mon->set_action(mon_to_server.action());
-	      server_to_mon->set_result(MON_FAILURE_UNEXPECTED_MESSAGE);
-	      send_message(cur_mon->sock_handle, *server_to_mon);
-	    }
-	  }
-	}
+            if(recv_message(cur_mon->sock_handle, mon_to_server) && (mon_to_server.mon_name().compare(cur_mon->name) == 0) &&
+              mon_to_server.action() == BEGIN_UPDATE) {
+              
+              server_to_mon->set_mon_name(mon_to_server.mon_name());
+              server_to_mon->set_action(BEGIN_UPDATE);
+              server_to_mon->set_result(MON_SUCCESS);
+              server_to_mon->set_allocated_batch(batch);
+              send_message(cur_mon->sock_handle, *server_to_mon);
+              server_to_mon->release_batch();
+              cur_mon->state = MON_STATE_PERFORMING_UPDATE;
+            } else {
+              LOG_E_A("Monitor <%s> sent invalid message. Expected begin postprocess", cur_mon->name.c_str());
+              cur_mon->state = MON_STATE_ERROR;
+              server_to_mon->set_mon_name(mon_to_server.mon_name());
+              server_to_mon->set_action(mon_to_server.action());
+              server_to_mon->set_result(MON_FAILURE_UNEXPECTED_MESSAGE);
+              send_message(cur_mon->sock_handle, *server_to_mon);
+            }
+          }
+        }
       }
 
       delete server_to_mon;
@@ -664,40 +664,40 @@ process_loop_handler(void * data)
       StingerMonState * cur_mon = server_state.get_mon(cur_mon_index);
 
       if(cur_mon->state == MON_STATE_PERFORMING_UPDATE) {
-	MonToServer mon_to_server;
+        MonToServer mon_to_server;
 
-	while(!can_be_read(cur_mon->sock_handle) && timeout < server_state.mon_timeout(MON_STATE_PERFORMING_UPDATE)) {
-	  usleep(server_state.time_granularity());
-	  //timeout += server_state.time_granularity();
-	}
+        while(!can_be_read(cur_mon->sock_handle) && timeout < server_state.mon_timeout(MON_STATE_PERFORMING_UPDATE)) {
+          usleep(server_state.time_granularity());
+          //timeout += server_state.time_granularity();
+        }
 
-	if(!can_be_read(cur_mon->sock_handle)) {
-	  LOG_E_A("Monitor <%s> has timed out while waiting for a END_UPDATE message", cur_mon->name.c_str());
-	  cur_mon->state = MON_STATE_ERROR;
-	  ServerToMon server_to_mon;
-	  server_to_mon.set_mon_name(cur_mon->name);
-	  server_to_mon.set_action(END_UPDATE);
-	  server_to_mon.set_result(MON_FAILURE_TIMEOUT);
-	  send_message(cur_mon->sock_handle, server_to_mon);
-	} else {
+        if(!can_be_read(cur_mon->sock_handle)) {
+          LOG_E_A("Monitor <%s> has timed out while waiting for a END_UPDATE message", cur_mon->name.c_str());
+          cur_mon->state = MON_STATE_ERROR;
+          ServerToMon server_to_mon;
+          server_to_mon.set_mon_name(cur_mon->name);
+          server_to_mon.set_action(END_UPDATE);
+          server_to_mon.set_result(MON_FAILURE_TIMEOUT);
+          send_message(cur_mon->sock_handle, server_to_mon);
+        } else {
 
-	  if(recv_message(cur_mon->sock_handle, mon_to_server) && mon_to_server.mon_name().compare(cur_mon->name) == 0 &&
-	    mon_to_server.action() == END_UPDATE) {
+          if(recv_message(cur_mon->sock_handle, mon_to_server) && mon_to_server.mon_name().compare(cur_mon->name) == 0 &&
+            mon_to_server.action() == END_UPDATE) {
 
-	    ServerToMon server_to_mon;
-	    server_to_mon.set_action(END_UPDATE);
-	    server_to_mon.set_result(MON_SUCCESS);
-	    send_message(cur_mon->sock_handle, server_to_mon);
-	    cur_mon->state = MON_STATE_READY_UPDATE;
-	  } else {
-	    LOG_E_A("Monitor <%s> sent invalid message. Expected end postprocess", mon_to_server.mon_name().c_str());
-	    cur_mon->state = MON_STATE_ERROR;
-	    ServerToMon server_to_mon;
-	    server_to_mon.set_mon_name(mon_to_server.mon_name());
-	    server_to_mon.set_action(mon_to_server.action());
-	    server_to_mon.set_result(MON_FAILURE_UNEXPECTED_MESSAGE);
-	  }
-	}
+            ServerToMon server_to_mon;
+            server_to_mon.set_action(END_UPDATE);
+            server_to_mon.set_result(MON_SUCCESS);
+            send_message(cur_mon->sock_handle, server_to_mon);
+            cur_mon->state = MON_STATE_READY_UPDATE;
+          } else {
+            LOG_E_A("Monitor <%s> sent invalid message. Expected end postprocess", mon_to_server.mon_name().c_str());
+            cur_mon->state = MON_STATE_ERROR;
+            ServerToMon server_to_mon;
+            server_to_mon.set_mon_name(mon_to_server.mon_name());
+            server_to_mon.set_action(mon_to_server.action());
+            server_to_mon.set_result(MON_FAILURE_UNEXPECTED_MESSAGE);
+          }
+        }
       }
     }
     server_state.write_data();
