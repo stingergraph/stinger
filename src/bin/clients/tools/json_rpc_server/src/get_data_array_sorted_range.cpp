@@ -32,6 +32,8 @@ JSON_RPC_get_data_array_sorted_range::operator()(rapidjson::Value * params, rapi
   rapidjson::Value max_time_seen;
   max_time_seen.SetInt64(server_state->get_max_time());
 
+  LOG_D ("Starting get_data_array_sorted_range");
+
   if (contains_params(p, params)) {
     StingerAlgState * alg_state = server_state->get_alg(algorithm_name);
     if (nsamples) {
@@ -42,14 +44,17 @@ JSON_RPC_get_data_array_sorted_range::operator()(rapidjson::Value * params, rapi
         LOG_E_A ("Algorithm is not running: %s", algorithm_name);
         return json_rpc_error(-32003, result, allocator);
       } else {
+        LOG_D_A ("Checking Stinger Algorithm: %s", algorithm_name);
         result.AddMember("time", max_time_seen, allocator);
-        return array_to_json_monolithic_stinger (
+        stinger_t * S = server_state->get_stinger();
+        char * data_description = stinger_local_state_get_data_description(S);
+        int64_t rtn = array_to_json_monolithic (
           SORTED,
-          server_state->get_stinger(),
+          S,
           result,
           allocator,
-          NULL, // alg_state->data_description.c_str(),
-          stinger_mapping_nv(server_state->get_stinger()),
+          data_description, // alg_state->data_description.c_str(),
+          stinger_mapping_nv(S),
           NULL, // (uint8_t *) alg_state->data,
           strings,
           data_array_name,
@@ -59,16 +64,19 @@ JSON_RPC_get_data_array_sorted_range::operator()(rapidjson::Value * params, rapi
           offset+count,
           order
       	);
+        return rtn;
       }
     }
+    LOG_D_A ("Looking up Algorithm: %s", algorithm_name);
     result.AddMember("time", max_time_seen, allocator);
+    stinger_t * S = server_state->get_stinger();
     return array_to_json_monolithic (
       SORTED,
-      server_state->get_stinger(),
+      S,
       result,
       allocator,
       alg_state->data_description.c_str(),
-      stinger_mapping_nv(server_state->get_stinger()),
+      stinger_mapping_nv(S),
       (uint8_t *) alg_state->data,
       strings,
       data_array_name,

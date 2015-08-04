@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <semaphore.h>
 #include "stinger_net/stinger_alg_state.h"
+#include "stinger_net/stinger_local_state_c.h"
 #include "stinger_core/stinger.h"
 #include "rapidjson/document.h"
 #include "stinger_net/proto/stinger-monitor.pb.h"
