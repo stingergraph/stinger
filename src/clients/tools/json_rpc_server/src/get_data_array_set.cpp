@@ -14,12 +14,14 @@ JSON_RPC_get_data_array_set::operator()(rapidjson::Value * params, rapidjson::Va
   char * algorithm_name;
   char * data_array_name;
   params_array_t set_array;
+  params_array_t vtype_array;
   bool strings;
   rpc_params_t p[] = {
     {"name", TYPE_STRING, &algorithm_name, false, 0},
     {"data", TYPE_STRING, &data_array_name, false, 0},
     {"set", TYPE_ARRAY, &set_array, false, 0},
     {"strings", TYPE_BOOL, &strings, true, 0},
+    {"vtypes", TYPE_ARRAY, &vtype_array, true, 0},
     {NULL, TYPE_NONE, NULL, false, 0}
   };
 
@@ -47,6 +49,7 @@ JSON_RPC_get_data_array_set::operator()(rapidjson::Value * params, rapidjson::Va
           NULL, // (uint8_t *) alg_state->data,
           strings,
           data_array_name,
+          vtype_array.arr, vtype_array.len,
           1,
           false,
           0,
@@ -69,6 +72,7 @@ JSON_RPC_get_data_array_set::operator()(rapidjson::Value * params, rapidjson::Va
       (uint8_t *) alg_state->data,
       strings,
       data_array_name,
+      vtype_array.arr, vtype_array.len,
       1,
       false,
       0,

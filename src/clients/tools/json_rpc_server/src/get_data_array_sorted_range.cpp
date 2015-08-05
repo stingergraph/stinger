@@ -12,6 +12,7 @@ JSON_RPC_get_data_array_sorted_range::operator()(rapidjson::Value * params, rapi
 {
   char * algorithm_name;
   char * data_array_name;
+  params_array_t vtype_array;
   int64_t stride, nsamples;
   int64_t count, offset;
   char * order;
@@ -26,6 +27,7 @@ JSON_RPC_get_data_array_sorted_range::operator()(rapidjson::Value * params, rapi
     {"stride", TYPE_INT64, &stride, true, 1},
     {"samples", TYPE_INT64, &nsamples, true, 0},
     {"log", TYPE_BOOL, &logscale, true, 0},
+    {"vtypes", TYPE_ARRAY, &vtype_array, true, 0},
     {NULL, TYPE_NONE, NULL, false, 0}
   };
 
@@ -58,6 +60,7 @@ JSON_RPC_get_data_array_sorted_range::operator()(rapidjson::Value * params, rapi
           NULL, // (uint8_t *) alg_state->data,
           strings,
           data_array_name,
+          vtype_array.arr, vtype_array.len,
           stride,
           logscale,
           offset,
@@ -80,6 +83,7 @@ JSON_RPC_get_data_array_sorted_range::operator()(rapidjson::Value * params, rapi
       (uint8_t *) alg_state->data,
       strings,
       data_array_name,
+      vtype_array.arr, vtype_array.len,
       stride,
       logscale,
       offset,

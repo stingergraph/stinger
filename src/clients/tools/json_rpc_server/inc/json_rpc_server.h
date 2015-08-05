@@ -186,24 +186,25 @@ struct JSON_RPC_bfs_edges: JSON_RPCFunction {
 /* Helper Functions */
 int
 array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
-			    rapidjson::Value& rtn,
-			    rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator,
-			    const char * description_string, int64_t nv, uint8_t * data,
-			    bool strings,
-			    const char * search_string,
-			    int64_t stride,
-			    bool logscale,
-			    int64_t start, int64_t end,
-			    const char * order_str = NULL,
-			    int64_t * set = NULL, int64_t set_len = 0
-			    );
+                rapidjson::Value& rtn,
+                rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator,
+                const char * description_string, int64_t nv, uint8_t * data,
+                bool strings,
+                const char * search_string,
+                int64_t * vtypes, int64_t num_vtypes,
+                int64_t stride,
+                bool logscale,
+                int64_t start, int64_t end,
+                const char * order_str = NULL,
+                int64_t * set = NULL, int64_t set_len = 0
+                );
 
 int
 array_to_json_reduction    (stinger_t * S,
-			    rapidjson::Value& rtn,
-			    rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator,
-			    const char * description_string, uint8_t * data,
-			    const char * search_string
-			    );
+                rapidjson::Value& rtn,
+                rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator,
+                const char * description_string, uint8_t * data,
+                const char * search_string
+                );
 
 #endif /* _JSON_RPC_SERVER_H */

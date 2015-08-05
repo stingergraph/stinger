@@ -13,6 +13,7 @@ JSON_RPC_get_data_array::operator()(rapidjson::Value * params, rapidjson::Value 
 {
   char * algorithm_name;
   char * data_array_name;
+  params_array_t vtype_array;
   int64_t stride, nsamples;
   bool strings, logscale;
   rpc_params_t p[] = {
@@ -22,6 +23,7 @@ JSON_RPC_get_data_array::operator()(rapidjson::Value * params, rapidjson::Value 
     {"stride", TYPE_INT64, &stride, true, 1},
     {"samples", TYPE_INT64, &nsamples, true, 0},
     {"log", TYPE_BOOL, &logscale, true, 0},
+    {"vtypes", TYPE_ARRAY, &vtype_array, true, 0},
     {NULL, TYPE_NONE, NULL, false, 0}
   };
 
@@ -49,9 +51,10 @@ JSON_RPC_get_data_array::operator()(rapidjson::Value * params, rapidjson::Value 
           allocator,
           data_description, // alg_state->data_description.c_str(),
           stinger_mapping_nv(S),
-          NULL, // (uint8_t *) alg_state->data,
+          NULL,// (uint8_t *) alg_state->data,
           strings,
           data_array_name,
+          vtype_array.arr, vtype_array.len, 
           stride,
           logscale,
           0,
@@ -62,19 +65,20 @@ JSON_RPC_get_data_array::operator()(rapidjson::Value * params, rapidjson::Value 
     }
     result.AddMember("time", max_time_seen, allocator);
     return array_to_json_monolithic (
-	RANGE,
-	server_state->get_stinger(),
-	result,
-	allocator,
-	alg_state->data_description.c_str(),
-	stinger_mapping_nv(server_state->get_stinger()),
-	(uint8_t *) alg_state->data,
-	strings,
-	data_array_name,
-	stride,
-	logscale,
-	0,
-	stinger_mapping_nv(server_state->get_stinger())
+          RANGE,
+          server_state->get_stinger(),
+          result,
+          allocator,
+          alg_state->data_description.c_str(),
+          stinger_mapping_nv(server_state->get_stinger()),
+          (uint8_t *) alg_state->data,
+          strings,
+          data_array_name,
+          vtype_array.arr, vtype_array.len,
+          stride,
+          logscale,
+          0,
+          stinger_mapping_nv(server_state->get_stinger())
     );
   } else {
     return json_rpc_error(-32602, result, allocator);
