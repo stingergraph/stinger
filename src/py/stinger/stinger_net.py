@@ -54,7 +54,7 @@ class StingerRegisteredAlg(Structure):
 	      ("alg_num", c_int64),
 	      ("alg_data_loc", 256 * c_char),
 	      ("alg_data", c_void_p),
-	      ("alg_data_per_vertex", c_int64), 
+	      ("alg_data_per_vertex", c_int64),
 	      ("dep_count", c_int64),
 	      ("dep_name", POINTER(c_char_p)),
 	      ("dep_location", POINTER(c_char_p)),
@@ -94,7 +94,9 @@ class StingerStream():
     self.only_strings = strings
     self.undirected = undirected
 
-  def add_insert(self, vfrom, vto, etype=0, weight=0, ts=0):
+  def add_insert(self, vfrom, vto, etype=0, weight=0, ts=0, insert_strings=None):
+    self.only_strings = insert_strings if insert_strings is not None else self.only_strings
+
     if(self.insertions_count >= self.insertions_size):
       self.insertions_size *= 2
       insertions_tmp = (StingerEdgeUpdate * self.insertions_size)()
@@ -146,7 +148,7 @@ class StingerStream():
     self.deletions_count += 1
 
   def send_batch(self):
-    libstinger_net['stream_send_batch'](self.sock_handle, c_int(self.only_strings), 
+    libstinger_net['stream_send_batch'](self.sock_handle, c_int(self.only_strings),
 	     self.insertions, self.insertions_count, self.deletions, self.deletions_count, self.undirected)
     self.insertions_count = 0
     self.deletions_count = 0
@@ -200,10 +202,10 @@ class StingerDataArray():
 
     offset = reduce(
 	lambda x,y: x+y,
-	[8 if c == 'd' or c == 'l' else 
-	 4 if c == 'f' or c == 'i' else 
-	 1 
-	   for c in data_desc[0][:field_index]], 
+	[8 if c == 'd' or c == 'l' else
+	 4 if c == 'f' or c == 'i' else
+	 1
+	   for c in data_desc[0][:field_index]],
 	0)
 
     self.data = data_ptr + (offset * self.nv)
@@ -306,7 +308,7 @@ class StingerMon():
 
   def release_read_lock(self):
     libstinger_net['stinger_mon_release_read_lock'](self.mon)
-      
+
   def stinger(self):
     get_stinger = libstinger_net['stinger_mon_get_stinger']
     get_stinger.restype = c_void_p
