@@ -199,20 +199,6 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
 			    );
 
 int
-array_to_json_monolithic_stinger   (json_rpc_array_meth_t method, stinger_t * S,
-			    rapidjson::Value& rtn,
-			    rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator,
-			    const char * description_string, int64_t nv, uint8_t * data,
-			    bool strings,
-			    const char * search_string,
-			    int64_t stride,
-			    bool logscale,
-			    int64_t start, int64_t end,
-			    const char * order_str = NULL,
-			    int64_t * set = NULL, int64_t set_len = 0
-			    );
-
-int
 array_to_json_reduction    (stinger_t * S,
 			    rapidjson::Value& rtn,
 			    rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator,

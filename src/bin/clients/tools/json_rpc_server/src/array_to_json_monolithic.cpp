@@ -27,6 +27,24 @@ inline int64_t* new_sorted_data_idx(T* data, int64_t nv, bool asc) {
   return idx;
 }
 
+template <typename T>
+inline int64_t* new_sorted_data_idx(T* data_start, int64_t nv, bool asc, int64_t data_byte_offset) {
+  int64_t * idx = (int64_t *) xmalloc (nv * sizeof(int64_t));
+  for (int64_t i = 0; i < nv; i++) {
+    idx[i] = i;
+  }
+
+  if (asc) {
+    compare_pair_off_asc<T> comparator(data_start, data_byte_offset);
+    std::sort(idx, idx + nv, comparator);
+  } else {
+    compare_pair_off_desc<T> comparator(data_start, data_byte_offset);
+    std::sort(idx, idx + nv, comparator);
+  }
+
+  return idx;
+}
+
 inline void free_sorted_data_idx(int64_t* idx) {
   free(idx);
 }
@@ -49,6 +67,8 @@ inline void free_sorted_data_idx(int64_t* idx) {
  * @param rtn The rapidjson object where the output should be added
  * @param allocator rapidjson allocator for adding new objects to rtn
  * @param description_string String describing the algorithms data fields and types
+ * @param nv Number of vertices
+ * @param data The algorithm data array
  * @param strings Should vertex string names be returned in the object (requires STINGER pointer to be valid)
  * @param search_string The field name to extract from the data
  * @param stride Return every 'stride' number of elements in the data array
@@ -104,6 +124,8 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
   if (stride >= nv) {
     LOG_W_A("Stride of %ld only returns one value. This probably isn't what you want.", stride);
   }
+
+  MAP_STING(S);
   
   bool asc;
   if (method == SORTED) {
@@ -177,6 +199,10 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
             LOG_D_A ("%s: case b", search_string);
             idx = new_sorted_data_idx((uint8_t*)data, nv, asc);
             break;
+          case 's':
+            LOG_D_A ("%s: case s", search_string);
+            idx = new_sorted_data_idx((int64_t*)stinger_local_state_get_data_ptr(S, search_string), nv, asc, sizeof(vertices->vertices[0]));
+            break;
           default:
             LOG_W_A("Umm...what letter was that?\ndescription_string: %s", description_string);
             return json_rpc_error(-32603, rtn, allocator);
@@ -222,6 +248,14 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
             break;
           case 'b':
             value.SetInt64((int)((uint8_t *) data)[vtx]);
+            break;
+          case 's':
+            if (0 == strncmp(search_string, "vertex_type_name",16)) {
+              char * type_name_str = stinger_vtype_names_lookup_name(S, stinger_local_state_get_data(S, search_string, vtx));
+              value.SetString(type_name_str, strlen(type_name_str), allocator);
+            } else {
+              value.SetInt64(stinger_local_state_get_data(S, search_string, vtx));
+            }
             break;
           default:
             LOG_W_A("Umm...what letter was that?\ndescription_string: %s", description_string);
@@ -269,6 +303,8 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
 
         case 'b':
           data += (S->max_nv * sizeof(uint8_t));
+          break;
+        case 's':
           break;
 
         default:

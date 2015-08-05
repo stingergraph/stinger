@@ -33,45 +33,49 @@ JSON_RPC_get_data_array_set::operator()(rapidjson::Value * params, rapidjson::Va
 	LOG_E ("Algorithm is not running");
 	return json_rpc_error(-32003, result, allocator);
       } else {
-	result.AddMember("time", max_time_seen, allocator);
-	return array_to_json_monolithic_stinger (
-	  SET,
-	  server_state->get_stinger(),
-	  result,
-	  allocator,
-	  NULL, //alg_state->data_description.c_str(),
-	  stinger_mapping_nv(server_state->get_stinger()),
-	  NULL, //(uint8_t *) alg_state->data,
-	  strings,
-	  data_array_name,
-	  1,
-	  false,
-	  0,
-	  0,
-	  NULL,
-	  set_array.arr,
-	  set_array.len
-	);
+        LOG_D_A ("Checking Stinger Algorithm: %s", algorithm_name);
+        result.AddMember("time", max_time_seen, allocator);
+        stinger_t * S = server_state->get_stinger();
+        char * data_description = stinger_local_state_get_data_description(S);
+        int64_t rtn = array_to_json_monolithic (
+          SET,
+          S,
+          result,
+          allocator,
+          data_description, // alg_state->data_description.c_str(),
+          stinger_mapping_nv(S),
+          NULL, // (uint8_t *) alg_state->data,
+          strings,
+          data_array_name,
+          1,
+          false,
+          0,
+          0,
+          NULL,
+          set_array.arr,
+          set_array.len
+        );
+        return rtn;
       }
     }
     result.AddMember("time", max_time_seen, allocator);
     return array_to_json_monolithic (
-	SET,
-	server_state->get_stinger(),
-	result,
-	allocator,
-	alg_state->data_description.c_str(),
-	stinger_mapping_nv(server_state->get_stinger()),
-	(uint8_t *) alg_state->data,
-	strings,
-	data_array_name,
-	1,
-	false,
-	0,
-	0,
-	NULL,
-	set_array.arr,
-	set_array.len
+      SET,
+      server_state->get_stinger(),
+      result,
+      allocator,
+      alg_state->data_description.c_str(),
+      stinger_mapping_nv(server_state->get_stinger()),
+      (uint8_t *) alg_state->data,
+      strings,
+      data_array_name,
+      1,
+      false,
+      0,
+      0,
+      NULL,
+      set_array.arr,
+      set_array.len
     );
   } else {
     LOG_W ("didn't have the right params");
