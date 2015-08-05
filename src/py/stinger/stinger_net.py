@@ -91,6 +91,10 @@ class StingerStream():
     self.deletions = (StingerEdgeUpdate * self.deletions_size)()
     self.deletions_refs = []
     self.deletions_count = 0
+    self.vertex_updates_size = 5000
+    self.vertex_updates = (StingerVertexUpdate * self.deletions_size)()
+    self.vertex_updates_refs = []
+    self.vertex_updates_count = 0
     self.only_strings = strings
     self.undirected = undirected
 
@@ -147,13 +151,42 @@ class StingerStream():
 
     self.deletions_count += 1
 
+  def add_vertex_update(self, vtx, vtype, weight=0, incr_weight=0):
+    if(self.vertex_updates_count >= self.vertex_updates_size):
+      self.vertex_updates_size *= 2
+      vertex_updates_tmp = (StingerVertexUpdate * self.vertex_updates_size)()
+      self.vertex_updates_refs.append(self.vertex_updates)
+      memmove(addressof(vertex_updates_tmp), addressof(self.vertex_updates), sizeof(StingerVertexUpdate * (self.vertex_updates_size/2)))
+      self.vertex_updates = vertex_updates_tmp
+
+    if(self.only_strings):
+      self.vertex_updates[self.vertex_updates_count].vertex_str = c_char_p(vtx)
+    else:
+      self.vertex_updates[self.vertex_updates_count].vertex = c_int64(vtx)
+      self.vertex_updates[self.vertex_updates_count].vertex_str = 0
+
+    if isinstance(vtype, basestring):
+      self.vertex_updates[self.vertex_updates_count].type_str = c_char_p(vtype)
+    else:
+      self.vertex_updates[self.vertex_updates_count].type = c_int64(vtype)
+
+    self.vertex_updates[self.vertex_updates_count].weight = c_int64(weight)
+    self.vertex_updates[self.vertex_updates_count].incr_weight = c_int64(incr_weight)
+
+    self.vertex_updates_count += 1
+
   def send_batch(self):
-    libstinger_net['stream_send_batch'](self.sock_handle, c_int(self.only_strings),
-	     self.insertions, self.insertions_count, self.deletions, self.deletions_count, self.undirected)
+    libstinger_net['stream_send_batch'](self.sock_handle, c_int(self.only_strings), 
+	     self.insertions, self.insertions_count, 
+       self.deletions, self.deletions_count, 
+       self.vertex_updates, self.vertex_updates_count,
+       self.undirected)
     self.insertions_count = 0
     self.deletions_count = 0
+    self.vertex_updates_count = 0
     self.insertions_refs = []
     self.deletions_refs = []
+    self.vertex_updates_refs = []
 
 
 class StingerAlg():
