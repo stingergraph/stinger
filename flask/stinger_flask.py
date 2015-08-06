@@ -18,8 +18,8 @@ log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 logging.basicConfig(stream=sys.stderr)
 
-sys.path.append("/home/tgoodyear/projects/stinger/src/py/")
-os.environ['STINGER_LIB_PATH'] = "/home/tgoodyear/projects/stinger/build/lib/"
+sys.path.append("/home/user/stinger/src/py/")
+os.environ['STINGER_LIB_PATH'] = "/home/user/stinger/build/lib/"
 
 import stinger.stinger_net as sn
 import stinger.stinger_core as sc
@@ -85,7 +85,7 @@ class Insert(Resource):
                         edge_type = x["type"] if 'type' in x else 0
                         timestamp = int(x["time"]) if 'time' in x else 0
                         s.add_insert(source, destination, edge_type, ts=timestamp, insert_strings=only_strings)
-                        print "added edge", source, destination, edge_type, timestamp
+                        # print "added edge", source, destination, edge_type, timestamp
                     except Exception as e:
                         print(traceback.format_exc())
                         pass
