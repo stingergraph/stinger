@@ -1,14 +1,24 @@
 set(sources
-	src/adamic_adar.c
-	src/pagerank.c
-	src/rmat.c
-	src/random.c
+  src/adamic_adar.c
+  src/betweenness.c
+  src/clustering.c
+  src/kcore.c
+  src/pagerank.c
+  src/random.c
+  src/rmat.c
+  src/static_components.c
+  src/weakly_connected_components.c
 )
 set(headers
-	inc/adamic_adar.h
-	inc/pagerank.h
-	inc/rmat.h
-	inc/random.h
+  inc/adamic_adar.h
+  inc/betweenness.h
+  inc/clustering.h
+  inc/kcore.h
+  inc/pagerank.h
+  inc/random.h
+  inc/rmat.h
+  inc/static_components.h
+  inc/weakly_connected_components.h
 )
 
 file(COPY ${headers} DESTINATION "${CMAKE_BINARY_DIR}/include/stinger_alg")
