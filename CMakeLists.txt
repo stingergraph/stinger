@@ -1,87 +1,110 @@
-CMAKE_MINIMUM_REQUIRED (VERSION 2.8.11)
+cmake_minimum_required (VERSION 2.8.11)
+project (STINGER)
 
-PROJECT (STINGER)
-SET(STINGER_VERSION_MAJOR 2013)
-SET(STINGER_VERSION_MINOR 06)
+include (ExternalProject)
 
-SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
-SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
-SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
+set(STINGER_VERSION_MAJOR 2013)
+set(STINGER_VERSION_MINOR 06)
 
-SET(STINGER_NAME_USE_SQLITE FALSE CACHE BOOL "Use sqlite for virtual to physmap")
-IF(STINGER_NAME_USE_SQLITE)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
+#set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} "--no-as-needed -ldl")
+set(STINGER_NAME_USE_SQLITE FALSE CACHE BOOL "Use sqlite for virtual to physmap")
+if(STINGER_NAME_USE_SQLITE)
   add_definitions(-DNAME_USE_SQLITE)
-ENDIF()
+endif()
 
-SET(STINGER_USE_TCP FALSE CACHE BOOL "Use TCP instead of Unix Sockets")
-IF(STINGER_USE_TCP)
+set(STINGER_USE_TCP FALSE CACHE BOOL "Use TCP instead of Unix Sockets")
+if(STINGER_USE_TCP)
   add_definitions(-DSTINGER_USE_TCP)
-ENDIF()
+endif()
 
-FIND_PACKAGE( OpenMP )
+find_package( OpenMP )
 if(OPENMP_FOUND)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
 
-LINK_LIBRARIES(m)
+link_libraries(m)
+
+option(BUILD_SHARED_LIBS "Build libraries as SHARED" ON)
 
 IF(APPLE)
   # Apple doesn't support librt, using CoreServices instead
-  LINK_LIBRARIES(/System/Library/Frameworks/CoreServices.framework/Versions/A/CoreServices)
+  link_libraries(/System/Library/Frameworks/CoreServices.framework/Versions/A/CoreServices)
+  set(CMAKE_MACOSX_RPATH ON)
 ELSEIF(WIN32)
   # Not sure what to do here as far as librt...?
-  LINK_LIBRARIES(rt)
+  link_libraries(rt)
 ELSE()
-  LINK_LIBRARIES(rt)
+  link_libraries(rt)
+  link_libraries(dl)
 ENDIF()
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu9x")
+
 # Doxygen
-find_package(Doxygen)
-if (DOXYGEN_FOUND)
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doxygen/Doxyfile.in
-    ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
-  add_custom_target(doc
-    ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    COMMENT "Generating API documentation with Doxygen" VERBATIM
-  )
-endif(DOXYGEN_FOUND)
+if(BUILD_DOCUMENTATION)
+  find_package(Doxygen)
+  if (DOXYGEN_FOUND)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doxygen/Doxyfile.in
+      ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
+    add_custom_target(doc
+      ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+      COMMENT "Generating API documentation with Doxygen" VERBATIM
+    )
+  endif()
+endif()
 
-# Custom protobuf to use STINGER distributed version
-function(CUST_PROTOBUF_GENERATE_CPP SUBDIR SRCS HDRS)
-  if(NOT ARGN)
-    message(SEND_ERROR "Error: PROTOBUF_GENERATE_CPP() called without any proto files")
-    return()
-  endif(NOT ARGN)
+#protobuf
+ExternalProject_Add(protobuf
+  PREFIX              ${CMAKE_BINARY_DIR}/external
+  URL                 file://${CMAKE_SOURCE_DIR}/external/protobuf-2.5.0.tar.gz
+  URL_MD5             b751f772bdeb2812a2a8e7202bf1dae8
+  UPDATE_COMMAND      ""
+  PATCH_COMMAND       ""
+  CONFIGURE_COMMAND   CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CPP_COMPILER} ${CMAKE_BINARY_DIR}/external/src/protobuf/configure
+    --prefix=${CMAKE_BINARY_DIR}
+    --enable-shared
+  BUILD_COMMAND make
+  INSTALL_COMMAND make install
+)
 
-  set(${SRCS})
-  set(${HDRS})
-  foreach(FIL ${ARGN})
-    get_filename_component(ABS_FIL ${FIL} ABSOLUTE)
-    get_filename_component(FIL_WE ${FIL} NAME_WE)
+if(APPLE)
+  set(SHARED_LIB_EXT .dylib)
+else()
+  set(SHARED_LIB_EXT .so)
+endif()
 
-    list(APPEND ${SRCS} "${CMAKE_CURRENT_BINARY_DIR}/${SUBDIR}/proto/${FIL_WE}.pb.cc")
-    list(APPEND ${HDRS} "${CMAKE_CURRENT_BINARY_DIR}/${SUBDIR}/proto/${FIL_WE}.pb.h")
+add_library(_protobuf_library STATIC IMPORTED)
+add_dependencies(_protobuf_library protobuf)
+set_target_properties(_protobuf_library PROPERTIES IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/lib/libprotobuf${SHARED_LIB_EXT})
 
-    add_custom_command(
-      OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${SUBDIR}/proto/${FIL_WE}.pb.cc"
-             "${CMAKE_CURRENT_BINARY_DIR}/${SUBDIR}/proto/${FIL_WE}.pb.h"
-      COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/protoc
-      ARGS --cpp_out  ${CMAKE_CURRENT_BINARY_DIR} --proto_path ${CMAKE_CURRENT_SOURCE_DIR} ${ABS_FIL}
-      DEPENDS ${ABS_FIL}
-      COMMENT "Running C++ protocol buffer compiler on ${FIL}"
-      VERBATIM )
-  endforeach()
+add_library(_protobuf_lite_library STATIC IMPORTED)
+add_dependencies(_protobuf_lite_library protobuf)
+set_target_properties(_protobuf_lite_library PROPERTIES IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/lib/libprotobuf-lite${SHARED_LIB_EXT})
 
-  set_source_files_properties(${${SRCS}} ${${HDRS}} PROPERTIES GENERATED TRUE)
-  set(${SRCS} ${${SRCS}} PARENT_SCOPE)
-  set(${HDRS} ${${HDRS}} PARENT_SCOPE)
-endfunction()
+add_library(_protoc_library STATIC IMPORTED)
+add_dependencies(_protoc_library protobuf)
+set_target_properties(_protoc_library PROPERTIES IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/lib/libprotoc${SHARED_LIB_EXT})
 
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu9x")
+# Memory size configuration bits for stinger_core
+set(STINGER_DEFAULT_VERTICES "(1L<<24)" CACHE STRING "Default number of vertices")
+set(STINGER_DEFAULT_NUMETYPES "5" CACHE STRING "Default number of edge types")
+set(STINGER_DEFAULT_NUMVTYPES "128" CACHE STRING "Default number of vertex types")
+set(STINGER_DEFAULT_NEB_FACTOR "4" CACHE STRING "Default number of edge blocks per vertex")
+set(STINGER_EDGEBLOCKSIZE "14" CACHE STRING "Number of edges per edge block")
+set(STINGER_NAME_STR_MAX "255" CACHE STRING "Max string length in physmap")
 
-INCLUDE_DIRECTORIES("${CMAKE_BINARY_DIR}/include")
+configure_file(${CMAKE_SOURCE_DIR}/lib/stinger_core/inc/stinger_defs.h.in ${CMAKE_SOURCE_DIR}/lib/stinger_core/inc/stinger_defs.h @ONLY)
+configure_file(${CMAKE_SOURCE_DIR}/lib/stinger_core/inc/stinger_names.h.in ${CMAKE_SOURCE_DIR}/lib/stinger_core/inc/stinger_names.h @ONLY)
+file(COPY ${CMAKE_SOURCE_DIR}/lib/stinger_core/inc/stinger_defs.h DESTINATION ${CMAKE_BINARY_DIR}/include/stinger_core/)
+file(COPY ${CMAKE_SOURCE_DIR}/lib/stinger_core/inc/stinger_names.h DESTINATION ${CMAKE_BINARY_DIR}/include/stinger_core/)
 
-ADD_SUBDIRECTORY(src)
+include_directories("${CMAKE_BINARY_DIR}/include")
+
+add_subdirectory(lib)
+add_subdirectory(src)
