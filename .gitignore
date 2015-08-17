@@ -26,3 +26,6 @@
 .project
 .cproject
 .pydevproject
+
+# Used for algorithm testing
+*.pickle
