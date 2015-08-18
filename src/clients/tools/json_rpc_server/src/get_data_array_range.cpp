@@ -12,6 +12,7 @@ JSON_RPC_get_data_array_range::operator()(rapidjson::Value * params, rapidjson::
 {
   char * algorithm_name;
   char * data_array_name;
+  params_array_t vtype_array;
   int64_t stride, nsamples;
   int64_t count, offset;
   bool strings, logscale;
@@ -24,6 +25,7 @@ JSON_RPC_get_data_array_range::operator()(rapidjson::Value * params, rapidjson::
     {"stride", TYPE_INT64, &stride, true, 1},
     {"samples", TYPE_INT64, &nsamples, true, 0},
     {"log", TYPE_BOOL, &logscale, true, 0},
+    {"vtypes", TYPE_ARRAY, &vtype_array, true, 0},
     {NULL, TYPE_NONE, NULL, false, 0}
   };
 
@@ -54,6 +56,7 @@ JSON_RPC_get_data_array_range::operator()(rapidjson::Value * params, rapidjson::
           NULL, // (uint8_t *) alg_state->data,
           strings,
           data_array_name,
+          vtype_array.arr, vtype_array.len,
           stride,
           logscale,
           offset,
@@ -73,6 +76,7 @@ JSON_RPC_get_data_array_range::operator()(rapidjson::Value * params, rapidjson::
       (uint8_t *) alg_state->data,
       strings,
       data_array_name,
+      vtype_array.arr, vtype_array.len,
       stride,
       logscale,
       offset,

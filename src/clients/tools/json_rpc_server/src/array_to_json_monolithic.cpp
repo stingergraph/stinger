@@ -71,6 +71,8 @@ inline void free_sorted_data_idx(int64_t* idx) {
  * @param data The algorithm data array
  * @param strings Should vertex string names be returned in the object (requires STINGER pointer to be valid)
  * @param search_string The field name to extract from the data
+ * @param vtypes The vertex types to return.  Pass NULL for all vertex types
+ * @param num_vtypes The number of vertex types in the vtypes array
  * @param stride Return every 'stride' number of elements in the data array
  * @param logscale Perform strided sampling on a log scale
  * @param start Skip to this start point in the data array
@@ -87,6 +89,7 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
                             const char * description_string, int64_t nv, uint8_t * data,
                             bool strings,
                             const char * search_string,
+                            int64_t * vtypes, int64_t num_vtypes,
                             int64_t stride,
                             bool logscale,
                             int64_t start, int64_t end,
@@ -123,6 +126,10 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
   }
   if (stride >= nv) {
     LOG_W_A("Stride of %ld only returns one value. This probably isn't what you want.", stride);
+  }
+  if (vtypes != NULL && num_vtypes <= 0) {
+    LOG_W("Number of vertex types specified as <= 0. Assuming all vertex types");
+    num_vtypes = 0;
   }
 
   MAP_STING(S);
@@ -233,6 +240,21 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
           vtx = i;
         if (method == SET)
           vtx = set[(int64_t)i];
+
+        if (vtypes != NULL && num_vtypes > 0) {
+          int64_t type = stinger_vtype_get(S, vtx);
+          bool found = false;
+          for (int64_t j = 0; j < num_vtypes; j++) {
+            if (vtypes[j] == type) {
+              found = true;
+              break;
+            }
+          }
+          if (found == false) {
+            continue;
+          }
+        }
+
         switch (description_string[off]) {
           case 'f':
             value.SetDouble((double)((float *) data)[vtx]);
