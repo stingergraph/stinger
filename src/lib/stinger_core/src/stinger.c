@@ -1132,7 +1132,7 @@ stinger_typed_outdegree (const struct stinger * S, int64_t i, int64_t type) {
 
   for (tmp = ebpool_priv + curs.eb; tmp != ebpool_priv; tmp = ebpool_priv + readff((uint64_t *)&tmp->next)) {
     if(type == tmp->etype) {
-      out++;
+      out += tmp->numEdges;
     }
   }
   return out;

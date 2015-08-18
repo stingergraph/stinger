@@ -294,7 +294,7 @@ extern "C" {
   do {                                                                  \
     CONST_MAP_STING(STINGER_); \
     const struct stinger * restrict S__ = (STINGER_);			\
-    struct stinger_eb * ebpool_priv = ebpool->ebpool;		\
+    const struct stinger_eb * ebpool_priv = ebpool->ebpool;		\
     OMP("omp parallel") {                                               \
       struct stinger_eb * restrict ebp__ = ebpool;                      \
       const int64_t source__ = (VTX_);                                  \
@@ -327,7 +327,7 @@ extern "C" {
       do {                                                              \
 	CONST_MAP_STING(STINGER_); \
         const struct stinger * restrict S__ = (STINGER_);               \
-        struct stinger_eb * restrict ebp__ = ebpool->ebpool;	\
+        const struct stinger_eb * restrict ebp__ = ebpool->ebpool;	\
         const int64_t etype__ = (TYPE_);                                \
         for(uint64_t p__ = 0; p__ < ETA((STINGER_),(TYPE_))->high; p__++) {    \
           int64_t ebp_k__ = ETA((STINGER_),(TYPE_))->blocks[p__];              \
@@ -351,7 +351,7 @@ extern "C" {
 	CONST_MAP_STING(STINGER_); \
         const struct stinger * restrict S__ = (STINGER_);             \
         const int64_t etype__ = (TYPE_);                              \
-	const struct stinger_eb * restrict ebp__ = ebpool->ebpool;	\
+        const struct stinger_eb * restrict ebp__ = ebpool->ebpool;	\
         OMP("omp parallel") {                                           \
           OMP("omp single") {                                           \
             for(uint64_t p__ = 0; p__ < ETA((STINGER_),(TYPE_))->high; p__++) { \
