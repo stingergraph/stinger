@@ -177,7 +177,7 @@ extern "C" {
 #define STINGER_FORALL_EDGES_OF_ALL_TYPES_BEGIN(STINGER_) \
   do {                  \
     MAP_STING(STINGER_); \
-    for (uint64_t t__ = 1; t__ < stinger_max_num_etypes(STINGER_); t__++) { \
+    for (uint64_t t__ = 0; t__ < stinger_max_num_etypes(STINGER_); t__++) { \
       struct stinger_eb * ebpool_priv = ebpool->ebpool; \
       for(uint64_t p__ = 0; p__ < ETA((STINGER_),(t__))->high; p__++) { \
         struct stinger_eb *  current_eb__ = ebpool_priv+ ETA((STINGER_),(t__))->blocks[p__]; \
@@ -218,7 +218,7 @@ extern "C" {
 #define STINGER_PARALLEL_FORALL_EDGES_OF_ALL_TYPES_BEGIN(STINGER_) \
   do {                  \
     MAP_STING(STINGER_); \
-    for (uint64_t t__ = 1; t__ < stinger_max_num_etypes(STINGER_); t__++) { \
+    for (uint64_t t__ = 0; t__ < stinger_max_num_etypes(STINGER_); t__++) { \
       struct stinger_eb * ebpool_priv = ebpool->ebpool; \
       OMP("omp parallel for")           \
       MTA("mta assert parallel")            \
