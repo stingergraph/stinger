@@ -138,8 +138,7 @@ page_rank_type_directed(stinger_t * S, int64_t NV, double * pr, double * tmp_pr_
     }
 
     STINGER_FORALL_EDGES_BEGIN(S,type) {
-      /* TODO: this should be typed outdegree */
-      int64_t outdegree = stinger_outdegree(S, STINGER_EDGE_SOURCE);
+      int64_t outdegree = stinger_typed_outdegree(S, STINGER_EDGE_SOURCE,type);
       tmp_pr[STINGER_EDGE_DEST] += (((double)pr[STINGER_EDGE_SOURCE]) /
         ((double) (outdegree ? outdegree : NV -1)));
     } STINGER_FORALL_EDGES_END();
