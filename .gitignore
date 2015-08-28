@@ -21,7 +21,7 @@
 /src/lib/protobuf/configure
 /src/lib/protobuf/autom4te.cache/
 
-/src/py/stinger/*.pyc
+*.pyc
 
 .project
 .cproject
@@ -29,3 +29,4 @@
 
 # Used for algorithm testing
 *.pickle
+/flask/stinger_paths.py

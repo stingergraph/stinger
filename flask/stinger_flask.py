@@ -8,6 +8,7 @@ import signal
 import logging
 import argparse
 import traceback
+import stinger_paths
 from flask import Flask, request, jsonify, Response
 from flask.ext.cors import CORS
 from flask.ext.restplus import Api, Resource, fields, apidoc
@@ -18,8 +19,8 @@ log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 logging.basicConfig(stream=sys.stderr)
 
-sys.path.append("/home/user/stinger/src/py/")
-os.environ['STINGER_LIB_PATH'] = "/home/user/stinger/build/lib/"
+sys.path.append(stinger_paths.STINGER_SRC_PY)
+os.environ['STINGER_LIB_PATH'] = stinger_paths.STINGER_LIB_PATH
 
 import stinger.stinger_net as sn
 import stinger.stinger_core as sc
@@ -241,4 +242,4 @@ if __name__ == '__main__':
     STINGER_HOST = args.stinger_host
     STINGER_RPC_PORT = args.stinger_rpc_port
     setupSTINGERConnection()
-    app.run(debug=True,host=args.flask_host,port=args.flask_port)
+    app.run(debug=False,host=args.flask_host,port=args.flask_port)

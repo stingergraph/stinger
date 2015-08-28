@@ -3,7 +3,6 @@ import cPickle as pickle
 import colorama as color
 import csv
 import json
-import numpy
 import os
 import requests
 import sys
