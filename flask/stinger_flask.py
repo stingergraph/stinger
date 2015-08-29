@@ -242,6 +242,8 @@ def stingerRPC(payload):
 def connect(undirected=False,strings=True):
     global s
     s = sn.StingerStream(STINGER_HOST, 10102, strings, undirected)
+    if s.sock_handle == -1:
+        raise Exception("Failed to connect to STINGER")
     directedness = 'UNdirected' if undirected else 'directed'
     print "Edges will be inserted as",directedness
 
@@ -278,14 +280,14 @@ def setupSTINGERConnection():
         try:
             connect(args.undirected)
             print 'STINGER connection successful'
-        except e as Exception:
+        except Exception as e:
             print str(e)
             print 'STINGER connection unsuccessful'
     if not 't' in globals():
         try:
             sendBatch()
             print 'STINGER timer setup successful'
-        except e as Exception:
+        except Exception as e:
             print str(e)
             print 'STINGER timer setup unsuccessful'
 
@@ -306,4 +308,4 @@ if __name__ == '__main__':
     STINGER_HOST = args.stinger_host
     STINGER_RPC_PORT = args.stinger_rpc_port
     setupSTINGERConnection()
-    app.run(debug=True,host=args.flask_host,port=args.flask_port)
+    app.run(debug=False,host=args.flask_host,port=args.flask_port)
