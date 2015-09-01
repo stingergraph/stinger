@@ -6,90 +6,7 @@
 #include "stinger_core/stinger_error.h"
 #include "stinger_net/stinger_alg.h"
 #include "stinger_utils/timer.h"
-
-
-int compare (const void * a, const void * b)
-{
-    return ( *(int64_t*)a - *(int64_t*)b );
-}
-
-
-/* For the sake of performance, I'm going to assume that the graph is undirected.
- * Therefore I can sort the edge list of the first vertex and re-use it throughout
- * the intersection computations.  If it is not undirected, this will not yield the
- * correct answer (but will compute transitivity coefficients correctly.)
- */
-
-int64_t
-//count_intersections (stinger_t * S, int64_t a, int64_t b)
-count_intersections (stinger_t * S, int64_t a, int64_t b, int64_t * neighbors, int64_t d)
-{
-  size_t out = 0;
-  
-  STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, b) {
-
-    if (STINGER_EDGE_DEST != a) {
-      int64_t first = 0;
-      int64_t last = d-1;
-      int64_t middle = (first + last)/2;
-
-      while (first <= last) {
-	if (neighbors[middle] < STINGER_EDGE_DEST) {
-	  first = middle + 1;
-	} else if (neighbors[middle] == STINGER_EDGE_DEST) {
-	  out++;
-	  break;
-	} else {
-	  last = middle - 1;
-	}
-
-	middle = (first + last)/2;
-      }
-      //out += stinger_has_typed_successor (S, 0, STINGER_EDGE_DEST, a);
-    }
-
-  } STINGER_FORALL_EDGES_OF_VTX_END();
-
-
-  return out;
-}
-
-
-int64_t
-count_triangles (stinger_t * S, uint64_t v)
-{
-  int64_t out = 0;
-
-  int64_t deg = stinger_outdegree(S, v);
-  int64_t * neighbors = xmalloc(deg * sizeof(int64_t));
-  size_t d;
-  stinger_gather_typed_successors(S, 0, v, &d, neighbors, deg);
-  qsort(neighbors, d, sizeof(int64_t), compare);
-
-  STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, v) {
-
-    if (STINGER_EDGE_DEST != v) {
-      //out += count_intersections (S, v, STINGER_EDGE_DEST);
-      out += count_intersections (S, v, STINGER_EDGE_DEST, neighbors, d);
-    }
-
-  } STINGER_FORALL_EDGES_OF_VTX_END();
-
-  free (neighbors);
-
-  return out;
-}
-
-
-void
-count_all_triangles (stinger_t * S, int64_t * ntri)
-{
-  OMP ("omp for schedule(dynamic,128)")
-  for (size_t i = 0; i < S->max_nv; ++i)
-    ntri[i] = count_triangles (S, i);
-}
-
-
+#include "stinger_alg/clustering.h"
 
 
 int
@@ -103,7 +20,7 @@ main(int argc, char *argv[])
     sprintf(name, "clustering_coeff_%s", argv[1]);
   }
 
-  stinger_registered_alg * alg = 
+  stinger_registered_alg * alg =
     stinger_register_alg(
       .name=argc > 1 ? name : "clustering_coeff",
       .data_per_vertex=(sizeof(double)+sizeof(int64_t)),
@@ -123,7 +40,7 @@ main(int argc, char *argv[])
 
   init_timer();
   double time;
-  
+
   /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
    * Initial static computation
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
@@ -149,48 +66,47 @@ main(int argc, char *argv[])
   while(alg->enabled) {
     /* Pre processing */
     if(stinger_alg_begin_pre(alg)) {
-
       tic();
 
       OMP("omp parallel for")
       for (uint64_t v = 0; v < alg->stinger->max_nv; v++) {
-	affected[v] = 0;
+        affected[v] = 0;
       }
 
       /* each vertex incident on an insertion is affected */
       OMP("omp parallel for")
       for (uint64_t i = 0; i < alg->num_insertions; i++) {
-	int64_t src = alg->insertions[i].source;
-	int64_t dst = alg->insertions[i].destination;
-	stinger_int64_fetch_add (&affected[src], 1);
-	stinger_int64_fetch_add (&affected[dst], 1);
+        int64_t src = alg->insertions[i].source;
+        int64_t dst = alg->insertions[i].destination;
+        stinger_int64_fetch_add (&affected[src], 1);
+        stinger_int64_fetch_add (&affected[dst], 1);
 
-	/* and all neighbors */
-	STINGER_FORALL_EDGES_OF_VTX_BEGIN(alg->stinger, src) {
-	  stinger_int64_fetch_add (&affected[STINGER_EDGE_DEST], 1);
-	} STINGER_FORALL_EDGES_OF_VTX_END();
-	
-	STINGER_FORALL_EDGES_OF_VTX_BEGIN(alg->stinger, dst) {
-	  stinger_int64_fetch_add (&affected[STINGER_EDGE_DEST], 1);
-	} STINGER_FORALL_EDGES_OF_VTX_END();
+        /* and all neighbors */
+        STINGER_FORALL_EDGES_OF_VTX_BEGIN(alg->stinger, src) {
+          stinger_int64_fetch_add (&affected[STINGER_EDGE_DEST], 1);
+        } STINGER_FORALL_EDGES_OF_VTX_END();
+
+        STINGER_FORALL_EDGES_OF_VTX_BEGIN(alg->stinger, dst) {
+          stinger_int64_fetch_add (&affected[STINGER_EDGE_DEST], 1);
+        } STINGER_FORALL_EDGES_OF_VTX_END();
       }
-     
+
       /* each vertex incident on a deletion is affected */
       OMP("omp parallel for")
       for (uint64_t i = 0; i < alg->num_deletions; i++) {
-	int64_t src = alg->deletions[i].source;
-	int64_t dst = alg->deletions[i].destination;
-	stinger_int64_fetch_add (&affected[src], 1);
-	stinger_int64_fetch_add (&affected[dst], 1);
-	
-	/* and all neighbors */
-	STINGER_FORALL_EDGES_OF_VTX_BEGIN(alg->stinger, src) {
-	  stinger_int64_fetch_add (&affected[STINGER_EDGE_DEST], 1);
-	} STINGER_FORALL_EDGES_OF_VTX_END();
-	
-	STINGER_FORALL_EDGES_OF_VTX_BEGIN(alg->stinger, dst) {
-	  stinger_int64_fetch_add (&affected[STINGER_EDGE_DEST], 1);
-	} STINGER_FORALL_EDGES_OF_VTX_END();
+        int64_t src = alg->deletions[i].source;
+        int64_t dst = alg->deletions[i].destination;
+        stinger_int64_fetch_add (&affected[src], 1);
+        stinger_int64_fetch_add (&affected[dst], 1);
+
+        /* and all neighbors */
+        STINGER_FORALL_EDGES_OF_VTX_BEGIN(alg->stinger, src) {
+          stinger_int64_fetch_add (&affected[STINGER_EDGE_DEST], 1);
+        } STINGER_FORALL_EDGES_OF_VTX_END();
+
+        STINGER_FORALL_EDGES_OF_VTX_BEGIN(alg->stinger, dst) {
+          stinger_int64_fetch_add (&affected[STINGER_EDGE_DEST], 1);
+        } STINGER_FORALL_EDGES_OF_VTX_END();
       }
 
       time = toc();
@@ -202,18 +118,17 @@ main(int argc, char *argv[])
 
     /* Post processing */
     if(stinger_alg_begin_post(alg)) {
-
       tic();
 
       OMP("omp parallel for")
       for (uint64_t v = 0; v < alg->stinger->max_nv; v++) {
-	if (affected[v]) {
-	  ntri[v] = count_triangles (alg->stinger, v);
-	  
-	  int64_t deg = stinger_outdegree_get(alg->stinger, v);
-	  int64_t d = deg * (deg-1);
-	  local_cc[v] = (d ? ntri[v] / (double) d : 0.0);
-	}
+        if (affected[v]) {
+          ntri[v] = count_triangles (alg->stinger, v);
+
+          int64_t deg = stinger_outdegree_get(alg->stinger, v);
+          int64_t d = deg * (deg-1);
+          local_cc[v] = (d ? ntri[v] / (double) d : 0.0);
+        }
       }
 
       time = toc();

@@ -4,54 +4,8 @@
 #include "stinger_core/xmalloc.h"
 #include "stinger_core/stinger_error.h"
 #include "stinger_net/stinger_alg.h"
+#include "stinger_alg/kcore.h"
 
-void
-kcore_find(stinger_t *S, int64_t * labels, int64_t * counts, int64_t nv, int64_t * k_out) {
-  int64_t k = 0;
-
-  for(int64_t v; v < nv; v++) {
-    if(stinger_outdegree_get(S,v)) {
-      labels[v] = 1;
-    } else {
-      labels[v] = 0;
-    }
-  }
-
-  int changed = 1;
-  while(changed) {
-    changed = 0;
-    k++;
-
-    OMP("omp parallel for")
-      for(int64_t v = 0; v < nv; v++) {
-	if(labels[v] == k) {
-	  int64_t count = 0;
-	  STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, v) {
-	    count += (labels[STINGER_EDGE_DEST] >= k);
-	  } STINGER_FORALL_EDGES_OF_VTX_END();
-	  if(count > k)
-	    counts[v] = count;
-	}
-      }
-
-    OMP("omp parallel for")
-      for(int64_t v = 0; v < nv; v++) {
-	if(labels[v] == k) {
-	  int64_t count = 0;
-	  STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, v) {
-	    count += (labels[STINGER_EDGE_DEST] >= k && 
-		counts[STINGER_EDGE_DEST] > k);
-	  } STINGER_FORALL_EDGES_OF_VTX_END();
-	  if(count > k) {
-	    labels[v] = k+1;
-	    changed = 1;
-	  }
-	}
-      }
-  }
-
-  *k_out = k;
-}
 
 int
 main(int argc, char *argv[])
@@ -59,7 +13,7 @@ main(int argc, char *argv[])
   /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
    * Setup and register algorithm with the server
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
-  stinger_registered_alg * alg = 
+  stinger_registered_alg * alg =
     stinger_register_alg(
       .name="kcore",
       .data_per_vertex=2*sizeof(int64_t),
@@ -81,7 +35,7 @@ main(int argc, char *argv[])
   int64_t * kcore = (int64_t *)alg->alg_data;
   int64_t * count = ((int64_t *)alg->alg_data) + alg->stinger->max_nv;
   int64_t k;
-  
+
   /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
    * Initial static computation
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */

@@ -8,6 +8,7 @@ import signal
 import logging
 import argparse
 import traceback
+import stinger_paths
 from flask import Flask, request, jsonify, Response
 from flask.ext.cors import CORS
 from flask.ext.restplus import Api, Resource, fields, apidoc
@@ -18,8 +19,8 @@ log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 logging.basicConfig(stream=sys.stderr)
 
-sys.path.append("/home/user/stinger/src/py/")
-os.environ['STINGER_LIB_PATH'] = "/home/user/stinger/build/lib/"
+sys.path.append(stinger_paths.STINGER_SRC_PY)
+os.environ['STINGER_LIB_PATH'] = stinger_paths.STINGER_LIB_PATH
 
 import stinger.stinger_net as sn
 import stinger.stinger_core as sc
@@ -83,7 +84,7 @@ class Insert(Resource):
                         edge_type = x["type"] if 'type' in x else 0
                         timestamp = int(x["time"]) if 'time' in x else 0
                         s.add_insert(source, destination, edge_type, ts=timestamp, insert_strings=only_strings)
-                        print "added edge", source, destination, edge_type, timestamp
+                        # print "added edge", source, destination, edge_type, timestamp
                     except Exception as e:
                         print(traceback.format_exc())
                         pass
@@ -213,7 +214,7 @@ class Stat(Resource):
     })
     def get(self,stat):
         stat_data = "bc" if stat == "betweenness_centrality" else stat
-        payload = {"jsonrpc": "2.0", "method": "get_data_array_sorted_range", "params": {"name": stat, "strings": True, "data": stat_data, "offset": 0, "count": 30, "order":"DESC"}, "id": 1}
+        payload = {"jsonrpc": "2.0", "method": "get_data_array_sorted_range", "params": {"name": stat, "strings": True, "data": stat_data, "offset": 0, "count": 500, "order":"DESC"}, "id": 1}
         return stingerRPC(payload)
 
 @api.route('/health', methods=['GET'])
