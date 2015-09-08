@@ -99,10 +99,10 @@ set(STINGER_DEFAULT_NEB_FACTOR "4" CACHE STRING "Default number of edge blocks p
 set(STINGER_EDGEBLOCKSIZE "14" CACHE STRING "Number of edges per edge block")
 set(STINGER_NAME_STR_MAX "255" CACHE STRING "Max string length in physmap")
 
-configure_file(${CMAKE_SOURCE_DIR}/lib/stinger_core/inc/stinger_defs.h.in ${CMAKE_SOURCE_DIR}/lib/stinger_core/inc/stinger_defs.h @ONLY)
-configure_file(${CMAKE_SOURCE_DIR}/lib/stinger_core/inc/stinger_names.h.in ${CMAKE_SOURCE_DIR}/lib/stinger_core/inc/stinger_names.h @ONLY)
-file(COPY ${CMAKE_SOURCE_DIR}/lib/stinger_core/inc/stinger_defs.h DESTINATION ${CMAKE_BINARY_DIR}/include/stinger_core/)
-file(COPY ${CMAKE_SOURCE_DIR}/lib/stinger_core/inc/stinger_names.h DESTINATION ${CMAKE_BINARY_DIR}/include/stinger_core/)
+configure_file(${CMAKE_SOURCE_DIR}/lib/stinger_core/inc/stinger_defs.h.in ${CMAKE_BINARY_DIR}/include/stinger_core/stinger_defs.h @ONLY)
+configure_file(${CMAKE_SOURCE_DIR}/lib/stinger_core/inc/stinger_names.h.in ${CMAKE_BINARY_DIR}/include/stinger_core/stinger_names.h @ONLY)
+#file(COPY ${CMAKE_SOURCE_DIR}/lib/stinger_core/inc/stinger_defs.h DESTINATION ${CMAKE_BINARY_DIR}/include/stinger_core/)
+#file(COPY ${CMAKE_SOURCE_DIR}/lib/stinger_core/inc/stinger_names.h DESTINATION ${CMAKE_BINARY_DIR}/include/stinger_core/)
 
 include_directories("${CMAKE_BINARY_DIR}/include")
 
