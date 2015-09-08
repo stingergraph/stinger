@@ -27,7 +27,7 @@ page_rank_subset(stinger_t * S, int64_t NV, uint8_t * vertex_set, int64_t vertex
   OMP("omp parallel for")
   for (uint64_t v = 0; v < NV; v++) {
     if (vertex_set[v]) {
-      fprintf(stderr,"%ld - %lf\n",v,pr[v]);
+      LOG_D_A("%ld - %lf\n",v,pr[v]);
       STINGER_FORALL_EDGES_OF_VTX_BEGIN(S,v) {
         if (vertex_set[STINGER_EDGE_DEST]) {
           vtx_outdegree[v]++;
