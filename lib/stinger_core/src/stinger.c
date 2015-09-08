@@ -683,7 +683,7 @@ struct stinger *stinger_new_full (int64_t nv, int64_t nebs, int64_t netypes, int
   size_t vertices_start, physmap_start, ebpool_start, 
 	 etype_names_start, vtype_names_start, ETA_start;
 
-  do {
+  while (1) {
     size_t tmp;
     if(sz > ((memory_size * 3) / 4)) {
       if(!resized) {
@@ -722,7 +722,20 @@ struct stinger *stinger_new_full (int64_t nv, int64_t nebs, int64_t netypes, int
 
     length = sz;
     /* fprintf (stderr, "nv %ld  %ld %ld\n", (long)nv, (long)length, (long)memory_size); */
-  } while(sz > memory_size);
+
+    if(sz > (((uint64_t)memory_size * 3) / 4)) {
+      if(!resized) {
+        LOG_W_A("Resizing stinger to fit into memory (detected as %ld)", memory_size);
+      }
+      resized = 1;
+
+      sz    = 0;
+      nv    = (3*nv)/4;
+      nebs  = STINGER_DEFAULT_NEB_FACTOR * nv;
+    } else {
+      break;
+    }
+  }
 
   struct stinger *G = xmalloc (sizeof(struct stinger) + sz);
 
