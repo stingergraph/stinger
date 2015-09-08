@@ -176,40 +176,18 @@ stinger_shared_new_full (char ** out, int64_t nv, int64_t nebs, int64_t netypes,
   const size_t memory_size = stinger_max_memsize ();
  
   size_t i;
-  size_t sz     = 0;
-  size_t length = 0;
   int resized   = 0;
-
-  size_t vertices_start, physmap_start, ebpool_start, 
-	 etype_names_start, vtype_names_start, ETA_start;
+  struct stinger_size_t sizes;
 
   while (1) {
-    vertices_start = 0;
-    sz += stinger_vertices_size(nv);
+    sizes = calculate_stinger_size(nv, nebs, netypes, nvtypes);
 
-    physmap_start = sz;
-    sz += stinger_physmap_size(nv);
-
-    ebpool_start = sz;
-    sz += netypes * stinger_ebpool_size(nebs);
-
-    etype_names_start = sz;
-    sz += stinger_names_size(netypes);
-
-    vtype_names_start = sz;
-    sz += stinger_names_size(nvtypes);
-
-    ETA_start = sz;
-    sz += netypes * stinger_etype_array_size(nebs);
-
-    length = sz;
-    if(sz > (((uint64_t)memory_size * 3) / 4)) {
+    if(sizes.size > (((uint64_t)memory_size * 3) / 4)) {
       if(!resized) {
         LOG_W_A("Resizing stinger to fit into memory (detected as %ld)", memory_size);
       }
       resized = 1;
 
-      sz    = 0;
       nv    = (3*nv)/4;
       nebs  = STINGER_DEFAULT_NEB_FACTOR * nv;
     } else {
@@ -218,7 +196,7 @@ stinger_shared_new_full (char ** out, int64_t nv, int64_t nebs, int64_t netypes,
   }
 
   struct stinger *G = shmmap (*out, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR,
-    PROT_READ | PROT_WRITE, sizeof(struct stinger) + sz, MAP_SHARED);
+    PROT_READ | PROT_WRITE, sizeof(struct stinger) + sizes.size, MAP_SHARED);
 
   if (!G) {
     perror("Failed to mmap STINGER graph.\n");
@@ -226,7 +204,7 @@ stinger_shared_new_full (char ** out, int64_t nv, int64_t nebs, int64_t netypes,
   }
 
   /* initialize the new data structure */
-  xzero(G, sizeof(struct stinger) + sz);
+  xzero(G, sizeof(struct stinger) + sizes.size);
 
   G->max_nv       = nv;
   G->max_neblocks = nebs;
@@ -242,13 +220,13 @@ stinger_shared_new_full (char ** out, int64_t nv, int64_t nebs, int64_t netypes,
   G->queue_size = 0;
   G->dropped_batches = 0;
 
-  G->length = length;
-  G->vertices_start = vertices_start;
-  G->physmap_start = physmap_start;
-  G->etype_names_start = etype_names_start;
-  G->vtype_names_start = vtype_names_start;
-  G->ETA_start = ETA_start;
-  G->ebpool_start = ebpool_start;
+  G->length = sizes.size;
+  G->vertices_start = sizes.vertices_start;
+  G->physmap_start = sizes.physmap_start;
+  G->etype_names_start = sizes.etype_names_start;
+  G->vtype_names_start = sizes.vtype_names_start;
+  G->ETA_start = sizes.ETA_start;
+  G->ebpool_start = sizes.ebpool_start;
 
   MAP_STING(G);
 
