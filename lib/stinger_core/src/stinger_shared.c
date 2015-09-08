@@ -66,8 +66,9 @@ shmmap (const char * name, int oflags, mode_t mode, int prot, size_t size, int m
 #ifdef __APPLE__
   if(-1 == ftruncate(fd, size)) {
     int err = errno;
-    LOG_W_A("Mapping STINGER indicated an error, but this may be ok or even normal on OS X. It is possible that your STINGER is too large -\n"
-	"try reducing the number of vertices and/or edges per block in stinger_defs.h. Error was: %s", strerror(err));
+    if(errno != EINVAL)  //Will always return EINVAL if another process is currently attached to the segment.  This should only be called by master
+      LOG_W_A("Mapping failed (it is likely your STINGER is too large -\n"
+	"try reducing the number of vertices and/or edges per block in stinger_defs.h). Error was: %s", strerror(err));
   }
 #else
   if(O_CREAT == (O_CREAT & oflags)) {
