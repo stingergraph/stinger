@@ -182,6 +182,12 @@ struct JSON_RPC_bfs_edges: JSON_RPCFunction {
   virtual int64_t operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
 };
 
+struct JSON_RPC_pagerank_subgraph: JSON_RPCFunction {
+  JSON_RPC_pagerank_subgraph(JSON_RPCServerState * state) : JSON_RPCFunction(state) { }
+  virtual int64_t operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
+};
+
+
 /* Helper Functions */
 int
 array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,

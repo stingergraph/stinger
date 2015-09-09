@@ -6,7 +6,9 @@
 
 #define LOG_AT_W  /* warning only */
 #include "stinger_core/stinger_error.h"
-#include "stinger_alg/adamic_adar.h"
+extern "C" {
+  #include "stinger_alg/adamic_adar.h"
+}
 
 using namespace gt::stinger;
 

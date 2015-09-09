@@ -30,6 +30,7 @@ set(sources
 	src/json_rpc.cpp
 	src/json_rpc_server.cpp
 	src/mon_handling.cpp
+	src/pagerank_subgraph.cpp
 	src/register_request.cpp
 	src/rpc_state.cpp
 	src/session_handling.cpp
