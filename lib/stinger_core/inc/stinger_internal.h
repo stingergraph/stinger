@@ -155,6 +155,16 @@ struct stinger_fragmentation_t {
   double avg_number_of_edges;
 };
 
+struct stinger_size_t {
+  uint64_t vertices_start;
+  uint64_t physmap_start;
+  uint64_t ebpool_start;
+  uint64_t etype_names_start;
+  uint64_t vtype_names_start;
+  uint64_t ETA_start;
+  uint64_t size;
+};
+
 struct curs
 {
   eb_index_t eb, *loc;

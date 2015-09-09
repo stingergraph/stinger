@@ -430,6 +430,44 @@ stinger_graph_size (const struct stinger *S)
   return result;
 }
 
+/**
+* @brief Calculates the required memory to allocate a STINGER given a set of parameters
+*
+* @param nv Number of vertices
+* @param nebs Number of edge blocks
+* @param netypes Number of edge types
+* @param netypes Number of vertex types
+*
+* @return The STINGER size and start points for each sub-structure
+*/
+struct stinger_size_t calculate_stinger_size(int64_t nv, int64_t nebs, int64_t netypes, int64_t nvtypes) {
+  struct stinger_size_t ret;
+
+  uint64_t sz = 0;
+
+  ret.vertices_start = 0;
+  sz += stinger_vertices_size(nv);
+
+  ret.physmap_start = sz;
+  sz += stinger_physmap_size(nv);
+
+  ret.ebpool_start = sz;
+  sz += netypes * stinger_ebpool_size(nebs);
+
+  ret.etype_names_start = sz;
+  sz += stinger_names_size(netypes);
+
+  ret.vtype_names_start = sz;
+  sz += stinger_names_size(nvtypes);
+
+  ret.ETA_start = sz;
+  sz += netypes * stinger_etype_array_size(nebs);
+
+  ret.size = sz;
+
+  return ret;
+}
+
 void
 stinger_print_eb(struct stinger_eb * eb) {
   printf(
@@ -676,60 +714,18 @@ struct stinger *stinger_new_full (int64_t nv, int64_t nebs, int64_t netypes, int
   const size_t memory_size = stinger_max_memsize ();
 
   size_t i;
-  size_t sz     = 0;
-  size_t length = 0;
   int resized   = 0;
-
-  size_t vertices_start, physmap_start, ebpool_start, 
-	 etype_names_start, vtype_names_start, ETA_start;
+  struct stinger_size_t sizes;
 
   while (1) {
-    size_t tmp;
-    if(sz > ((memory_size * 3) / 4)) {
-      if(!resized) {
-	LOG_W_A("Resizing stinger to fit into memory (detected as %ld)", memory_size);
-      }
-      resized = 1;
+    sizes = calculate_stinger_size(nv, nebs, netypes, nvtypes);
 
-      sz    = 0;
-      nv   = (3*nv)/4;
-      nebs = STINGER_DEFAULT_NEB_FACTOR * nv;
-    }
-
-    vertices_start = 0;
-    sz += (tmp = stinger_vertices_size(nv));
-    /* fprintf (stderr, " ... vtcs %ld\n", (long)tmp); */
-
-    physmap_start = sz;
-    sz += (tmp = stinger_physmap_size(nv));
-    /* fprintf (stderr, " ... physmap %ld\n", (long)tmp); */
-
-    ebpool_start = sz;
-    sz += (tmp = netypes * stinger_ebpool_size(nebs));
-    /* fprintf (stderr, " ... ebpool %ld\n", (long)tmp); */
-
-    etype_names_start = sz;
-    sz += (tmp = stinger_names_size(netypes));
-    /* fprintf (stderr, " ... etypes %ld\n", (long)tmp); */
-
-    vtype_names_start = sz;
-    sz += (tmp = stinger_names_size(nvtypes));
-    /* fprintf (stderr, " ... vtypes %ld\n", (long)tmp); */
-
-    ETA_start = sz;
-    sz += (tmp = netypes * stinger_etype_array_size(nebs));
-    /* fprintf (stderr, " ... etypes ary %ld\n", (long)tmp); */
-
-    length = sz;
-    /* fprintf (stderr, "nv %ld  %ld %ld\n", (long)nv, (long)length, (long)memory_size); */
-
-    if(sz > (((uint64_t)memory_size * 3) / 4)) {
+    if(sizes.size > (((uint64_t)memory_size * 3) / 4)) {
       if(!resized) {
         LOG_W_A("Resizing stinger to fit into memory (detected as %ld)", memory_size);
       }
       resized = 1;
 
-      sz    = 0;
       nv    = (3*nv)/4;
       nebs  = STINGER_DEFAULT_NEB_FACTOR * nv;
     } else {
@@ -737,22 +733,22 @@ struct stinger *stinger_new_full (int64_t nv, int64_t nebs, int64_t netypes, int
     }
   }
 
-  struct stinger *G = xmalloc (sizeof(struct stinger) + sz);
+  struct stinger *G = xmalloc (sizeof(struct stinger) + sizes.size);
 
-  xzero(G, sizeof(struct stinger) + sz);
+  xzero(G, sizeof(struct stinger) + sizes.size);
 
   G->max_nv       = nv;
   G->max_neblocks = nebs;
   G->max_netypes  = netypes;
   G->max_nvtypes  = nvtypes;
 
-  G->length = length;
-  G->vertices_start = vertices_start;
-  G->physmap_start = physmap_start;
-  G->etype_names_start = etype_names_start;
-  G->vtype_names_start = vtype_names_start;
-  G->ETA_start = ETA_start;
-  G->ebpool_start = ebpool_start;
+  G->length = sizes.size;
+  G->vertices_start = sizes.vertices_start;
+  G->physmap_start = sizes.physmap_start;
+  G->etype_names_start = sizes.etype_names_start;
+  G->vtype_names_start = sizes.vtype_names_start;
+  G->ETA_start = sizes.ETA_start;
+  G->ebpool_start = sizes.ebpool_start;
 
   MAP_STING(G);
 

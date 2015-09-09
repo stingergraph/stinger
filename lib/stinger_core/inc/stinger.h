@@ -45,6 +45,8 @@ vindex_t stinger_max_nv(stinger_t * S);
 
 int64_t stinger_max_num_etypes(stinger_t * S);
 
+struct stinger_size_t calculate_stinger_size(int64_t nv, int64_t nebs, int64_t netypes, int64_t nvtypes);
+
 /* read and write stinger from disk 
  * writes stinger into series of files in the specified directory
  * reading back will allocate a new STINGER
