@@ -229,7 +229,7 @@ class Health(Resource):
 
 def stingerRPC(payload):
     try:
-        urlstr = 'http://{}:{}/jsonrpc'.format(STINGER_HOST,STINGER_RPC_PORT)
+        urlstr = 'http://{0}:{1}/jsonrpc'.format(STINGER_HOST,STINGER_RPC_PORT)
         r = requests.post(urlstr, data=json.dumps(payload))
     except:
         print(traceback.format_exc())
