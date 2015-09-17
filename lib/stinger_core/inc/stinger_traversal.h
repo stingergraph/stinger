@@ -272,7 +272,7 @@ extern "C" {
     int64_t ebp_k__ = vertices->vertices[source__].edges;		\
     while(ebp_k__ && ebp__[ebp_k__].etype != etype__)                   \
       ebp_k__ = ebp__[ebp_k__].next;                                    \
-    while(ebp_k__ && ebp__[ebp_k__].etype == etype__) {                 \
+    while(ebp_k__) {                 \
       if (ebp__[ebp_k__].etype == etype__) {                            \
         MTA("mta assert parallel")                                      \
           for(uint64_t i__ = 0; i__ < ebp__[ebp_k__].high; i__++) {     \
@@ -284,8 +284,8 @@ extern "C" {
               }                                                         \
             }                                                           \
           }                                                             \
-        ebp_k__ = ebp__[ebp_k__].next;                                  \
       }                                                                 \
+      ebp_k__ = ebp__[ebp_k__].next;                                    \
     }                                                                   \
   } while (0)
 
