@@ -9,27 +9,27 @@ What is STINGER?
 
 STINGER is a package designed to support streaming graph analytics by using in-memory parallel computation to accelerate the computation.  STINGER is composed of the core data structure and the STINGER server, algorithms, and an RPC server that can be used to run queries and serve visualizations.  The directory structure of the components is as follows:
 
-doc/ - Documentation
-doxygen/ - Doxygen generated documentation
-external/ - External dependencies packaged with STINGER
-flask/ - Python Flask Relay Server for interacting with the JSON RPC server and STINGER server
-html/ - Basic web pages that communicate with the JSON RPC server
-lib/ - The STINGER library and dependencies
-    stinger_alg/ - Algorithm kernels that work on the STINGER data structure
-    stinger_core/ - The Core STINGER data structure
-    stinger_net/ - Libraries for communicating over unix sockets and/or TCP/IP using Protobufs
-    stinger_utils/ - Auxiliary functions over the data structure
-src/ - STINGER ecosystem binaries
-    server/ - The STINGER server
-    clients/ - Clients that connect to the STINGER server
-        algorithms/ - Streaming Algorithm binaries
-        streams/ - Binaries for streaming in new data
-        tools/ - Auxiliary tools
-    py/stinger - Python bindings to STINGER
-    standalone/ - Standalone binaries that use the STINGER core data structure
-    templates/json - Common templates for stream ingest
-    tests/ - Tests for the STINGER data structure and algorithms
-SOURCEME.sh - File to be executed from out-of-source build directory to link the html/ web pages with the STINGER server
+    doc/ - Documentation
+    doxygen/ - Doxygen generated documentation
+    external/ - External dependencies packaged with STINGER
+    flask/ - Python Flask Relay Server for interacting with the JSON RPC server and STINGER server
+    html/ - Basic web pages that communicate with the JSON RPC server
+    lib/ - The STINGER library and dependencies
+        stinger_alg/ - Algorithm kernels that work on the STINGER data structure
+        stinger_core/ - The Core STINGER data structure
+        stinger_net/ - Libraries for communicating over unix sockets and/or TCP/IP using Protobufs
+        stinger_utils/ - Auxiliary functions over the data structure
+    src/ - STINGER ecosystem binaries
+        server/ - The STINGER server
+        clients/ - Clients that connect to the STINGER server
+            algorithms/ - Streaming Algorithm binaries
+            streams/ - Binaries for streaming in new data
+            tools/ - Auxiliary tools
+        py/stinger - Python bindings to STINGER
+        standalone/ - Standalone binaries that use the STINGER core data structure
+        templates/json - Common templates for stream ingest
+        tests/ - Tests for the STINGER data structure and algorithms
+    SOURCEME.sh - File to be executed from out-of-source build directory to link the html/ web pages with the STINGER server
 
 Building
 ========
