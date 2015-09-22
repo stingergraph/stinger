@@ -4,76 +4,32 @@ STINGER
 
 Learn more at [stingergraph.com](http://stingergraph.com).
 
-Directory Structure
-===================
+What is STINGER?
+=============
 
-    .
-    ├── CMakeLists.txt
-    ├── doc
-    ├── doxygen
-    ├── flask
-    ├── html
-    ├── README.md
-    ├── SOURCEME.sh
-    ├── src
-    │   ├── bin
-    │   │   ├── clients
-    │   │   │   ├── algorithms
-    │   │   │   │   ├── betweenness
-    │   │   │   │   ├── clustering_coefficients
-    │   │   │   │   ├── kcore
-    │   │   │   │   ├── pagerank
-    │   │   │   │   ├── pagerank_updating
-    │   │   │   │   ├── rate_monitor
-    │   │   │   │   ├── simple_communities
-    │   │   │   │   ├── spmspv_test
-    │   │   │   │   ├── static_components
-    │   │   │   │   ├── test_alg
-    │   │   │   │   └── weakly_connected_components
-    │   │   │   ├── streams
-    │   │   │   │   ├── csv_stream
-    │   │   │   │   ├── human_edge_generator
-    │   │   │   │   ├── json_stream
-    │   │   │   │   ├── mongodb_stream
-    │   │   │   │   ├── netflow_stream
-    │   │   │   │   ├── random_edge_generator
-    │   │   │   │   └── rmat_edge_generator
-    │   │   │   └── tools
-    │   │   │       ├── alg_to_mongo
-    │   │   │       ├── dump_graph_to_disk
-    │   │   │       ├── json_rpc_server
-    │   │   │       ├── scrape_alg_data
-    │   │   │       ├── scrape_vertex_data
-    │   │   │       ├── sql_client
-    │   │   │       ├── test_client
-    │   │   │       ├── udp_query
-    │   │   │       ├── vquery
-    │   │   │       └── web_server
-    │   │   ├── server
-    │   │   ├── standalone
-    │   │   └── tests
-    │   ├── lib
-    │   │   ├── compat
-    │   │   ├── fmemopen
-    │   │   ├── int_hm_seq
-    │   │   ├── int_ht_seq
-    │   │   ├── intvec
-    │   │   ├── kv_store
-    │   │   ├── mongo_c_driver
-    │   │   ├── mongoose
-    │   │   ├── protobuf
-    │   │   ├── pugixml
-    │   │   ├── rapidjson
-    │   │   ├── stinger_core
-    │   │   ├── stinger_net
-    │   │   ├── stinger_utils
-    │   │   ├── string
-    │   │   └── vtx_set
-    │   ├── py
-    │   │   └── stinger
-    │   └── templates
-    │       └── json
+STINGER is a package designed to support streaming graph analytics by using in-memory parallel computation to accelerate the computation.  STINGER is composed of the core data structure and the STINGER server, algorithms, and an RPC server that can be used to run queries and serve visualizations.  The directory structure of the components is as follows:
 
+doc/ - Documentation
+doxygen/ - Doxygen generated documentation
+external/ - External dependencies packaged with STINGER
+flask/ - Python Flask Relay Server for interacting with the JSON RPC server and STINGER server
+html/ - Basic web pages that communicate with the JSON RPC server
+lib/ - The STINGER library and dependencies
+    stinger_alg/ - Algorithm kernels that work on the STINGER data structure
+    stinger_core/ - The Core STINGER data structure
+    stinger_net/ - Libraries for communicating over unix sockets and/or TCP/IP using Protobufs
+    stinger_utils/ - Auxiliary functions over the data structure
+src/ - STINGER ecosystem binaries
+    server/ - The STINGER server
+    clients/ - Clients that connect to the STINGER server
+        algorithms/ - Streaming Algorithm binaries
+        streams/ - Binaries for streaming in new data
+        tools/ - Auxiliary tools
+    py/stinger - Python bindings to STINGER
+    standalone/ - Standalone binaries that use the STINGER core data structure
+    templates/json - Common templates for stream ingest
+    tests/ - Tests for the STINGER data structure and algorithms
+SOURCEME.sh - File to be executed from out-of-source build directory to link the html/ web pages with the STINGER server
 
 Building
 ========
@@ -85,22 +41,18 @@ STINGER is built using [CMake](http://www.cmake.org).  From the root of STINGER,
 
 Then call CMake from that build directory to automatically configure the build and to create a Makefile:
 
-    ccmake .. -DCMAKE_BUILD_TYPE=Release
+    ccmake .. 
 
-Change `Release` to `Debug` for a debugging build during development.  Finally, call make to build all libraries and executable targets (or call make and the name of an executable or library to build):
+Change `Release` to `Debug` or `RelWithDebInfo` for a debugging build during development.  Finally, call make to build all libraries and executable targets (or call make and the name of an executable or library to build):
 
-    make
+    make -j8
 
-Note:  multithreaded make is discouraged until CMakeLists issues are corrected.
+Note: the -j flag is a multi-threaded build.  Typically you should match the argument to the number of cores on your system.  
 
 All binary targets will be built and placed in build/bin.  They are named according to the folder from which they were 
 built (so src/bin/server produces build/bin/stinger\_server, src/bin/clients/tools/json\_rpc\_server produces 
 build/bin/stinger\_json\_rpc\_server, etc.).  If you ran SOURCEME.sh from the build directory as instructed above, the build/bin
 directory is appended to your path.
-
-All library targets are built as both static and shared libraries by default and are placed in build/lib as .so and .a files
-(or .dylib on Mac).  Headers for these libraries are copied into build/include/library\_name.  The build/include directory
-is in the include path of all targets.
 
 Executable Targets
 ==================
