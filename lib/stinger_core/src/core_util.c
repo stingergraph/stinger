@@ -225,7 +225,7 @@ set_max_memsize_env (void)
     }
     max_memsize_env = mx;
   } else {
-    max_memsize_env = 0.5 * getMemorySize(); // Default to 1/2 memory size
+    max_memsize_env = getMemorySize() / 2; // Default to 1/2 memory size
   }
 }
 
@@ -234,9 +234,7 @@ stinger_max_memsize (void)
 {
   size_t out;
   set_max_memsize_env ();
-  out = getMemorySize();
-  if (out > max_memsize_env)
-    out = max_memsize_env;
+  out = max_memsize_env;
   return out;
 }
 

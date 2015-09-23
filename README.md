@@ -191,7 +191,7 @@ Runtime Issues
 
 STINGER allocates and manages its own memory. When STINGER starts, it allocates one large block of memory (enough to hold its maximum size), and then manages its own memory allocation from that pool.  The server version of STINGER does this in shared memory so that multiple processes can see the graph.  Unfortunately, the error handling for memory allocations is not particularly user-friendly at the moment.  Changing the way that this works is on the issues list (see https://github.com/robmccoll/stinger/issues/8).
 
-- "Bus error" when running the server: The size of STINGER that the server is trying to allocate is too large for your memory.  First try to increase the size of your /dev/shm (See below).  If this does not work reduce the size of your STINGER and recompile
+- "Bus error" when running the server: The size of STINGER that the server is trying to allocate is too large for your memory.  First try to increase the size of your /dev/shm (See below).  If this does not work reduce the size of your STINGER and recompile.
 - "XXX: eb pool exhausted" or "STINGER has run out of internal storage space" when running the server, standalone executables, or anything else using stinger\_core: you have run out of internal edge storage.  Increase the size of STINGER and recompile.
 
 Compile-time definitions can be adjusted in ccmake to increase or decrease memory consumption.  Note that adjusting these values will require you to rebuild STINGER.
