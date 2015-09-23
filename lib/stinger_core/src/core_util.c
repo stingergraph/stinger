@@ -225,7 +225,7 @@ set_max_memsize_env (void)
     }
     max_memsize_env = mx;
   } else {
-    max_memsize_env = SIZE_MAX;
+    max_memsize_env = 0.5 * getMemorySize(); // Default to 1/2 memory size
   }
 }
 
