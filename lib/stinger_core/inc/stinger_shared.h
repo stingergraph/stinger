@@ -23,7 +23,7 @@ struct stinger *
 stinger_shared_new (char ** name);
 
 struct stinger *
-stinger_shared_new_full (char ** out, int64_t nv, int64_t nebs, int64_t netypes, int64_t nvtypes);
+stinger_shared_new_full (char ** out, struct stinger_config_t * config);
 
 struct stinger *
 stinger_shared_map (const char * name, size_t sz);

@@ -1,17 +1,19 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "stinger_alg/adamic_adar.h"
+#include "stinger_alg/betweenness.h"
 #include "stinger_core/stinger.h"
 #include "stinger_core/stinger_shared.h"
 #include "stinger_alg/rmat.h"
 #include "stinger_utils/timer.h"
 
-#define NUM_EDGES (1 << 16)
+#define LOG_AT_E 1
+
+#define NUM_EDGES (1 << 20)
 
 int main(int argc, char * argv[]) {
   struct stinger_config_t * stinger_config = (struct stinger_config_t *)xcalloc(1,sizeof(struct stinger_config_t));
-  stinger_config->nv = 1<<13;
-  stinger_config->nebs = 1<<16;
+  stinger_config->nv = 1<<20;
+  stinger_config->nebs = 1<<22;
   stinger_config->netypes = 2;
   stinger_config->nvtypes = 2;
   stinger_config->memory_size = 0;
@@ -40,53 +42,52 @@ int main(int argc, char * argv[]) {
   OMP("omp parallel for")
   for (int64_t z=0; z < NUM_EDGES; z++) {
     rmat_edge (&i, &j, scale, a, b, c, d, &env);
-    
+
     stinger_insert_edge_pair(S, 1, i, j, 1, 1);
   }
 
   fprintf(stderr,"Done.\n");
 
-  fprintf(stderr,"Adamic Adar...\n");
+  double * bc_d = (double *)xcalloc(nv, sizeof(double));
+  int64_t * found_d = (int64_t *)xcalloc(nv, sizeof(int64_t));
+  double * bc_u = (double *)xcalloc(nv, sizeof(double));
+  int64_t * found_u = (int64_t *)xcalloc(nv, sizeof(int64_t));
 
-  double total_time = 0.0;
-  double epoch_time = 0.0;
-  double algorithm_time = 0.0;
-  
-  FILE * fp = fopen("adamic.csv", "w");
+  srand(100);
 
-  fprintf(fp,"Vertex,Outdegree,num_candidates,time (s)\n");
+  fprintf(stderr,"Sample Parallelism BC...");
 
-  for (int64_t z=0; z < nv; z++) {
-    int64_t * candidates = NULL;
-    double * scores = NULL;
+  tic();
 
-    tic();
+  sample_search(S, nv, 256, bc_d, found_d);
 
-    int64_t num_candidates = adamic_adar(S, z, -1, &candidates, &scores);
-
-    algorithm_time = toc();
-
-    fprintf(fp,"%ld,%ld,%ld,%lf\n",z,stinger_outdegree(S,z),num_candidates,algorithm_time);
-
-    total_time += algorithm_time;
-    epoch_time += algorithm_time;
-
-    if (z != 0 && z % 1000 == 0) {
-      fprintf(stderr,"%ld vertices in Total %lf (%lf s last 1000)\n",z,total_time,epoch_time);
-      epoch_time = 0.0;
-    }
-
-    if (candidates != NULL) {
-      xfree(candidates);
-    }
-    if (scores != NULL) {
-      xfree(scores);
-    }
-  }
-
-  fclose(fp);
+  double directed_time = toc();
 
   fprintf(stderr,"Done.\n");
 
-  fprintf(stderr,"\nTime: %lf s\n",total_time);
+  srand(100);
+
+  fprintf(stderr,"Intra-sample Parallelism BC...");
+
+  tic();
+
+  //sample_search_parallel(S, nv, 256, bc_u, found_u);
+
+
+  double undirected_time = toc();
+
+  fprintf(stderr,"Done.\n");
+
+  fprintf(stderr,"\nIntra-sample: %lf s\nInter-sample: %lf s\n",undirected_time,directed_time);
+
+  FILE * fp = fopen("bc.csv", "w");
+
+  fprintf(fp,"vertex,bc_intersample,bc_intrasample\n");
+
+  for (int64_t z=0; z < nv; z++) {
+    fprintf(fp,"%ld,%lf,%lf",z,bc_d[z],bc_u[z]);
+    fprintf(fp,"\n");
+  }
+
+  fclose(fp);
 }

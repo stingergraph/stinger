@@ -98,6 +98,61 @@ This will start a stream of R-MAT edges over 100,000 vertices in batches of 10,0
 and PageRank scoring will be maintained.  The JSON-RPC server will host interactive web pages at 
 http://localhost:8088/full.html are powered by the live streaming analysis.  The total memory usage of the dynamic graph is limited to 1 GiB.
 
+Server Configuration
+--------------------
+
+### CMake Parameters
+
+The STINGER is configured via several methods when using the STINGER Server.  There are several CMake Parameters that can be set when configuring the build via CMake.  These are listed below.
+
+- ``STINGER_DEFAULT_VERTICES`` -> Specifies the number of vertices
+- ``STINGER_DEFAULT_NEB_FACTOR`` -> Specifies the Number of Edge Blocks allocated for each vertex per edge type
+- ``STINGER_DEFAULT_NUMETYPES`` -> Specifies the Number of Edge Types
+- ``STINGER_DEFAULT_NUMVTYPES`` -> Specifies the Number of Vertex Types
+- ``STINGER_EDGEBLOCKSIZE`` -> Specifies the minimum number of edges of each type that can be attached to a vertex.  This should be a multiple of 2
+- ``STINGER_NAME_STR_MAX`` -> Specifies the maximum length of strings when specifying edge type names and vertex type names
+- ``STINGER_NAME_USE_SQLITE`` -> (Alpha - Still under development) Replaces the static names structure with a dynamic structure that uses SQLITE
+- ``STINGER_USE_TCP`` -> Uses TCP instead of Unix Sockets to connect to the STINGER server
+
+** Note: STINGER, by default, uses one edge type name and vertex type name for the "None" type.  This can be disabled using the STINGER server config file described in a later section.
+
+### Example
+
+Suppose there is a graph you want to store with a power-law distribution of edges, and the average degree of each vertex is 3.  There are 3 named edge types and 4 name vertex types.  You wish to store up to 2 million vertices. A good configuration would be
+
+    STINGER_DEFAULT_VERTICES = 1 << 21
+    STINGER_EDGEBLOCKSIZE = 4            # On average one edge block is sufficient for most vertices
+    STINGER_DEFAULT_NEB_FACTOR = 2       # Depending on the skewness 3 may also be necessary.  This will create 2 * nv edge blocks for each edge types
+    STINGER_DEFAULT_NUMETYPES = 4        # There are 3 named types and the default "None" type
+    STINGER_DEFAULT_NUMVTYPES = 5        # There are 4 named types and the default "None" type
+
+### Environment Variables
+
+By default, STINGER will attempt to allocate 1/2 of the available memory on the system.  This can be overwritten using an environment variable, ``STINGER_MAX_MEMSIZE``.
+
+Example:
+  > ``STINGER_MAX_MEMSIZE=4g ./bin/stinger_server``
+
+If the STINGER parameters provided would create a STINGER that is larger than STINGER_MAX_MEMSIZE, then the STINGER is shrunk to fit the specified memory size.  This is done by repeatedly reducing the number of vertices by 25% until the STINGER fits in the specified memory size.
+
+### Config File
+
+The STINGER server accepts a config file format in the libconfig style.  A config filename can be passed as an argument to the ``stinger_server`` with the ``-C`` flag.  An example config file is provided in stinger.cfg in the root directory of the STINGER repository.  All of the cmake configurations regarding the size of the STINGER can be overridden via the config file __except for the ``STINGER_EDGEBLOCKSIZE``__.  The config file values will override any CMake values.  If the ``STINGER_MAX_MEMSIZE`` environment variable is set, it will be considered an upper limit on the memory size.
+
+The following values are allowed in stinger.cfg:
+
+- ``num_vertices`` -> A __long__ integer representing the number of vertices.  __Must have the L at the end of the integer__
+- ``edges_per_type`` -> A __long__ integer representing the number of edges for each vertex type.  __Must have the L at the end of the integer__
+- ``num_edge_types`` -> Specifies number of edge types.
+- ``num_vertex_types`` -> Specifies number of vertex types.
+- ``max_memsize`` -> Specifies maximum memory for STINGER.  Cannot be bigger than the ``STINGER_MAX_MEMSIZE`` environment variable.  Uses the same format as the environment variable (e.g. "4G", "1T", "512M")
+- ``edge_type_names`` -> A list of edge type names to map at STINGER startup.  If this list is specified the "None" type will not be mapped.
+- ``vertex_type_names`` -> A list of vertex type names to map at STINGER startup.  If this list is specified the "None" type will not be mapped.
+- ``map_none_etype`` -> If set to false, the "None" edge type will not be mapped at startup.  Likewise, if true, the "None" edge type will be mapped at startup.
+- ``map_none_vtype`` -> If set to false, the "None" vertex type will not be mapped at startup.  Likewise, if true, the "None" vertex type will be mapped at startup.
+- ``no_resize`` -> If set to true, the the STINGER will not try to resize and fit in the specified memory size.  Instead it will throw an error and exit.
+
+
 Example: Parsing Twitter
 ------------------------
 
@@ -194,16 +249,7 @@ STINGER allocates and manages its own memory. When STINGER starts, it allocates 
 - "Bus error" when running the server: The size of STINGER that the server is trying to allocate is too large for your memory.  Reduce the size of your STINGER and recompile.
 - "XXX: eb pool exhausted" or "STINGER has run out of internal storage space" when running the server, standalone executables, or anything else using stinger\_core: you have run out of internal edge storage.  Increase the size of STINGER and recompile.
 
-Compile-time definitions can be adjusted in ccmake to increase or decrease memory consumption.  Note that adjusting these values will require you to rebuild STINGER.
-
-- STINGER\_MAX\_LVERTICES: maximum number of vertices to support, often written as a power of two: 1L<<22
-- STINGER\_EDGEBLOCKSIZE: number of edges per block, default: 14  
-- STINGER\_NUMETYPES: maximum number of edge types to support, default: 5
-- STINGER\_NUMVTYPES maximum number of vertex types to support, default: 128
-
-STINGER\_EDGEBLOCKSIZE determines how many edges are in each edge block (there are 4 * STINGER\_MAX\_LVERTICES edge blocks, so 4 * STINGER\_MAX\_LVERTICES * STINGER\_EDGEBLOCKSIZE is the maximum number of directed edges).
-
-These are listed in the order of how much of an affect they will have on the size of STINGER.
+See the section on STINGER server configuration to adjust the sizing of STINGER
 
 Build Problems
 --------------

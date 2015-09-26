@@ -22,10 +22,22 @@ typedef struct stinger stinger_t;
 
 #include "stinger_internal.h"
 
+/* STINGER configuration structure */
+struct stinger_config_t {
+	int64_t nv;
+	int64_t nebs;
+	int64_t netypes;
+	int64_t nvtypes;
+	size_t memory_size;
+	uint8_t no_map_none_etype;
+	uint8_t no_map_none_vtype;
+	uint8_t no_resize;
+};
+
 /* STINGER creation & deletion */
 struct stinger *stinger_new (void);
 
-struct stinger *stinger_new_full (int64_t nv, int64_t nebs, int64_t netypes, int64_t nvtypes);
+struct stinger *stinger_new_full (struct stinger_config_t * config);
 
 void stinger_set_initial_edges (struct stinger * /* G */ ,
 				const size_t     /* nv */ ,

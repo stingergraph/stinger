@@ -13,5 +13,6 @@ set(headers
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_BINARY_DIR}/stinger_net)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/inc)
+link_libraries(config++)
 add_executable(stinger_server ${sources} ${headers})
 target_link_libraries(stinger_server stinger_utils stinger_net)

@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <sys/syscall.h>
+#include <libconfig.h++>
 
 #include "server.h"
 #include "stinger_net/stinger_server_state.h"
@@ -34,6 +35,7 @@ static char * graph_name = NULL;
 static char * input_file = NULL;
 static char * file_type = NULL;
 static bool save_to_disk = false;
+static char * stinger_config_file = NULL;
 
 static int start_pipe[2] = {-1, -1};
 
@@ -50,6 +52,8 @@ extern "C" {
   
 int main(int argc, char *argv[])
 {
+
+
   /* default global options */
   int port_names = 10101;
   int port_streams = port_names + 1;
@@ -62,12 +66,18 @@ int main(int argc, char *argv[])
   input_file[0] = '\0';
   file_type = (char *) xmalloc (128*sizeof(char));
   file_type[0] = '\0';
+  stinger_config_file = (char *) xmalloc(1024*sizeof(char));
+  stinger_config_file[0] = '\0';
   int use_numerics = 0;
 
   /* parse command line configuration */
   int opt = 0;
-  while(-1 != (opt = getopt(argc, argv, "a:s:p:b:n:i:t:1h?dkvc:f:"))) {
+  while(-1 != (opt = getopt(argc, argv, "C:a:s:p:b:n:i:t:1h?dkvc:f:"))) {
     switch(opt) {
+      case 'C': {
+        strcpy(stinger_config_file,optarg);
+      }
+
       case 'p': {
 		  port_names = atoi(optarg);
 		} break;
@@ -117,7 +127,8 @@ int main(int argc, char *argv[])
       case '?':
       case 'h': {
 		  printf("Usage:    %s\n"
-		         "   [-p port_names]\n"
+       "   [-C Stinger Config file]\n"
+       "   [-p port_names]\n"
 			 "   [-a port_algs]\n"
 			 "   [-s port_streams]\n"
 			 "   [-n graph_name]\n"
@@ -133,6 +144,102 @@ int main(int argc, char *argv[])
 		  exit(0);
 		} break;
 
+    }
+  }
+
+  struct stinger_config_t * stinger_config = (struct stinger_config_t *)xcalloc(1,sizeof(struct stinger_config_t));
+
+  libconfig::Config cfg;
+
+  if (stinger_config_file[0] != '\0') { 
+    // Used for configuring STINGER
+
+    try {
+      cfg.readFile(stinger_config_file);
+    } catch (libconfig::ParseException e) {
+      const char * error_msg = e.getError();
+      LOG_E_A("Error Parsing STINGER Config File (%s):\n%s",stinger_config_file,error_msg);
+      exit(-1);
+    } catch (libconfig::FileIOException e) {
+      LOG_E_A("Error Opening STINGER Config File (%s)",stinger_config_file);
+      exit(-1);
+    } catch (libconfig::SettingException e) {
+      LOG_E_A("Unknown Error with STINGER Config File (%s)",stinger_config_file);
+      exit(-1);
+    }
+
+    long long nv_cfg;
+    long long edge_factor_cfg;
+    int netypes_cfg;
+    int nvtypes_cfg;
+    bool map_none_etype_cfg, map_none_vtype_cfg;
+    bool no_resize_cfg;
+    const char * memory_size_cfg;
+
+    if (cfg.lookupValue("num_vertices", nv_cfg)) {
+      LOG_D_A("num_vertices: %ld",nv_cfg);
+      stinger_config->nv = nv_cfg;
+    }
+    if (cfg.lookupValue("edges_per_type", edge_factor_cfg)) {
+      LOG_D_A("edges_per_type: %ld",edge_factor_cfg);
+      stinger_config->nebs = ceil((double)edge_factor_cfg / STINGER_EDGEBLOCKSIZE);
+      if (stinger_config->nebs < stinger_config->nv) {
+        stinger_config->nebs = stinger_config->nv;
+      }
+    }
+    if (cfg.lookupValue("num_edge_types", netypes_cfg)) {
+      LOG_D_A("num_edge_types: %ld",netypes_cfg);
+      stinger_config->netypes = netypes_cfg;
+    }
+    if (cfg.lookupValue("num_vertex_types", nvtypes_cfg)) {
+      LOG_D_A("num_vertex_types: %ld",nvtypes_cfg);
+      stinger_config->nvtypes = nvtypes_cfg;
+    }
+    if (cfg.exists("edge_type_names")) {
+      LOG_D("edge_type_names exists");
+      stinger_config->no_map_none_etype = true;
+    }
+    if (cfg.lookupValue("map_none_etype", map_none_etype_cfg)) {
+      LOG_D_A("map_none_etype: %ld",map_none_etype_cfg);
+      stinger_config->no_map_none_etype = !map_none_etype_cfg;
+    }
+    if (cfg.exists("vertex_type_names")) {
+      LOG_D("vertex_type_names exists");
+      stinger_config->no_map_none_vtype = true;
+    }
+    if (cfg.lookupValue("map_none_vtype", map_none_vtype_cfg)) {
+      LOG_D_A("map_none_vtype: %ld",map_none_vtype_cfg);
+      stinger_config->no_map_none_vtype = !map_none_vtype_cfg;
+    }
+    if (cfg.lookupValue("max_memsize", memory_size_cfg)) {  
+        LOG_D_A("max_memsize: %s",memory_size_cfg);  
+        char *tailptr = NULL;
+        unsigned long mx;
+        errno = 0;
+        mx = strtoul (memory_size_cfg, &tailptr, 10);
+        if (ULONG_MAX != mx && errno == 0) {
+          if (tailptr)
+            switch (*tailptr) {
+            case 't':
+            case 'T':
+              mx <<= 10;
+            case 'g':
+            case 'G':
+              mx <<= 10;
+            case 'm':
+            case 'M':
+              mx <<= 10;
+            case 'k':
+            case 'K':
+              mx <<= 10;
+              break;
+            }
+        }
+        stinger_config->memory_size = mx;
+    }
+    if (cfg.lookupValue("no_resize", no_resize_cfg)) {
+      LOG_D_A("no_resize: %ld",no_resize_cfg);
+      stinger_config->no_resize = no_resize_cfg;
     }
   }
 
@@ -176,7 +283,40 @@ int main(int argc, char *argv[])
 
   /* allocate the graph */
   tic();
-  struct stinger * S = stinger_shared_new(&graph_name);
+  struct stinger * S = stinger_shared_new_full(&graph_name, stinger_config);
+
+  if (cfg.exists("edge_type_names")) {
+    libconfig::Setting &etype_names = cfg.lookup("edge_type_names");
+    int64_t etype_names_len = etype_names.getLength();
+    int64_t remaining_types = (stinger_config->no_map_none_etype) ? stinger_config->netypes : stinger_config->netypes - 1;
+    if (stinger_config->netypes && etype_names_len > remaining_types) {
+      LOG_E_A("Too many edge types specified. %ld specified %ld remaining.", etype_names_len, remaining_types);
+      etype_names_len = remaining_types;
+    }
+    int64_t tmp = 0;
+    for (int64_t i = 0; i < etype_names_len; i++) {
+      const char * type_name = etype_names[i];
+      stinger_etype_names_create_type(S, type_name, &tmp);
+      LOG_D_A("Mapped %s to %ld",type_name,tmp);
+    }
+  }
+  if (cfg.exists("vertex_type_names")) {
+    libconfig::Setting &vtype_names = cfg.lookup("vertex_type_names");
+    int64_t vtype_names_len = vtype_names.getLength();
+    int64_t remaining_types = (stinger_config->no_map_none_vtype) ? stinger_config->nvtypes : stinger_config->nvtypes - 1;
+    if (stinger_config->nvtypes && vtype_names_len > remaining_types) {
+      LOG_E_A("Too many vertex types specified. %ld specified %ld remaining.", vtype_names_len, remaining_types);
+      vtype_names_len = remaining_types;
+    }
+    int64_t tmp = 0;
+    for (int64_t i = 0; i < vtype_names_len; i++) {
+      const char * type_name = vtype_names[i];
+      stinger_vtype_names_create_type(S, type_name, &tmp);
+      LOG_D_A("Mapped %s to %ld",type_name,tmp);
+    }
+  }
+  xfree(stinger_config);
+
   size_t graph_sz = S->length + sizeof(struct stinger);
   LOG_V_A("Data structure allocation time: %lf seconds", toc());
 

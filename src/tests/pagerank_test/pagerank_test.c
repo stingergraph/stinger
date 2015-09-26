@@ -9,7 +9,14 @@
 #define NUM_EDGES (1 << 23)
 
 int main(int argc, char * argv[]) {
-	struct stinger * S = stinger_new_full(1<<20, 1<<22, 2, 2);
+	struct stinger_config_t * stinger_config = (struct stinger_config_t *)xcalloc(1,sizeof(struct stinger_config_t));
+  stinger_config->nv = 1<<20;
+  stinger_config->nebs = 1<<22;
+  stinger_config->netypes = 2;
+  stinger_config->nvtypes = 2;
+  stinger_config->memory_size = 0;
+	struct stinger * S = stinger_new_full(stinger_config);
+	xfree(stinger_config);
 
 	int64_t i, j;
 	int64_t scale = 0;
