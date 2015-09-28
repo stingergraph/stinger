@@ -246,10 +246,37 @@ Runtime Issues
 
 STINGER allocates and manages its own memory. When STINGER starts, it allocates one large block of memory (enough to hold its maximum size), and then manages its own memory allocation from that pool.  The server version of STINGER does this in shared memory so that multiple processes can see the graph.  Unfortunately, the error handling for memory allocations is not particularly user-friendly at the moment.  Changing the way that this works is on the issues list (see https://github.com/robmccoll/stinger/issues/8).
 
-- "Bus error" when running the server: The size of STINGER that the server is trying to allocate is too large for your memory.  Reduce the size of your STINGER and recompile.
+- "Bus error" when running the server: The size of STINGER that the server is trying to allocate is too large for your memory.  First try to increase the size of your /dev/shm (See below).  If this does not work reduce the size of your STINGER and recompile.
 - "XXX: eb pool exhausted" or "STINGER has run out of internal storage space" when running the server, standalone executables, or anything else using stinger\_core: you have run out of internal edge storage.  Increase the size of STINGER and recompile.
 
 See the section on STINGER server configuration to adjust the sizing of STINGER
+
+Resizing /dev/shm
+--------------
+
+/dev/shm allows for memory-mapped files in the shared memory space.  By default the size of this filesystem is set to be 1/2 the total memory in the system.  STINGER by default attempts to allocate 3/4 of the total memory (unless the STINGER_MAX_MEMSIZE environment variable is used).  This will commonly cause a 'Bus Error' the first time STINGER server is run on the system.  There are two solutions to this problem
+
+1. Use STINGER_MAX_MEMSIZE and provide a value no greater than 1/2 the total system memory.
+2. Resize the /dev/shm filesystem to match the total system memory size.
+
+To achieve #2 you should edit /etc/fstab to include the following line
+
+### On Ubuntu
+
+    tmpfs /run/shm tmpfs defaults,noexec,nosuid,size=32G 0 0
+
+Replace 32G with the size of your system's main memory
+
+### On most other systems
+
+    tmpfs /dev/shm tmpfs defaults,noexec,nosuid,size=32G 0 0
+
+Replace 32G with the size of your system's main memory 
+
+Once you have added this line either restart the machine or run the following command.
+
+  sudo mount -o remount /run/shm  
+
 
 Build Problems
 --------------
