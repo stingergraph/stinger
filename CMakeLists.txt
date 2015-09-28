@@ -73,11 +73,30 @@ ExternalProject_Add(protobuf
   INSTALL_COMMAND make install
 )
 
+#libconfig
+ExternalProject_Add(libconfig
+  PREFIX              ${CMAKE_BINARY_DIR}/external
+  URL                 file://${CMAKE_SOURCE_DIR}/external/libconfig-1.5.tar.gz
+  URL_MD5             a939c4990d74e6fc1ee62be05716f633
+  UPDATE_COMMAND      ""
+  PATCH_COMMAND       ""
+  CONFIGURE_COMMAND   CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CPP_COMPILER} ${CMAKE_BINARY_DIR}/external/src/libconfig/configure
+    --prefix=${CMAKE_BINARY_DIR}
+    --enable-shared
+    --disable-examples
+  BUILD_COMMAND cp ${CMAKE_BINARY_DIR}/external/src/libconfig/lib/libconfig.h ${CMAKE_BINARY_DIR}/external/src/libconfig-build/lib/ && make
+  INSTALL_COMMAND make install
+)
+
 if(APPLE)
   set(SHARED_LIB_EXT .dylib)
 else()
   set(SHARED_LIB_EXT .so)
 endif()
+
+add_library(_libconfig_library STATIC IMPORTED)
+add_dependencies(_libconfig_library libconfig)
+set_target_properties(_libconfig_library PROPERTIES IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/lib/libconfig${SHARED_LIB_EXT})
 
 add_library(_protobuf_library STATIC IMPORTED)
 add_dependencies(_protobuf_library protobuf)
