@@ -66,7 +66,7 @@ ExternalProject_Add(protobuf
   URL_MD5             b751f772bdeb2812a2a8e7202bf1dae8
   UPDATE_COMMAND      ""
   PATCH_COMMAND       ""
-  CONFIGURE_COMMAND   CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CPP_COMPILER} ${CMAKE_BINARY_DIR}/external/src/protobuf/configure
+  CONFIGURE_COMMAND   CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} ${CMAKE_BINARY_DIR}/external/src/protobuf/configure
     --prefix=${CMAKE_BINARY_DIR}
     --enable-shared
   BUILD_COMMAND make
@@ -80,7 +80,7 @@ ExternalProject_Add(libconfig
   URL_MD5             a939c4990d74e6fc1ee62be05716f633
   UPDATE_COMMAND      ""
   PATCH_COMMAND       ""
-  CONFIGURE_COMMAND   CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CPP_COMPILER} ${CMAKE_BINARY_DIR}/external/src/libconfig/configure
+  CONFIGURE_COMMAND   CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} ${CMAKE_BINARY_DIR}/external/src/libconfig/configure
     --prefix=${CMAKE_BINARY_DIR}
     --enable-shared
     --disable-examples
