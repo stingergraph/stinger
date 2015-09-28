@@ -98,6 +98,10 @@ add_library(_libconfig_library STATIC IMPORTED)
 add_dependencies(_libconfig_library libconfig)
 set_target_properties(_libconfig_library PROPERTIES IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/lib/libconfig${SHARED_LIB_EXT})
 
+add_library(_libconfig++_library STATIC IMPORTED)
+add_dependencies(_libconfig++_library libconfig)
+set_target_properties(_libconfig++_library PROPERTIES IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/lib/libconfig++${SHARED_LIB_EXT})
+
 add_library(_protobuf_library STATIC IMPORTED)
 add_dependencies(_protobuf_library protobuf)
 set_target_properties(_protobuf_library PROPERTIES IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/lib/libprotobuf${SHARED_LIB_EXT})
