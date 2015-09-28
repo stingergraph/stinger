@@ -20,8 +20,8 @@ sigbus_handler(int sig, siginfo_t *si, void * vuctx)
 {
   char * err_string = 
     "FATAL: stinger_shared.c X: Bus Error - writing to STINGER failed.  It is likely that your STINGER is too large.\n"
-    "       Try reducing the number of vertices and/or edges per block in stinger_defs.h.  See the 'Handling Common\n"
-    "       Errors' section of the README.md for more information on how to do this.\n";
+    "       You may need to increase the size of your /dev/shm to be larger than 1/2 of total memory.\n"
+    "       See the 'Handling Common Errors' section of the README.md for more information on how to do this.\n";
   write(STDERR_FILENO, err_string, strlen(err_string));
   _exit(-1);
 }
@@ -182,7 +182,7 @@ stinger_shared_new_full (char ** out, int64_t nv, int64_t nebs, int64_t netypes,
   while (1) {
     sizes = calculate_stinger_size(nv, nebs, netypes, nvtypes);
 
-    if(sizes.size > (((uint64_t)memory_size * 3) / 4)) {
+    if(sizes.size > (uint64_t)memory_size) {
       if(!resized) {
         LOG_W_A("Resizing stinger to fit into memory (detected as %ld)", memory_size);
       }
