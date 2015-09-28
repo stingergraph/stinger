@@ -294,7 +294,7 @@ int main(int argc, char *argv[])
       etype_names_len = remaining_types;
     }
     int64_t tmp = 0;
-    for (int64_t i = 0; i < etype_names_len; i++) {
+    for (int i = 0; i < etype_names_len; i++) {
       const char * type_name = etype_names[i];
       stinger_etype_names_create_type(S, type_name, &tmp);
       LOG_D_A("Mapped %s to %ld",type_name,tmp);
@@ -309,7 +309,7 @@ int main(int argc, char *argv[])
       vtype_names_len = remaining_types;
     }
     int64_t tmp = 0;
-    for (int64_t i = 0; i < vtype_names_len; i++) {
+    for (int i = 0; i < vtype_names_len; i++) {
       const char * type_name = vtype_names[i];
       stinger_vtype_names_create_type(S, type_name, &tmp);
       LOG_D_A("Mapped %s to %ld",type_name,tmp);
