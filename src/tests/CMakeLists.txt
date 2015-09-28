@@ -26,3 +26,13 @@ set(_pagerank_test_sources
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/pagerank_test)
 add_executable(stinger_pagerank_test ${_pagerank_test_sources})
 target_link_libraries(stinger_pagerank_test stinger_utils stinger_alg stinger_core)
+
+#================================
+
+set(_betweenness_test_sources
+  betweenness_test/betweenness_test.c
+)
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/betweenness_test)
+add_executable(stinger_betweenness_test ${_betweenness_test_sources})
+target_link_libraries(stinger_betweenness_test stinger_utils stinger_alg stinger_core)
