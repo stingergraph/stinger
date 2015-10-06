@@ -75,19 +75,19 @@ int64_t adamic_adar(const stinger_t * S, int64_t source, int64_t etype, int64_t 
   for (int64_t i = 0; i < source_deg; i++) {
     int64_t v = source_adj[i];
     if (etype == -1) {
-      STINGER_FORALL_EDGES_OF_VTX_BEGIN(S,v) {
+      STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S,v) {
         if (stinger_int64_fetch_add(&marks[STINGER_EDGE_DEST], 1) == 0) {
           int64_t loc = stinger_int64_fetch_add(&head, 1);
           two_hop_neighborhood[loc] = STINGER_EDGE_DEST;
         }
-      } STINGER_FORALL_EDGES_OF_VTX_END();
+      } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
     } else {
-      STINGER_FORALL_EDGES_OF_TYPE_OF_VTX_BEGIN(S,etype,v) {
+      STINGER_FORALL_OUT_EDGES_OF_TYPE_OF_VTX_BEGIN(S,etype,v) {
         if (stinger_int64_fetch_add(&marks[STINGER_EDGE_DEST], 1) == 0) {
           int64_t loc = stinger_int64_fetch_add(&head, 1);
           two_hop_neighborhood[loc] = STINGER_EDGE_DEST;
         }
-      } STINGER_FORALL_EDGES_OF_TYPE_OF_VTX_END();      
+      } STINGER_FORALL_OUT_EDGES_OF_TYPE_OF_VTX_END();        
     }
   }
 

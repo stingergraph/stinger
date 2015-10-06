@@ -549,15 +549,21 @@ TEST_F(StingerCoreTest, stinger_remove_vertex) {
   EXPECT_EQ(outDegree,0);
   EXPECT_EQ(inDegree,0);
 
+  bool has_edge_list = false;
+  bool in_edge_list = false;
+
   STINGER_FORALL_EDGES_OF_VTX_BEGIN(S,3) {
-    EXPECT_FALSE(true) << "Vertex should have no incident edges";
+    fprintf(stderr,"%ld %ld %ld\n",STINGER_EDGE_SOURCE,STINGER_EDGE_DEST,STINGER_EDGE_DIRECTION);
+    has_edge_list = true;
   } STINGER_FORALL_EDGES_OF_VTX_END();
+  EXPECT_FALSE(has_edge_list) << "Vertex should have no incident edges";
 
   STINGER_FORALL_EDGES_OF_ALL_TYPES_BEGIN(S) {
     if (STINGER_EDGE_SOURCE == 3 || STINGER_EDGE_DEST == 3) {
-      EXPECT_FALSE(true) << "Vertex should have no incident edges";
+      in_edge_list = true;
     }
   } STINGER_FORALL_EDGES_OF_ALL_TYPES_END();
+  EXPECT_FALSE(in_edge_list) << "Vertex should have no incident edges";
 
   consistency = stinger_consistency_check(S,S->max_nv);
   EXPECT_EQ(consistency,0);
@@ -573,15 +579,19 @@ TEST_F(StingerCoreTest, stinger_remove_vertex) {
   EXPECT_EQ(outDegree,0);
   EXPECT_EQ(inDegree,0);
 
+  has_edge_list = false;
+  in_edge_list = false;
   STINGER_FORALL_EDGES_OF_VTX_BEGIN(S,1) {
-    EXPECT_FALSE(true) << "Vertex should have no incident edges";
+    has_edge_list = true;
   } STINGER_FORALL_EDGES_OF_VTX_END();
+  EXPECT_FALSE(has_edge_list) << "Vertex should have no incident edges";
 
   STINGER_FORALL_EDGES_OF_ALL_TYPES_BEGIN(S) {
     if (STINGER_EDGE_SOURCE == 1 || STINGER_EDGE_DEST == 1) {
-      EXPECT_FALSE(true) << "Vertex should have no incident edges";
+      in_edge_list = true;
     }
   } STINGER_FORALL_EDGES_OF_ALL_TYPES_END();
+  EXPECT_FALSE(in_edge_list) << "Vertex should have no incident edges";
 
   consistency = stinger_consistency_check(S,S->max_nv);
   EXPECT_EQ(consistency,0); 
@@ -597,15 +607,19 @@ TEST_F(StingerCoreTest, stinger_remove_vertex) {
   EXPECT_EQ(outDegree,0);
   EXPECT_EQ(inDegree,0);
 
+  has_edge_list = false;
+  in_edge_list = false;
   STINGER_FORALL_EDGES_OF_VTX_BEGIN(S,2) {
-    EXPECT_FALSE(true) << "Vertex should have no incident edges";
-  } STINGER_FORALL_EDGES_OF_VTX_END();
+    has_edge_list = true;
+  } STINGER_FORALL_EDGES_OF_VTX_END(); 
+  EXPECT_FALSE(has_edge_list) << "Vertex should have no incident edges";
 
   STINGER_FORALL_EDGES_OF_ALL_TYPES_BEGIN(S) {
     if (STINGER_EDGE_SOURCE == 2 || STINGER_EDGE_DEST == 2) {
-      EXPECT_FALSE(true) << "Vertex should have no incident edges";
+      in_edge_list = true;
     }
   } STINGER_FORALL_EDGES_OF_ALL_TYPES_END();
+  EXPECT_FALSE(in_edge_list) << "Vertex should have no incident edges";
 
   consistency = stinger_consistency_check(S,S->max_nv);
   EXPECT_EQ(consistency,0);  
@@ -631,7 +645,7 @@ TEST_F(StingerCoreTest, stinger_save_load_file) {
 
   int64_t ret;
 
-  ret = stinger_save_to_file(S, stinger_max_active_vertex(S), "./undirected.stinger");
+  ret = stinger_save_to_file(S, stinger_max_active_vertex(S)+1, "./undirected.stinger");
 
   EXPECT_EQ(ret,0);
 
@@ -651,9 +665,9 @@ TEST_F(StingerCoreTest, stinger_save_load_file) {
   ret = stinger_open_from_file("./undirected.stinger",S,&max_nv);
 
   EXPECT_EQ(ret,0);
-  EXPECT_EQ(max_nv,99);
+  EXPECT_EQ(max_nv,100);
 
-  int64_t total_edges = (99*99);
+  int64_t total_edges = (100*99);
 
   STINGER_FORALL_EDGES_OF_ALL_TYPES_BEGIN(S) {
     int64_t expected_timestamp = std::min(STINGER_EDGE_SOURCE,STINGER_EDGE_DEST) + 1;
@@ -1003,6 +1017,7 @@ TEST_F(StingerCoreTest, gather_predecessors) {
 
 TEST_F(StingerCoreTest, edge_counts) {
   int64_t edge_counts[2][200];
+  int64_t extra_in_edges = 0;
 
   for (int i=0; i < 200; i++) {
     edge_counts[0][i] = edge_counts[1][i] = 0;
@@ -1013,6 +1028,7 @@ TEST_F(StingerCoreTest, edge_counts) {
     int64_t timestamp = i+1;
     for (int j=i+1; j < 100; j++) {
       stinger_insert_edge_pair(S, (j%2)?1:0 , i, j, 1, timestamp);
+      // A pair should add one edge on each size
       stinger_int64_fetch_add(&edge_counts[(j%2)?1:0][i],1);
       stinger_int64_fetch_add(&edge_counts[(j%2)?1:0][j],1);
     }
@@ -1022,8 +1038,11 @@ TEST_F(StingerCoreTest, edge_counts) {
   for (int i=0; i < 100; i++) {
     int64_t timestamp = i+2;
     for (int j=i+101; j < 200; j++) {
+      // a single edge should add an In edge and an out edge
       stinger_insert_edge(S, 0, j, i, 1, timestamp);
       stinger_int64_fetch_add(&edge_counts[0][j],1);
+      stinger_int64_fetch_add(&edge_counts[0][i],1);
+      stinger_int64_fetch_add(&extra_in_edges,1);
     }
   }
 
@@ -1045,12 +1064,14 @@ TEST_F(StingerCoreTest, edge_counts) {
       expected_edges_up_to += edge_counts[0][i] + edge_counts[1][i];
     }
   }
+  expected_edges_up_to -= extra_in_edges;
+  expected_total_edges -= extra_in_edges;
 
-  ASSERT_EQ(max_edges, (expected_max_ebs+1) * STINGER_EDGEBLOCKSIZE);
+  EXPECT_EQ(max_edges, (expected_max_ebs+1) * STINGER_EDGEBLOCKSIZE);
 
-  ASSERT_EQ(edges_up_to, expected_edges_up_to);
+  EXPECT_EQ(edges_up_to, expected_edges_up_to);
 
-  ASSERT_EQ(total_edges, expected_total_edges);
+  EXPECT_EQ(total_edges, expected_total_edges);
 }
 
 int

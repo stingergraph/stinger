@@ -472,7 +472,7 @@ extract_edges (const int64_t nvlist, const int64_t * restrict vlist, const int64
           q.n = 0;
 #endif
 
-          STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, i) {
+          STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, i) {
             const int64_t j = STINGER_EDGE_DEST;
             const int64_t cj = cmap[j];
             const int64_t mj = mark[j];
@@ -506,7 +506,7 @@ extract_edges (const int64_t nvlist, const int64_t * restrict vlist, const int64
                 ++n_new_edges;
             }
 
-          } STINGER_FORALL_EDGES_OF_VTX_END();
+          } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
 
           if (internal_cw) D(g, ci) -= internal_cw;
           D(g, mi) = internal_w;
@@ -534,7 +534,7 @@ extract_edges (const int64_t nvlist, const int64_t * restrict vlist, const int64
           struct insqueue q;
           q.n = 0;
 #endif
-          STINGER_READ_ONLY_FORALL_EDGES_OF_VTX_BEGIN(S, i) {
+          STINGER_READ_ONLY_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, i) {
             const int64_t j = STINGER_RO_EDGE_DEST;
             const int64_t cj = cmap[j];
             const int64_t mj = mark[j];
@@ -560,7 +560,7 @@ extract_edges (const int64_t nvlist, const int64_t * restrict vlist, const int64
                 enqueue (&q, mi, mj, w, g);
             }
 
-          } STINGER_READ_ONLY_FORALL_EDGES_OF_VTX_END();
+          } STINGER_READ_ONLY_FORALL_OUT_EDGES_OF_VTX_END();
 
 #if defined(__MTA__)
           qflush (&q, g);
@@ -768,7 +768,7 @@ void cstate_preproc (struct community_state * restrict cstate,
           append_to_vlist (&nvlist, vlist, mark, j);
         }
         /* Find the weight to remove.  ugh. */
-        STINGER_FORALL_EDGES_OF_VTX_BEGIN (S, i) {
+        STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN (S, i) {
           if (STINGER_EDGE_DEST == j) {
             if (ci != cj)
               enqueue (&q, ci, cj, -STINGER_EDGE_WEIGHT, &cstate->cg);
@@ -777,7 +777,7 @@ void cstate_preproc (struct community_state * restrict cstate,
             break;
             /* XXX: Technically, could have many of different types. */
           }
-        } STINGER_FORALL_EDGES_OF_VTX_END ();
+        } STINGER_FORALL_OUT_EDGES_OF_VTX_END ();
       }
 
     qflush (&q, &cstate->cg);
@@ -858,7 +858,7 @@ void cstate_preproc_acts (struct community_state * restrict cstate,
         } else {
           /* Find the weight to remove.  ugh. */
           /* fprintf (stderr, "searching for weight of %ld %ld\n", (long)i, (long)j); */
-          STINGER_FORALL_EDGES_OF_VTX_BEGIN (S, i) {
+          STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN (S, i) {
             if (STINGER_EDGE_DEST == j) {
               if (ci != cj)
                 enqueue (&q, ci, cj, -STINGER_EDGE_WEIGHT, &cstate->cg);
@@ -867,7 +867,7 @@ void cstate_preproc_acts (struct community_state * restrict cstate,
               break;
               /* XXX: Technically, could have many of different types. */
             }
-          } STINGER_FORALL_EDGES_OF_VTX_END ();
+          } STINGER_FORALL_OUT_EDGES_OF_VTX_END ();
         }
       }
     qflush (&q, &cstate->cg);
@@ -899,7 +899,7 @@ init_cstate_from_stinger (struct community_state * cs, const struct stinger * S)
         D(g, i) = 0;
     OMP("omp for")
       for (int64_t i = 0; i < nv; ++i) {
-       STINGER_READ_ONLY_FORALL_EDGES_OF_VTX_BEGIN(S, i) {
+       STINGER_READ_ONLY_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, i) {
          const int64_t j = STINGER_RO_EDGE_DEST;
          const int64_t w = STINGER_RO_EDGE_WEIGHT;
          if (i < j) {
@@ -907,7 +907,7 @@ init_cstate_from_stinger (struct community_state * cs, const struct stinger * S)
          } else if (i == j) {
            OMP("omp atomic") D(g, i) += w;
          }
-       } STINGER_READ_ONLY_FORALL_EDGES_OF_VTX_END();
+       } STINGER_READ_ONLY_FORALL_OUT_EDGES_OF_VTX_END();
       }
     qflush (&q, &g);
   }
@@ -995,7 +995,7 @@ cstate_preproc_alg (struct community_state * restrict cstate,
           append_to_vlist (&nvlist, vlist, mark, j);
         }
         /* Find the weight to remove.  ugh. */
-        STINGER_FORALL_EDGES_OF_VTX_BEGIN (S, i) {
+        STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN (S, i) {
           if (STINGER_EDGE_DEST == j) {
             if (ci != cj)
               enqueue (&q, ci, cj, -STINGER_EDGE_WEIGHT, &cstate->cg);
@@ -1004,7 +1004,7 @@ cstate_preproc_alg (struct community_state * restrict cstate,
             break;
             /* XXX: Technically, could have many of different types. */
           }
-        } STINGER_FORALL_EDGES_OF_VTX_END ();
+        } STINGER_FORALL_OUT_EDGES_OF_VTX_END ();
       }
 
     qflush (&q, &cstate->cg);

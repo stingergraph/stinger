@@ -27,11 +27,12 @@ page_rank_subset(stinger_t * S, int64_t NV, uint8_t * vertex_set, int64_t vertex
   OMP("omp parallel for")
   for (uint64_t v = 0; v < NV; v++) {
     if (vertex_set[v]) {
-      STINGER_FORALL_EDGES_OF_VTX_BEGIN(S,v) {
+      LOG_D_A("%ld - %lf\n",v,pr[v]);
+      STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S,v) {
         if (vertex_set[STINGER_EDGE_DEST]) {
           vtx_outdegree[v]++;
         }
-      } STINGER_FORALL_EDGES_OF_VTX_END();
+      } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
     }
   }
 
@@ -178,11 +179,11 @@ page_rank (stinger_t * S, int64_t NV, double * pr, double * tmp_pr_in, double ep
       if (stinger_outdegree(S, v) == 0) {
         pr_constant += pr[v];
       } else {
-        STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, v) {
+        STINGER_FORALL_IN_EDGES_OF_VTX_BEGIN(S, v) {
           int64_t outdegree = stinger_outdegree (S, STINGER_EDGE_DEST);
           tmp_pr[v] += (((double) pr[STINGER_EDGE_DEST]) / 
             ((double) (outdegree ? outdegree : NV-1)));
-        } STINGER_FORALL_EDGES_OF_VTX_END();
+        } STINGER_FORALL_IN_EDGES_OF_VTX_END();
       }
     }
 
@@ -290,12 +291,12 @@ page_rank_type(stinger_t * S, int64_t NV, double * pr, double * tmp_pr_in, doubl
       if (stinger_typed_outdegree(S, v, type) == 0) {
         pr_constant += pr[v];
       } else {
-        STINGER_FORALL_EDGES_OF_TYPE_OF_VTX_BEGIN(S, type, v) {
+        STINGER_FORALL_IN_EDGES_OF_TYPE_OF_VTX_BEGIN(S, type, v) {
           /* TODO: this should be typed outdegree */
           int64_t outdegree = stinger_typed_outdegree (S, STINGER_EDGE_DEST, type);
           	tmp_pr[v] += (((double) pr[STINGER_EDGE_DEST]) / 
       	  ((double) (outdegree ? outdegree : NV-1)));
-        } STINGER_FORALL_EDGES_OF_TYPE_OF_VTX_END();
+        } STINGER_FORALL_IN_EDGES_OF_TYPE_OF_VTX_END();
       }
     }
 

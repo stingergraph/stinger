@@ -285,38 +285,6 @@ int main(int argc, char *argv[])
   tic();
   struct stinger * S = stinger_shared_new_full(&graph_name, stinger_config);
 
-  if (cfg.exists("edge_type_names")) {
-    libconfig::Setting &etype_names = cfg.lookup("edge_type_names");
-    int64_t etype_names_len = etype_names.getLength();
-    int64_t remaining_types = (stinger_config->no_map_none_etype) ? stinger_config->netypes : stinger_config->netypes - 1;
-    if (stinger_config->netypes && etype_names_len > remaining_types) {
-      LOG_E_A("Too many edge types specified. %ld specified %ld remaining.", etype_names_len, remaining_types);
-      etype_names_len = remaining_types;
-    }
-    int64_t tmp = 0;
-    for (int i = 0; i < etype_names_len; i++) {
-      const char * type_name = etype_names[i];
-      stinger_etype_names_create_type(S, type_name, &tmp);
-      LOG_D_A("Mapped %s to %ld",type_name,tmp);
-    }
-  }
-  if (cfg.exists("vertex_type_names")) {
-    libconfig::Setting &vtype_names = cfg.lookup("vertex_type_names");
-    int64_t vtype_names_len = vtype_names.getLength();
-    int64_t remaining_types = (stinger_config->no_map_none_vtype) ? stinger_config->nvtypes : stinger_config->nvtypes - 1;
-    if (stinger_config->nvtypes && vtype_names_len > remaining_types) {
-      LOG_E_A("Too many vertex types specified. %ld specified %ld remaining.", vtype_names_len, remaining_types);
-      vtype_names_len = remaining_types;
-    }
-    int64_t tmp = 0;
-    for (int i = 0; i < vtype_names_len; i++) {
-      const char * type_name = vtype_names[i];
-      stinger_vtype_names_create_type(S, type_name, &tmp);
-      LOG_D_A("Mapped %s to %ld",type_name,tmp);
-    }
-  }
-  xfree(stinger_config);
-
   size_t graph_sz = S->length + sizeof(struct stinger);
   LOG_V_A("Data structure allocation time: %lf seconds", toc());
 
@@ -327,15 +295,7 @@ int main(int argc, char *argv[])
     tic ();
     switch (file_type[0])
     {
-      case 'b': {
-		  int64_t nv, ne;
-		  int64_t *off, *ind, *weight, *graphmem;
-		  snarf_graph (input_file, &nv, &ne, (int64_t**)&off,
-		      (int64_t**)&ind, (int64_t**)&weight, (int64_t**)&graphmem);
-		  stinger_set_initial_edges (S, nv, 0, off, ind, weight, NULL, NULL, 0);
-		  free(graphmem);
-		} break;  /* STINGER binary */
-
+  
       case 'c': {
 		  load_csv_graph (S, input_file, use_numerics);
 		} break;  /* CSV */
@@ -371,6 +331,38 @@ int main(int argc, char *argv[])
     }
     LOG_V_A("Read time: %lf seconds", toc());
   }
+
+  if (cfg.exists("edge_type_names")) {
+    libconfig::Setting &etype_names = cfg.lookup("edge_type_names");
+    int64_t etype_names_len = etype_names.getLength();
+    int64_t remaining_types = (stinger_config->no_map_none_etype) ? stinger_config->netypes : stinger_config->netypes - 1;
+    if (stinger_config->netypes && etype_names_len > remaining_types) {
+      LOG_E_A("Too many edge types specified. %ld specified %ld remaining.", etype_names_len, remaining_types);
+      etype_names_len = remaining_types;
+    }
+    int64_t tmp = 0;
+    for (int i = 0; i < etype_names_len; i++) {
+      const char * type_name = etype_names[i];
+      stinger_etype_names_create_type(S, type_name, &tmp);
+      LOG_D_A("Mapped %s to %ld",type_name,tmp);
+    }
+  }
+  if (cfg.exists("vertex_type_names")) {
+    libconfig::Setting &vtype_names = cfg.lookup("vertex_type_names");
+    int64_t vtype_names_len = vtype_names.getLength();
+    int64_t remaining_types = (stinger_config->no_map_none_vtype) ? stinger_config->nvtypes : stinger_config->nvtypes - 1;
+    if (stinger_config->nvtypes && vtype_names_len > remaining_types) {
+      LOG_E_A("Too many vertex types specified. %ld specified %ld remaining.", vtype_names_len, remaining_types);
+      vtype_names_len = remaining_types;
+    }
+    int64_t tmp = 0;
+    for (int i = 0; i < vtype_names_len; i++) {
+      const char * type_name = vtype_names[i];
+      stinger_vtype_names_create_type(S, type_name, &tmp);
+      LOG_D_A("Mapped %s to %ld",type_name,tmp);
+    }
+  }
+  xfree(stinger_config);
 
 
   LOG_V("Graph created. Running stats...");
@@ -452,7 +444,8 @@ cleanup (void)
 
     /* snapshot to disk */
     if (save_to_disk) {
-      stinger_save_to_file(S, stinger_max_active_vertex(S) + 1, input_file);
+      int64_t rtn = stinger_save_to_file(S, stinger_max_active_vertex(S) + 1, input_file);
+      LOG_D_A("save_to_file return code: %ld",rtn);
     }
 
     /* clean up */

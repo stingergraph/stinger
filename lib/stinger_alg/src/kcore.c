@@ -23,9 +23,9 @@ kcore_find(stinger_t *S, int64_t * labels, int64_t * counts, int64_t nv, int64_t
       for(int64_t v = 0; v < nv; v++) {
       	if(labels[v] == k) {
       	  int64_t count = 0;
-      	  STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, v) {
+      	  STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, v) {
       	    count += (labels[STINGER_EDGE_DEST] >= k);
-      	  } STINGER_FORALL_EDGES_OF_VTX_END();
+      	  } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
       	  if(count > k) {
       	    counts[v] = count;
           }
@@ -36,10 +36,10 @@ kcore_find(stinger_t *S, int64_t * labels, int64_t * counts, int64_t nv, int64_t
       for(int64_t v = 0; v < nv; v++) {
       	if(labels[v] == k) {
       	  int64_t count = 0;
-      	  STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, v) {
+      	  STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, v) {
       	    count += (labels[STINGER_EDGE_DEST] >= k &&
       		counts[STINGER_EDGE_DEST] > k);
-      	  } STINGER_FORALL_EDGES_OF_VTX_END();
+      	  } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
       	  if(count > k) {
       	    labels[v] = k+1;
       	    changed = 1;

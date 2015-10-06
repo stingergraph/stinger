@@ -3,6 +3,11 @@
 #include "stinger_atomics.h"
 #include "stinger.h"
 
+void update_edge_data (struct stinger * S, struct stinger_eb *eb,
+                  uint64_t index, int64_t neighbor, int64_t weight, int64_t ts, int64_t operation) {
+
+  update_edge_data_and_direction (S, eb, index, neighbor, weight, ts, STINGER_EDGE_DIRECTION_OUT, operation);
+}
 
 MTA ("mta parallel off") MTA ("mta expect parallel context")
 /** @brief DEPRECATED Remove and insert edges incident on a common source vertex.
@@ -325,10 +330,10 @@ stinger_gather_typed_successors_serial (const struct stinger *G, int64_t type,
     return;
   }
 
-  STINGER_FORALL_EDGES_OF_TYPE_OF_VTX_BEGIN(G, v, type) {
+  STINGER_FORALL_OUT_EDGES_OF_TYPE_OF_VTX_BEGIN(G, v, type) {
     if(kout < max_outlen)
       out[kout++] = STINGER_EDGE_DEST;
-  } STINGER_FORALL_EDGES_OF_TYPE_OF_VTX_END();
+  } STINGER_FORALL_OUT_EDGES_OF_TYPE_OF_VTX_END();
 
   *outlen = kout;               /* May be longer than max_outlen. */
 }

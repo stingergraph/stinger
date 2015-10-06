@@ -237,7 +237,10 @@ load_dimacs_graph (struct stinger * S, const char * filename)
   SortStart (NV, NE, sV1, eV1, w1, sV2, eV2, w2, edgeStart);
 
   /* build up the STINGER graph */
-  stinger_set_initial_edges (S, NV, 0, edgeStart, eV2, w2, NULL, NULL, 0);
+  OMP("omp parallel for")
+  for (int64_t i = 0; i < NE; i++) {
+    stinger_insert_edge (S, 0, sV2[i], eV2[i], w2[i], 0);
+  }
 
 
   free(sV1);

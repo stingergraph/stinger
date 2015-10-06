@@ -78,7 +78,7 @@ egonet_to_json(stinger_t * S, int64_t vtx) {
   string_append_cstr(&vertices, vtx_str);
   fseek(vtx_file, 0, SEEK_SET);
 
-  int_hm_seq_t * neighbors = int_hm_seq_new(stinger_outdegree_get(S, vtx));
+  int_hm_seq_t * neighbors = int_hm_seq_new(stinger_outdegree_get(S, vtx) + stinger_indegree_get(S, vtx));
   int64_t which = 1;
 
   STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, vtx) {
@@ -96,44 +96,46 @@ egonet_to_json(stinger_t * S, int64_t vtx) {
     }
 
     char * etype = stinger_etype_names_lookup_name(S, STINGER_EDGE_TYPE);
-    if(!edge_added) {
-      edge_added = 1;
-      if(etype) {
-	sprintf(edge_str, "{ \"type\" : \"%s\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
-	    etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, (long int) 0, source);
+    const char prepend_str [] = ",\n";
+    if (STINGER_IS_OUT_EDGE) {
+      if(!edge_added) {
+        edge_added = 1;
+        if(etype) {
+          sprintf(edge_str, "{ \"type\" : \"%s\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+              etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, (long int) 0, source);
+        } else {
+          sprintf(edge_str, "{ \"type\" : \"%ld\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+              STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, (long int) 0, source);
+        }
       } else {
-	sprintf(edge_str, "{ \"type\" : \"%ld\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
-	    STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, (long int) 0, source);
+        if(etype) {
+          sprintf(edge_str, ",\n{ \"type\" : \"%s\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+              etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, (long int) 0, source);
+        } else {
+          sprintf(edge_str, ",\n{ \"type\" : \"%ld\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+              STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, (long int) 0, source);
+        }
       }
-    } else {
-      if(etype) {
-	sprintf(edge_str, ",\n{ \"type\" : \"%s\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
-	    etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, (long int) 0, source);
-      } else {
-	sprintf(edge_str, ",\n{ \"type\" : \"%ld\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
-	    STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, (long int) 0, source);
-      }
+      string_append_cstr(&edges, edge_str);
     }
-
-    string_append_cstr(&edges, edge_str);
     uint64_t dest = STINGER_EDGE_DEST;
 
-    STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, dest) {
+    STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, dest) {
 
       int64_t target = int_hm_seq_get(neighbors, STINGER_EDGE_DEST);
       if(INT_HT_SEQ_EMPTY != target) {
-	char * etype = stinger_etype_names_lookup_name(S, STINGER_EDGE_TYPE);
-	if(etype) {
-	  sprintf(edge_str, ",\n{ \"type\" : \"%s\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
-	      etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, source, target);
-	} else {
-	  sprintf(edge_str, ",\n{ \"type\" : \"%ld\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
-	      STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, source, target);
-	}
-	string_append_cstr(&edges, edge_str);
+        char * etype = stinger_etype_names_lookup_name(S, STINGER_EDGE_TYPE);
+        if(etype) {
+          sprintf(edge_str, ",\n{ \"type\" : \"%s\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+              etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, source, target);
+        } else {
+          sprintf(edge_str, ",\n{ \"type\" : \"%ld\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+              STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, source, target);
+        }
+        string_append_cstr(&edges, edge_str);
       }
 
-    } STINGER_FORALL_EDGES_OF_VTX_END();
+    } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
 
   } STINGER_FORALL_EDGES_OF_VTX_END();
 
@@ -166,7 +168,7 @@ group_to_json(stinger_t * S, int64_t * group, int64_t groupsize) {
 
   int64_t which = 0;
   int first_vtx = 1;
-  int_hm_seq_t * neighbors = int_hm_seq_new(groupsize ? stinger_outdegree_get(S, group[0]) : 1);
+  int_hm_seq_t * neighbors = int_hm_seq_new(groupsize ? stinger_outdegree_get(S, group[0]) + stinger_indegree_get(S, group[0]) : 1);
 
   for(int64_t v = 0; v < groupsize; v++) {
     int64_t group_vtx = int_hm_seq_get(neighbors, group[v]);
@@ -174,9 +176,9 @@ group_to_json(stinger_t * S, int64_t * group, int64_t groupsize) {
       group_vtx = which++;
       int_hm_seq_insert(neighbors, group[v], group_vtx);
       if(!first_vtx) {
-	fprintf(vtx_file, ",\n");
+        fprintf(vtx_file, ",\n");
       } else {
-	first_vtx = 0;
+        first_vtx = 0;
       }
       stinger_vertex_to_json_with_type_strings(stinger_vertices_get(S), stinger_vtype_names_get(S), stinger_physmap_get(S), group[v], vtx_file, 2);
       fputc('\0',vtx_file);
@@ -188,14 +190,14 @@ group_to_json(stinger_t * S, int64_t * group, int64_t groupsize) {
     STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, group[v]) {
       int64_t source = int_hm_seq_get(neighbors, STINGER_EDGE_DEST);
       if(INT_HT_SEQ_EMPTY == source) {
-	source = which++;
-	int_hm_seq_insert(neighbors, STINGER_EDGE_DEST, source);
-	fprintf(vtx_file, ",\n");
-	stinger_vertex_to_json_with_type_strings(stinger_vertices_get(S), stinger_vtype_names_get(S), stinger_physmap_get(S), STINGER_EDGE_DEST, vtx_file, 2);
-	fputc('\0',vtx_file);
-	fflush(vtx_file);
-	string_append_cstr(&vertices, vtx_str);
-	fseek(vtx_file, 0, SEEK_SET);
+        source = which++;
+        int_hm_seq_insert(neighbors, STINGER_EDGE_DEST, source);
+        fprintf(vtx_file, ",\n");
+        stinger_vertex_to_json_with_type_strings(stinger_vertices_get(S), stinger_vtype_names_get(S), stinger_physmap_get(S), STINGER_EDGE_DEST, vtx_file, 2);
+        fputc('\0',vtx_file);
+        fflush(vtx_file);
+        string_append_cstr(&vertices, vtx_str);
+        fseek(vtx_file, 0, SEEK_SET);
       }
     } STINGER_FORALL_EDGES_OF_VTX_END();
   }
@@ -205,28 +207,30 @@ group_to_json(stinger_t * S, int64_t * group, int64_t groupsize) {
     if(cur != INT_HT_SEQ_EMPTY) {
       int64_t cur_val = neighbors->vals[v];
       STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, cur) {
-	if(int_hm_seq_get(neighbors, STINGER_EDGE_DEST) != INT_HT_SEQ_EMPTY && STINGER_EDGE_SOURCE < STINGER_EDGE_DEST) {
-	  char * etype = stinger_etype_names_lookup_name(S, STINGER_EDGE_TYPE);
-	  if(!edge_added) {
-	    edge_added = 1;
-	    if(etype) {
-	      sprintf(edge_str, "{ \"type\" : \"%s\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
-		  etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, cur_val, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
-	    } else {
-	      sprintf(edge_str, "{ \"type\" : \"%ld\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
-		  STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, cur_val, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
-	    }
-	  } else {
-	    if(etype) {
-	      sprintf(edge_str, ",\n{ \"type\" : \"%s\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
-		  etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, cur_val, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
-	    } else {
-	      sprintf(edge_str, ",\n{ \"type\" : \"%ld\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
-		  STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, cur_val, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
-	    }
-	  }
-	  string_append_cstr(&edges, edge_str);
-	}
+        if(int_hm_seq_get(neighbors, STINGER_EDGE_DEST) != INT_HT_SEQ_EMPTY && STINGER_EDGE_SOURCE < STINGER_EDGE_DEST) {
+          char * etype = stinger_etype_names_lookup_name(S, STINGER_EDGE_TYPE);
+          if (STINGER_IS_OUT_EDGE) {
+            if(!edge_added) {
+              edge_added = 1;
+              if(etype) {
+                sprintf(edge_str, "{ \"type\" : \"%s\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+              etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, cur_val, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
+              } else {
+                sprintf(edge_str, "{ \"type\" : \"%ld\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+              STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, cur_val, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
+              }
+            } else {
+              if(etype) {
+                sprintf(edge_str, ",\n{ \"type\" : \"%s\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+              etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, cur_val, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
+              } else {
+                sprintf(edge_str, ",\n{ \"type\" : \"%ld\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+              STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, cur_val, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
+              }
+            }
+            string_append_cstr(&edges, edge_str);
+          }
+        }
       } STINGER_FORALL_EDGES_OF_VTX_END();
     }
   }
@@ -260,7 +264,7 @@ labeled_subgraph_to_json(stinger_t * S, int64_t src, int64_t * labels, const int
   string_init_from_cstr(&vertices, "\"vertices\" : [ \n");
   string_init_from_cstr(&edges, "\"edges\" : [ \n");
 
-  int_hm_seq_t * neighbors = int_hm_seq_new(stinger_outdegree_get(S, src));
+  int_hm_seq_t * neighbors = int_hm_seq_new(stinger_outdegree_get(S, src) + stinger_indegree_get(S, src));
 
   char *vtx_str, *edge_str;
   FILE * vtx_file;
@@ -299,29 +303,53 @@ labeled_subgraph_to_json(stinger_t * S, int64_t src, int64_t * labels, const int
 
     STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, queue[q_cur]) {
       if(found[STINGER_EDGE_DEST] > 1) {
-	char * etype = stinger_etype_names_lookup_name(S, STINGER_EDGE_TYPE);
-	if(!edge_added) {
-	  edge_added = 1;
-	  if(etype) {
-	    sprintf(edge_str, "{ \"type\" : \"%s\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
-	      etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, group_vtx, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
-	  } else {
-	    sprintf(edge_str, "{ \"type\" : \"%ld\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
-	      STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, group_vtx, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
-	  }
-	} else {
-	  if(etype) {
-	    sprintf(edge_str, ",\n{ \"type\" : \"%s\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
-	      etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, group_vtx, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
-	  } else {
-	    sprintf(edge_str, ",\n{ \"type\" : \"%ld\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
-	      STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, group_vtx, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
-	  }
-	}
-	string_append_cstr(&edges, edge_str);
+        char * etype = stinger_etype_names_lookup_name(S, STINGER_EDGE_TYPE);
+        if (STINGER_IS_OUT_EDGE) { 
+          if(!edge_added) {
+            edge_added = 1;
+            if(etype) {
+              sprintf(edge_str, "{ \"type\" : \"%s\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+                etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, group_vtx, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
+            } else {
+              sprintf(edge_str, "{ \"type\" : \"%ld\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+                STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, group_vtx, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
+            }
+          } else {
+            if(etype) {
+              sprintf(edge_str, ",\n{ \"type\" : \"%s\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+                etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, group_vtx, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
+            } else {
+              sprintf(edge_str, ",\n{ \"type\" : \"%ld\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+                STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, group_vtx, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
+            }
+          }
+          string_append_cstr(&edges, edge_str);
+        }
+        if (STINGER_IS_IN_EDGE) { 
+          if(!edge_added) {
+            edge_added = 1;
+            if(etype) {
+              sprintf(edge_str, "{ \"type\" : \"%s\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+                etype, STINGER_EDGE_DEST, STINGER_EDGE_SOURCE, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, group_vtx, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
+            } else {
+              sprintf(edge_str, "{ \"type\" : \"%ld\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+                STINGER_EDGE_TYPE, STINGER_EDGE_DEST, STINGER_EDGE_SOURCE, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, group_vtx, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
+            }
+          } else {
+            if(etype) {
+              sprintf(edge_str, ",\n{ \"type\" : \"%s\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+                etype, STINGER_EDGE_DEST, STINGER_EDGE_SOURCE, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, group_vtx, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
+            } else {
+              sprintf(edge_str, ",\n{ \"type\" : \"%ld\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+                STINGER_EDGE_TYPE, STINGER_EDGE_DEST, STINGER_EDGE_SOURCE, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, group_vtx, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
+            }
+          }
+          string_append_cstr(&edges, edge_str);
+        }
+        
       } else if(q_top < vtxlimit && !found[STINGER_EDGE_DEST] && labels[STINGER_EDGE_SOURCE] == labels[STINGER_EDGE_DEST]) {
-	found[STINGER_EDGE_DEST] = 1;
-	queue[q_top++] = STINGER_EDGE_DEST;
+        found[STINGER_EDGE_DEST] = 1;
+        queue[q_top++] = STINGER_EDGE_DEST;
       }
     } STINGER_FORALL_EDGES_OF_VTX_END();
   }

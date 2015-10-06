@@ -49,7 +49,7 @@ single_bc_search(stinger_t * S, int64_t nv, int64_t source, double * bc, int64_t
 
             //LOG_D_A("(%ld) TOS=%ld",source,v);
 
-            STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, v) {
+            STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, v) {
                 //LOG_D_A("(%ld) Begin - d[%ld]=%ld paths[%ld]=%ld",source,STINGER_EDGE_DEST,d[STINGER_EDGE_DEST],STINGER_EDGE_DEST,paths[STINGER_EDGE_DEST]);
                 if(d[STINGER_EDGE_DEST] < 0) {
                     d[STINGER_EDGE_DEST]     = d_next;
@@ -64,7 +64,7 @@ single_bc_search(stinger_t * S, int64_t nv, int64_t source, double * bc, int64_t
                 }
                 //LOG_D_A("(%ld) End - d[%ld]=%ld paths[%ld]=%ld",source,STINGER_EDGE_DEST,d[STINGER_EDGE_DEST],STINGER_EDGE_DEST,paths[STINGER_EDGE_DEST]);
 
-            } STINGER_FORALL_EDGES_OF_VTX_END();
+            } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
 
             index++;
         }
@@ -78,11 +78,11 @@ single_bc_search(stinger_t * S, int64_t nv, int64_t source, double * bc, int64_t
             int64_t w = bfs_stack[stack_top];
             double dsw = 0;
             int64_t sw = paths[w];
-            STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, w) {
+            STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, w) {
                 if(d[w] == (d[STINGER_EDGE_DEST] - 1)) {
                     dsw += frac(sw,paths[STINGER_EDGE_DEST]) * (1.0 + partial[STINGER_EDGE_DEST]);
                 }
-            } STINGER_FORALL_EDGES_OF_VTX_END();
+            } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
             partial[w] = dsw;
             bc[w] += dsw;
             stack_top--;
@@ -139,7 +139,7 @@ single_bc_search(stinger_t * S, int64_t nv, int64_t source, double * bc, int64_t
 
         //fprintf(stderr,"(%ld) v=%ld d_next=%ld\n",source,v,d_next);
 
-        STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, v) {
+        STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, v) {
             //fprintf(stderr,"(%ld) Begin - d[%ld]=%ld paths[%ld]=%ld\n",source,STINGER_EDGE_DEST,d[STINGER_EDGE_DEST],STINGER_EDGE_DEST,paths[STINGER_EDGE_DEST]);
             if(d[STINGER_EDGE_DEST] < 0) {
                 d[STINGER_EDGE_DEST]     = d_next;
@@ -154,7 +154,7 @@ single_bc_search(stinger_t * S, int64_t nv, int64_t source, double * bc, int64_t
             }
             //fprintf(stderr,"(%ld) End - d[%ld]=%ld paths[%ld]=%ld\n",source,STINGER_EDGE_DEST,d[STINGER_EDGE_DEST],STINGER_EDGE_DEST,paths[STINGER_EDGE_DEST]);
 
-        } STINGER_FORALL_EDGES_OF_VTX_END();
+        } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
     }
 
     /* don't process source */
@@ -162,11 +162,11 @@ single_bc_search(stinger_t * S, int64_t nv, int64_t source, double * bc, int64_t
         int64_t w = q[--q_front];
 
         /* don't maintain parents, do search instead */
-        STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, w) {
+        STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, w) {
             if(d[STINGER_EDGE_DEST] == (d[w] - 1)) {
                 partial[STINGER_EDGE_DEST] += frac(paths[STINGER_EDGE_DEST],paths[w]) * (1 + partial[w]);
             }
-        } STINGER_FORALL_EDGES_OF_VTX_END();
+        } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
         bc[w] += partial[w];
         //fprintf(stderr,"(%ld) Sum Partials for %ld -- partial[%ld]=%lf bc[%ld]=%lf\n",source,w,w,partial[w],w,bc[w]);
     }
