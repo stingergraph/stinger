@@ -1,5 +1,6 @@
 colorama
 requests
+simplejson
 flask
 flask-cors
 flask-restplus

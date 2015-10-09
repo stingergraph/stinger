@@ -17,7 +17,7 @@
 # Editor temporaries
 *~
 
-# Google Protobufs 
+# Google Protobufs
 /src/lib/protobuf/configure
 /src/lib/protobuf/autom4te.cache/
 
@@ -27,6 +27,5 @@
 .cproject
 .pydevproject
 
-# Used for algorithm testing
 *.pickle
 /flask/stinger_paths.py

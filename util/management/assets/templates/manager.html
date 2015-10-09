@@ -1,0 +1,69 @@
+<div class="container">
+
+	<!-- CONTENT -->
+	<h5>STINGER Connection Manager</h5>
+	<div class="row">
+		<div class="col-sm-12 col-lg-12">
+			<div class="dash-unit">
+				<div class="row" ng-repeat="con in stingerConnect['connections']" ng-show="stingerConnect.connections[0].name">
+					<div class=" col-md-offset-1 col-md-11">
+						<h5>{{con.name}}</h5>
+						<hr />
+					</div>
+					<div class="col-md-5 col-md-offset-1">
+						<table class="table">
+							<tr>
+								<th colspan="3">
+									Server Status
+								</th>
+							</tr>
+							<tr ng-repeat="(name,key) in stingerConnect.stingerComponents">
+								<td>
+									{{name}}
+								</td>
+								<td>
+									{{stingerConnect.componentsStatus[key] ? 'Running' : 'Not Running'}}
+								</td>
+								<td>
+									<button class="btn"
+											ng-class="{'btn-success':!stingerConnect.componentsStatus[key],
+													   'btn-danger':stingerConnect.componentsStatus[key]}"
+											ng-click="stingerConnect.toggleService(key)">
+										{{stingerConnect.componentsStatus[key] ? 'Stop' : 'Start'}}
+									</button>
+								</td>
+							</tr>
+						</table>
+					</div>
+					<div class="col-md-6">
+						<table class="table">
+							<tr>
+								<th colspan="2">
+									Connection Details
+								</th>
+							</tr>
+							<tr>
+								<td>
+									STINGER URL
+								</td>
+								<td>
+									http://{{con.stingerURL}}:{{con.stingerPort}}
+								</td>
+							</tr>
+							<tr>
+								<td>
+									STINGER API URL
+								</td>
+								<td>
+									http://{{con.stingerURL}}:{{con.flaskPort}}
+								</td>
+							</tr>
+						</table>
+					</div>
+				</div>
+
+
+			</div>
+		</div>
+	</div><!-- /row -->
+</div> <!-- /container -->
