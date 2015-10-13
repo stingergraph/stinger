@@ -1,0 +1,256 @@
+#!/bin/bash
+
+if [[ "$(whoami)" != "root" ]]; then
+  echo "stingerctl requires root privileges if log directories do not exist."
+#  exit 1
+fi
+
+RED='\033[0;31m'
+GRN='\033[0;32m'
+CYN='\033[0;36m'
+LBL='\033[0;34m'
+ORG='\033[0;33m'
+NC='\033[0m'
+
+: ${STINGER_ROOT_PATH=/opt/stinger/build}
+: ${STINGER_RUN=/var/run}
+: ${STINGER_FILE=$STINGER_RUN/stinger.graph}
+: ${STINGER_FILE_TYPE=r}
+: ${STINGER_LOGDIR=/var/log/stinger}
+: ${PORT_NAMES=10101}
+: ${PORT_STREAMS=10102}
+: ${PORT_ALGS=10103}
+: ${STINGER_MAX_MEMSIZE=4G}
+
+# required to be in the right directory to relatively reference binaries
+cd $STINGER_ROOT_PATH
+
+graceful_kill()
+{
+  patience=10
+  while
+    pkill -SIGHUP -f $1 # ask nicely first
+    [[ $? -eq 0 && $(( --patience )) -gt 0 ]]
+  do
+    sleep 2
+  done
+  [[ $patience -lt 0 ]] && pkill -SIGQUIT -f $1
+}
+
+s_start()
+{
+  echo -n "Starting stinger stack..."
+  if [[ -S /tmp/stinger.sock ]]; then
+    echo -e "\n\t[  ${RED}FAILED${NC}  ]  stinger already running. Try restart?" 1>&2
+    return 1
+  fi
+
+  mkdir -p $STINGER_LOGDIR &>/dev/null && test -w $STINGER_LOGDIR
+  if [[ $? -ne 0 ]]; then
+    echo -e "\n\t[  ${RED}FAILED${NC}  ]  Could not set up logging in $STINGER_LOGDIR. Check permissions?" 1>&2
+    return 1
+  fi
+
+  while [[ -z $(ss -anl | grep $PORT_STREAMS) ]]
+  do
+    env STINGER_MAX_MEMSIZE=$STINGER_MAX_MEMSIZE \
+      ./bin/stinger_server -p $PORT_NAMES -s $PORT_STREAMS -a $PORT_ALGS \
+      -i $STINGER_FILE -t $STINGER_FILE_TYPE &>>$STINGER_LOGDIR/stinger_server.log &
+    # hopefully eventually stinger will signal when it's good to go, until then
+    # this heuristic seems to be a safe bet for amount of time to wait
+    sleep $(( 5 + ${STINGER_MAX_MEMSIZE%?} ))
+    echo -n "."
+  done
+
+  ./bin/stinger_json_rpc_server &>>$STINGER_LOGDIR/stinger_rpc.log &
+
+    python ../flask/stinger_flask.py &>>$STINGER_LOGDIR/stinger_flask.log &
+
+  echo -e "\n\t[  ${GRN}OK${NC}  ]"
+}
+
+s_stop()
+{
+  echo -n "Stopping stinger stack..."
+  if [[ ! -S /tmp/stinger.sock ]]; then
+    echo -e "\n\t[  ${RED}FAILED${NC}  ]  stinger is not currently running."
+    return 1
+  fi
+
+  graceful_kill stinger_flask
+  graceful_kill stinger_json_rpc_server
+  graceful_kill stinger_server
+
+  [[ ! -S /tmp/stinger.sock ]] || rm -f /tmp/stinger.sock &>/dev/null
+  if [[ $? -ne 0 ]]; then
+    echo -e "\n\t[  ${RED}FAILED${NC}  ]  Could not clean up socket. Check permissions?"
+    return 1
+  fi
+  echo -e "\n\t[  ${GRN}OK${NC}  ]"
+}
+
+s_restart()
+{
+  s_stop
+  if [[ $1 == "nuke" ]]; then
+    rm -f $STINGER_FILE
+    echo "Erased stinger backup at: $STINGER_FILE"
+  fi
+  while [[ -n $(ss -anl | grep $PORT_STREAMS) ]];
+  do echo "Waiting for sockets to free..."; sleep 5;done
+  s_start
+}
+
+s_init_daemon()
+{
+  while :
+  do
+    sleep 5
+    pgrep -f stinger_server && \
+      pgrep -f stinger_json_rpc_server && \
+      pgrep -f stinger_flask
+    if [[ $? -ne 0 ]]; then
+      s_stop
+      s_start
+    fi
+  done
+}
+
+s_daemon-start()
+{
+  echo -n "Starting stingerd daemon..."
+  if [[ -e $STINGER_RUN/stingerd.pid && $(ps $(cat $STINGER_RUN/stingerd.pid)) ]]; then
+    echo -e "\n\t[  ${RED}FAILED${NC}  ]  Daemon already running."
+    return 1
+  fi
+  s_init_daemon &>/dev/null &
+  echo $! > $STINGER_RUN/stingerd.pid
+  while ! pgrep -f "stinger_" &>/dev/null; do sleep 1; done
+  echo -e "\n\t[  ${GRN}OK${NC}  ]"
+
+}
+
+s_daemon-stop()
+{
+  echo -n "Stopping stingerd daemon..."
+  kill $(cat $STINGER_RUN/stingerd.pid 2>/dev/null) &>/dev/null
+  if [[ $? -ne 0 ]]; then
+    echo -e "\n\t[  ${RED}FAILED${NC}  ]  No running instance of daemon found."
+    rm $STINGER_RUN/stingerd.pid &>/dev/null
+    return 1
+  fi
+  rm $STINGER_RUN/stingerd.pid &>/dev/null
+  echo -e "\n\t[  ${GRN}OK${NC}  ]"
+}
+
+s_addalg()
+{
+  echo "Adding algorithm ${2}..."
+  if [[ ! -e ./bin/stinger_"$2" ]]; then
+    echo -e "\n\t[  ${RED}FAILED${NC}  ] Algorithm $2 not found in $STINGER_ROOT_PATH."
+    return 1
+  fi
+  ./bin/stinger_"$2" "${@:3}" &>>$STINGER_LOGDIR/stinger_"$2".log &
+  echo -e "\n\t[  ${GRN}OK${NC}  ]"
+  echo "Algorithm added. Check log for details at: $STINGER_LOGDIR/stinger_$2.log"
+}
+
+s_remalg()
+{
+  echo "Removing algorithm ${2}..."
+  if [[ ! -e ./bin/stinger_"$2" ]]; then
+    echo -e "\n\t[  ${RED}FAILED${NC}  ] Algorithm $2 not found in $STINGER_ROOT_PATH."
+    return 1
+  fi
+  ./bin/stinger_"$2" "${@:3}" &>>$STINGER_LOGDIR/stinger_"$2".log &
+  echo -e "\n\t[  ${GRN}OK${NC}  ]"
+  echo "Algorithm added. Check log for details at: $STINGER_LOGDIR/stinger_$2.log"
+}
+
+s_exec()
+{
+  echo "Executing stinger_${2}..."
+  if [[ ! -e ./bin/stinger_"$2" ]]; then
+    echo -e "\n\t[  ${RED}FAILED${NC}  ] Program $2 not found."
+    return 1
+  fi
+  ./bin/stinger_"$2" "${@:3}"
+}
+
+s_check_daemon()
+{
+  if [[ -e $STINGER_RUN/stingerd.pid ]]; then
+    echo -e "\t[  ${ORG}INFO${NC}  ]  Daemon running. Stop it to use stingerctl manually."
+    exit 1
+  fi
+}
+case "$1" in
+  start)
+    s_check_daemon
+    s_start
+    ;;
+  stop)
+    s_check_daemon
+    s_stop
+    ;;
+  restart)
+    s_check_daemon
+    s_restart
+    ;;
+  daemon-start)
+    s_daemon-start
+    ;;
+  daemon-stop)
+    s_daemon-stop
+    ;;
+  addalg)
+    if [[ $# -lt 2 ]]; then
+      echo $"Usage: $0 addalg <NAME> [OPTIONS]"
+      echo "ex. $0 addalg pagerank -d -f 0.87"
+      exit 1
+    fi
+    s_addalg "$@"
+    ;;
+  nuke)
+    s_check_daemon
+    s_restart nuke
+    ;;
+  exec)
+    if [[ $# -lt 2 ]]; then
+      echo $"Usage: $0 exec <NAME> [OPTIONS]"
+      echo "ex. $0 exec dump_graph_to_disk -f graphdump.txt"
+      exit 1
+    fi
+    s_exec "$@"
+    ;;
+  *)
+    echo
+    echo -e "Environment defaults:
+    ${CYN}STINGER_ROOT_PATH${NC}=/opt/stinger/build
+    ${CYN}STINGER_RUN${NC}=/var/run
+    ${CYN}STINGER_FILE${NC}=${LBL}\$STINGER_RUN${NC}/stinger.graph
+    ${CYN}STINGER_FILE${NC}_TYPE=r
+    ${CYN}STINGER_LOGDIR${NC}=/var/log/stinger
+    ${CYN}PORT_NAMES${NC}=10101
+    ${CYN}PORT_STREAMS${NC}=10102
+    ${CYN}PORT_ALGS${NC}=10103
+    ${CYN}STINGER_MAX_MEMSIZE${NC}=4G
+    "
+    echo "Usage: stingerctl command [OPTIONS]"
+    echo
+    echo "Commands:"
+    column -s "|" -t <<< "
+    start | Start stinger.
+    stop | Stop stinger.
+    restart | Restart stinger.
+    nuke | Nuke stinger's disk store and restart.
+    exec NAME [OPTS] | Execute the provided stinger program NAME with given options.
+    addalg NAME [OPTS] | Add the provided algorithm NAME to the running stinger.
+    daemon-start | Initializes a watcher process to restart stinger if it crashes.
+    daemon-stop | Kill the watcher process.
+    "
+    echo
+    exit 1
+esac
+
+exit $?

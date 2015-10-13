@@ -1,26 +1,43 @@
-import sys
-import os
-import time
-import requests
-import json
-import threading
-import signal
-import logging
 import argparse
+import commands
+import json
+import logging
+import os
+import requests
+import signal
+import subprocess
+import sys
+import threading
+import time
 import traceback
-import stinger_paths
-from flask import Flask, request, jsonify, Response
+from flask import Flask, request, jsonify, Response, make_response
 from flask.ext.cors import CORS
 from flask.ext.restplus import Api, Resource, fields, apidoc
 from time import gmtime, strftime
 
-
+# Set logs to go to stderr
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 logging.basicConfig(stream=sys.stderr)
 
-sys.path.append(stinger_paths.STINGER_SRC_PY)
-os.environ['STINGER_LIB_PATH'] = stinger_paths.STINGER_LIB_PATH
+# Import stinger libraries, setup Flask config parameters
+baseDir = os.path.dirname(os.path.realpath(__file__)) + '/../../'
+config = {
+    'STINGER_BASE':baseDir,
+    'STINGER_HOST':'localhost',
+    'STINGER_LOGDIR':'/var/log/stinger/',
+    'STINGER_RPC_PORT': 8088,
+    'LIB_PATH':baseDir + 'build/lib/',
+    'PY_PATH':baseDir + 'src/py/',
+    'SESSION_NAME':'ManagedSTINGER',
+    'STINGERCTL_PATH': baseDir + 'util/stingerctl',
+    'UNDIRECTED': False,
+    'FLASK_PORT': 82,
+    'FLASK_HOST': '0.0.0.0'
+}
+
+sys.path.append(config['PY_PATH'])
+os.environ['STINGER_LIB_PATH'] = config['LIB_PATH']
 
 import stinger.stinger_net as sn
 import stinger.stinger_core as sc
@@ -29,11 +46,11 @@ import stinger.stinger_core as sc
 TIMEOUT_SECS = 5
 BATCH_THRESHOLD = 500
 
-app = Flask(__name__)
-api = Api(app, version='1.0', title='STINGER API',
+application = Flask(__name__)
+api = Api(application, version='1.1', title='STINGER API',
     description='An API to interface with the STINGER graph database',
 )
-cors = CORS(app)
+cors = CORS(application)
 
 @api.route('/insert',endpoint='insert')
 class Insert(Resource):
@@ -55,8 +72,7 @@ class Insert(Resource):
         503: 'Unable to reach STINGER'
     })
     def post(self):
-        global q
-
+        setupSTINGERConnection()
         exec_time = time.time()
         if not request.json:
             r = json.dumps({"error": "Invalid input"})
@@ -119,15 +135,13 @@ class VertexUpdate(Resource):
         'vertexUpdates': fields.List(fields.Nested(vertexUpdate), description='List of Vertex Updates', required=True),
         'immediate': fields.Boolean(description='Instructs the API to send this batch to STINGER immediately upon receipt', required=False, default=False)
     })
-    @api.expect(vertexUpdateSpec)    
+    @api.expect(vertexUpdateSpec)
     @api.doc(responses={
         201: 'Vertices Updated',
         400: 'Bad Request',
         503: 'Unable to reach STINGER'
     })
     def post(self):
-        global q
-
         exec_time = time.time()
         if not request.json:
             r = json.dumps({"error": "Invalid input"})
@@ -188,7 +202,7 @@ class StingerProxy(Resource):
         return stingerRPC(request.json)
 
 @api.route('/algorithm/<string:algorithm>')
-class Algorithms(Resource):
+class Algorithm(Resource):
     @api.doc(responses={
         200: 'Success',
         #400: 'Invalid algorithm',
@@ -198,7 +212,7 @@ class Algorithms(Resource):
         return stingerRPC({"jsonrpc": "2.0", "method": "get_data_description", "params": {"name": algorithm}, "id": 1})
 
 @api.route('/algorithms')
-class Algorithm(Resource):
+class Algorithms(Resource):
     @api.doc(responses={
         200: 'Success',
         503: 'Unable to reach STINGER'
@@ -218,6 +232,7 @@ class Stat(Resource):
         return stingerRPC(payload)
 
 @api.route('/health', methods=['GET'])
+@application.route('/server_status', methods=['GET'])
 class Health(Resource):
     @api.doc(responses={
         200: 'Success',
@@ -227,9 +242,166 @@ class Health(Resource):
         return stingerRPC({"jsonrpc": "2.0", "method": "get_server_health", "id": 1})
 
 
+@api.route('/connections', methods=['GET'])
+class Connections(Resource):
+    @api.doc(responses={
+        200: 'Success',
+        500: 'Cannot read connections.json'
+    })
+    def get(self):
+        response = make_response(get_connections())
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers["content-type"] = "text/plain"
+        return response
+
+
+@api.route('/log', methods=['GET'])
+class Log(Resource):
+    @api.doc(responses={
+        200: 'Success',
+        500: 'Cannot read log'
+    })
+    def get(self):
+        response = make_response(get_log())
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers["content-type"] = "text/plain"
+        return response
+
+
+@api.route('/status')
+class Status(Resource):
+    @api.doc(responses={
+        200: 'Success',
+        500: 'Cannot read process list'
+    })
+    def get(self):
+        response = {}
+        processes = ['stinger_server','stinger_json_rpc_server','stinger_pagerank','stinger_betweenness','stinger_kcore']
+        for p in processes:
+            running = commands.getoutput('ps -A w')
+            if p in starting:
+                response[p] = "STARTING"
+            elif p in running:
+                response[p] = "RUNNING"
+            else:
+                response[p] = "DOWN"
+        return response
+
+@api.route('/toggle/<string:program>')
+class Toggle(Resource):
+    @api.doc(responses={
+        200: 'Success',
+        500: 'Cannot stop/start requested program'
+    })
+    def get(self,program):
+        success = 0
+        status = ''
+        processes = commands.getoutput('ps -A')
+        if program in processes:
+            if(program == 'stinger_server'):
+                success =  stingerctl(['stop'])
+            if success == 0:
+                status = 'NOT RUNNING'
+        else:
+            if(program == 'stinger_server'):
+                success =  stingerctl(['start'])
+            else:
+                alg = program[len('stinger_'):]
+                success = stingerctl(['addalg',str(alg)])
+            if success == 0:
+                status = 'RUNNING'
+
+        return {'status':status,'success':success == 0}
+
+
+starting = list()
+
+def reverse_readline(filename, buf_size=8192):
+    """a generator that returns the lines of a file in reverse order"""
+    with open(filename) as fh:
+        segment = None
+        offset = 0
+        fh.seek(0, os.SEEK_END)
+        total_size = remaining_size = fh.tell()
+        while remaining_size > 0:
+            offset = min(total_size, offset + buf_size)
+            fh.seek(-offset, os.SEEK_END)
+            buffer = fh.read(min(remaining_size, buf_size))
+            remaining_size -= buf_size
+            lines = buffer.split('\n')
+            # the first line of the buffer is probably not a complete line so
+            # we'll save it and applicationend it to the last line of the next buffer
+            # we read
+            if segment is not None:
+                # if the previous chunk starts right from the beginning of line
+                # do not concact the segment to the last line of new chunk
+                # instead, yield the segment first
+                if buffer[-1] is not '\n':
+                    lines[-1] += segment
+                else:
+                    yield segment
+            segment = lines[0]
+            for index in range(len(lines) - 1, 0, -1):
+                yield lines[index]
+        yield segment
+
+def get_time_from_log_line(line):
+    return
+
+def ingest_history():
+    output = []
+    # Only get the last 10 minutes
+    time_window = 10
+
+def get_log():
+    output = ""
+    return output
+    num_lines = 200
+    fileName = "syslog"
+    nextLog = 1
+    try:
+        while 1==1:
+            if os.path.exists("/var/log/" + fileName) == False:
+                break;
+            print "Trying " + "/var/log/" + fileName
+            for line in reverse_readline("/var/log/" + fileName):
+                if re.search("stinger", line):
+                    output += line + '\n'
+                    num_lines -= 1
+                if num_lines == 0:
+                    break
+            if num_lines ==0:
+                break;
+            else:
+                if nextLog == 1:
+                    fileName = "syslog.1"
+                else:
+                    fileName = "syslog." + str(nextLog) + ".gz"
+                nextLog += 1
+
+        return output
+
+    except:
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        traceback.print_exception(exc_type, exc_value, exc_traceback, limit=2, file=sys.stderr)
+        traceback.print_tb(exc_traceback, limit=4, file=sys.stderr)
+
+def get_connections():
+    thisdir = os.path.dirname(os.path.realpath(__file__))
+    with open(thisdir + '/connections.json') as data_file:
+        data = data_file.read()
+    return data
+
+
+def stingerctl(command):
+    cmd = [config['STINGERCTL_PATH']]
+    cmd.extend(command)
+    print ' '.join(cmd)
+    return subprocess.call( cmd )
+
 def stingerRPC(payload):
     try:
-        urlstr = 'http://{0}:{1}/jsonrpc'.format(STINGER_HOST,STINGER_RPC_PORT)
+        urlstr = 'http://{0}:{1}/jsonrpc'.format(config['STINGER_HOST'],config['STINGER_RPC_PORT'])
         r = requests.post(urlstr, data=json.dumps(payload))
     except:
         print(traceback.format_exc())
@@ -240,15 +412,15 @@ def stingerRPC(payload):
 #
 # Initialize the connection to STINGER server
 #
-def connect(undirected=False,strings=True):
+def connect(strings=True):
     global s
-    s = sn.StingerStream(STINGER_HOST, 10102, strings, undirected)
+    global counter_lock
+    s = sn.StingerStream(config['STINGER_HOST'], 10102, strings, config['UNDIRECTED'])
     if s.sock_handle == -1:
         raise Exception("Failed to connect to STINGER")
-    directedness = 'UNdirected' if undirected else 'directed'
+    directedness = 'UNdirected' if config['UNDIRECTED'] else 'directed'
     print "Edges will be inserted as",directedness
 
-    global counter_lock
     counter_lock = threading.Lock()
 
 #
@@ -277,9 +449,9 @@ def signal_handler(signal, frame):
     sys.exit(0)
 
 def setupSTINGERConnection():
-    if not 's' in globals():
+    if not 's' in globals() or 'counter_lock' not in globals():
         try:
-            connect(args.undirected)
+            connect()
             print 'STINGER connection successful'
         except Exception as e:
             print str(e)
@@ -292,21 +464,23 @@ def setupSTINGERConnection():
             print str(e)
             print 'STINGER timer setup unsuccessful'
 
+
+setupSTINGERConnection()
+
 #
 # main
 #
 if __name__ == '__main__':
-    global STINGER_HOST
-    global STINGER_RPC_PORT
     signal.signal(signal.SIGINT, signal_handler)
     parser = argparse.ArgumentParser(description="STINGER Flask Relay Server")
     parser.add_argument('--undirected', action="store_true")
-    parser.add_argument('--flask_host', default="0.0.0.0")
-    parser.add_argument('--flask_port', default=5000, type=int)
-    parser.add_argument('--stinger_host', default="localhost")
-    parser.add_argument('--stinger_rpc_port', default=8088, type=int)
+    parser.add_argument('--flask_host', default=config['FLASK_HOST'])
+    parser.add_argument('--flask_port', default=config['FLASK_PORT'], type=int)
+    parser.add_argument('--stinger_host', default=config['STINGER_HOST'])
+    parser.add_argument('--stinger_rpc_port', default=config['STINGER_RPC_PORT'], type=int)
     args = parser.parse_args()
-    STINGER_HOST = args.stinger_host
-    STINGER_RPC_PORT = args.stinger_rpc_port
+    config['STINGER_HOST'] = args.stinger_host
+    config['STINGER_RPC_PORT'] = args.stinger_rpc_port
+    config['UNDIRECTED'] = args.undirected
     setupSTINGERConnection()
-    app.run(debug=False,host=args.flask_host,port=args.flask_port)
+    application.run(debug=False,host=args.flask_host,port=args.flask_port)
