@@ -103,7 +103,8 @@ main(int argc, char *argv[])
     * Initial static computation
     * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
     stinger_alg_begin_init(alg); {
-        sample_search(alg->stinger, stinger_max_active_vertex(alg->stinger) + 1, num_samples, bc, times_found);
+        if (stinger_max_active_vertex(alg->stinger) > 0)
+            sample_search(alg->stinger, stinger_max_active_vertex(alg->stinger) + 1, num_samples, bc, times_found);
     } stinger_alg_end_init(alg);
 
     /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
@@ -118,16 +119,18 @@ main(int argc, char *argv[])
 
         /* Post processing */
         if(stinger_alg_begin_post(alg)) {
-            int64_t nv = stinger_mapping_nv(alg->stinger)+1;
-            if(do_weighted) {
-                sample_search(alg->stinger, nv, num_samples, sample_bc, times_found);
+            int64_t nv = (stinger_mapping_nv(alg->stinger))?stinger_mapping_nv(alg->stinger)+1:0;
+            if (nv > 0) {
+                if(do_weighted) {
+                    sample_search(alg->stinger, nv, num_samples, sample_bc, times_found);
 
-                OMP("omp parallel for")
-                for(int64_t v = 0; v < nv; v++) {
-                    bc[v] = bc[v] * old_weighting + weighting* sample_bc[v];
+                    OMP("omp parallel for")
+                    for(int64_t v = 0; v < nv; v++) {
+                        bc[v] = bc[v] * old_weighting + weighting* sample_bc[v];
+                    }
+                } else {
+                    sample_search(alg->stinger, nv, num_samples, bc, times_found);
                 }
-            } else {
-                sample_search(alg->stinger, nv, num_samples, bc, times_found);
             }
 
             stinger_alg_end_post(alg);
