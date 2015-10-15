@@ -273,19 +273,19 @@ stinger_max_num_etypes(stinger_t * S)
  */
 uint64_t
 stinger_max_active_vertex(const struct stinger * S) {
-  uint64_t out = -1;
+  uint64_t out = 0;
   OMP("omp parallel") {
     uint64_t local_max = 0;
     OMP("omp for")
     for(uint64_t i = 0; i < (S->max_nv); i++) {
       if((stinger_indegree_get(S, i) > 0 || stinger_outdegree_get(S, i) > 0) && 
-	i > local_max) {
-	local_max = i;
+        i > local_max) {
+        local_max = i;
       }
     }
     OMP("omp critical") {
       if(local_max > out)
-	out = local_max;
+        out = local_max;
     }
   }
   return out;

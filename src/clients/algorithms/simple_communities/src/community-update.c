@@ -882,7 +882,7 @@ void cstate_preproc_acts (struct community_state * restrict cstate,
 double
 init_cstate_from_stinger (struct community_state * cs, const struct stinger * S)
 {
-  const int64_t nv = stinger_max_active_vertex(S) + 1;
+  const int64_t nv = (stinger_max_active_vertex(S))?stinger_max_active_vertex(S) + 1:0;
   int64_t ne = stinger_max_total_edges(S);
   struct el g = alloc_graph (nv, ne);
   double time = 0;

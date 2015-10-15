@@ -57,7 +57,7 @@ main(int argc, char *argv[])
     return -1;
   }
 
-  nv = stinger_max_active_vertex(alg->stinger)+1;
+  nv = (stinger_max_active_vertex(alg->stinger))?stinger_max_active_vertex(alg->stinger) + 1:0;
   cmap = (int64_t *)alg->alg_data;
 #define UPDATE_EXTERNAL_CMAP(CS) do {                   \
     OMP("omp parallel for")                             \
