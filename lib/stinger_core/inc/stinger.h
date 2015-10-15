@@ -257,11 +257,6 @@ uint64_t stinger_max_active_vertex(const struct stinger * S);
 uint64_t stinger_num_active_vertices(const struct stinger * S);
 
 int64_t stinger_typed_outdegree(const struct stinger *, int64_t /* vtx */, int64_t /* type */);
-XMTI int64_t stinger_indegree (const struct stinger *, int64_t);
-XMTI int64_t stinger_vweight (const struct stinger *, int64_t);
-
-int64_t stinger_set_vweight (struct stinger *, int64_t /* vertex */ , int64_t /* weight */ );
-
 
 /* Neighbor list access */
 void stinger_gather_successors (const struct stinger *,
