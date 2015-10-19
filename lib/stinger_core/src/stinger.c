@@ -265,7 +265,7 @@ stinger_max_num_etypes(stinger_t * S)
  *  is greater than zero.
  *
  *  <em>NOTE:</em> If you are using this to obtain a
- *  value of "nv" for additional STINGER calls, you must add one to the 
+ *  value of "nv" for additional STINGER calls, you must add one to the
  *  result.
  *
  *  @param S The STINGER data structure
@@ -278,7 +278,7 @@ stinger_max_active_vertex(const struct stinger * S) {
     uint64_t local_max = 0;
     OMP("omp for")
     for(uint64_t i = 0; i < (S->max_nv); i++) {
-      if((stinger_indegree_get(S, i) > 0 || stinger_outdegree_get(S, i) > 0) && 
+      if((stinger_indegree_get(S, i) > 0 || stinger_outdegree_get(S, i) > 0) &&
         i > local_max) {
         local_max = i;
       }
@@ -482,14 +482,14 @@ stinger_print_eb(struct stinger_eb * eb) {
     eb->vertexID, eb->next, eb->etype, eb->numEdges, eb->high, eb->smallStamp, eb->largeStamp);
   uint64_t j = 0;
   for (; j < eb->high && j < STINGER_EDGEBLOCKSIZE; j++) {
-    printf("    TO: %s%ld WGT: %ld TSF: %ld TSR: %ld\n", 
-      eb->edges[j].neighbor < 0 ? "x " : "  ", eb->edges[j].neighbor < 0 ? ~(eb->edges[j].neighbor) : eb->edges[j].neighbor, 
+    printf("    TO: %s%ld WGT: %ld TSF: %ld TSR: %ld\n",
+      eb->edges[j].neighbor < 0 ? "x " : "  ", eb->edges[j].neighbor < 0 ? ~(eb->edges[j].neighbor) : eb->edges[j].neighbor,
       eb->edges[j].weight, eb->edges[j].timeFirst, eb->edges[j].timeRecent);
   }
   if(j < STINGER_EDGEBLOCKSIZE) {
     printf("  ABOVE HIGH:\n");
     for (; j < STINGER_EDGEBLOCKSIZE; j++) {
-      printf("    TO: %ld WGT: %ld TSF: %ld TSR: %ld\n", 
+      printf("    TO: %ld WGT: %ld TSF: %ld TSR: %ld\n",
 	eb->edges[j].neighbor, eb->edges[j].weight, eb->edges[j].timeFirst, eb->edges[j].timeRecent);
     }
   }
@@ -1026,7 +1026,7 @@ update_edge_data (struct stinger * S, struct stinger_eb *eb,
     stinger_indegree_increment_atomic(S, e->neighbor, -1);
     stinger_int64_fetch_add (&(eb->numEdges), -1);
     e->neighbor = neighbor;
-  } 
+  }
 
   /* we always do this to update weight and  unlock the edge if needed */
 }
@@ -1363,16 +1363,16 @@ stinger_remove_edge (struct stinger *G,
       endk = tmp->high;
 
       for (k = 0; k < endk; ++k) {
-	if (to == tmp->edges[k].neighbor) {
-	  int64_t weight = readfe (&(tmp->edges[k].weight));
-	  if(to == tmp->edges[k].neighbor) {
-	    update_edge_data (G, tmp, k, ~to, weight, 0, EDGE_WEIGHT_SET);
-	    return 1;
-	  } else {
-	    writeef((uint64_t *)&(tmp->edges[k].weight), (uint64_t)weight);
-	  }
-	  return 0;
-	}
+        if (to == tmp->edges[k].neighbor) {
+          int64_t weight = readfe (&(tmp->edges[k].weight));
+          if(to == tmp->edges[k].neighbor) {
+            update_edge_data (G, tmp, k, ~to, weight, 0, EDGE_WEIGHT_SET);
+            return 1;
+          } else {
+            writeef((uint64_t *)&(tmp->edges[k].weight), (uint64_t)weight);
+          }
+          return 0;
+        }
       }
     }
   }
@@ -1576,7 +1576,7 @@ stinger_set_initial_edges (struct stinger *G,
     if (blkoff[v] != blkoff[v + 1]) {
       ebpool->ebpool[block[blkoff[v+1]-1]].next = stinger_vertex_edges_get(vertices, from);
       stinger_vertex_edges_set(vertices, from, block[blkoff[v]]);
-    } 
+    }
   }
 
   /* Insert into the edge type array */
@@ -1625,13 +1625,13 @@ stinger_gather_typed_predecessors (const struct stinger *G,
     }
   } STINGER_PARALLEL_FORALL_EDGES_END();
 
-  *outlen = kout;               /* May be longer than max_outlen. */
+  *outlen = (kout < max_outlen)?kout:max_outlen;               /* May be longer than max_outlen. */
 }
 
 /** @brief Copy adjacencies of a vertex into a buffer with optional metadata
  *
- *  Adjacencies of the specified vertex are copied into the user-provided buffer(s) 
- *  up to the length of the buffer(s) specified by max_outlen.  All buffers should 
+ *  Adjacencies of the specified vertex are copied into the user-provided buffer(s)
+ *  up to the length of the buffer(s) specified by max_outlen.  All buffers should
  *  be at least max_outlen or NULL.
  *
  *  @param G The STINGER data structure
@@ -1679,7 +1679,7 @@ stinger_gather_successors (const struct stinger *G,
     }
   } STINGER_PARALLEL_FORALL_EDGES_OF_VTX_END();
 
-  *outlen = kout;               /* May be longer than max_outlen. */
+  *outlen = (kout < max_outlen)?kout:max_outlen;               /* May be longer than max_outlen. */
 }
 
 /** @brief Copy typed adjacencies of a vertex into a buffer
@@ -1716,7 +1716,7 @@ stinger_gather_typed_successors (const struct stinger *G, int64_t type,
       out[where] = STINGER_EDGE_DEST;
   } STINGER_PARALLEL_FORALL_EDGES_OF_TYPE_OF_VTX_END();
 
-  *outlen = kout;               /* May be longer than max_outlen. */
+  *outlen = (kout < max_outlen)?kout:max_outlen;               /* May be longer than max_outlen. */
 }
 
 /** @brief Determines if a vertex has an edge of a given type
@@ -1743,7 +1743,7 @@ stinger_has_typed_successor (const struct stinger *G,
       stinger_int_fetch_add(&rtn, 1);
     }
   } STINGER_PARALLEL_FORALL_EDGES_OF_TYPE_OF_VTX_END();
-  return (rtn > 0 ? 1 : 0); 
+  return (rtn > 0 ? 1 : 0);
 }
 
 /** @brief Get the weight of a given edge.
@@ -1870,8 +1870,8 @@ stinger_edge_timestamp_recent (const struct stinger * G,
 }
 
 /* TODO revisit this function
- * XXX how to handle in parallel?
- * BUG block meta not handled
+ * BUG Timestamp in edge block has a race condition which
+ * may break consistency.  At least we are attempting to keep it up to date
  * */
 /** @brief Update the recent timestamp of an edge
  *
@@ -1898,6 +1898,16 @@ stinger_edge_touch (struct stinger *G,
   STINGER_PARALLEL_FORALL_EDGES_OF_TYPE_OF_VTX_BEGIN(G,type,from) {
     if (STINGER_EDGE_DEST == to) {
       STINGER_EDGE_TIME_RECENT = timestamp;
+      if (current_eb__->largeStamp < timestamp) {
+        stinger_int64_cas (&(current_eb__->largeStamp), 
+                            current_eb__->largeStamp, 
+                            timestamp);
+      }
+      if (current_eb__->smallStamp > timestamp) {
+        stinger_int64_cas (&(current_eb__->smallStamp), 
+                            current_eb__->smallStamp, 
+                            timestamp);
+      }
       rtn = 1;
     }
   } STINGER_PARALLEL_FORALL_EDGES_OF_TYPE_OF_VTX_END();
@@ -1927,7 +1937,7 @@ stinger_count_outdeg (struct stinger * G, int64_t v)
 
 /**
 * @brief Sorts a batch of edge insertions and deletions.
-* 
+*
 * Takes an array of edge insertions and deletions and sorts them.  The array is
 * packed with <source, destination> pairs, such that actions[2*i] = source vertex
 * ID and actions[2*i+1] = destination vertex ID.  Bit-wise complement the source
@@ -1982,7 +1992,7 @@ stinger_sort_actions (int64_t nactions, int64_t * actions,
   OMP("omp single") {
   actlen = head;
 #if !defined(__MTA__)
-  qsort (act, actlen, 2 * sizeof (act[0]), i2cmp); 
+  qsort (act, actlen, 2 * sizeof (act[0]), i2cmp);
   //radix_sort_pairs (act, actlen<<1, 6);
 #else
   bucket_sort_pairs (act, actlen);
@@ -2140,13 +2150,13 @@ const int64_t endian_check = 0x1234ABCD;
  *    - number of edge types
  *    - type offsets (length = etypes + 1) offsets of the beginning on each type in the CSR structure
  *    - offsets (length = etypes * (maxNV+2)) concatenated CSR offsets, one NV+2-array per edge type
- *    - ind/adj (legnth = type_offsets[etypes] = total number of edges) concatenated CSR adjacency arrays, 
+ *    - ind/adj (legnth = type_offsets[etypes] = total number of edges) concatenated CSR adjacency arrays,
  *		      offsets into this are type_offsets[etype] + offets[etype*(maxNV+2) + sourcevertex]
- *    - weight (legnth = type_offsets[etypes] = total number of edges) concatenated csr weight arrays, 
+ *    - weight (legnth = type_offsets[etypes] = total number of edges) concatenated csr weight arrays,
  *		      offsets into this are type_offsets[etype] + offets[etype*(maxnv+2) + sourcevertex]
- *    - time first (legnth = type_offsets[etypes] = total number of edges) concatenated csr timefirst arrays, 
+ *    - time first (legnth = type_offsets[etypes] = total number of edges) concatenated csr timefirst arrays,
  *		      offsets into this are type_offsets[etype] + offets[etype*(maxnv+2) + sourcevertex]
- *    - time recent (legnth = type_offsets[etypes] = total number of edges) concatenated csr time recent arrays, 
+ *    - time recent (legnth = type_offsets[etypes] = total number of edges) concatenated csr time recent arrays,
  *		      offsets into this are type_offsets[etype] + offets[etype*(maxnv+2) + sourcevertex]
  * @param S A pointer to the Stinger to be saved.
  * @param maxVtx The maximum vertex ID + 1.
@@ -2273,7 +2283,7 @@ stinger_save_to_file (struct stinger * S, uint64_t maxVtx, const char * stingerf
   free(xmt_buf);
 #endif
 
-  if(written != (3 + etypes + 1 + (maxVtx+2) * etypes + 4 * type_offsets[etypes]) * sizeof(int64_t)) {
+  if(written != (3 + etypes + 1 + (maxVtx+2) * etypes + 4 * type_offsets[etypes])) {
     free(offsets); free(type_offsets); free(ind);
     return -1;
   } else {
@@ -2311,7 +2321,7 @@ stinger_open_from_file (const char * stingerfile, struct stinger * S, uint64_t *
   result += fread(&local_endian, sizeof(int64_t), 1, fp);
   result += fread(maxVtx, sizeof(int64_t), 1, fp);
   result += fread(&etypes, sizeof(int64_t), 1, fp);
-  
+
   if(result != 3) {
     fprintf (stderr, "%s %d: Fread of file \"%s\" failed.\n", __func__, __LINE__, stingerfile);
     return -1;
@@ -2385,7 +2395,7 @@ stinger_open_from_file (const char * stingerfile, struct stinger * S, uint64_t *
   }
 
   for(int64_t type = 0; type < etypes; type++) {
-    stinger_set_initial_edges(S, *maxVtx, type, 
+    stinger_set_initial_edges(S, *maxVtx, type,
 	offsets + type * (*maxVtx+2),
 	ind + type_offsets[type],
 	weight + type_offsets[type],
@@ -2418,7 +2428,7 @@ stinger_open_from_file (const char * stingerfile, struct stinger * S, uint64_t *
 #if defined(STINGER_TEST_SAVE_LOAD)
 
 int
-main(int argc, char *argv[]) 
+main(int argc, char *argv[])
 {
   stinger_t * S = stinger_new();
 
@@ -2509,7 +2519,7 @@ main(int argc, char *argv[])
 
   for(int64_t i = 0; i < 1024; i++) {
     STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, i) {
-      if(STINGER_EDGE_DEST != i + 1) 
+      if(STINGER_EDGE_DEST != i + 1)
 	LOG_E("Vertex doesn't have expected number");
     } STINGER_FORALL_EDGES_OF_VTX_END();
   }

@@ -2,6 +2,7 @@ cmake_minimum_required (VERSION 2.8.11)
 project (STINGER)
 
 include (ExternalProject)
+include (CTest)
 
 set(STINGER_VERSION_MAJOR 2013)
 set(STINGER_VERSION_MINOR 06)
@@ -128,6 +129,16 @@ configure_file(${CMAKE_SOURCE_DIR}/lib/stinger_core/inc/stinger_names.h.in ${CMA
 #file(COPY ${CMAKE_SOURCE_DIR}/lib/stinger_core/inc/stinger_names.h DESTINATION ${CMAKE_BINARY_DIR}/include/stinger_core/)
 
 include_directories("${CMAKE_BINARY_DIR}/include")
+include_directories("${CMAKE_SOURCE_DIR}/external/googletest/include/")
 
+add_subdirectory(external/googletest)
 add_subdirectory(lib)
 add_subdirectory(src)
+
+enable_testing()
+add_test(NamesTest ${CMAKE_BINARY_DIR}/bin/stinger_names_test)
+add_test(StingerCoreTest ${CMAKE_BINARY_DIR}/bin/stinger_core_test)
+add_test(StingerPhysmapTest ${CMAKE_BINARY_DIR}/bin/stinger_physmap_test)
+
+add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1 --verbose DEPENDS stinger_names_test stinger_core_test stinger_physmap_test)
+

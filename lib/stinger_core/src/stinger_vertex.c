@@ -44,6 +44,9 @@ stinger_vertices_free(stinger_vertices_t ** vertices)
 inline stinger_vertex_t *
 stinger_vertices_vertex_get(const stinger_vertices_t * vertices, vindex_t v)
 {
+  if (v >= vertices->max_vertices || v < 0) {
+    return NULL;
+  }
   return &(vertices->vertices[v]);
 }
 
@@ -71,12 +74,18 @@ stinger_vertices_size_bytes(const stinger_vertices_t * vertices)
 inline vtype_t
 stinger_vertex_type_get(const stinger_vertices_t * vertices, vindex_t v)
 {
+  if (v >= vertices->max_vertices || v < 0) {
+    return -1;
+  }
   return VTX(v)->type;
 }
 
 inline vtype_t
 stinger_vertex_type_set(const stinger_vertices_t * vertices, vindex_t v, vtype_t type)
 {
+  if (v >= vertices->max_vertices || v < 0) {
+    return -1;
+  }
   return (VTX(v)->type = type);
 }
 
@@ -85,24 +94,36 @@ stinger_vertex_type_set(const stinger_vertices_t * vertices, vindex_t v, vtype_t
 inline vweight_t
 stinger_vertex_weight_get(const stinger_vertices_t * vertices, vindex_t v)
 {
+  if (v >= vertices->max_vertices || v < 0) {
+    return -1;
+  }
   return VTX(v)->weight;
 }
 
 inline vweight_t
 stinger_vertex_weight_set(const stinger_vertices_t * vertices, vindex_t v, vweight_t weight)
 {
+  if (v >= vertices->max_vertices || v < 0) {
+    return -1;
+  }
   return (VTX(v)->weight = weight);
 }
 
 inline vweight_t
 stinger_vertex_weight_increment(const stinger_vertices_t * vertices, vindex_t v, vweight_t weight)
 {
+  if (v >= vertices->max_vertices || v < 0) {
+    return -1;
+  }
   return stinger_vweight_fetch_add(&(VTX(v)->weight), weight);
 }
 
 inline vweight_t
 stinger_vertex_weight_increment_atomic(const stinger_vertices_t * vertices, vindex_t v, vweight_t weight)
 {
+  if (v >= vertices->max_vertices || v < 0) {
+    return -1;
+  }
   return stinger_vweight_fetch_add_atomic(&(VTX(v)->weight), weight);
 }
 
@@ -111,24 +132,36 @@ stinger_vertex_weight_increment_atomic(const stinger_vertices_t * vertices, vind
 inline vdegree_t
 stinger_vertex_indegree_get(const stinger_vertices_t * vertices, vindex_t v)
 {
+  if (v >= vertices->max_vertices || v < 0) {
+    return -1;
+  }
   return VTX(v)->inDegree;
 }
 
 inline vdegree_t
 stinger_vertex_indegree_set(const stinger_vertices_t * vertices, vindex_t v, vdegree_t degree)
 {
+  if (v >= vertices->max_vertices || v < 0) {
+    return -1;
+  }
   return (VTX(v)->inDegree = degree);
 }
 
 inline vdegree_t
 stinger_vertex_indegree_increment(const stinger_vertices_t * vertices, vindex_t v, vdegree_t degree)
 {
+  if (v >= vertices->max_vertices || v < 0) {
+    return -1;
+  }
   return (VTX(v)->inDegree += degree);
 }
 
 inline vdegree_t
 stinger_vertex_indegree_increment_atomic(const stinger_vertices_t * vertices, vindex_t v, vdegree_t degree)
 {
+  if (v >= vertices->max_vertices || v < 0) {
+    return -1;
+  }
   return stinger_vdegree_fetch_add_atomic(&(VTX(v)->inDegree), degree);
 }
 
@@ -137,24 +170,36 @@ stinger_vertex_indegree_increment_atomic(const stinger_vertices_t * vertices, vi
 inline vdegree_t
 stinger_vertex_outdegree_get(const stinger_vertices_t * vertices, vindex_t v)
 {
+  if (v >= vertices->max_vertices || v < 0) {
+    return -1;
+  }
   return VTX(v)->outDegree;
 }
 
 inline vdegree_t
 stinger_vertex_outdegree_set(const stinger_vertices_t * vertices, vindex_t v, vdegree_t degree)
 {
+  if (v >= vertices->max_vertices || v < 0) {
+    return -1;
+  }
   return (VTX(v)->outDegree = degree);
 }
 
 inline vdegree_t
 stinger_vertex_outdegree_increment(const stinger_vertices_t * vertices, vindex_t v, vdegree_t degree)
 {
+  if (v >= vertices->max_vertices || v < 0) {
+    return -1;
+  }
   return (VTX(v)->outDegree += degree);
 }
 
 inline vdegree_t
 stinger_vertex_outdegree_increment_atomic(const stinger_vertices_t * vertices, vindex_t v, vdegree_t degree)
 {
+  if (v >= vertices->max_vertices || v < 0) {
+    return -1;
+  }
   return stinger_vdegree_fetch_add_atomic(&(VTX(v)->outDegree), degree);
 }
 
@@ -163,24 +208,36 @@ stinger_vertex_outdegree_increment_atomic(const stinger_vertices_t * vertices, v
 inline adjacency_t
 stinger_vertex_edges_get(const stinger_vertices_t * vertices, vindex_t v)
 {
+  if (v >= vertices->max_vertices || v < 0) {
+    return -1;
+  }
   return readff(&(VTX(v)->edges));
 }
 
 inline adjacency_t *
 stinger_vertex_edges_pointer_get(const stinger_vertices_t * vertices, vindex_t v)
-{
+{  
+  if (v >= vertices->max_vertices || v < 0) {
+    return NULL;
+  }
   return &(VTX(v)->edges);
 }
 
 inline adjacency_t
 stinger_vertex_edges_get_and_lock(const stinger_vertices_t * vertices, vindex_t v)
 {
+  if (v >= vertices->max_vertices || v < 0) {
+    return -1;
+  }
   return readfe(&(VTX(v)->edges));
 }
 
 inline adjacency_t
 stinger_vertex_edges_set(const stinger_vertices_t * vertices, vindex_t v, adjacency_t edges)
 {
+  if (v >= vertices->max_vertices || v < 0) {
+    return -1;
+  }
   return (VTX(v)->edges = edges);
 }
 
