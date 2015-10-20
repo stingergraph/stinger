@@ -139,6 +139,7 @@ enable_testing()
 add_test(NamesTest ${CMAKE_BINARY_DIR}/bin/stinger_names_test)
 add_test(StingerCoreTest ${CMAKE_BINARY_DIR}/bin/stinger_core_test)
 add_test(StingerPhysmapTest ${CMAKE_BINARY_DIR}/bin/stinger_physmap_test)
+add_test(StingerTraversalTest ${CMAKE_BINARY_DIR}/bin/stinger_traversal_test)
 
-add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1 --verbose DEPENDS stinger_names_test stinger_core_test stinger_physmap_test)
+add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1 --verbose DEPENDS stinger_names_test stinger_core_test stinger_physmap_test stinger_traversal_test)
 

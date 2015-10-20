@@ -31,6 +31,19 @@ target_link_libraries(stinger_physmap_test stinger_core gtest)
 
 #================================
 
+set(_stinger_traversal_test_sources
+  stinger_traversal_test/stinger_traversal_test.cpp
+  stinger_traversal_test/non_read_only_traversal.cpp
+  stinger_traversal_test/read_only_traversal.cpp
+  stinger_traversal_test/stinger_traversal_test.h
+)
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/stinger_traversal_test)
+add_executable(stinger_traversal_test ${_stinger_traversal_test_sources})
+target_link_libraries(stinger_traversal_test stinger_core gtest)
+
+#================================
+
 set(_adamic_adar_test_sources
   adamic_adar_test/adamic_adar_test.c
 )
