@@ -1,4 +1,4 @@
-#include "stinger_core_test.h"
+#include "stinger_physmap_test.h"
 extern "C" {
   #include "stinger_core/xmalloc.h"
   #include "stinger_core/stinger_traversal.h"
