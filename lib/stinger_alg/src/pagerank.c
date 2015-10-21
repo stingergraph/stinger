@@ -27,7 +27,6 @@ page_rank_subset(stinger_t * S, int64_t NV, uint8_t * vertex_set, int64_t vertex
   OMP("omp parallel for")
   for (uint64_t v = 0; v < NV; v++) {
     if (vertex_set[v]) {
-      LOG_D_A("%ld - %lf\n",v,pr[v]);
       STINGER_FORALL_EDGES_OF_VTX_BEGIN(S,v) {
         if (vertex_set[STINGER_EDGE_DEST]) {
           vtx_outdegree[v]++;
@@ -238,13 +237,13 @@ page_rank_type_directed(stinger_t * S, int64_t NV, double * pr, double * tmp_pr_
       }
     }
 
-    STINGER_PARALLEL_FORALL_EDGES_OF_ALL_TYPES_BEGIN(S) {
+    STINGER_PARALLEL_FORALL_EDGES_BEGIN(S,type) {
       int64_t outdegree = stinger_typed_outdegree(S, STINGER_EDGE_SOURCE,type);
       int64_t count = readfe(&pr_lock[STINGER_EDGE_DEST]);
       tmp_pr[STINGER_EDGE_DEST] += (((double)pr[STINGER_EDGE_SOURCE]) /
         ((double) (outdegree ? outdegree : NV -1)));
       writeef(&pr_lock[STINGER_EDGE_DEST],count+1);
-    } STINGER_PARALLEL_FORALL_EDGES_OF_ALL_TYPES_END();
+    } STINGER_PARALLEL_FORALL_EDGES_END();
 
     OMP("omp parallel for")
     for (uint64_t v = 0; v < NV; v++) {
