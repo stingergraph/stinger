@@ -45,12 +45,13 @@ target_link_libraries(stinger_traversal_test stinger_core gtest)
 #================================
 
 set(_adamic_adar_test_sources
-  adamic_adar_test/adamic_adar_test.c
+  adamic_adar_test/adamic_adar_test.cpp
+  adamic_adar_test/adamic_adar_test.h
 )
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/adamic_adar_test)
 add_executable(stinger_adamic_adar_test ${_adamic_adar_test_sources})
-target_link_libraries(stinger_adamic_adar_test stinger_utils stinger_alg stinger_core)
+target_link_libraries(stinger_adamic_adar_test stinger_utils stinger_alg stinger_core gtest)
 
 #================================
 
