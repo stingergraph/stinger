@@ -55,12 +55,15 @@ target_link_libraries(stinger_adamic_adar_test stinger_utils stinger_alg stinger
 #================================
 
 set(_pagerank_test_sources
-  pagerank_test/pagerank_test.c
+  pagerank_test/pagerank_test.cpp
+  pagerank_test/pagerank_test.h
+  pagerank_test/directed_princeton.cpp
+  pagerank_test/undirected_princeton.cpp
 )
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/pagerank_test)
 add_executable(stinger_pagerank_test ${_pagerank_test_sources})
-target_link_libraries(stinger_pagerank_test stinger_utils stinger_alg stinger_core)
+target_link_libraries(stinger_pagerank_test stinger_utils stinger_alg stinger_core gtest)
 
 #================================
 
