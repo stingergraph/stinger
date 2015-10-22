@@ -1,12 +1,16 @@
+sudo: false
 language: cpp
 compiler:
   - gcc
   - clang
 before_install:
   - wget http://www.cmake.org/files/v3.3/cmake-3.3.0-rc3-Linux-x86_64.sh
-  - sudo sh cmake-3.3.0-rc3-Linux-x86_64.sh --skip-license --prefix=/usr
+  - mkdir -p $HOME/cmake
+  - sh cmake-3.3.0-rc3-Linux-x86_64.sh --skip-license --prefix=$HOME/cmake
 before_script:
   - mkdir build
   - cd build
-  - cmake ..
-script: make
+  - $HOME/cmake/bin/cmake ..
+script: 
+  - make
+  - make check

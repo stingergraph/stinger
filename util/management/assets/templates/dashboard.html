@@ -1,0 +1,96 @@
+<div class="container">
+
+    <!-- FIRST ROW OF BLOCKS -->
+    <div class="row">
+
+
+
+        <!-- DONUT CHART BLOCK -->
+        <div class="col-sm-3 col-lg-3">
+            <div class="dash-unit">
+                <dtitle>Edge Block Usage</dtitle>
+                <hr>
+                <div id="ebPie"></div>
+                <h2>{{ 100 * status.result.edge_blocks_in_use / status.result.max_neblocks | number: 2  }} %</h2>
+                <h3>{{ status.result.edge_blocks_in_use }} of {{ status.result.max_neblocks }}</h3>
+            </div>
+        </div>
+
+        <!-- DONUT CHART BLOCK -->
+        <div class="col-sm-3 col-lg-3">
+            <div class="dash-unit">
+                <dtitle>Vertex Usage</dtitle>
+                <hr>
+                <div id="vertexPie"></div>
+                <h2>{{ 100 * status.result.vertices / status.result.max_vertices | number: 2  }} %</h2>
+                <h3>{{ status.result.vertices }} of {{ status.result.max_vertices }}</h3>
+            </div>
+        </div>
+
+        <div class="col-sm-3 col-lg-3">
+
+            <!-- LOCAL TIME BLOCK -->
+            <div class="half-unit">
+                <dtitle>Server Time / STINGER Time</dtitle>
+                <hr>
+                <div class="clockcenter">
+                    Server: <digiclock>12:45:25</digiclock>
+                </div>
+                <div class="clockcenter">
+                    STINGER: {{ status.result.time }}
+                </div>
+            </div>
+
+            <!-- SERVER UPTIME -->
+            <div class="half-unit">
+                <dtitle>JSON RPC Server Uptime</dtitle>
+                <hr>
+                <div class="cont">
+                    <p><img src="assets/img/up.png" alt="" ng-show="status"> <bold ng-show="status">Up</bold>
+                        <img src="assets/img/down.png" alt="" ng-hide="status"> <bold ng-hide="status">Down</bold>
+                        | {{ status.result.uptime }} seconds</p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- GRAPH CHART - lineandbars.js file -->
+        <div class="col-sm-3 col-lg-3">
+            <div class="half-unit">
+                <dtitle>Host Info</dtitle>
+                <hr>
+                <h4>Host Name: {{ status.result.host }}</h4>
+                <h4>Load Average: {{ status.result.loadavg[0] }} | {{ status.result.loadavg[1] }} | {{ status.result.loadavg[2] }}</h4>
+                <h4>PID: {{ status.result.pid }}</h4>
+                <h4>Last Status Ping Time: {{ status.millis }} ms</h4>
+            </div>
+            <div class="half-unit">
+                <dtitle>Algorithms</dtitle>
+                <hr>
+                <h4 ng-repeat="a in algs.result.algorithms">{{ a }} </h4>
+            </div>
+        </div>
+    </div><!-- /row -->
+
+    <div class="row">
+        <div class="col-sm-6 col-lg-6">
+            <div class="dash-unit">
+                <a style="float:right;cursor:pointer;" ng-click="updateLogData()">Reload</a>
+                <dtitle>STINGER Log </dtitle>
+                <hr>
+                <pre class="log">{{ logData }}</pre>
+            </div>
+        </div>
+    <div class="row">
+        <div class="col-sm-6 col-lg-6">
+            <div class="dash-unit">
+                <a style="float:right;cursor:pointer;" ng-click="submitRPC(rpcInput)">Submit Request</a>
+                <dtitle>STINGER RPC Console</dtitle>
+                <hr>
+                Input:
+                <textarea class="log" ng-model="rpcInput" style="height:40%;"></textarea>
+                Output:
+                <pre class="log" style="height:40%;">{{ rpcOutput }}</pre>
+            </div>
+        </div>
+    </div><!-- /row -->

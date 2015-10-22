@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.2/jquery.min.js"></script>
+<meta charset=utf-8 />
+<title>STINGER RPC Test Page</title>
+</head>
+<body>
+<script>
+var whatever = null;
+
+data = {"jsonrpc": "2.0", "method": "get_algorithms", "id": 1};
+jQuery.ajax({
+url: "http://localhost:8088/jsonrpc",
+type: "POST",
+data: JSON.stringify(data),
+dataType: "json",
+success: function(data) {whatever = data; $(".algorithms").append("<p>" + JSON.stringify(data) + "</p>");}
+});
+
+data = {"jsonrpc": "2.0", "method": "get_data_description", "params": {"name": "pagerank"}, "id": 2};
+jQuery.ajax({
+url: "http://localhost:8088/jsonrpc",
+type: "POST",
+data: JSON.stringify(data),
+dataType: "json",
+success: function(data) {whatever = data; $(".description").append("<p>" + JSON.stringify(data) + "</p>");}
+});
+
+data = {"jsonrpc": "2.0", "method": "get_data_array_set", "params": {"name": "pagerank", "data": "pagerank", "set": [2,6,4]}, "id": 6};
+jQuery.ajax({
+url: "http://localhost:8088/jsonrpc",
+type: "POST",
+data: JSON.stringify(data),
+dataType: "json",
+success: function(data) {whatever = data; $(".set").append("<p>" + JSON.stringify(data) + "</p>");}
+});
+
+data = {"jsonrpc": "2.0", "method": "get_data_array_sorted_range", "params": {"name": "pagerank", "data": "nothing", "offset": 0, "count": 10, "order":"ASC"}, "id": 7};
+jQuery.ajax({
+url: "http://localhost:8088/jsonrpc",
+type: "POST",
+data: JSON.stringify(data),
+dataType: "json",
+success: function(data) {whatever = data; $(".nothing").append("<p>" + JSON.stringify(data) + "</p>");}
+});
+
+data = {"jsonrpc": "2.0", "method": "get_data_array_range", "params": {"name": "pagerank", "data": "pagerank", "offset": 0, "count": 25}, "id": 5};
+jQuery.ajax({
+url: "http://localhost:8088/jsonrpc",
+type: "POST",
+data: JSON.stringify(data),
+dataType: "json",
+success: function(data) {whatever = data; $(".range").append("<p>" + JSON.stringify(data) + "</p>");}
+});
+
+data = {"jsonrpc": "2.0", "method": "get_data_array_sorted_range", "params": {"name": "pagerank", "data": "pagerank", "offset": 0, "count": 25, "order":"DESC"}, "id": 4};
+jQuery.ajax({
+url: "http://localhost:8088/jsonrpc",
+type: "POST",
+data: JSON.stringify(data),
+dataType: "json",
+success: function(data) {whatever = data; $(".sorted").append("<p>" + JSON.stringify(data) + "</p>");}
+});
+
+data = {"jsonrpc": "2.0", "method": "get_data_array_stride", "params": {"name": "pagerank", "data": "pagerank", "stride": 50000}, "id": 8};
+jQuery.ajax({
+url: "http://localhost:8088/jsonrpc",
+type: "POST",
+data: JSON.stringify(data),
+dataType: "json",
+success: function(data) {whatever = data; $(".invalid").append("<p>" + JSON.stringify(data) + "</p>");}
+});
+
+data = {"jsonrpc": "2.0", "method": "get_data_array_range", "params": {"name": "pagerank", "data": "pagerank", "offset": 0, "count": 25, "stride": 2}, "id": 9};
+jQuery.ajax({
+url: "http://localhost:8088/jsonrpc",
+type: "POST",
+data: JSON.stringify(data),
+dataType: "json",
+success: function(data) {whatever = data; $(".strided").append("<p>" + JSON.stringify(data) + "</p>");}
+});
+
+data = {"jsonrpc": "2.0", "method": "get_data_array_range", "params": {"name": "pagerank", "data": "pagerank", "offset": 0, "count": 25, "samples": 4}, "id": 9};
+jQuery.ajax({
+url: "http://localhost:8088/jsonrpc",
+type: "POST",
+data: JSON.stringify(data),
+dataType: "json",
+success: function(data) {whatever = data; $(".samples").append("<p>" + JSON.stringify(data) + "</p>");}
+});
+
+data = {"jsonrpc": "2.0", "method": "get_data_array_range", "params": {"name": "pagerank", "data": "pagerank", "offset": 0, "count": 10000, "samples": 10, "log": true}, "id": 9};
+jQuery.ajax({
+url: "http://localhost:8088/jsonrpc",
+type: "POST",
+data: JSON.stringify(data),
+dataType: "json",
+success: function(data) {whatever = data; $(".logarithmic").append("<p>" + JSON.stringify(data) + "</p>"); }
+});
+
+data = {"jsonrpc": "2.0", "method": "get_graph_stats", "id": 10};
+jQuery.ajax({
+url: "http://localhost:8088/jsonrpc",
+type: "POST",
+data: JSON.stringify(data),
+dataType: "json",
+success: function(data) {whatever = data; $(".stats").append("<p>" + JSON.stringify(data) + "</p>"); }
+});
+
+data = {"jsonrpc": "2.0", "method": "get_graph_stats", "params": {"get_types": true}, "id": 10};
+jQuery.ajax({
+url: "http://localhost:8088/jsonrpc",
+type: "POST",
+data: JSON.stringify(data),
+dataType: "json",
+success: function(data) {whatever = data; $(".stats_with_types").append("<p>" + JSON.stringify(data) + "</p>"); }
+});
+
+data = {"jsonrpc": "2.0", "method": "breadth_first_search", "params": {"source": 0, "target": 10}, "id": 11};
+jQuery.ajax({
+url: "http://localhost:8088/jsonrpc",
+type: "POST",
+data: JSON.stringify(data),
+dataType: "json",
+success: function(data) {whatever = data; $(".bfs").append("<p>" + JSON.stringify(data) + "</p>"); }
+});
+
+data = {"jsonrpc": "2.0", "method": "get_data_array_reduction", "params": {"name": "pagerank", "data": "pagerank", "op": "sum"}, "id": 12};
+jQuery.ajax({
+url: "http://localhost:8088/jsonrpc",
+type: "POST",
+data: JSON.stringify(data),
+dataType: "json",
+success: function(data) {whatever = data; $(".reduction").append("<p>" + JSON.stringify(data) + "</p>");}
+});
+
+data = {"jsonrpc": "2.0", "method": "get_server_info", "params": {}, "id": 13};
+jQuery.ajax({
+url: "http://localhost:8088/jsonrpc",
+type: "POST",
+data: JSON.stringify(data),
+dataType: "json",
+success: function(data) {whatever = data; $(".info").append("<p>" + JSON.stringify(data) + "</p>");}
+});
+
+data = {"jsonrpc": "2.0", "method": "adamic_adar_index", "params": {"source": 1, "strings": true}, "id": 14};
+jQuery.ajax({
+url: "http://localhost:8088/jsonrpc",
+type: "POST",
+data: JSON.stringify(data),
+dataType: "json",
+success: function(data) {whatever = data; $(".adamic").append("<p>" + JSON.stringify(data) + "</p>"); }
+});
+
+jQuery.ajax({
+url: "http://localhost:8088/jsonrpc",
+type: "POST",
+dataType: "json",
+success: function(data) {whatever = data; $(".emptyPost").append("<p>" + JSON.stringify(data) + "</p>"); }
+});
+
+data = {"totally_garbage": true};
+jQuery.ajax({
+url: "http://localhost:8088/jsonrpc",
+type: "POST",
+data: JSON.stringify(data),
+dataType: "json",
+success: function(data) {whatever = data; $(".badRequest").append("<p>" + JSON.stringify(data) + "</p>"); }
+});
+
+data = {"jsonrpc": "2.0", "method": "get_server_health", "id": 15};
+jQuery.ajax({
+url: "http://localhost:8088/jsonrpc",
+type: "POST",
+data: JSON.stringify(data),
+dataType: "json",
+success: function(data) {whatever = data; $(".health").append("<p>" + JSON.stringify(data) + "</p>"); }
+});
+
+data = {"jsonrpc": "2.0", "method": "egonet", "params": {"source": "1", strings: true, incident_edges: false, get_etypes:true}, "id": 16};
+jQuery.ajax({
+url: "http://localhost:8088/jsonrpc",
+type: "POST",
+data: JSON.stringify(data),
+dataType: "json",
+success: function(data) {whatever = data; $(".egonet").append("<p>" + JSON.stringify(data) + "</p>"); }
+});
+
+
+</script>
+<div class="health">health:&nbsp;</div>
+<div class="algorithms">algorithms:&nbsp;</div>
+<div class="description">description:&nbsp;</div>
+<div class="range">range:&nbsp;</div>
+<div class="set">set:&nbsp;</div>
+<div class="sorted">sorted:&nbsp;</div>
+<div class="strided">strided:&nbsp;</div>
+<div class="samples">samples:&nbsp;</div>
+<div class="logarithmic">logarithmic:&nbsp;</div>
+<div class="invalid">invalid:&nbsp;</div>
+<div class="nothing">nothing:&nbsp;</div>
+<div class="stats">stats:&nbsp;</div>
+<div class="stats_with_types">stats_with_types:&nbsp;</div>
+<div class="bfs">bfs:&nbsp;</div>
+<div class="reduction">reduction:&nbsp;</div>
+<div class="info">info:&nbsp;</div>
+<div class="adamic">adamic:&nbsp;</div>
+<div class="emptyPost">emptyPost:&nbsp;</div>
+<div class="badRequest">badRequest:&nbsp;</div>
+<div class="egonet">egonet:&nbsp;</div>
+</body>
+</html>

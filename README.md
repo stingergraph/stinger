@@ -4,76 +4,32 @@ STINGER
 
 Learn more at [stingergraph.com](http://stingergraph.com).
 
-Directory Structure
-===================
+What is STINGER?
+=============
 
-    .
-    ├── CMakeLists.txt
-    ├── doc
-    ├── doxygen
-    ├── flask
-    ├── html
-    ├── README.md
-    ├── SOURCEME.sh
-    ├── src
-    │   ├── bin
-    │   │   ├── clients
-    │   │   │   ├── algorithms
-    │   │   │   │   ├── betweenness
-    │   │   │   │   ├── clustering_coefficients
-    │   │   │   │   ├── kcore
-    │   │   │   │   ├── pagerank
-    │   │   │   │   ├── pagerank_updating
-    │   │   │   │   ├── rate_monitor
-    │   │   │   │   ├── simple_communities
-    │   │   │   │   ├── spmspv_test
-    │   │   │   │   ├── static_components
-    │   │   │   │   ├── test_alg
-    │   │   │   │   └── weakly_connected_components
-    │   │   │   ├── streams
-    │   │   │   │   ├── csv_stream
-    │   │   │   │   ├── human_edge_generator
-    │   │   │   │   ├── json_stream
-    │   │   │   │   ├── mongodb_stream
-    │   │   │   │   ├── netflow_stream
-    │   │   │   │   ├── random_edge_generator
-    │   │   │   │   └── rmat_edge_generator
-    │   │   │   └── tools
-    │   │   │       ├── alg_to_mongo
-    │   │   │       ├── dump_graph_to_disk
-    │   │   │       ├── json_rpc_server
-    │   │   │       ├── scrape_alg_data
-    │   │   │       ├── scrape_vertex_data
-    │   │   │       ├── sql_client
-    │   │   │       ├── test_client
-    │   │   │       ├── udp_query
-    │   │   │       ├── vquery
-    │   │   │       └── web_server
-    │   │   ├── server
-    │   │   ├── standalone
-    │   │   └── tests
-    │   ├── lib
-    │   │   ├── compat
-    │   │   ├── fmemopen
-    │   │   ├── int_hm_seq
-    │   │   ├── int_ht_seq
-    │   │   ├── intvec
-    │   │   ├── kv_store
-    │   │   ├── mongo_c_driver
-    │   │   ├── mongoose
-    │   │   ├── protobuf
-    │   │   ├── pugixml
-    │   │   ├── rapidjson
-    │   │   ├── stinger_core
-    │   │   ├── stinger_net
-    │   │   ├── stinger_utils
-    │   │   ├── string
-    │   │   └── vtx_set
-    │   ├── py
-    │   │   └── stinger
-    │   └── templates
-    │       └── json
+STINGER is a package designed to support streaming graph analytics by using in-memory parallel computation to accelerate the computation.  STINGER is composed of the core data structure and the STINGER server, algorithms, and an RPC server that can be used to run queries and serve visualizations.  The directory structure of the components is as follows:
 
+    doc/ - Documentation
+    doxygen/ - Doxygen generated documentation
+    external/ - External dependencies packaged with STINGER
+    flask/ - Python Flask Relay Server for interacting with the JSON RPC server and STINGER server
+    html/ - Basic web pages that communicate with the JSON RPC server
+    lib/ - The STINGER library and dependencies
+        stinger_alg/ - Algorithm kernels that work on the STINGER data structure
+        stinger_core/ - The Core STINGER data structure
+        stinger_net/ - Libraries for communicating over unix sockets and/or TCP/IP using Protobufs
+        stinger_utils/ - Auxiliary functions over the data structure
+    src/ - STINGER ecosystem binaries
+        server/ - The STINGER server
+        clients/ - Clients that connect to the STINGER server
+            algorithms/ - Streaming Algorithm binaries
+            streams/ - Binaries for streaming in new data
+            tools/ - Auxiliary tools
+        py/stinger - Python bindings to STINGER
+        standalone/ - Standalone binaries that use the STINGER core data structure
+        templates/json - Common templates for stream ingest
+        tests/ - Tests for the STINGER data structure and algorithms
+    SOURCEME.sh - File to be executed from out-of-source build directory to link the html/ web pages with the STINGER server
 
 Building
 ========
@@ -85,22 +41,18 @@ STINGER is built using [CMake](http://www.cmake.org).  From the root of STINGER,
 
 Then call CMake from that build directory to automatically configure the build and to create a Makefile:
 
-    ccmake .. -DCMAKE_BUILD_TYPE=Release
+    ccmake .. 
 
-Change `Release` to `Debug` for a debugging build during development.  Finally, call make to build all libraries and executable targets (or call make and the name of an executable or library to build):
+Change `Release` to `Debug` or `RelWithDebInfo` for a debugging build during development.  Finally, call make to build all libraries and executable targets (or call make and the name of an executable or library to build):
 
-    make
+    make -j8
 
-Note:  multithreaded make is discouraged until CMakeLists issues are corrected.
+Note: the -j flag is a multi-threaded build.  Typically you should match the argument to the number of cores on your system.  
 
 All binary targets will be built and placed in build/bin.  They are named according to the folder from which they were 
 built (so src/bin/server produces build/bin/stinger\_server, src/bin/clients/tools/json\_rpc\_server produces 
 build/bin/stinger\_json\_rpc\_server, etc.).  If you ran SOURCEME.sh from the build directory as instructed above, the build/bin
 directory is appended to your path.
-
-All library targets are built as both static and shared libraries by default and are placed in build/lib as .so and .a files
-(or .dylib on Mac).  Headers for these libraries are copied into build/include/library\_name.  The build/include directory
-is in the include path of all targets.
 
 Executable Targets
 ==================
@@ -145,6 +97,61 @@ To run an example using the server and five terminals:
 This will start a stream of R-MAT edges over 100,000 vertices in batches of 10,000 edges.  A connected component labeling
 and PageRank scoring will be maintained.  The JSON-RPC server will host interactive web pages at 
 http://localhost:8088/full.html are powered by the live streaming analysis.  The total memory usage of the dynamic graph is limited to 1 GiB.
+
+Server Configuration
+--------------------
+
+### CMake Parameters
+
+The STINGER is configured via several methods when using the STINGER Server.  There are several CMake Parameters that can be set when configuring the build via CMake.  These are listed below.
+
+- ``STINGER_DEFAULT_VERTICES`` -> Specifies the number of vertices
+- ``STINGER_DEFAULT_NEB_FACTOR`` -> Specifies the Number of Edge Blocks allocated for each vertex per edge type
+- ``STINGER_DEFAULT_NUMETYPES`` -> Specifies the Number of Edge Types
+- ``STINGER_DEFAULT_NUMVTYPES`` -> Specifies the Number of Vertex Types
+- ``STINGER_EDGEBLOCKSIZE`` -> Specifies the minimum number of edges of each type that can be attached to a vertex.  This should be a multiple of 2
+- ``STINGER_NAME_STR_MAX`` -> Specifies the maximum length of strings when specifying edge type names and vertex type names
+- ``STINGER_NAME_USE_SQLITE`` -> (Alpha - Still under development) Replaces the static names structure with a dynamic structure that uses SQLITE
+- ``STINGER_USE_TCP`` -> Uses TCP instead of Unix Sockets to connect to the STINGER server
+
+** Note: STINGER, by default, uses one edge type name and vertex type name for the "None" type.  This can be disabled using the STINGER server config file described in a later section.
+
+### Example
+
+Suppose there is a graph you want to store with a power-law distribution of edges, and the average degree of each vertex is 3.  There are 3 named edge types and 4 name vertex types.  You wish to store up to 2 million vertices. A good configuration would be
+
+    STINGER_DEFAULT_VERTICES = 1 << 21
+    STINGER_EDGEBLOCKSIZE = 4            # On average one edge block is sufficient for most vertices
+    STINGER_DEFAULT_NEB_FACTOR = 2       # Depending on the skewness 3 may also be necessary.  This will create 2 * nv edge blocks for each edge types
+    STINGER_DEFAULT_NUMETYPES = 4        # There are 3 named types and the default "None" type
+    STINGER_DEFAULT_NUMVTYPES = 5        # There are 4 named types and the default "None" type
+
+### Environment Variables
+
+By default, STINGER will attempt to allocate 1/2 of the available memory on the system.  This can be overwritten using an environment variable, ``STINGER_MAX_MEMSIZE``.
+
+Example:
+  > ``STINGER_MAX_MEMSIZE=4g ./bin/stinger_server``
+
+If the STINGER parameters provided would create a STINGER that is larger than STINGER_MAX_MEMSIZE, then the STINGER is shrunk to fit the specified memory size.  This is done by repeatedly reducing the number of vertices by 25% until the STINGER fits in the specified memory size.
+
+### Config File
+
+The STINGER server accepts a config file format in the libconfig style.  A config filename can be passed as an argument to the ``stinger_server`` with the ``-C`` flag.  An example config file is provided in stinger.cfg in the root directory of the STINGER repository.  All of the cmake configurations regarding the size of the STINGER can be overridden via the config file __except for the ``STINGER_EDGEBLOCKSIZE``__.  The config file values will override any CMake values.  If the ``STINGER_MAX_MEMSIZE`` environment variable is set, it will be considered an upper limit on the memory size.
+
+The following values are allowed in stinger.cfg:
+
+- ``num_vertices`` -> A __long__ integer representing the number of vertices.  __Must have the L at the end of the integer__
+- ``edges_per_type`` -> A __long__ integer representing the number of edges for each vertex type.  __Must have the L at the end of the integer__
+- ``num_edge_types`` -> Specifies number of edge types.
+- ``num_vertex_types`` -> Specifies number of vertex types.
+- ``max_memsize`` -> Specifies maximum memory for STINGER.  Cannot be bigger than the ``STINGER_MAX_MEMSIZE`` environment variable.  Uses the same format as the environment variable (e.g. "4G", "1T", "512M")
+- ``edge_type_names`` -> A list of edge type names to map at STINGER startup.  If this list is specified the "None" type will not be mapped.
+- ``vertex_type_names`` -> A list of vertex type names to map at STINGER startup.  If this list is specified the "None" type will not be mapped.
+- ``map_none_etype`` -> If set to false, the "None" edge type will not be mapped at startup.  Likewise, if true, the "None" edge type will be mapped at startup.
+- ``map_none_vtype`` -> If set to false, the "None" vertex type will not be mapped at startup.  Likewise, if true, the "None" vertex type will be mapped at startup.
+- ``no_resize`` -> If set to true, the the STINGER will not try to resize and fit in the specified memory size.  Instead it will throw an error and exit.
+
 
 Example: Parsing Twitter
 ------------------------
@@ -239,19 +246,37 @@ Runtime Issues
 
 STINGER allocates and manages its own memory. When STINGER starts, it allocates one large block of memory (enough to hold its maximum size), and then manages its own memory allocation from that pool.  The server version of STINGER does this in shared memory so that multiple processes can see the graph.  Unfortunately, the error handling for memory allocations is not particularly user-friendly at the moment.  Changing the way that this works is on the issues list (see https://github.com/robmccoll/stinger/issues/8).
 
-- "Bus error" when running the server: The size of STINGER that the server is trying to allocate is too large for your memory.  Reduce the size of your STINGER and recompile.
+- "Bus error" when running the server: The size of STINGER that the server is trying to allocate is too large for your memory.  First try to increase the size of your /dev/shm (See below).  If this does not work reduce the size of your STINGER and recompile.
 - "XXX: eb pool exhausted" or "STINGER has run out of internal storage space" when running the server, standalone executables, or anything else using stinger\_core: you have run out of internal edge storage.  Increase the size of STINGER and recompile.
 
-Compile-time definitions can be adjusted in ccmake to increase or decrease memory consumption.  Note that adjusting these values will require you to rebuild STINGER.
+See the section on STINGER server configuration to adjust the sizing of STINGER
 
-- STINGER\_MAX\_LVERTICES: maximum number of vertices to support, often written as a power of two: 1L<<22
-- STINGER\_EDGEBLOCKSIZE: number of edges per block, default: 14  
-- STINGER\_NUMETYPES: maximum number of edge types to support, default: 5
-- STINGER\_NUMVTYPES maximum number of vertex types to support, default: 128
+Resizing /dev/shm
+--------------
 
-STINGER\_EDGEBLOCKSIZE determines how many edges are in each edge block (there are 4 * STINGER\_MAX\_LVERTICES edge blocks, so 4 * STINGER\_MAX\_LVERTICES * STINGER\_EDGEBLOCKSIZE is the maximum number of directed edges).
+/dev/shm allows for memory-mapped files in the shared memory space.  By default the size of this filesystem is set to be 1/2 the total memory in the system.  STINGER by default attempts to allocate 3/4 of the total memory (unless the STINGER_MAX_MEMSIZE environment variable is used).  This will commonly cause a 'Bus Error' the first time STINGER server is run on the system.  There are two solutions to this problem
 
-These are listed in the order of how much of an affect they will have on the size of STINGER.
+1. Use STINGER_MAX_MEMSIZE and provide a value no greater than 1/2 the total system memory.
+2. Resize the /dev/shm filesystem to match the total system memory size.
+
+To achieve #2 you should edit /etc/fstab to include the following line
+
+### On Ubuntu
+
+    tmpfs /run/shm tmpfs defaults,noexec,nosuid,size=32G 0 0
+
+Replace 32G with the size of your system's main memory
+
+### On most other systems
+
+    tmpfs /dev/shm tmpfs defaults,noexec,nosuid,size=32G 0 0
+
+Replace 32G with the size of your system's main memory 
+
+Once you have added this line either restart the machine or run the following command.
+
+  sudo mount -o remount /run/shm  
+
 
 Build Problems
 --------------

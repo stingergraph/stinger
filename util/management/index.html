@@ -1,0 +1,130 @@
+<!doctype html>
+<html ng-app="StingerManagementApp"><head>
+    <meta charset="utf-8">
+    <title>STINGER Management Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+
+    <!-- Le styles -->
+    <link href="assets/css/bootstrap.css" rel="stylesheet">
+    <link href="assets/css/main.css" rel="stylesheet">
+    <link href="assets/css/font-style.css" rel="stylesheet">
+    <link href="assets/css/flexslider.css" rel="stylesheet">
+
+	<script type="text/javascript" src="http://code.jquery.com/jquery-latest.js"></script>
+    <script type="text/javascript" src="assets/js/angular.js"></script>
+    <script type="text/javascript" src="assets/js/angular-route.js"></script>
+    <script type="text/javascript" src="assets/js/angular-ui/ui-utils.min.js"></script>
+    <script type="text/javascript" src="assets/js/underscore-min.js"></script>
+
+    <script type="text/javascript">
+        var app = angular.module("StingerManagementApp", ['ngRoute','ui.utils']);
+    </script>
+
+    <script src="assets/js/services/RequestID.js"></script>
+    <script src="assets/js/services/stingerConnect.js"></script>
+    <script src="assets/js/controllers/MainController.js"></script>
+    <script src="assets/js/controllers/StingerManagement.js"></script>
+    <script src="assets/js/controllers/ConnectionManager.js"></script>
+
+    <script type="text/javascript">
+        app.config(function($routeProvider,$locationProvider) {
+            $routeProvider
+                    .when('/', {
+                        templateUrl: "assets/templates/dashboard.html",
+                        controller:"StingerManagement"
+                    })
+                    .when('/connections', {
+                        templateUrl: "assets/templates/manager.html",
+                        controller:"ConnectionManager"
+                    });
+        });
+    </script>
+
+    <base href="/">
+
+    <style type="text/css">
+      body {
+        padding-top: 60px;
+      }
+    </style>
+
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <link rel="shortcut icon" href="assets/ico/favicon.ico">
+
+  	<!-- Google Fonts call. Font Used Open Sans & Raleway -->
+	<link href="http://fonts.googleapis.com/css?family=Raleway:400,300" rel="stylesheet" type="text/css">
+  	<link href="http://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet" type="text/css">
+  </head>
+  <body ng-controller="MainController">
+
+  	<!-- NAVIGATION MENU -->
+
+    <div class="navbar-nav navbar-inverse navbar-fixed-top">
+        <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+            <a class="navbar-brand" href="#/" ng-click="selected = 'home'">STINGER Dashboard</a>
+        </div>
+          <div class="navbar-collapse collapse">
+            <ul class="nav navbar-nav">
+              <li ng-class="{ 'active': currentPage() == 'home'}"><a href="#/"><i class="icon-home icon-white"></i> Home</a></li>
+              <li ng-class="{ 'active':currentPage() == 'connections'}"><a href="#connections"><i class="icon-folder-open icon-white"></i> Connection Manager</a></li>
+
+            </ul>
+              <div class="navbar-brand navbar-right">
+                <select ng-model="stingerConnect.connection" ng-change="stingerConnect.setConnection(stingerConnect.connection.name)" ng-options="connection.name for connection in stingerConnect['connections']"></select>
+              </div>
+
+          </div><!--/.nav-collapse -->
+
+        </div>
+    </div>
+
+
+    <div ng-view></div>
+    <div id="overlay" ng-show='showOverlay'></div>
+
+    <div id="footerwrap">
+      	<footer class="clearfix"></footer>
+      	<div class="container">
+      		<div class="row">
+      			<div class="col-sm-12 col-lg-12">
+
+      			</div>
+
+      		</div><!-- /row -->
+      	</div><!-- /container -->
+	</div><!-- /footerwrap -->
+
+  <script type="text/javascript" src="assets/js/bootstrap.js"></script>
+
+<!--
+	<script type="text/javascript" src="assets/js/lineandbars.js"></script>
+	<script type="text/javascript" src="assets/js/dash-charts.js"></script>
+	<script type="text/javascript" src="assets/js/gauge.js"></script>
+-->
+	<!-- NOTY JAVASCRIPT
+	<script type="text/javascript" src="assets/js/noty/jquery.noty.js"></script>
+	<script type="text/javascript" src="assets/js/noty/layouts/top.js"></script>
+	<script type="text/javascript" src="assets/js/noty/layouts/topLeft.js"></script>
+	<script type="text/javascript" src="assets/js/noty/layouts/topRight.js"></script>
+	<script type="text/javascript" src="assets/js/noty/layouts/topCenter.js"></script>
+
+	 You can add more layouts if you want
+	<script type="text/javascript" src="assets/js/noty/themes/default.js"></script>
+     <script type="text/javascript" src="assets/js/dash-noty.js"></script> This is a Noty bubble when you init the theme
+	<script src="assets/js/jquery.flexslider.js" type="text/javascript"></script>
+
+    <script type="text/javascript" src="assets/js/admin.js"></script>
+-->
+	<script type="text/javascript" src="http://code.highcharts.com/highcharts.js"></script>
+
+</body></html>

@@ -54,7 +54,7 @@ class StingerRegisteredAlg(Structure):
 	      ("alg_num", c_int64),
 	      ("alg_data_loc", 256 * c_char),
 	      ("alg_data", c_void_p),
-	      ("alg_data_per_vertex", c_int64), 
+	      ("alg_data_per_vertex", c_int64),
 	      ("dep_count", c_int64),
 	      ("dep_name", POINTER(c_char_p)),
 	      ("dep_location", POINTER(c_char_p)),
@@ -81,7 +81,7 @@ class StingerRegisteredAlg(Structure):
     return Stinger(s=self.stinger)
 
 class StingerStream():
-  def __init__(self, host, port, strings=True, directed=False):
+  def __init__(self, host, port, strings=True, undirected=False):
     self.sock_handle = libstinger_net['stream_connect'](c_char_p(host), c_int(port))
     self.insertions_size = 5000
     self.insertions = (StingerEdgeUpdate * self.insertions_size)()
@@ -91,10 +91,16 @@ class StingerStream():
     self.deletions = (StingerEdgeUpdate * self.deletions_size)()
     self.deletions_refs = []
     self.deletions_count = 0
+    self.vertex_updates_size = 5000
+    self.vertex_updates = (StingerVertexUpdate * self.deletions_size)()
+    self.vertex_updates_refs = []
+    self.vertex_updates_count = 0
     self.only_strings = strings
-    self.directed = directed
+    self.undirected = undirected
 
-  def add_insert(self, vfrom, vto, etype=0, weight=0, ts=0):
+  def add_insert(self, vfrom, vto, etype=0, weight=0, ts=0, insert_strings=None):
+    self.only_strings = insert_strings if insert_strings is not None else self.only_strings
+
     if(self.insertions_count >= self.insertions_size):
       self.insertions_size *= 2
       insertions_tmp = (StingerEdgeUpdate * self.insertions_size)()
@@ -145,13 +151,42 @@ class StingerStream():
 
     self.deletions_count += 1
 
+  def add_vertex_update(self, vtx, vtype, weight=0, incr_weight=0):
+    if(self.vertex_updates_count >= self.vertex_updates_size):
+      self.vertex_updates_size *= 2
+      vertex_updates_tmp = (StingerVertexUpdate * self.vertex_updates_size)()
+      self.vertex_updates_refs.append(self.vertex_updates)
+      memmove(addressof(vertex_updates_tmp), addressof(self.vertex_updates), sizeof(StingerVertexUpdate * (self.vertex_updates_size/2)))
+      self.vertex_updates = vertex_updates_tmp
+
+    if(self.only_strings):
+      self.vertex_updates[self.vertex_updates_count].vertex_str = c_char_p(vtx)
+    else:
+      self.vertex_updates[self.vertex_updates_count].vertex = c_int64(vtx)
+      self.vertex_updates[self.vertex_updates_count].vertex_str = 0
+
+    if isinstance(vtype, basestring):
+      self.vertex_updates[self.vertex_updates_count].type_str = c_char_p(vtype)
+    else:
+      self.vertex_updates[self.vertex_updates_count].type = c_int64(vtype)
+
+    self.vertex_updates[self.vertex_updates_count].weight = c_int64(weight)
+    self.vertex_updates[self.vertex_updates_count].incr_weight = c_int64(incr_weight)
+
+    self.vertex_updates_count += 1
+
   def send_batch(self):
     libstinger_net['stream_send_batch'](self.sock_handle, c_int(self.only_strings), 
-	self.insertions, self.insertions_count, self.deletions, self.deletions_count, self.directed)
+	     self.insertions, self.insertions_count, 
+       self.deletions, self.deletions_count, 
+       self.vertex_updates, self.vertex_updates_count,
+       self.undirected)
     self.insertions_count = 0
     self.deletions_count = 0
+    self.vertex_updates_count = 0
     self.insertions_refs = []
     self.deletions_refs = []
+    self.vertex_updates_refs = []
 
 
 class StingerAlg():
@@ -200,10 +235,10 @@ class StingerDataArray():
 
     offset = reduce(
 	lambda x,y: x+y,
-	[8 if c == 'd' or c == 'l' else 
-	 4 if c == 'f' or c == 'i' else 
-	 1 
-	   for c in data_desc[0][:field_index]], 
+	[8 if c == 'd' or c == 'l' else
+	 4 if c == 'f' or c == 'i' else
+	 1
+	   for c in data_desc[0][:field_index]],
 	0)
 
     self.data = data_ptr + (offset * self.nv)
@@ -306,7 +341,7 @@ class StingerMon():
 
   def release_read_lock(self):
     libstinger_net['stinger_mon_release_read_lock'](self.mon)
-      
+
   def stinger(self):
     get_stinger = libstinger_net['stinger_mon_get_stinger']
     get_stinger.restype = c_void_p
