@@ -110,10 +110,12 @@ TEST(StingerCoreCreationTest, AllocateLargeSharedStinger) {
   char * graph_name = (char*)xcalloc(20,sizeof(char));
   sprintf(graph_name, "/stinger-default");
   stinger_config = (struct stinger_config_t *)xcalloc(1,sizeof(struct stinger_config_t));
+  
   stinger_config->nv = 0;
   stinger_config->nebs = 0;
   stinger_config->netypes = 0;
   stinger_config->nvtypes = 0;
+
   stinger_config->memory_size = 1<<26;
   S = stinger_shared_new_full(&graph_name,stinger_config);
   int64_t consistency = stinger_consistency_check(S,S->max_nv);
@@ -849,7 +851,7 @@ TEST_F(StingerCoreTest, gather_successors) {
   int64_t * out_timerecent = (int64_t *)xcalloc(200,sizeof(int64_t));
   int64_t * out_type = (int64_t *)xcalloc(200,sizeof(int64_t));
 
-  uint64_t outlen;
+  size_t outlen;
   int64_t ret;
 
   stinger_gather_successors(S, 0, &outlen, out_vtx, out_weight, out_timefirst, out_timerecent, out_type, 200);
@@ -968,7 +970,7 @@ TEST_F(StingerCoreTest, gather_predecessors) {
 
   // PART 1: Try a buffer that is big enough to hold all predecessors
   int64_t * out_vtx = (int64_t *)xcalloc(200,sizeof(int64_t));
-  uint64_t outlen;
+  size_t outlen;
 
   stinger_gather_typed_predecessors(S, 0, 0, &outlen, out_vtx, 200);
   EXPECT_EQ(outlen, 148);

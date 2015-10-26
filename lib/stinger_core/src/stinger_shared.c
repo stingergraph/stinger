@@ -302,7 +302,7 @@ stinger_shared_free (struct stinger *S, const char * name, size_t sz)
     return S;
 
   int status = shmunmap(name, S, sz);
-  //status = shmunlink(name);
+  status = shmunlink(name);
 
   return NULL;
 }
