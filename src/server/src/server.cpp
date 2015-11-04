@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
     switch(opt) {
       case 'C': {
         strcpy(stinger_config_file,optarg);
-      }
+      		} break;
 
       case 'p': {
 		  port_names = atoi(optarg);
