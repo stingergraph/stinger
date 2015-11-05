@@ -1022,13 +1022,6 @@ TEST_F(StingerCoreTest, gather_successors) {
 }
 
 TEST_F(StingerCoreTest, gather_predecessors) {
-  void stinger_gather_typed_predecessors (const struct stinger *,
-    int64_t /* type */,
-    int64_t /* v */,
-    size_t * /* outlen */,
-    int64_t * /* out */,
-    size_t /* max_outlen */ );  
-
   OMP("omp parallel for")
   for (int i=0; i < 100; i++) {
     int64_t timestamp = i+1;
@@ -1074,6 +1067,56 @@ TEST_F(StingerCoreTest, gather_predecessors) {
   out_vtx = NULL;
 
   stinger_gather_typed_predecessors(S, 0, 0, &outlen, out_vtx, 0);
+  EXPECT_EQ(outlen, 0);
+  EXPECT_EQ(out_vtx, (void*)NULL);
+}
+
+TEST_F(StingerCoreTest, gather_neighbors) {
+  OMP("omp parallel for")
+  for (int i=0; i < 100; i++) {
+    int64_t timestamp = i+1;
+    for (int j=i+1; j < 100; j++) {
+      stinger_insert_edge_pair(S, (j%2)?1:0 , i, j, 1, timestamp);
+    }
+  }
+
+  OMP("omp parallel for")
+  for (int i=0; i < 100; i++) {
+    int64_t timestamp = i+2;
+    for (int j=i+101; j < 200; j++) {
+      stinger_insert_edge(S, 0, j, i, 1, timestamp);
+    }
+  }
+
+  // PART 1: Try a buffer that is big enough to hold all neighbors
+  int64_t * out_vtx = (int64_t *)xcalloc(200,sizeof(int64_t));
+  size_t outlen;
+
+  stinger_gather_typed_neighbors(S, 0, 0, &outlen, out_vtx, 200);
+  EXPECT_EQ(outlen, 148);
+
+  for (int64_t i=0; i < outlen; i++) {
+    EXPECT_TRUE(out_vtx[i] % 2 == 0 || out_vtx[i] >= 101);
+  }
+
+  xfree(out_vtx);
+
+  // PART 2: Try a small buffer
+  out_vtx = (int64_t *)xcalloc(99,sizeof(int64_t));
+
+  stinger_gather_typed_neighbors(S, 0, 0, &outlen, out_vtx, 99);
+  EXPECT_EQ(outlen, 99);
+
+  for (int64_t i=0; i < outlen; i++) {
+    EXPECT_TRUE(out_vtx[i] % 2 == 0 || out_vtx[i] >= 101);
+  }
+
+  xfree(out_vtx);
+
+  // PART 3: Try an empty buffer
+  out_vtx = NULL;
+
+  stinger_gather_typed_neighbors(S, 0, 0, &outlen, out_vtx, 0);
   EXPECT_EQ(outlen, 0);
   EXPECT_EQ(out_vtx, (void*)NULL);
 }

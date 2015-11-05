@@ -325,6 +325,28 @@ int stinger_has_typed_predecessor (const struct stinger *,
 				 int64_t /* type */ , int64_t /* from */ ,
 				 int64_t /* to */ );
 
+/* Neighbor list access */
+void stinger_gather_neighbors (const struct stinger *,
+                                          int64_t /* vtx */,
+                                          size_t * /* outlen */,
+                                          int64_t * /* out_vtx */,
+					  int64_t * /* out_weight_optional */,
+					  int64_t * /* out_timefirst_optional */,
+                                          int64_t * /* out_timerecent_optional */,
+					  int64_t * /* out_type_optional */,
+                                          size_t max_outlen);
+
+void stinger_gather_typed_neighbors (const struct stinger *,
+				      int64_t /* type */ ,
+				      int64_t /* vtx */ ,
+				      size_t * /* outlen */ ,
+				      int64_t * /* out */ ,
+				      size_t /* max_outlen */ );
+
+int stinger_has_typed_neighbor (const struct stinger *,
+				 int64_t /* type */ , int64_t /* from */ ,
+				 int64_t /* to */ );
+
 int64_t stinger_sort_actions (int64_t nactions,
 			      int64_t * /* actions */,
 			      int64_t * /* insoff */,

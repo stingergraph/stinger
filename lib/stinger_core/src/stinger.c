@@ -1972,6 +1972,133 @@ stinger_has_typed_successor (const struct stinger *G,
   return (rtn > 0 ? 1 : 0); 
 }
 
+/** @brief Copy adjacencies of a vertex into a buffer with optional metadata
+ *
+ *  Adjacencies of the specified vertex are copied into the user-provided buffer(s) 
+ *  up to the length of the buffer(s) specified by max_outlen.  All buffers should 
+ *  be at least max_outlen or NULL.
+ *
+ *  @param G The STINGER data structure
+ *  @param v Source vertex ID
+ *  @param outlen Number of adjacencies copied
+ *  @param out Buffer to hold adjacencies
+ *  @param weight OPTIONAL Buffer to hold edge weights
+ *  @param timefirst OPTIONAL Buffer to hold first timestamps
+ *  @param timerecent OPTIONAL Buffer to hold recent timestamps
+ *  @param type OPTIONAL Buffer to hold edge types
+ *  @param max_outlen Length of out[] and any optional buffers provided
+ *  @return Void
+ */
+MTA ("mta inline")
+void
+stinger_gather_neighbors (const struct stinger *G,
+                            int64_t v,
+                            size_t * outlen,
+                            int64_t * out,
+                            int64_t * weight,
+                            int64_t * timefirst,
+                            int64_t * timerecent,
+                            int64_t * type,
+                            size_t max_outlen)
+{
+  size_t kout = 0;
+
+  assert (G);
+
+  // Hack to get around constant warnings.  FIXME: Requires the READ_ONLY macros to be fixed!
+  struct stinger * G2 = *(struct stinger **)&G;
+
+  STINGER_PARALLEL_FORALL_EDGES_OF_VTX_BEGIN(G2, v) {
+    const int64_t n = STINGER_EDGE_DEST;
+    const int64_t w = STINGER_EDGE_WEIGHT;
+    const int64_t tf = STINGER_EDGE_TIME_FIRST;
+    const int64_t tr = STINGER_EDGE_TIME_RECENT;
+    const int64_t t = STINGER_EDGE_TYPE;
+    if (n >= 0) {
+      size_t where = stinger_size_fetch_add (&kout, 1);
+      if (where < max_outlen) {
+        out[where] = n;
+        if(weight) weight[where] = w;
+        if(timefirst) timefirst[where] = tf;
+        if(timerecent) timerecent[where] = tr;
+        if(type) type[where] = t;
+      }
+    }
+  } STINGER_PARALLEL_FORALL_EDGES_OF_VTX_END();
+
+  *outlen = (kout < max_outlen)?kout:max_outlen;               /* May be longer than max_outlen. */
+}
+
+/** @brief Copy typed adjacencies of a vertex into a buffer
+ *
+ *  For a given edge type, adjacencies of the specified vertex are copied into
+ *  the user-provided buffer up to the length of the buffer.
+ *
+ *  @param G The STINGER data structure
+ *  @param type Edge type
+ *  @param v Source vertex ID
+ *  @param outlen Number of adjacencies copied
+ *  @param out Buffer to hold adjacencies
+ *  @param max_outlen Length of out[] and recent[]
+ *  @return Void
+ */
+MTA ("mta inline")
+void
+stinger_gather_typed_neighbors (const struct stinger *G, int64_t type,
+                                 int64_t v, size_t * outlen,
+                                 int64_t * out, size_t max_outlen)
+{
+  size_t kout = 0;
+
+  assert (G);
+
+  if (v < 0) {
+    *outlen = 0;
+    return;
+  }
+
+  // Hack to get around constant warnings.  FIXME: Requires the READ_ONLY macros to be fixed!
+  struct stinger * G2 = *(struct stinger **)&G;
+
+  STINGER_PARALLEL_FORALL_EDGES_OF_TYPE_OF_VTX_BEGIN(G2, type, v) {
+    size_t where = stinger_size_fetch_add (&kout, 1);
+    if (where < max_outlen)
+      out[where] = STINGER_EDGE_DEST;
+  } STINGER_PARALLEL_FORALL_EDGES_OF_TYPE_OF_VTX_END();
+
+  *outlen = (kout < max_outlen)?kout:max_outlen;               /* May be longer than max_outlen. */
+}
+
+/** @brief Determines if a vertex has an out edge of a given type
+ *
+ *  Searches the adjacencies of a specified vertex for an edge of the given type.
+ *
+ *  @param G The STINGER data structure
+ *  @param type Edge type
+ *  @param from Source vertex ID
+ *  @param to Destination vertex ID
+ *  @return 1 if found; 0 otherwise
+ */
+MTA ("mta inline")
+int
+stinger_has_typed_neighbor (const struct stinger *G,
+    int64_t type, int64_t from, int64_t to)
+{
+  STINGERASSERTS ();
+
+  int rtn = 0;
+
+  // Hack to get around constant warnings.  FIXME: Requires the READ_ONLY macros to be fixed!
+  struct stinger * G2 = *(struct stinger **)&G;
+
+  STINGER_PARALLEL_FORALL_EDGES_OF_TYPE_OF_VTX_BEGIN(G2,type,from) {
+    if (STINGER_EDGE_DEST == to) {
+      stinger_int_fetch_add(&rtn, 1);
+    }
+  } STINGER_PARALLEL_FORALL_EDGES_OF_TYPE_OF_VTX_END();
+  return (rtn > 0 ? 1 : 0); 
+}
+
 /** @brief Determines if a vertex has an in edge of a given type
  *
  *  Searches the adjacencies of a specified vertex for an edge of the given type.

@@ -7,6 +7,13 @@ compare (const void * a, const void * b)
     return ( *(int*)a - *(int*)b );
 }
 
+/*
+ *  Adamic Adar
+ *
+ *  This implementation treats the input graph as undirected.  Directed edges in the graph are treated as undirected
+ *  when performing the analysis.  This is to account for the fact that Adamic Adar is only defined for an undirected
+ *  graph.
+ */
 int64_t adamic_adar(const stinger_t * S, int64_t source, int64_t etype, int64_t ** candidates, double ** scores) {
   if (*candidates != NULL || *scores != NULL) {
     LOG_E("Adamic Adar output arrays should not be allocated before call.  Possible memory leak.");
@@ -17,9 +24,9 @@ int64_t adamic_adar(const stinger_t * S, int64_t source, int64_t etype, int64_t 
   int64_t source_deg = 0;
 
   if (etype == -1) {
-    source_deg = stinger_outdegree (S, source);
+    source_deg = stinger_degree_get (S, source);
   } else {
-    source_deg = stinger_typed_outdegree (S, source, etype);
+    source_deg = stinger_typed_degree (S, source, etype);
   }
 
   /* Initialize to NULL in case of error */
@@ -36,10 +43,10 @@ int64_t adamic_adar(const stinger_t * S, int64_t source, int64_t etype, int64_t 
   /* extract and sort the neighborhood of SOURCE */
   size_t res;
   if (etype == -1) {
-    stinger_gather_successors (S, source, &res, source_adj, NULL, NULL, NULL, NULL, source_deg);
+    stinger_gather_neighbors (S, source, &res, source_adj, NULL, NULL, NULL, NULL, source_deg);
     source_deg = res;
   } else {
-    stinger_gather_typed_successors (S, etype, source, &res, source_adj, source_deg);
+    stinger_gather_typed_neighbors (S, etype, source, &res, source_adj, source_deg);
     source_deg = res;
   }
 
@@ -60,9 +67,9 @@ int64_t adamic_adar(const stinger_t * S, int64_t source, int64_t etype, int64_t 
     int64_t v = source_adj[i];
     int64_t v_deg;
     if (etype == -1) {
-      v_deg = stinger_outdegree (S, v);
+      v_deg = stinger_degree_get (S, v);
     } else {
-      v_deg = stinger_typed_outdegree (S, v, etype);
+      v_deg = stinger_typed_degree (S, v, etype);
     }
     marks[v] = 1;
     two_hop_size += v_deg;
@@ -75,19 +82,19 @@ int64_t adamic_adar(const stinger_t * S, int64_t source, int64_t etype, int64_t 
   for (int64_t i = 0; i < source_deg; i++) {
     int64_t v = source_adj[i];
     if (etype == -1) {
-      STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S,v) {
+      STINGER_FORALL_EDGES_OF_VTX_BEGIN(S,v) {
         if (stinger_int64_fetch_add(&marks[STINGER_EDGE_DEST], 1) == 0) {
           int64_t loc = stinger_int64_fetch_add(&head, 1);
           two_hop_neighborhood[loc] = STINGER_EDGE_DEST;
         }
-      } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
+      } STINGER_FORALL_EDGES_OF_VTX_END();
     } else {
-      STINGER_FORALL_OUT_EDGES_OF_TYPE_OF_VTX_BEGIN(S,etype,v) {
+      STINGER_FORALL_EDGES_OF_TYPE_OF_VTX_BEGIN(S,etype,v) {
         if (stinger_int64_fetch_add(&marks[STINGER_EDGE_DEST], 1) == 0) {
           int64_t loc = stinger_int64_fetch_add(&head, 1);
           two_hop_neighborhood[loc] = STINGER_EDGE_DEST;
         }
-      } STINGER_FORALL_OUT_EDGES_OF_TYPE_OF_VTX_END();        
+      } STINGER_FORALL_EDGES_OF_TYPE_OF_VTX_END();        
     }
   }
 
@@ -107,18 +114,18 @@ int64_t adamic_adar(const stinger_t * S, int64_t source, int64_t etype, int64_t 
     int64_t vtx = two_hop_neighborhood[k];    
     int64_t v_deg;
     if (etype == -1) {
-      v_deg = stinger_outdegree (S, vtx);
+      v_deg = stinger_degree_get (S, vtx);
     } else {
-      v_deg = stinger_typed_outdegree (S, vtx, etype);
+      v_deg = stinger_typed_degree (S, vtx, etype);
     }
 
     int64_t * target_adj = (int64_t *) xmalloc (v_deg * sizeof(int64_t));
     size_t res;
     if (etype == -1) {
-      stinger_gather_successors (S, vtx, &res, target_adj, NULL, NULL, NULL, NULL, v_deg);
+      stinger_gather_neighbors (S, vtx, &res, target_adj, NULL, NULL, NULL, NULL, v_deg);
       v_deg = res;
     } else {
-      stinger_gather_typed_successors (S, etype, vtx, &res, target_adj, v_deg);
+      stinger_gather_typed_neighbors (S, etype, vtx, &res, target_adj, v_deg);
       v_deg = res;
     }
     qsort (target_adj, v_deg, sizeof(int64_t), compare);
@@ -137,9 +144,9 @@ int64_t adamic_adar(const stinger_t * S, int64_t source, int64_t etype, int64_t 
       	int64_t neighbor = source_adj[i];    
         int64_t my_deg;
         if (etype == -1) {
-          my_deg = stinger_outdegree (S, neighbor);
+          my_deg = stinger_degree_get (S, neighbor);
         } else {
-          my_deg = stinger_typed_outdegree (S, neighbor, etype);
+          my_deg = stinger_typed_degree (S, neighbor, etype);
         }
 
         double score = 0.0;
