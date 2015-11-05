@@ -512,6 +512,37 @@ TEST_F(StingerCoreTest, stinger_delete_edges) {
   }
 }
 
+TEST_F(StingerCoreTest, racing_deletions) {
+  int64_t ret;
+  // Insert undirected edges
+  OMP("omp parallel for")
+  for (int i=0; i < 100; i++) {
+    int64_t timestamp = i+1;
+    int64_t ret;
+    for (int j=i+1; j < 100; j++) {
+      ret = stinger_insert_edge_pair(S, 0, i, j, 1, timestamp);
+    }
+  }
+
+  for (int i=0; i < 100; i++) {
+    for (int j=i+1; j < 100; j++) {
+      OMP("omp parallel") {
+        OMP ("omp sections") {
+          OMP("omp section") {
+            ret = stinger_remove_edge(S, 0, i, j);
+          }
+          OMP("omp section") {
+            ret = stinger_remove_edge(S, 0, j, i);
+          }
+        }
+      }
+    }
+  }
+
+  int64_t consistency = stinger_consistency_check(S,S->max_nv);
+  EXPECT_EQ(consistency,0);
+}
+
 TEST_F(StingerCoreTest, stinger_remove_vertex) {
   int64_t consistency;
   // Insert undirected edges

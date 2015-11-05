@@ -1007,7 +1007,7 @@ update_edge_data_and_direction (struct stinger * S, struct stinger_eb *eb,
       if (operation & EDGE_WEIGHT_SET) {
         weight = in_weight;
       } else if (operation & EDGE_WEIGHT_INCR) {
-        weight++;
+        weight += in_weight;;
       }
     }
 
@@ -1230,8 +1230,18 @@ stinger_insert_edge (struct stinger *G,
 {
   STINGERASSERTS();
 
-  int ret = stinger_update_directed_edge(G, type, from, to, weight, timestamp, STINGER_EDGE_DIRECTION_OUT, EDGE_WEIGHT_SET);
-  stinger_update_directed_edge(G, type, from, to, weight, timestamp, STINGER_EDGE_DIRECTION_IN, EDGE_WEIGHT_SET);
+  int64_t first_direction, second_direction;
+
+  if (from < to) {
+    first_direction = STINGER_EDGE_DIRECTION_OUT;
+    second_direction = STINGER_EDGE_DIRECTION_IN;
+  } else {
+    first_direction = STINGER_EDGE_DIRECTION_IN;
+    second_direction = STINGER_EDGE_DIRECTION_OUT;
+  }
+
+  int ret = stinger_update_directed_edge(G, type, from, to, weight, timestamp, first_direction, EDGE_WEIGHT_SET);
+  stinger_update_directed_edge(G, type, from, to, weight, timestamp, second_direction, EDGE_WEIGHT_SET);
 
   return ret;
 }
@@ -1275,8 +1285,18 @@ stinger_incr_edge (struct stinger *G,
 {
   STINGERASSERTS();
 
-  int ret = stinger_update_directed_edge(G, type, from, to, weight, timestamp, STINGER_EDGE_DIRECTION_OUT, EDGE_WEIGHT_INCR);
-  stinger_update_directed_edge(G, type, from, to, weight, timestamp, STINGER_EDGE_DIRECTION_IN, EDGE_WEIGHT_INCR);
+  int64_t first_direction, second_direction;
+
+  if (from < to) {
+    first_direction = STINGER_EDGE_DIRECTION_OUT;
+    second_direction = STINGER_EDGE_DIRECTION_IN;
+  } else {
+    first_direction = STINGER_EDGE_DIRECTION_IN;
+    second_direction = STINGER_EDGE_DIRECTION_OUT;
+  }
+
+  int ret = stinger_update_directed_edge(G, type, from, to, weight, timestamp, first_direction, EDGE_WEIGHT_INCR);
+  stinger_update_directed_edge(G, type, from, to, weight, timestamp, second_direction, EDGE_WEIGHT_INCR);
 
   return ret;
 }
@@ -1370,6 +1390,15 @@ stinger_remove_edge (struct stinger *G,
   int64_t weight_first, weight_second;
   struct stinger_eb *ebpool_priv = ebpool->ebpool;
 
+  int64_t lock_backedge_first = 0;
+
+  if (from > to) {
+    lock_backedge_first = 1;
+    goto removeBackEdge;
+  }
+
+  removeForwardEdge:
+
   curs = etype_begin (G, from, type);
 
   for (tmp_first = ebpool_priv + curs.eb; tmp_first != ebpool_priv; tmp_first = ebpool_priv + readff((uint64_t *)&tmp_first->next)) {
@@ -1381,9 +1410,16 @@ stinger_remove_edge (struct stinger *G,
         if (to == stinger_eb_adjvtx(tmp_first,k_first) && stinger_eb_direction_out(tmp_first,k_first)) {
           weight_first = readfe (&(tmp_first->edges[k_first].weight));
           if(to == stinger_eb_adjvtx(tmp_first,k_first) && stinger_eb_direction_out(tmp_first,k_first)) {
-            goto removeBackEdge;
+            if (lock_backedge_first) {
+              goto removeEdges;
+            } else {
+              goto removeBackEdge;
+            }
           } else {
             writeef((uint64_t *)&(tmp_first->edges[k_first].weight), (uint64_t)weight_first);
+            if (lock_backedge_first) {
+              writeef((uint64_t *)&(tmp_second->edges[k_second].weight), (uint64_t)weight_second);
+            }
             return -1;
           }
         }
@@ -1391,6 +1427,9 @@ stinger_remove_edge (struct stinger *G,
     }
   }
 
+  if (lock_backedge_first) {
+    writeef((uint64_t *)&(tmp_second->edges[k_second].weight), (uint64_t)weight_second);
+  }
   return -1;
 
   removeBackEdge:
@@ -1408,10 +1447,16 @@ stinger_remove_edge (struct stinger *G,
         if (from == stinger_eb_adjvtx(tmp_second,k_second) && stinger_eb_direction_in(tmp_second,k_second)) {
           weight_second = readfe (&(tmp_second->edges[k_second].weight));
           if(from == stinger_eb_adjvtx(tmp_second,k_second) && stinger_eb_direction_in(tmp_second,k_second)) {
-            goto removeEdges;
+            if (lock_backedge_first) {
+              goto removeForwardEdge;
+            } else {
+              goto removeEdges;
+            }
           } else {
-            writeef((uint64_t *)&(tmp_second->edges[k_second].weight), (uint64_t)weight_second);
-            writeef((uint64_t *)&(tmp_first->edges[k_first].weight), (uint64_t)weight_first);
+              writeef((uint64_t *)&(tmp_second->edges[k_second].weight), (uint64_t)weight_second);
+            if (!lock_backedge_first) {
+              writeef((uint64_t *)&(tmp_first->edges[k_first].weight), (uint64_t)weight_first);
+            }
             return -1;
           }
         }
@@ -1419,15 +1464,22 @@ stinger_remove_edge (struct stinger *G,
     }
   }
 
-  writeef((uint64_t *)&(tmp_first->edges[k_first].weight), (uint64_t)weight_first);
+  if (!lock_backedge_first) {
+    writeef((uint64_t *)&(tmp_first->edges[k_first].weight), (uint64_t)weight_first);
+  }
   return -1;
 
   removeEdges:
 
   update_edge_data_and_direction (G, tmp_first, k_first, -1, weight_first, 0, STINGER_EDGE_DIRECTION_OUT, EDGE_WEIGHT_SET);
   update_edge_data_and_direction (G, tmp_second, k_second, -1, weight_second, 0, STINGER_EDGE_DIRECTION_IN, EDGE_WEIGHT_SET);
-  writeef((uint64_t *)&(tmp_first->edges[k_first].weight), (uint64_t)weight_first);
-  writeef((uint64_t *)&(tmp_second->edges[k_second].weight), (uint64_t)weight_second);
+  if (lock_backedge_first) {
+    writeef((uint64_t *)&(tmp_first->edges[k_first].weight), (uint64_t)weight_first);
+    writeef((uint64_t *)&(tmp_second->edges[k_second].weight), (uint64_t)weight_second);
+  } else {
+    writeef((uint64_t *)&(tmp_second->edges[k_second].weight), (uint64_t)weight_second);
+    writeef((uint64_t *)&(tmp_first->edges[k_first].weight), (uint64_t)weight_first);
+  }
 
   return 1;
 }
@@ -1948,7 +2000,10 @@ stinger_set_edgeweight (struct stinger *G,
 
   STINGER_PARALLEL_FORALL_OUT_EDGES_OF_TYPE_OF_VTX_BEGIN(G,type,from) {
     if (STINGER_EDGE_DEST == to) {
-      STINGER_EDGE_WEIGHT = weight;
+
+      int64_t cur_weight = readfe (&(current_edge__->weight));
+      writeef((uint64_t *)&(current_edge__->weight), (uint64_t)weight);
+
       rtn = 1;
     }
   } STINGER_PARALLEL_FORALL_OUT_EDGES_OF_TYPE_OF_VTX_END();
@@ -2019,10 +2074,6 @@ stinger_edge_timestamp_recent (const struct stinger * G,
   return rtn;
 }
 
-/* TODO revisit this function
- * BUG Timestamp in edge block has a race condition which
- * may break consistency.  At least we are attempting to keep it up to date
- * */
 /** @brief Update the recent timestamp of an edge
  *
  *  Finds a specified edge of a given type by source and destination vertex ID
@@ -2047,6 +2098,8 @@ stinger_edge_touch (struct stinger *G,
 
   STINGER_PARALLEL_FORALL_OUT_EDGES_OF_TYPE_OF_VTX_BEGIN(G,type,from) {
     if (STINGER_EDGE_DEST == to) {
+      int64_t cur_weight = readfe (&(current_edge__->weight));
+      
       STINGER_EDGE_TIME_RECENT = timestamp;
       if (current_eb__->largeStamp < timestamp) {
         stinger_int64_cas (&(current_eb__->largeStamp), 
@@ -2059,6 +2112,8 @@ stinger_edge_touch (struct stinger *G,
                             timestamp);
       }
       rtn = 1;
+      
+      writeef((uint64_t *)&(current_edge__->weight), (uint64_t)cur_weight);
     }
   } STINGER_PARALLEL_FORALL_OUT_EDGES_OF_TYPE_OF_VTX_END();
   return rtn;
