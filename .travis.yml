@@ -4,7 +4,7 @@ compiler:
   - gcc
   - clang
 before_install:
-  - wget http://www.cmake.org/files/v3.3/cmake-3.3.0-rc3-Linux-x86_64.sh
+  - wget --no-check-certificate http://www.cmake.org/files/v3.3/cmake-3.3.0-rc3-Linux-x86_64.sh
   - mkdir -p $HOME/cmake
   - sh cmake-3.3.0-rc3-Linux-x86_64.sh --skip-license --prefix=$HOME/cmake
 before_script:
