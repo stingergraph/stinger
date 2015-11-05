@@ -372,19 +372,23 @@ TEST_F(StingerCoreTest, stinger_delete_edges) {
 
   stinger_insert_edge_pair(S, 0, 300, 301, 1, 1);
 
-  int64_t outDegree, inDegree;
+  int64_t outDegree, inDegree, degree;
 
   outDegree = stinger_outdegree_get(S,300);
   inDegree = stinger_indegree_get(S,300);
+  degree = stinger_degree_get(S,300);
 
   EXPECT_EQ(outDegree,1);
   EXPECT_EQ(inDegree,1);
+  EXPECT_EQ(degree,1);
 
   outDegree = stinger_outdegree_get(S,301);
   inDegree = stinger_indegree_get(S,301);
+  degree = stinger_degree_get(S,301);
 
   EXPECT_EQ(outDegree,1);
   EXPECT_EQ(inDegree,1);
+  EXPECT_EQ(degree,1);
 
   ret = stinger_remove_edge_pair(S, 0, 300, 301);
 
@@ -392,15 +396,19 @@ TEST_F(StingerCoreTest, stinger_delete_edges) {
 
   outDegree = stinger_outdegree_get(S,300);
   inDegree = stinger_indegree_get(S,300);
+  degree = stinger_degree_get(S,300);
 
   EXPECT_EQ(outDegree,0);
   EXPECT_EQ(inDegree,0);
+  EXPECT_EQ(degree,0);
 
   outDegree = stinger_outdegree_get(S,301);
   inDegree = stinger_indegree_get(S,301);
+  degree = stinger_degree_get(S,301);
 
   EXPECT_EQ(outDegree,0);
   EXPECT_EQ(inDegree,0);
+  EXPECT_EQ(degree,0);
 
   int64_t total_edges = 0;
 
@@ -432,15 +440,19 @@ TEST_F(StingerCoreTest, stinger_delete_edges) {
 
   outDegree = stinger_outdegree_get(S,400);
   inDegree = stinger_indegree_get(S,400);
+  degree = stinger_degree_get(S,400);
 
   EXPECT_EQ(outDegree,0);
   EXPECT_EQ(inDegree,1);
+  EXPECT_EQ(degree,1);
 
   outDegree = stinger_outdegree_get(S,401);
   inDegree = stinger_indegree_get(S,401);
+  degree = stinger_degree_get(S,400);
 
   EXPECT_EQ(outDegree,1);
   EXPECT_EQ(inDegree,0);
+  EXPECT_EQ(degree,1);
 
   STINGER_FORALL_EDGES_OF_ALL_TYPES_BEGIN(S) {
     total_edges++;
@@ -486,12 +498,18 @@ TEST_F(StingerCoreTest, stinger_delete_edges) {
   for (int i=0; i < 100; i++) {
     outDegree = stinger_outdegree_get(S,i);
     inDegree = stinger_indegree_get(S,i);
+    degree = stinger_degree_get(S,i);
     EXPECT_EQ(outDegree,99-i);
     EXPECT_EQ(inDegree,i);
+    EXPECT_EQ(degree,99);
     outDegree = stinger_typed_outdegree(S,i,0);
+    degree = stinger_typed_degree(S,i,0);
     EXPECT_EQ(outDegree,0);
+    EXPECT_EQ(degree,0);
     outDegree = stinger_typed_outdegree(S,i,1);
+    degree = stinger_typed_degree(S,i,1);
     EXPECT_EQ(outDegree,99-i);
+    EXPECT_EQ(degree,99);
   }
 
   for (int i=0; i < 100; i++) {
@@ -507,8 +525,10 @@ TEST_F(StingerCoreTest, stinger_delete_edges) {
   for (int i=0; i < 100; i++) {
     outDegree = stinger_outdegree_get(S,i);
     inDegree = stinger_indegree_get(S,i);
+    degree = stinger_degree_get(S,i);
     EXPECT_EQ(outDegree,0);
     EXPECT_EQ(inDegree,0);
+    EXPECT_EQ(degree,0);
   }
 }
 
@@ -569,16 +589,20 @@ TEST_F(StingerCoreTest, stinger_remove_vertex) {
   }
 
   // PART 1: remove a vertex with all undirected edges
-  int64_t outDegree, inDegree;
+  int64_t outDegree, inDegree, degree;
   outDegree = stinger_outdegree_get(S,3);
   inDegree = stinger_indegree_get(S,3);
+  degree = stinger_degree_get(S,3);
   EXPECT_GT(outDegree,0);
   EXPECT_GT(inDegree,0);
+  EXPECT_GT(degree,0);
   stinger_remove_vertex (S, 3);
   outDegree = stinger_outdegree_get(S,3);
   inDegree = stinger_indegree_get(S,3);
+  degree = stinger_degree_get(S,3);
   EXPECT_EQ(outDegree,0);
   EXPECT_EQ(inDegree,0);
+  EXPECT_EQ(degree,0);
 
   bool has_edge_list = false;
   bool in_edge_list = false;
@@ -602,13 +626,17 @@ TEST_F(StingerCoreTest, stinger_remove_vertex) {
   // PART 2: remove a vertex with some directed out edges
   outDegree = stinger_outdegree_get(S,1);
   inDegree = stinger_indegree_get(S,1);
+  degree = stinger_degree_get(S,1);
   EXPECT_GT(outDegree,0);
   EXPECT_GT(inDegree,0);
+  EXPECT_GT(degree,0);
   stinger_remove_vertex (S, 1);
   outDegree = stinger_outdegree_get(S,1);
   inDegree = stinger_indegree_get(S,1);
+  degree = stinger_degree_get(S,1);
   EXPECT_EQ(outDegree,0);
   EXPECT_EQ(inDegree,0);
+  EXPECT_EQ(degree,0);
 
   has_edge_list = false;
   in_edge_list = false;
@@ -630,13 +658,17 @@ TEST_F(StingerCoreTest, stinger_remove_vertex) {
   // PART 2: remove a vertex with some directed in edges
   outDegree = stinger_outdegree_get(S,2);
   inDegree = stinger_indegree_get(S,2);
+  degree = stinger_degree_get(S,2);
   EXPECT_GT(outDegree,0);
   EXPECT_GT(inDegree,0);
+  EXPECT_GT(degree,0);
   stinger_remove_vertex (S, 2);
   outDegree = stinger_outdegree_get(S,2);
   inDegree = stinger_indegree_get(S,2);
+  degree = stinger_degree_get(S,2);
   EXPECT_EQ(outDegree,0);
   EXPECT_EQ(inDegree,0);
+  EXPECT_EQ(degree,0);
 
   has_edge_list = false;
   in_edge_list = false;

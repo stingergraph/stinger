@@ -44,6 +44,28 @@ stinger_etype_names_get(const stinger_t * S) {
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
  * EXTERNAL INTERFACE FOR VERTICES
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+/* DEGREE */
+
+inline vdegree_t
+stinger_degree_get(const stinger_t * S, vindex_t v) {
+  return stinger_vertex_degree_get(stinger_vertices_get(S), v);
+}
+
+inline vdegree_t
+stinger_degree_set(const stinger_t * S, vindex_t v, vdegree_t d) {
+  return stinger_vertex_degree_set(stinger_vertices_get(S), v, d);
+}
+
+inline vdegree_t
+stinger_degree_increment(const stinger_t * S, vindex_t v, vdegree_t d) {
+  return stinger_vertex_degree_increment(stinger_vertices_get(S), v, d);
+}
+
+inline vdegree_t
+stinger_degree_increment_atomic(const stinger_t * S, vindex_t v, vdegree_t d) {
+  return stinger_vertex_degree_increment_atomic(stinger_vertices_get(S), v, d);
+}
+
 /* IN DEGREE */
 
 inline vdegree_t
@@ -541,6 +563,11 @@ stinger_consistency_check (struct stinger *S, uint64_t NV)
   if (outDegree == NULL) {
     returnCode |= 0x00000001;
     return returnCode;
+  } 
+  uint64_t *degree = xcalloc (NV, sizeof (uint64_t));
+  if (degree == NULL) {
+    returnCode |= 0x00000001;
+    return returnCode;
   }  
 
   MAP_STING(S);
@@ -551,6 +578,7 @@ stinger_consistency_check (struct stinger *S, uint64_t NV)
   for (uint64_t i = 0; i < NV; i++) {
     uint64_t curOutDegree = 0;
     uint64_t curInDegree = 0;
+    uint64_t curDegree = 0;
     const struct stinger_eb *curBlock = ebpool_priv + stinger_vertex_edges_get(vertices, i);
     while (curBlock != ebpool_priv) {
       if (curBlock->vertexID != i)
@@ -573,6 +601,8 @@ stinger_consistency_check (struct stinger *S, uint64_t NV)
             stinger_int64_fetch_add (&inDegree[stinger_eb_adjvtx (curBlock, j)], 1);
             curOutDegree++;
           }
+          stinger_int64_fetch_add (&degree[stinger_eb_adjvtx (curBlock, j)], 1);
+          curDegree++;
           numEdges++;
           if (stinger_eb_direction_out (curBlock, j)) {
             if (stinger_eb_ts (curBlock, j) < smallStamp)
@@ -611,6 +641,10 @@ stinger_consistency_check (struct stinger *S, uint64_t NV)
       LOG_E_A("%ld -- curInDegree: %ld != stinger_indegree: %ld",i,curInDegree,stinger_indegree_get(S,i));
       returnCode |= 0x00000100;
     }
+    if (curDegree != stinger_degree_get(S, i)) {
+      LOG_E_A("%ld -- curDegree: %ld != stinger_degree: %ld",i,curDegree,stinger_degree_get(S,i));
+      returnCode |= 0x00000200;
+    }
   }
 
   OMP("omp parallel for reduction(|:returnCode)")
@@ -631,8 +665,18 @@ stinger_consistency_check (struct stinger *S, uint64_t NV)
     }
   }
 
+  OMP("omp parallel for reduction(|:returnCode)")
+  MTA("mta assert nodep")
+  for (uint64_t i = 0; i < NV; i++) {
+    if (degree[i] != stinger_degree_get(S,i)){
+      LOG_E_A("%ld -- curDegree: %ld != stinger_degree: %ld",i,degree[i],stinger_degree_get(S,i));
+      returnCode |= 0x00002000;
+    }
+  }
+
   free (inDegree);
   free (outDegree);
+  free (degree);
 
   return returnCode;
 }
@@ -1025,6 +1069,7 @@ update_edge_data_and_direction (struct stinger * S, struct stinger_eb *eb,
       } else if (direction & STINGER_EDGE_DIRECTION_IN) {        
         stinger_indegree_increment_atomic(S, eb->vertexID, 1);
       }
+      stinger_degree_increment_atomic(S, eb->vertexID, 1);
 
       if (index >= eb->high)
         eb->high = index + 1;
@@ -1078,10 +1123,9 @@ update_edge_data_and_direction (struct stinger * S, struct stinger_eb *eb,
     if ((e->neighbor & STINGER_EDGE_DIRECTION_MASK) == 0) {
       e->neighbor = neighbor;
       stinger_int64_fetch_add (&(eb->numEdges), -1);
+      stinger_degree_increment_atomic(S, eb->vertexID, -1);
     }
   } 
-
-  /* we always do this to update weight and  unlock the edge if needed */
 }
 
 int
@@ -1261,6 +1305,24 @@ stinger_typed_outdegree (const struct stinger * S, int64_t i, int64_t type) {
   STINGER_FORALL_OUT_EDGES_OF_TYPE_OF_VTX_BEGIN(S2,type,i) {
     out++;
   } STINGER_FORALL_OUT_EDGES_OF_TYPE_OF_VTX_END();
+  return out;
+}
+
+/** @brief Returns the degree of a vertex for a given edge type
+ *
+ *  @param S The STINGER data structure
+ *  @param i Logical vertex ID
+ *  @param type Edge type
+ *  @return degree of vertex i with type
+ */
+int64_t
+stinger_typed_degree (const struct stinger * S, int64_t i, int64_t type) {
+  int64_t out = 0;
+  // Hack to get around constant warnings.  FIXME: Requires the READ_ONLY macros to be fixed!
+  struct stinger * S2 = *(struct stinger **)&S;
+  STINGER_FORALL_EDGES_OF_TYPE_OF_VTX_BEGIN(S2,type,i) {
+    out++;
+  } STINGER_FORALL_EDGES_OF_TYPE_OF_VTX_END();
   return out;
 }
 
@@ -1630,6 +1692,7 @@ stinger_set_initial_edges (struct stinger *G,
           stinger_vertex_outdegree_increment_atomic(vertices, from, 1);
           stinger_vertex_indegree_increment_atomic(vertices, to, 1);
         }
+        stinger_vertex_degree_increment_atomic(vertices, from, 1);
         /* XXX: The next statements block parallelization
            of the outer loop. */
         edge[i].neighbor = to | direction[voff + i];
@@ -1802,14 +1865,14 @@ stinger_gather_predecessors (const struct stinger *G,
 MTA ("mta inline")
 void
 stinger_gather_successors (const struct stinger *G,
-                                          int64_t v,
-                                          size_t * outlen,
-                                          int64_t * out,
-					  int64_t * weight,
-					  int64_t * timefirst,
-                                          int64_t * timerecent,
-					  int64_t * type,
-                                          size_t max_outlen)
+                            int64_t v,
+                            size_t * outlen,
+                            int64_t * out,
+                            int64_t * weight,
+                            int64_t * timefirst,
+                            int64_t * timerecent,
+                            int64_t * type,
+                            size_t max_outlen)
 {
   size_t kout = 0;
 

@@ -153,6 +153,20 @@ stinger_etype_names_get(const stinger_t * S);
  * VERTEX METADATA
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+/* DEGREE */
+
+vdegree_t
+stinger_degree_get(const stinger_t * S, vindex_t v);
+
+vdegree_t
+stinger_degree_set(const stinger_t * S, vindex_t v, vdegree_t d);
+
+vdegree_t
+stinger_degree_increment(const stinger_t * S, vindex_t v, vdegree_t d);
+
+vdegree_t
+stinger_degree_increment_atomic(const stinger_t * S, vindex_t v, vdegree_t d);
+
 /* IN DEGREE */
 
 vdegree_t
@@ -264,6 +278,8 @@ uint64_t stinger_max_active_vertex(const struct stinger * S);
 uint64_t stinger_num_active_vertices(const struct stinger * S);
 
 int64_t stinger_typed_outdegree(const struct stinger *, int64_t /* vtx */, int64_t /* type */);
+
+int64_t stinger_typed_degree(const struct stinger *, int64_t /* vtx */, int64_t /* type */);
 
 /* Neighbor list access */
 void stinger_gather_successors (const struct stinger *,
