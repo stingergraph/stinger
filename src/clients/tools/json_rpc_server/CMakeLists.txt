@@ -12,6 +12,7 @@ set(sources
 	src/alg_data_array.cpp
 	src/array_to_json_monolithic.cpp
 	src/array_to_json_reduction.cpp
+	src/betweenness_subgraph.cpp
 	src/bfs_edges.cpp
 	src/breadth_first_search.cpp
 	src/egonet.cpp

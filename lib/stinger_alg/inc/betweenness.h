@@ -8,7 +8,8 @@
 #include "stinger_net/stinger_alg.h"
 #include "stinger_utils/timer.h"
 
-void single_bc_search(stinger_t * S, int64_t nv, int64_t source, double * bc, int64_t * found_count);
+void single_bc_search(stinger_t * S, int64_t nv, int64_t source, double * bc, int64_t * found_count, uint8_t * vertex_set);
 void sample_search(stinger_t * S, int64_t nv, int64_t nsamples, double * bc, int64_t * found_count);
+void sample_search_subgraph(stinger_t * S, int64_t nv, uint8_t * vertex_set, int64_t nsamples, double * bc, int64_t * found_count);
 
 #endif
