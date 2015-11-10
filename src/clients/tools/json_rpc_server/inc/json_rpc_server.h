@@ -187,6 +187,11 @@ struct JSON_RPC_pagerank_subgraph: JSON_RPCFunction {
   virtual int64_t operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
 };
 
+struct JSON_RPC_betweenness_subgraph: JSON_RPCFunction {
+  JSON_RPC_betweenness_subgraph(JSON_RPCServerState * state) : JSON_RPCFunction(state) { }
+  virtual int64_t operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
+};
+
 
 /* Helper Functions */
 int

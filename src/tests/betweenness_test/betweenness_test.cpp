@@ -59,6 +59,9 @@ TEST_F(BetweennessTest, DirectedGraph) {
   for (int64_t v = 0; v < nv; v++) {
     EXPECT_DOUBLE_EQ(expected_bc[v],bc[v]) << "v = " << v;
   }
+
+  xfree(bc);
+  xfree(times_found);
 }
 
 TEST_F(BetweennessTest, DirectedGraphOverSample) {
@@ -96,6 +99,9 @@ TEST_F(BetweennessTest, DirectedGraphOverSample) {
   for (int64_t v = 0; v < nv; v++) {
     EXPECT_DOUBLE_EQ(expected_bc[v],bc[v]) << "v = " << v;
   }
+
+  xfree(bc);
+  xfree(times_found);
 }
 
 TEST_F(BetweennessTest, UndirectedGraph) {
@@ -133,7 +139,60 @@ TEST_F(BetweennessTest, UndirectedGraph) {
   for (int64_t v = 0; v < nv; v++) {
     EXPECT_NEAR(expected_bc[v],bc[v],0.00001) << "v = " << v;
   }
+
+  xfree(bc);
+  xfree(times_found);
 }
+
+TEST_F(BetweennessTest, Subgraph) {
+  stinger_insert_edge(S, 0, 0, 1, 1, 1);
+  stinger_insert_edge(S, 0, 1, 2, 1, 1);
+  stinger_insert_edge(S, 0, 1, 3, 1, 1);
+  stinger_insert_edge(S, 0, 1, 4, 1, 1);
+  stinger_insert_edge(S, 0, 2, 8, 1, 1);
+  stinger_insert_edge(S, 0, 3, 5, 1, 1);
+  stinger_insert_edge(S, 0, 3, 6, 1, 1);
+  stinger_insert_edge(S, 0, 4, 5, 1, 1);
+  stinger_insert_edge(S, 0, 5, 6, 1, 1);
+  stinger_insert_edge(S, 0, 5, 7, 1, 1);
+  stinger_insert_edge(S, 0, 7, 8, 1, 1);
+
+  int64_t nv = stinger_max_active_vertex(S)+1;
+
+  double * bc = (double *)xcalloc(nv, sizeof(double));
+  int64_t * times_found = (int64_t *)xcalloc(nv, sizeof(int64_t)); 
+  uint8_t * vtx_set = (uint8_t *)xcalloc(nv,sizeof(uint8_t));
+
+  for (int64_t i = 0; i < nv; i++) {
+    if (i != 3) {
+      vtx_set[i] = 1;
+    }
+  }
+
+  sample_search_subgraph(S, nv, vtx_set, 9, bc, times_found);
+
+  xfree(vtx_set);
+
+  double expected_bc[9] = {
+    0.0,
+    6.0,
+    2.0,
+    0.0,
+    6.0,
+    7.0,
+    0.0,
+    2.0,
+    0.0
+  };
+
+  for (int64_t v = 0; v < nv; v++) {
+    EXPECT_DOUBLE_EQ(expected_bc[v],bc[v]) << "v = " << v;
+  }
+
+  xfree(bc);
+  xfree(times_found);
+}
+
 
 int
 main (int argc, char *argv[])
