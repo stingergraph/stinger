@@ -1,6 +1,7 @@
 STINGER
 =======
-[![Build Status](https://travis-ci.org/robmccoll/stinger.png?branch=master)](https://travis-ci.org/robmccoll/stinger)
+[![Build Status (master)](https://travis-ci.org/stingergraph/stinger.png?branch=master)](https://travis-ci.org/stingergraph/stinger)
+[![Build Status (dev)](https://travis-ci.org/stingergraph/stinger.png?branch=dev)](https://travis-ci.org/stginergraph/stinger)
 
 Learn more at [stingergraph.com](http://stingergraph.com).
 
