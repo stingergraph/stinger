@@ -104,26 +104,26 @@ static PyObject *stinger_vquery(PyObject *self, PyObject *args, PyObject *keywds
   list = (PyListObject *) Py_BuildValue("[]");
 
   if (vtx >= 0) {
-    STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, vtx) {
+    STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, vtx) {
       if(matches(S, &conf, STINGER_EDGE_TYPE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT)) {
-	char * id;
-	int64_t id_len;
-	stinger_mapping_physid_direct(S, STINGER_EDGE_DEST, &id, &id_len);
-	dict = Py_BuildValue ("{s:l,s:s,s:l,s:s,s:s,s:l,s:l,s:l,s:s,s:s}",
-			      "SourceID", vtx,
-			      "SourceString", vertex_name,
-			      "DestinationID", STINGER_EDGE_DEST,
-			      "DestinationString", id,
-			      "EdgeType", stinger_etype_names_lookup_name (S, STINGER_EDGE_TYPE),
-			      "EdgeWeight", STINGER_EDGE_WEIGHT,
-			      "EdgeTimeFirst", STINGER_EDGE_TIME_FIRST,
-			      "EdgeTimeRecent", STINGER_EDGE_TIME_RECENT,
-			      "SourceType", stinger_vtype_names_lookup_name (S, stinger_vtype_get(S, vtx)),
-			      "DestinationType", stinger_vtype_names_lookup_name (S, stinger_vtype_get(S, STINGER_EDGE_DEST))
-			      );
-	PyList_Append((struct PyObject *)list, dict);
+        char * id;
+        int64_t id_len;
+        stinger_mapping_physid_direct(S, STINGER_EDGE_DEST, &id, &id_len);
+        dict = Py_BuildValue ("{s:l,s:s,s:l,s:s,s:s,s:l,s:l,s:l,s:s,s:s}",
+        		      "SourceID", vtx,
+        		      "SourceString", vertex_name,
+        		      "DestinationID", STINGER_EDGE_DEST,
+        		      "DestinationString", id,
+        		      "EdgeType", stinger_etype_names_lookup_name (S, STINGER_EDGE_TYPE),
+        		      "EdgeWeight", STINGER_EDGE_WEIGHT,
+        		      "EdgeTimeFirst", STINGER_EDGE_TIME_FIRST,
+        		      "EdgeTimeRecent", STINGER_EDGE_TIME_RECENT,
+        		      "SourceType", stinger_vtype_names_lookup_name (S, stinger_vtype_get(S, vtx)),
+        		      "DestinationType", stinger_vtype_names_lookup_name (S, stinger_vtype_get(S, STINGER_EDGE_DEST))
+        		      );
+        PyList_Append((struct PyObject *)list, dict);
       }
-    } STINGER_FORALL_EDGES_OF_VTX_END();
+    } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
   }
 
   return (PyObject *) list;

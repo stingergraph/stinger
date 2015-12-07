@@ -29,22 +29,22 @@ main(int argc, char *argv[])
   while(-1 != (opt = getopt(argc, argv, "p:a:"))) {
     switch(opt) {
       case 'p': {
-	port = atoi(optarg);
+        port = atoi(optarg);
       } break;
 
       case 'a': {
-	server = gethostbyname(optarg);
-	if(NULL == server) {
-	  LOG_E_A ("ERROR: server %s could not be resolved.", optarg);
-	  exit(-1);
-	}
+        server = gethostbyname(optarg);
+        if(NULL == server) {
+          LOG_E_A ("ERROR: server %s could not be resolved.", optarg);
+          exit(-1);
+        }
       } break;
 
       case '?':
       case 'h': {
-	printf("Usage:    %s [-p port] [-a server_addr]\n", argv[0]);
-	printf("Defaults:\n\tport: %d\n\tserver: localhost\n", port);
-	exit(0);
+        printf("Usage:    %s [-p port] [-a server_addr]\n", argv[0]);
+        printf("Defaults:\n\tport: %d\n\tserver: localhost\n", port);
+        exit(0);
       } break;
     }
   }
@@ -71,7 +71,7 @@ main(int argc, char *argv[])
   while (1)
   {
     StingerBatch batch;
-    batch.set_make_undirected(true);
+    batch.set_make_undirected(false);
     batch.set_type(STRINGS_ONLY);
     batch.set_keep_alive(true);
 

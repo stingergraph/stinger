@@ -18,7 +18,7 @@ count_intersections (stinger_t * S, int64_t a, int64_t b, int64_t * neighbors, i
 {
   size_t out = 0;
 
-  STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, b) {
+  STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, b) {
 
     if (STINGER_EDGE_DEST != a) {
       int64_t first = 0;
@@ -40,7 +40,7 @@ count_intersections (stinger_t * S, int64_t a, int64_t b, int64_t * neighbors, i
       //out += stinger_has_typed_successor (S, 0, STINGER_EDGE_DEST, a);
     }
 
-  } STINGER_FORALL_EDGES_OF_VTX_END();
+  } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
 
 
   return out;
@@ -58,14 +58,14 @@ count_triangles (stinger_t * S, uint64_t v)
   stinger_gather_typed_successors(S, 0, v, &d, neighbors, deg);
   qsort(neighbors, d, sizeof(int64_t), compare);
 
-  STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, v) {
+  STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, v) {
 
     if (STINGER_EDGE_DEST != v) {
       //out += count_intersections (S, v, STINGER_EDGE_DEST);
       out += count_intersections (S, v, STINGER_EDGE_DEST, neighbors, d);
     }
 
-  } STINGER_FORALL_EDGES_OF_VTX_END();
+  } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
 
   free (neighbors);
 

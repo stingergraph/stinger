@@ -96,17 +96,9 @@ main(int argc, char *argv[])
       type = stinger_etype_names_lookup_type(alg->stinger, type_str);
     }
     if(type_specified && type > -1) {
-      if (directed) {
-        page_rank_type_directed(alg->stinger, stinger_mapping_nv(alg->stinger), pr, tmp_pr, epsilon, dampingfactor, maxiter, type);
-      } else {
-        page_rank_type(alg->stinger, stinger_mapping_nv(alg->stinger), pr, tmp_pr, epsilon, dampingfactor, maxiter, type);
-      }
+      page_rank_type(alg->stinger, stinger_mapping_nv(alg->stinger), pr, tmp_pr, epsilon, dampingfactor, maxiter, type);
     } else if (!type_specified) {
-      if (directed) {
-        page_rank_directed(alg->stinger, stinger_mapping_nv(alg->stinger), pr, tmp_pr, epsilon, dampingfactor, maxiter);
-      } else {
-        page_rank(alg->stinger, stinger_mapping_nv(alg->stinger), pr, tmp_pr, epsilon, dampingfactor, maxiter);
-      }
+      page_rank(alg->stinger, stinger_mapping_nv(alg->stinger), pr, tmp_pr, epsilon, dampingfactor, maxiter);
     }
   } stinger_alg_end_init(alg);
 
@@ -130,11 +122,7 @@ main(int argc, char *argv[])
       if(type_specified) {
       	type = stinger_etype_names_lookup_type(alg->stinger, type_str);
       	if(type > -1) {
-          if (directed) {
-            page_rank_type_directed(alg->stinger, stinger_mapping_nv(alg->stinger), pr, tmp_pr, epsilon, dampingfactor, maxiter, type);
-          } else {
-            page_rank_type(alg->stinger, stinger_mapping_nv(alg->stinger), pr, tmp_pr, epsilon, dampingfactor, maxiter, type);
-          }
+          page_rank_type(alg->stinger, stinger_mapping_nv(alg->stinger), pr, tmp_pr, epsilon, dampingfactor, maxiter, type);
       	} else {
       	  LOG_W_A("TYPE DOES NOT EXIST %s", type_str);
       	  LOG_W("Existing types:");
@@ -144,11 +132,7 @@ main(int argc, char *argv[])
       	  }
       	}
       } else {
-        if (directed) {
-          page_rank_directed(alg->stinger, stinger_mapping_nv(alg->stinger), pr, tmp_pr, epsilon, dampingfactor, maxiter);
-        } else {
-          page_rank(alg->stinger, stinger_mapping_nv(alg->stinger), pr, tmp_pr, epsilon, dampingfactor, maxiter);
-        }
+        page_rank(alg->stinger, stinger_mapping_nv(alg->stinger), pr, tmp_pr, epsilon, dampingfactor, maxiter);
       }
       stinger_alg_end_post(alg);
     }

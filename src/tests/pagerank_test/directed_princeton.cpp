@@ -38,7 +38,7 @@ TEST_F(PagerankPrincetonTest, DirectedPagerank) {
   tmp_pr = (double *)xcalloc(stinger_max_active_vertex(S)+1, sizeof(double));
   pr = (double *)xcalloc(stinger_max_active_vertex(S)+1, sizeof(double));
   
-  page_rank_directed(S, stinger_max_active_vertex(S)+1, pr, tmp_pr, EPSILON_DEFAULT, DAMPINGFACTOR_DEFAULT, 100);
+  page_rank(S, stinger_max_active_vertex(S)+1, pr, tmp_pr, EPSILON_DEFAULT, DAMPINGFACTOR_DEFAULT, 100);
 
   double expected_pr[4] = {
     1.49 / 4.0,
@@ -117,7 +117,7 @@ TEST_F(PagerankPrincetonTest, PagerankDirectedType) {
     pr[v] = 1 / ((double)nv);
   }
 
-  page_rank_type_directed(S, nv, pr, tmp_pr, EPSILON_DEFAULT, DAMPINGFACTOR_DEFAULT, 100, 0);
+  page_rank_type(S, nv, pr, tmp_pr, EPSILON_DEFAULT, DAMPINGFACTOR_DEFAULT, 100, 0);
 
   double expected_pr[4] = {
     1.49,

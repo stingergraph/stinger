@@ -127,6 +127,44 @@ stinger_vertex_weight_increment_atomic(const stinger_vertices_t * vertices, vind
   return stinger_vweight_fetch_add_atomic(&(VTX(v)->weight), weight);
 }
 
+/* DEGREE */
+
+inline vdegree_t
+stinger_vertex_degree_get(const stinger_vertices_t * vertices, vindex_t v)
+{
+  if (v >= vertices->max_vertices || v < 0) {
+    return -1;
+  }
+  return VTX(v)->degree;
+}
+
+inline vdegree_t
+stinger_vertex_degree_set(const stinger_vertices_t * vertices, vindex_t v, vdegree_t degree)
+{
+  if (v >= vertices->max_vertices || v < 0) {
+    return -1;
+  }
+  return (VTX(v)->degree = degree);
+}
+
+inline vdegree_t
+stinger_vertex_degree_increment(const stinger_vertices_t * vertices, vindex_t v, vdegree_t degree)
+{
+  if (v >= vertices->max_vertices || v < 0) {
+    return -1;
+  }
+  return (VTX(v)->degree += degree);
+}
+
+inline vdegree_t
+stinger_vertex_degree_increment_atomic(const stinger_vertices_t * vertices, vindex_t v, vdegree_t degree)
+{
+  if (v >= vertices->max_vertices || v < 0) {
+    return -1;
+  }
+  return stinger_vdegree_fetch_add_atomic(&(VTX(v)->degree), degree);
+}
+
 /* INDEGREE */
 
 inline vdegree_t

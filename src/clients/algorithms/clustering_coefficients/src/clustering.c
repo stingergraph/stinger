@@ -82,13 +82,13 @@ main(int argc, char *argv[])
         stinger_int64_fetch_add (&affected[dst], 1);
 
         /* and all neighbors */
-        STINGER_FORALL_EDGES_OF_VTX_BEGIN(alg->stinger, src) {
+        STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(alg->stinger, src) {
           stinger_int64_fetch_add (&affected[STINGER_EDGE_DEST], 1);
-        } STINGER_FORALL_EDGES_OF_VTX_END();
+        } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
 
-        STINGER_FORALL_EDGES_OF_VTX_BEGIN(alg->stinger, dst) {
+        STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(alg->stinger, dst) {
           stinger_int64_fetch_add (&affected[STINGER_EDGE_DEST], 1);
-        } STINGER_FORALL_EDGES_OF_VTX_END();
+        } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
       }
 
       /* each vertex incident on a deletion is affected */
@@ -100,13 +100,13 @@ main(int argc, char *argv[])
         stinger_int64_fetch_add (&affected[dst], 1);
 
         /* and all neighbors */
-        STINGER_FORALL_EDGES_OF_VTX_BEGIN(alg->stinger, src) {
+        STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(alg->stinger, src) {
           stinger_int64_fetch_add (&affected[STINGER_EDGE_DEST], 1);
-        } STINGER_FORALL_EDGES_OF_VTX_END();
+        } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
 
-        STINGER_FORALL_EDGES_OF_VTX_BEGIN(alg->stinger, dst) {
+        STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(alg->stinger, dst) {
           stinger_int64_fetch_add (&affected[STINGER_EDGE_DEST], 1);
-        } STINGER_FORALL_EDGES_OF_VTX_END();
+        } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
       }
 
       time = toc();
