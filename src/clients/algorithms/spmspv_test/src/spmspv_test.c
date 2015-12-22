@@ -23,6 +23,9 @@
 #include "spmspv_ompcas.h"
 #include "spmspv_ompcas_batch.h"
 
+// HACK enable alternate OMP macro
+#include "stinger_core/alternative_omp_macros.h"
+
 #define ALG_SEQ 0
 #define ALG_OMPSIMPLE 1
 #define ALG_OMPCAS 2
@@ -141,7 +144,7 @@ main(int argc, char *argv[])
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
   stinger_alg_begin_init(alg); {
     tic ();
-    OMP("omp parallel for")
+    OMP(parallel for)
       for (int64_t i = 0; i < nv; ++i) {
         y[i] = 0;
         mark[i] = -1;
@@ -170,29 +173,29 @@ main(int argc, char *argv[])
         const stinger_edge_update * restrict ins = alg->insertions;
         const stinger_edge_update * restrict rem = alg->deletions;
 
-        OMP("omp parallel") {
-          OMP("omp for nowait")
+        OMP(parallel) {
+          OMP(for nowait)
             for (int64_t k = 0; k < nins; ++k) {
               append_to_vlist (&x.nv, x.idx, mark, ins[k].source);
               append_to_vlist (&x.nv, x.idx, mark, ins[k].destination);
             }
-          OMP("omp for")
+          OMP(for)
             for (int64_t k = 0; k < nrem; ++k) {
               append_to_vlist (&x.nv, x.idx, mark, rem[k].source);
               append_to_vlist (&x.nv, x.idx, mark, rem[k].destination);
             }
-          OMP("omp for")
+          OMP(for)
             for (int64_t k = 0; k < x.nv; ++k)
               x.val[k] = 1.0;
         }
       }
       gather_time = toc ();
       stinger_alg_end_pre(alg);
-      OMP("omp parallel") {
-        OMP("omp for")
+      OMP(parallel) {
+        OMP(for)
           for (int64_t i = 0; i < nv; ++i)
             dense_x[i] = 0;
-        OMP("omp for")
+        OMP(for)
           for (int64_t k = 0; k < x.nv; ++k)
             dense_x[x.idx[k]] = 1.0;
       }
@@ -202,22 +205,22 @@ main(int argc, char *argv[])
     if(stinger_alg_begin_post(alg)) {
       /* Set up the dense x, copy items, etc. */
       dy.nv = x.nv;
-      OMP("omp parallel") {
-        OMP("omp for")
+      OMP(parallel) {
+        OMP(for)
           for (int64_t i = 0; i < nv; ++i) {
             /* Form the dense x for testing. */
             dense_x[i] = 0.0;
             y_copy[i] = y[i];
             y_seq[i] = y[i];
           }
-        OMP("omp for")
+        OMP(for)
           for (int64_t k = 0; k < x.nv; ++k) {
             dy.idx[k] = x.idx[k];
             dy.val[k] = 0.0;
             dense_x[x.idx[k]] = x.val[k];
           }
         /* Count volume *after* changing the graph. */
-        OMP("omp for reduction(+:vol_x)")
+        OMP(for reduction(+:vol_x))
           for (int64_t k = 0; k < x.nv; ++k)
             vol_x += stinger_outdegree_get (alg->stinger, x.idx[k]);
       }
@@ -289,7 +292,7 @@ main(int argc, char *argv[])
       VALGRIND_MAKE_MEM_DEFINED(y, nv*sizeof(*y));
 
       /* Apply update to y_copy */
-      OMP("omp parallel for")
+      OMP(parallel for)
         for (int64_t k = 0; k < dy.nv; ++k) {
           const int64_t i = dy.idx[k];
           assert (i >= 0);
@@ -299,9 +302,9 @@ main(int argc, char *argv[])
       spmult_time = toc ();
 
       mult_cwise_err = 0.0;
-      OMP("omp parallel") {
+      OMP(parallel) {
         double t_cwise_err = 0.0;
-        OMP("omp for nowait")
+        OMP(for nowait)
           for (int64_t i = 0; i < nv; ++i) {
             double err;
 
@@ -314,14 +317,14 @@ main(int argc, char *argv[])
 
             if (err > t_cwise_err) t_cwise_err = err;
           }
-        OMP("omp critical")
+        OMP(critical)
           if (t_cwise_err > mult_cwise_err) mult_cwise_err = t_cwise_err;
       }
       /* Compute componentwise relative error... which can only be in updated locations. */
       cwise_err = 0.0;
-      OMP("omp parallel") {
+      OMP(parallel) {
         double t_cwise_err = 0.0;
-        OMP("omp for nowait")
+        OMP(for nowait)
           for (int64_t k = 0; k < dy.nv; ++k) {
             int64_t i = dy.idx[k];
             double err;
@@ -335,7 +338,7 @@ main(int argc, char *argv[])
 
             if (err > t_cwise_err) t_cwise_err = err;
           }
-        OMP("omp critical")
+        OMP(critical)
           if (t_cwise_err > cwise_err) cwise_err = t_cwise_err;
       }
 
@@ -360,7 +363,7 @@ main(int argc, char *argv[])
 
 /* Utility functions */
 
- 
+
 int
 append_to_vlist (int64_t * restrict nvlist,
                  int64_t * restrict vlist,
@@ -399,7 +402,7 @@ clear_vlist (int64_t * restrict nvlist,
 {
   const int64_t nvl = *nvlist;
 
-  OMP("omp parallel for")
+  OMP(parallel for)
     for (int64_t k = 0; k < nvl; ++k)
       mark[vlist[k]] = -1;
 

@@ -9,18 +9,21 @@
 
 #include "compat.h"
 
+// HACK enable alternate OMP macro
+#include "stinger_core/alternative_omp_macros.h"
+
 static inline void setup_y (const int64_t nv, const double beta, double * y)
 {
   if (0.0 == beta) {
-    OMP("omp for")
+    OMP(for)
       for (int64_t i = 0; i < nv; ++i)
         y[i] = 0.0;
   } else if (-1.0 == beta) {
-    OMP("omp for")
+    OMP(for)
       for (int64_t i = 0; i < nv; ++i)
         y[i] = -y[i];
   } else if (!(1.0 == beta)) {
-    OMP("omp for")
+    OMP(for)
       for (int64_t i = 0; i < nv; ++i)
         y[i] *= beta;
   }
@@ -33,16 +36,16 @@ static inline void setup_y (const int64_t nv, const double beta, double * y)
 
 void stinger_dspmTv_ompsimple (const int64_t nv, const double alpha, const struct stinger *S, const double * x, const double beta, double * y)
 {
-  OMP("omp parallel") {
+  OMP(parallel) {
     setup_y (nv, beta, y);
 
-    OMP("omp for")
+    OMP(for)
       for (int64_t i = 0; i < nv; ++i) {
         const double alphaxi = ALPHAXI_VAL (alpha, x[i]);
         STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, i) {
           const int64_t j = STINGER_EDGE_DEST;
           const double aij = STINGER_EDGE_WEIGHT;
-          OMP("omp atomic") y[j] += aij * alphaxi;
+          OMP(atomic) y[j] += aij * alphaxi;
         } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
       }
   }
@@ -50,15 +53,15 @@ void stinger_dspmTv_ompsimple (const int64_t nv, const double alpha, const struc
 
 void stinger_unit_dspmTv_ompsimple (const int64_t nv, const double alpha, const struct stinger *S, const double * x, const double beta, double * y)
 {
-  OMP("omp parallel") {
+  OMP(parallel) {
     setup_y (nv, beta, y);
 
-    OMP("omp for")
+    OMP(for)
       for (int64_t i = 0; i < nv; ++i) {
         const double alphaxi = ALPHAXI_VAL (alpha, x[i]);
         STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, i) {
           const int64_t j = STINGER_EDGE_DEST;
-          OMP("omp atomic") y[j] += alphaxi;
+          OMP(atomic) y[j] += alphaxi;
         } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
       }
   }
@@ -67,19 +70,19 @@ void stinger_unit_dspmTv_ompsimple (const int64_t nv, const double alpha, const 
 static void setup_workspace (const int64_t nv, int64_t ** loc_ws, double ** val_ws)
 {
   if (!*loc_ws) {
-    OMP("omp master") {
+    OMP(master) {
       *loc_ws = xmalloc (nv * sizeof (**loc_ws));
     }
-    OMP("omp barrier");
-    OMP("omp for")
+    OMP(barrier);
+    OMP(for)
       for (int64_t k = 0; k < nv; ++k) (*loc_ws)[k] = -1;
   }
   if (!*val_ws) {
-    OMP("omp master") {
+    OMP(master) {
       *val_ws = xmalloc (nv * sizeof (**val_ws));
     }
-    OMP("omp barrier");
-    OMP("omp for")
+    OMP(barrier);
+    OMP(for)
       for (int64_t k = 0; k < nv; ++k) (*val_ws)[k] = 0.0;
   }
 }
@@ -89,7 +92,7 @@ static void setup_sparse_y (const double beta,
                             int64_t * loc_ws, double * val_ws /*UNUSED*/)
 {
   if (0.0 == beta) {
-    OMP("omp for")
+    OMP(for)
       for (int64_t k = 0; k < y_deg; ++k) {
         const int64_t i = y_idx[k];
         loc_ws[i] = k;
@@ -97,20 +100,20 @@ static void setup_sparse_y (const double beta,
       }
   } else if (1.0 == beta) {
     /* Still have to set up the pattern... */
-    OMP("omp for")
+    OMP(for)
       for (int64_t k = 0; k < y_deg; ++k) {
         const int64_t i = y_idx[k];
         loc_ws[i] = k;
       }
   } else if (-1.0 == beta) {
-    OMP("omp for")
+    OMP(for)
       for (int64_t k = 0; k < y_deg; ++k) {
         const int64_t i = y_idx[k];
         loc_ws[i] = k;
         y_val[k] = -y_val[k];
       }
   } else if (1.0 != beta) {
-    OMP("omp for")
+    OMP(for)
       for (int64_t k = 0; k < y_deg; ++k) {
         const int64_t i = y_idx[k];
         const double yi = y_val[k];
@@ -126,20 +129,20 @@ void stinger_dspmTspv_ompsimple (const int64_t nv, const double alpha, const str
   int64_t * loc_ws = loc_ws_in;
   double * restrict val_ws = val_ws_in;
 
-  OMP("omp parallel") {
+  OMP(parallel) {
     setup_workspace (nv, &loc_ws, &val_ws);
     setup_sparse_y (beta, y_deg, y_idx, y_val, loc_ws, val_ws);
 
-    OMP("omp for")
+    OMP(for)
       for (int64_t xk = 0; xk < x_deg; ++xk) {
         const int64_t i = x_idx[xk];
         const double alphaxi = ALPHAXI_VAL (alpha, x_val[xk]);
         STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, i) {
           const int64_t j = STINGER_EDGE_DEST;
           const double aij = STINGER_EDGE_WEIGHT;
-          OMP("omp atomic") val_ws[j] += aij * alphaxi;
+          OMP(atomic) val_ws[j] += aij * alphaxi;
           if (loc_ws[j] < 0) {
-            OMP("omp critical") {
+            OMP(critical) {
               if (loc_ws[j] < 0) {
                 int64_t yk = loc_ws[j] = y_deg++;
                 assert (yk < nv);
@@ -151,7 +154,7 @@ void stinger_dspmTspv_ompsimple (const int64_t nv, const double alpha, const str
       }
 
     /* Pack the values back into the shorter form. */
-    OMP("omp for")
+    OMP(for)
       for (int64_t k = 0; k < y_deg; ++k) {
         y_val[k] = val_ws[y_idx[k]];
         val_ws[y_idx[k]] = 0.0;
@@ -169,20 +172,20 @@ void stinger_unit_dspmTspv_ompsimple (const int64_t nv, const double alpha, cons
   int64_t * restrict loc_ws = loc_ws_in;
   double * restrict val_ws = val_ws_in;
 
-  OMP("omp parallel") {
+  OMP(parallel) {
     setup_workspace (nv, &loc_ws, &val_ws);
     setup_sparse_y (beta, y_deg, y_idx, y_val, loc_ws, val_ws);
 
-    OMP("omp for")
+    OMP(for)
       for (int64_t xk = 0; xk < x_deg; ++xk) {
         const int64_t i = x_idx[xk];
         const double alphaxi = ALPHAXI_VAL (alpha, x_val[xk]);
         STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, i) {
           const int64_t j = STINGER_EDGE_DEST;
           const double aij = STINGER_EDGE_WEIGHT;
-          OMP("omp atomic") val_ws[j] += alphaxi;
+          OMP(atomic) val_ws[j] += alphaxi;
           if (loc_ws[j] < 0) {
-            OMP("omp critical") {
+            OMP(critical) {
               if (loc_ws[j] < 0) {
                 int64_t yk = loc_ws[j] = y_deg++;
                 assert (yk < nv);
@@ -194,7 +197,7 @@ void stinger_unit_dspmTspv_ompsimple (const int64_t nv, const double alpha, cons
       }
 
     /* Pack the values back into the shorter form. */
-    OMP("omp for")
+    OMP(for)
       for (int64_t k = 0; k < y_deg; ++k) {
         y_val[k] = val_ws[y_idx[k]];
         val_ws[y_idx[k]] = 0.0;

@@ -40,6 +40,9 @@
 /* #define ATOMIC_FP_OPTIMISTIC */
 #endif
 
+// HACK enable alternate OMP macro
+#include "stinger_core/alternative_omp_macros.h"
+
 static inline void
 atomic_daccum (double *p, const double val)
 {
@@ -66,22 +69,22 @@ atomic_daccum (double *p, const double val)
       MM_PAUSE();
   } while (1);
 #else
-  OMP("omp atomic") *p += val;
+  OMP(atomic) *p += val;
 #endif
 }
 
 static inline void setup_y (const int64_t nv, const double beta, double * y)
 {
   if (0.0 == beta) {
-    OMP("omp for")
+    OMP(for)
       for (int64_t i = 0; i < nv; ++i)
         y[i] = 0.0;
   } else if (-1.0 == beta) {
-    OMP("omp for")
+    OMP(for)
       for (int64_t i = 0; i < nv; ++i)
         y[i] = -y[i];
   } else if (!(1.0 == beta)) {
-    OMP("omp for")
+    OMP(for)
       for (int64_t i = 0; i < nv; ++i)
         y[i] *= beta;
   }
@@ -114,10 +117,10 @@ dspmTv_unit_accum (const struct stinger * S, const int64_t i, const double alpha
 
 void stinger_dspmTv_ompcas_batch (const int64_t nv, const double alpha, const struct stinger *S, const double * x, const double beta, double * y)
 {
-  OMP("omp parallel if(!omp_in_parallel())") {
+  OMP(parallel if(!omp_in_parallel())) {
     setup_y (nv, beta, y);
 
-    OMP("omp for")
+    OMP(for)
       for (int64_t i = 0; i < nv; ++i) {
         const double alphaxi = ALPHAXI_VAL (alpha, x[i]);
         if (alphaxi != 0.0)
@@ -128,10 +131,10 @@ void stinger_dspmTv_ompcas_batch (const int64_t nv, const double alpha, const st
 
 void stinger_unit_dspmTv_ompcas_batch (const int64_t nv, const double alpha, const struct stinger *S, const double * x, const double beta, double * y)
 {
-  OMP("omp parallel if(!omp_in_parallel())") {
+  OMP(parallel if(!omp_in_parallel())) {
     setup_y (nv, beta, y);
 
-    OMP("omp for")
+    OMP(for)
       for (int64_t i = 0; i < nv; ++i) {
         const double alphaxi = ALPHAXI_VAL (alpha, x[i]);
         if (alphaxi != 0.0)
@@ -142,10 +145,10 @@ void stinger_unit_dspmTv_ompcas_batch (const int64_t nv, const double alpha, con
 
 void stinger_dspmTv_degscaled_ompcas_batch (const int64_t nv, const double alpha, const struct stinger *S, const double * x, const double beta, double * y)
 {
-  OMP("omp parallel if(!omp_in_parallel())") {
+  OMP(parallel if(!omp_in_parallel())) {
     setup_y (nv, beta, y);
 
-    OMP("omp for")
+    OMP(for)
       for (int64_t i = 0; i < nv; ++i) {
         const double alphaxi = ALPHAXI_VAL (alpha, x[i]);
         if (alphaxi != 0.0) {
@@ -159,10 +162,10 @@ void stinger_dspmTv_degscaled_ompcas_batch (const int64_t nv, const double alpha
 
 void stinger_unit_dspmTv_degscaled_ompcas_batch (const int64_t nv, const double alpha, const struct stinger *S, const double * x, const double beta, double * y)
 {
-  OMP("omp parallel if(!omp_in_parallel())") {
+  OMP(parallel if(!omp_in_parallel())) {
     setup_y (nv, beta, y);
 
-    OMP("omp for")
+    OMP(for)
       for (int64_t i = 0; i < nv; ++i) {
         const double alphaxi = ALPHAXI_VAL (alpha, x[i]);
         const int64_t degi = stinger_outdegree_get (S, i);
@@ -177,19 +180,19 @@ void stinger_unit_dspmTv_degscaled_ompcas_batch (const int64_t nv, const double 
 static void setup_workspace (const int64_t nv, int64_t ** loc_ws, double ** val_ws)
 {
   if (!*loc_ws) {
-    OMP("omp master") {
+    OMP(master) {
       *loc_ws = xmalloc (nv * sizeof (**loc_ws));
     }
-    OMP("omp barrier");
-    OMP("omp for")
+    OMP(barrier);
+    OMP(for)
       for (int64_t k = 0; k < nv; ++k) (*loc_ws)[k] = -1;
   }
   if (!*val_ws) {
-    OMP("omp master") {
+    OMP(master) {
       *val_ws = xmalloc (nv * sizeof (**val_ws));
     }
-    OMP("omp barrier");
-    OMP("omp for")
+    OMP(barrier);
+    OMP(for)
       for (int64_t k = 0; k < nv; ++k) (*val_ws)[k] = 0.0;
   }
 }
@@ -199,7 +202,7 @@ static void setup_sparse_y (const double beta,
                             int64_t * loc_ws, double * val_ws /*UNUSED*/)
 {
   if (0.0 == beta) {
-    OMP("omp for")
+    OMP(for)
       for (int64_t k = 0; k < y_deg; ++k) {
         const int64_t i = y_idx[k];
         loc_ws[i] = k;
@@ -207,20 +210,20 @@ static void setup_sparse_y (const double beta,
       }
   } else if (1.0 == beta) {
     /* Still have to set up the pattern... */
-    OMP("omp for")
+    OMP(for)
       for (int64_t k = 0; k < y_deg; ++k) {
         const int64_t i = y_idx[k];
         loc_ws[i] = k;
       }
   } else if (-1.0 == beta) {
-    OMP("omp for")
+    OMP(for)
       for (int64_t k = 0; k < y_deg; ++k) {
         const int64_t i = y_idx[k];
         loc_ws[i] = k;
         y_val[k] = -y_val[k];
       }
   } else if (1.0 != beta) {
-    OMP("omp for")
+    OMP(for)
       for (int64_t k = 0; k < y_deg; ++k) {
         const int64_t i = y_idx[k];
         const double yi = y_val[k];
@@ -312,7 +315,7 @@ pack_vals (const int64_t y_deg, const int64_t * restrict y_idx,
            double * restrict val_ws, double * restrict y_val)
 {
   /* Pack the values back into the shorter form. */
-  OMP("omp for")
+  OMP(for)
     for (int64_t k = 0; k < y_deg; ++k) {
       y_val[k] = val_ws[y_idx[k]];
       val_ws[y_idx[k]] = 0.0;
@@ -324,12 +327,12 @@ void stinger_dspmTspv_ompcas_batch (const int64_t nv, const double alpha, const 
   int64_t * loc_ws = loc_ws_in;
   double * val_ws = val_ws_in;
 
-  OMP("omp parallel if(!omp_in_parallel()) shared(loc_ws, val_ws)") {
+  OMP(parallel if(!omp_in_parallel()) shared(loc_ws, val_ws)) {
     setup_workspace (nv, &loc_ws, &val_ws);
     setup_sparse_y (beta, *y_deg_ptr, y_idx, y_val, loc_ws, val_ws);
     struct batch b = BATCH_INIT;
 
-    OMP("omp for nowait")
+    OMP(for nowait)
       for (int64_t xk = 0; xk < x_deg; ++xk) {
         const int64_t i = x_idx[xk];
         const double alphaxi = ALPHAXI_VAL (alpha, x_val[xk]);
@@ -339,13 +342,13 @@ void stinger_dspmTspv_ompcas_batch (const int64_t nv, const double alpha, const 
       }
     flush (&b, y_deg_ptr, y_idx, loc_ws);
     assert(b.n == 0);
-    OMP("omp barrier");
+    OMP(barrier);
 
     pack_vals (*y_deg_ptr, y_idx, val_ws, y_val);
   }
 
-  OMP("omp barrier");
-  OMP("omp master") {
+  OMP(barrier);
+  OMP(master) {
        if (!val_ws_in) free (val_ws);
        if (!loc_ws_in) free (loc_ws);
   }
@@ -356,12 +359,12 @@ void stinger_unit_dspmTspv_ompcas_batch (const int64_t nv, const double alpha, c
   int64_t * loc_ws = loc_ws_in;
   double * val_ws = val_ws_in;
 
-  OMP("omp parallel if(!omp_in_parallel()) shared(loc_ws, val_ws)") {
+  OMP(parallel if(!omp_in_parallel()) shared(loc_ws, val_ws)) {
     setup_workspace (nv, &loc_ws, &val_ws);
     setup_sparse_y (beta, *y_deg_ptr, y_idx, y_val, loc_ws, val_ws);
     struct batch b = BATCH_INIT;
 
-    OMP("omp for nowait")
+    OMP(for nowait)
       for (int64_t xk = 0; xk < x_deg; ++xk) {
         const int64_t i = x_idx[xk];
         const double alphaxi = ALPHAXI_VAL (alpha, x_val[xk]);
@@ -369,13 +372,13 @@ void stinger_unit_dspmTspv_ompcas_batch (const int64_t nv, const double alpha, c
              dspmTspv_unit_accum (S, i, alphaxi, y_deg_ptr, y_idx, val_ws, loc_ws, &b);
       }
     flush (&b, y_deg_ptr, y_idx, loc_ws);
-    OMP("omp barrier")
+    OMP(barrier)
 
     pack_vals (*y_deg_ptr, y_idx, val_ws, y_val);
   }
 
-  OMP("omp barrier");
-  OMP("omp master") {
+  OMP(barrier);
+  OMP(master) {
        if (!val_ws_in) free (val_ws);
        if (!loc_ws_in) free (loc_ws);
   }
@@ -386,12 +389,12 @@ void stinger_dspmTspv_degscaled_ompcas_batch (const int64_t nv, const double alp
   int64_t * loc_ws = loc_ws_in;
   double * val_ws = val_ws_in;
 
-  OMP("omp parallel if(!omp_in_parallel()) shared(loc_ws, val_ws)") {
+  OMP(parallel if(!omp_in_parallel()) shared(loc_ws, val_ws)) {
     setup_workspace (nv, &loc_ws, &val_ws);
     setup_sparse_y (beta, *y_deg_ptr, y_idx, y_val, loc_ws, val_ws);
     struct batch b = BATCH_INIT;
 
-    OMP("omp for nowait")
+    OMP(for nowait)
       for (int64_t xk = 0; xk < x_deg; ++xk) {
         const int64_t i = x_idx[xk];
         const double alphaxi = ALPHAXI_VAL (alpha, x_val[xk]);
@@ -402,13 +405,13 @@ void stinger_dspmTspv_degscaled_ompcas_batch (const int64_t nv, const double alp
         }
       }
     flush (&b, y_deg_ptr, y_idx, loc_ws);
-    OMP("omp barrier")
+    OMP(barrier)
 
     pack_vals (*y_deg_ptr, y_idx, val_ws, y_val);
   }
 
-  OMP("omp barrier");
-  OMP("omp master") {
+  OMP(barrier);
+  OMP(master) {
        if (!val_ws_in) free (val_ws);
        if (!loc_ws_in) free (loc_ws);
   }
@@ -421,14 +424,14 @@ void stinger_unit_dspmTspv_degscaled_ompcas_batch (const int64_t nv, const doubl
 
   /* double t0, t1, t2, t3, tugh, tugh2; */
 
-  OMP("omp parallel if(!omp_in_parallel()) shared(loc_ws, val_ws)") { // shared(t0, t1, t2, t3, tugh, tugh2)") {
-    /* OMP("omp single") t0 = omp_get_wtime (); */
+  OMP(parallel if(!omp_in_parallel()) shared(loc_ws, val_ws)) { // shared(t0, t1, t2, t3, tugh, tugh2)") {
+    /* OMP(single) t0 = omp_get_wtime (); */
     setup_workspace (nv, &loc_ws, &val_ws);
     setup_sparse_y (beta, *y_deg_ptr, y_idx, y_val, loc_ws, val_ws);
     struct batch b = BATCH_INIT;
 
-    /* OMP("omp single") t1 = omp_get_wtime (); */
-    OMP("omp for nowait") // reduction(+: tugh, tugh2)")
+    /* OMP(single) t1 = omp_get_wtime (); */
+    OMP(for nowait) // reduction(+: tugh, tugh2)")
       for (int64_t xk = 0; xk < x_deg; ++xk) {
         const int64_t i = x_idx[xk];
         const double alphaxi = ALPHAXI_VAL (alpha, x_val[xk]);
@@ -443,18 +446,18 @@ void stinger_unit_dspmTspv_degscaled_ompcas_batch (const int64_t nv, const doubl
         }
       }
     flush (&b, y_deg_ptr, y_idx, loc_ws);
-    OMP("omp barrier")
+    OMP(barrier)
 
-    /* OMP("omp single") t2 = omp_get_wtime (); */
+    /* OMP(single) t2 = omp_get_wtime (); */
     pack_vals (*y_deg_ptr, y_idx, val_ws, y_val);
 
-    /* OMP("omp single") t3 = omp_get_wtime (); */
-    OMP("omp barrier");
-    OMP("omp master") {
+    /* OMP(single) t3 = omp_get_wtime (); */
+    OMP(barrier);
+    OMP(master) {
       if (!val_ws_in) free (val_ws);
       if (!loc_ws_in) free (loc_ws);
     }
 
-    /* OMP("omp single") fprintf (stderr, "x_deg %ld t1 %g t2 %g t3 %g  tugh %g tugh2 %g\n", (long)x_deg, t1-t0, t2-t1, t3-t2, tugh, tugh2); */
+    /* OMP(single) fprintf (stderr, "x_deg %ld t1 %g t2 %g t3 %g  tugh %g tugh2 %g\n", (long)x_deg, t1-t0, t2-t1, t3-t2, tugh, tugh2); */
   }
 }
