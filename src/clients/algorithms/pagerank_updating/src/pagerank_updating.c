@@ -15,6 +15,9 @@
 #include "spmspv.h"
 #include "spmspv_ompcas_batch.h"
 
+// HACK enable alternate OMP macro
+#include "stinger_core/alternative_omp_macros.h"
+
 static inline int append_to_vlist (int64_t * restrict nvlist,
                                    int64_t * restrict vlist,
                                    int64_t * restrict mark /* |V|, init to -1 */,
@@ -124,8 +127,8 @@ main(int argc, char *argv[])
   saved_dx = & ((double*)alg->alg_data)[max_nv * (NPR_ALG+0)];
   saved_dpr = & ((double*)alg->alg_data)[max_nv * (NPR_ALG+1)];
   saved_dpr_held = & ((double*)alg->alg_data)[max_nv * (NPR_ALG+2)];
-  OMP("omp parallel") {
-    OMP("omp for")
+  OMP(parallel) {
+    OMP(for)
       for (int64_t k = 0; k < max_nv; ++k) {
         saved_dx[k] = 0.0;
         saved_dpr[k] = 0.0;
@@ -145,14 +148,14 @@ main(int argc, char *argv[])
   dpr = alloc_spvect (nv);
   dpr_held = alloc_spvect (nv);
 
-  OMP("omp parallel") {
-    OMP("omp for nowait")
+  OMP(parallel) {
+    OMP(for nowait)
       for (int64_t i = 0; i < nv; ++i) {
         mark[i] = -1;
         for (int k = 0; k < 4; ++k)
           pr_val[k][i] = 0.0;
       }
-    OMP("omp for nowait")
+    OMP(for nowait)
       for (int64_t i = 0; i < nv; ++i)
         v[i] = 1.0;
   }
@@ -176,7 +179,7 @@ main(int argc, char *argv[])
 #endif
       pr_vol[BASELINE] = niter[BASELINE] * stinger_total_edges (alg->stinger);
       for (int k = 1; k < NPR_ALG; ++k) {
-        OMP("omp parallel for" OMP_SIMD)
+        OMP(parallel for OMP_SIMD)
           for (int64_t i = 0; i < nv; ++i)
             pr_val[k][i] = pr_val[BASELINE][i];
       }
@@ -193,7 +196,7 @@ main(int argc, char *argv[])
     /* Pre processing */
     if(stinger_alg_begin_pre(alg)) {
       clear_vlist (&x.nv, x.idx, mark);
-      OMP("omp parallel for" OMP_SIMD)
+      OMP(parallel for OMP_SIMD)
         for (int64_t k = 0; k < nv; ++k) mark[k] = -1;
       /* Gather vertices that are affected by the batch. */
       /* (Really should be done in the framework, but ends up being handy here...) */
@@ -210,18 +213,18 @@ main(int argc, char *argv[])
         const stinger_edge_update * restrict ins = alg->insertions;
         const stinger_edge_update * restrict rem = alg->deletions;
 
-        OMP("omp parallel") {
-          OMP("omp for nowait")
+        OMP(parallel) {
+          OMP(for nowait)
             for (int64_t k = 0; k < nins; ++k) {
               append_to_vlist (&x.nv, x.idx, mark, ins[k].source);
               append_to_vlist (&x.nv, x.idx, mark, ins[k].destination);
             }
-          OMP("omp for")
+          OMP(for)
             for (int64_t k = 0; k < nrem; ++k) {
               append_to_vlist (&x.nv, x.idx, mark, rem[k].source);
               append_to_vlist (&x.nv, x.idx, mark, rem[k].destination);
             }
-          OMP("omp for" OMP_SIMD)
+          OMP(for OMP_SIMD)
             for (int64_t k = 0; k < x.nv; ++k) {
               assert(!isnan(pr_val[DPR][x.idx[k]]));
               x.val[k] = pr_val[DPR][x.idx[k]];
@@ -231,14 +234,14 @@ main(int argc, char *argv[])
       }
       gather_time = toc ();
 
-      OMP("omp parallel for" OMP_SIMD)
+      OMP(parallel for OMP_SIMD)
         for (int64_t k = 0; k < x.nv; ++k)
           saved_dx[x.idx[k]] = x.val[k];
 
       tic ();
       b.nv = 0;
       /* Compute b0 in b */
-      OMP("omp parallel") {
+      OMP(parallel) {
         stinger_unit_dspmTspv_degscaled_ompcas_batch (nv,
                                                       1.0, alg->stinger,
                                                       x.nv, x.idx, x.val,
@@ -246,14 +249,14 @@ main(int argc, char *argv[])
                                                       &b.nv, b.idx, b.val,
                                                       mark, dzero_workspace,
                                                       &pr_vol[DPR]);
-        OMP("omp for" OMP_SIMD)
+        OMP(for OMP_SIMD)
           for (int64_t k = 0; k < b.nv; ++k) mark[b.idx[k]] = -1;
       }
       compute_b_time = toc ();
-      OMP("omp parallel") {
-        OMP("omp for nowait reduction(+: b0n)" OMP_SIMD)
+      OMP(parallel) {
+        OMP(for nowait reduction(+: b0n) OMP_SIMD)
           for (int64_t k = 0; k < b.nv; ++k) b0n += fabs (b.val[k]);
-        /* OMP("omp for") */
+        /* OMP(for) */
         /*   for (int64_t k = 0; k < nv; ++k) dzero_workspace[k] = 0.0; */
       }
 
@@ -261,8 +264,8 @@ main(int argc, char *argv[])
       
       b_held.nv = 0;
       x_held.nv = x.nv;
-      OMP("omp parallel") {
-        OMP("omp for" OMP_SIMD)
+      OMP(parallel) {
+        OMP(for OMP_SIMD)
           for (int64_t k = 0; k < x.nv; ++k) {
             assert(!isnan(pr_val[DPR_HELD][x.idx[k]]));
             x_held.idx[k] = x.idx[k];
@@ -275,7 +278,7 @@ main(int argc, char *argv[])
                                                       &b_held.nv, b_held.idx, b_held.val,
                                                       mark, dzero_workspace,
                                                       &pr_vol[DPR]);
-        OMP("omp for" OMP_SIMD)
+        OMP(for OMP_SIMD)
           for (int64_t k = 0; k < b.nv; ++k) mark[b_held.idx[k]] = -1;
       }
       
@@ -302,14 +305,14 @@ main(int argc, char *argv[])
                                  &dpr.nv, dpr.idx, dpr.val,
                                  mark, iworkspace, workspace, dzero_workspace,
                                  &pr_vol[DPR]);
-      OMP("omp parallel for" OMP_SIMD)
+      OMP(parallel for OMP_SIMD)
         for (int64_t k = 0; k < dpr.nv; ++k)
           pr_val[DPR][dpr.idx[k]] += dpr.val[k];
       normalize_pr (nv, pr_val[DPR]);
       pr_time[DPR] = toc ();
       pr_nupd[DPR] = dpr.nv;
 
-      OMP("omp parallel for" OMP_SIMD)
+      OMP(parallel for OMP_SIMD)
         for (int64_t k = 0; k < dpr.nv; ++k) {
           assert (mark[dpr.idx[k]] != -1);
           mark[dpr.idx[k]] = -1;
@@ -317,7 +320,7 @@ main(int argc, char *argv[])
 
       /* Reset for dpr_held */
       b.nv = 0;
-      OMP("omp parallel") {
+      OMP(parallel) {
         /* Compute b0 in b */
         stinger_unit_dspmTspv_degscaled_ompcas_batch (nv,
                                                       1.0, alg->stinger,
@@ -326,7 +329,7 @@ main(int argc, char *argv[])
                                                       &b.nv, b.idx, b.val,
                                                       mark, dzero_workspace,
                                                       &pr_vol[DPR_HELD]);
-        OMP("omp for" OMP_SIMD)
+        OMP(for OMP_SIMD)
           for (int64_t k = 0; k < b.nv; ++k) mark[b.idx[k]] = -1;
       }
 
@@ -340,7 +343,7 @@ main(int argc, char *argv[])
                                  &dpr_held.nv, dpr_held.idx, dpr_held.val,
                                  mark, iworkspace, workspace, dzero_workspace,
                                  &pr_vol[DPR_HELD]);
-      OMP("omp parallel for" OMP_SIMD)
+      OMP(parallel for OMP_SIMD)
         for (int64_t k = 0; k < dpr_held.nv; ++k)
           pr_val[DPR_HELD][dpr_held.idx[k]] += dpr_held.val[k];
       normalize_pr (nv, pr_val[DPR_HELD]);
@@ -375,7 +378,7 @@ main(int argc, char *argv[])
       const int64_t loc = find_max_pr (nv, pr_val[alg]);
       if (alg == 0) loc_baseline = loc;
       if (alg > 0)
-        //OMP("omp parallel for reduction(+: err)")
+        //OMP(parallel for reduction(+: err))
         for (int64_t i = 0; i < nv; ++i) {
           const double ei = fabs (pr_val[alg][i] - pr_val[BASELINE][i]);
           if (ei > mxerr) { where = i; mxerr = ei; }
@@ -394,7 +397,6 @@ main(int argc, char *argv[])
 
 /* Utility functions */
 
- 
 int
 append_to_vlist (int64_t * restrict nvlist,
                  int64_t * restrict vlist,
@@ -433,7 +435,7 @@ clear_vlist (int64_t * restrict nvlist,
 {
   const int64_t nvl = *nvlist;
 
-  OMP("omp parallel for")
+  OMP(parallel for)
     for (int64_t k = 0; k < nvl; ++k)
       mark[vlist[k]] = -1;
 
@@ -454,11 +456,11 @@ void
 normalize_pr (const int64_t nv, double * restrict pr_val)
 {
   double n1 = 0.0;
-  OMP("omp parallel") {
-    OMP("omp for reduction(+: n1)")
+  OMP(parallel) {
+    OMP(for reduction(+: n1))
       for (int64_t k = 0; k < nv; ++k)
         n1 += fabs (pr_val[k]);
-    OMP("omp for")
+    OMP(for)
       for (int64_t k = 0; k < nv; ++k)
         pr_val[k] /= n1;
   }
