@@ -15,15 +15,15 @@
 static inline void setup_y (const int64_t nv, const double beta, double * y)
 {
   if (0.0 == beta) {
-    OMP(for)
+    OMP(omp for)
       for (int64_t i = 0; i < nv; ++i)
         y[i] = 0.0;
   } else if (-1.0 == beta) {
-    OMP(for)
+    OMP(omp for)
       for (int64_t i = 0; i < nv; ++i)
         y[i] = -y[i];
   } else if (!(1.0 == beta)) {
-    OMP(for)
+    OMP(omp for)
       for (int64_t i = 0; i < nv; ++i)
         y[i] *= beta;
   }
@@ -38,16 +38,16 @@ static inline void setup_y (const int64_t nv, const double beta, double * y)
 
 void stinger_dspmTv_ompsimple (const int64_t nv, const double alpha, const struct stinger *S, const double * x, const double beta, double * y)
 {
-  OMP(parallel) {
+  OMP(omp parallel) {
     setup_y (nv, beta, y);
 
-    OMP(for)
+    OMP(omp for)
       for (int64_t i = 0; i < nv; ++i) {
         const double alphaxi = ALPHAXI_VAL (alpha, x[i]);
         STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, i) {
           const int64_t j = STINGER_EDGE_DEST;
           const double aij = STINGER_EDGE_WEIGHT;
-          OMP(atomic) y[j] += aij * alphaxi;
+          OMP(omp atomic) y[j] += aij * alphaxi;
         } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
       }
   }
@@ -55,15 +55,15 @@ void stinger_dspmTv_ompsimple (const int64_t nv, const double alpha, const struc
 
 void stinger_unit_dspmTv_ompsimple (const int64_t nv, const double alpha, const struct stinger *S, const double * x, const double beta, double * y)
 {
-  OMP(parallel) {
+  OMP(omp parallel) {
     setup_y (nv, beta, y);
 
-    OMP(for)
+    OMP(omp for)
       for (int64_t i = 0; i < nv; ++i) {
         const double alphaxi = ALPHAXI_VAL (alpha, x[i]);
         STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, i) {
           const int64_t j = STINGER_EDGE_DEST;
-          OMP(atomic) y[j] += alphaxi;
+          OMP(omp atomic) y[j] += alphaxi;
         } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
       }
   }
@@ -71,10 +71,10 @@ void stinger_unit_dspmTv_ompsimple (const int64_t nv, const double alpha, const 
 
 void stinger_dspmTv_degscaled_ompsimple (const int64_t nv, const double alpha, const struct stinger *S, const double * x, const double beta, double * y)
 {
-  OMP(parallel) {
+  OMP(omp parallel) {
     setup_y (nv, beta, y);
 
-    OMP(for)
+    OMP(omp for)
       for (int64_t i = 0; i < nv; ++i) {
         const double alphaxi = ALPHAXI_VAL (alpha, x[i]);
         const int64_t degi = stinger_outdegree_get (S, i);
@@ -82,7 +82,7 @@ void stinger_dspmTv_degscaled_ompsimple (const int64_t nv, const double alpha, c
         STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, i) {
           const int64_t j = STINGER_EDGE_DEST;
           const double aij = STINGER_EDGE_WEIGHT;
-          OMP(atomic) y[j] += aij * alphaxi_deg;
+          OMP(omp atomic) y[j] += aij * alphaxi_deg;
         } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
       }
   }
@@ -90,17 +90,17 @@ void stinger_dspmTv_degscaled_ompsimple (const int64_t nv, const double alpha, c
 
 void stinger_unit_dspmTv_degscaled_ompsimple (const int64_t nv, const double alpha, const struct stinger *S, const double * x, const double beta, double * y)
 {
-  OMP(parallel) {
+  OMP(omp parallel) {
     setup_y (nv, beta, y);
 
-    OMP(for)
+    OMP(omp for)
       for (int64_t i = 0; i < nv; ++i) {
         const double alphaxi = ALPHAXI_VAL (alpha, x[i]);
         const int64_t degi = stinger_outdegree_get (S, i);
         const double alphaxi_deg = DEGSCALE (alphaxi, degi);
         STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, i) {
           const int64_t j = STINGER_EDGE_DEST;
-          OMP(atomic) y[j] += alphaxi_deg;
+          OMP(omp atomic) y[j] += alphaxi_deg;
         } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
       }
   }
@@ -109,19 +109,19 @@ void stinger_unit_dspmTv_degscaled_ompsimple (const int64_t nv, const double alp
 static void setup_workspace (const int64_t nv, int64_t ** loc_ws, double ** val_ws)
 {
   if (!*loc_ws) {
-    OMP(master) {
+    OMP(omp master) {
       *loc_ws = xmalloc (nv * sizeof (**loc_ws));
     }
-    OMP(barrier);
-    OMP(for)
+    OMP(omp barrier);
+    OMP(omp for)
       for (int64_t k = 0; k < nv; ++k) (*loc_ws)[k] = -1;
   }
   if (!*val_ws) {
-    OMP(master) {
+    OMP(omp master) {
       *val_ws = xmalloc (nv * sizeof (**val_ws));
     }
-    OMP(barrier);
-    OMP(for)
+    OMP(omp barrier);
+    OMP(omp for)
       for (int64_t k = 0; k < nv; ++k) (*val_ws)[k] = 0.0;
   }
 }
@@ -131,7 +131,7 @@ static void setup_sparse_y (const double beta,
                             int64_t * loc_ws, double * val_ws /*UNUSED*/)
 {
   if (0.0 == beta) {
-    OMP(for)
+    OMP(omp for)
       for (int64_t k = 0; k < y_deg; ++k) {
         const int64_t i = y_idx[k];
         loc_ws[i] = k;
@@ -139,21 +139,21 @@ static void setup_sparse_y (const double beta,
       }
   } else if (1.0 == beta) {
     /* Still have to set up the pattern... */
-    OMP(for)
+    OMP(omp for)
       for (int64_t k = 0; k < y_deg; ++k) {
         const int64_t i = y_idx[k];
         loc_ws[i] = k;
         val_ws[i] = y_val[k];
       }
   } else if (-1.0 == beta) {
-    OMP(for)
+    OMP(omp for)
       for (int64_t k = 0; k < y_deg; ++k) {
         const int64_t i = y_idx[k];
         loc_ws[i] = k;
         val_ws[i] = -y_val[k];
       }
   } else if (1.0 != beta) {
-    OMP(for)
+    OMP(omp for)
       for (int64_t k = 0; k < y_deg; ++k) {
         const int64_t i = y_idx[k];
         const double yi = y_val[k];
@@ -169,18 +169,18 @@ void stinger_dspmTspv_ompsimple (const int64_t nv, const double alpha, const str
   int64_t * loc_ws = loc_ws_in;
   double * restrict val_ws = val_ws_in;
 
-  OMP(parallel) {
+  OMP(omp parallel) {
     setup_workspace (nv, &loc_ws, &val_ws);
     setup_sparse_y (beta, y_deg, y_idx, y_val, loc_ws, val_ws);
 
-    OMP(for)
+    OMP(omp for)
       for (int64_t xk = 0; xk < x_deg; ++xk) {
         const int64_t i = x_idx[xk];
         const double alphaxi = ALPHAXI_VAL (alpha, x_val[xk]);
         STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, i) {
           const int64_t j = STINGER_EDGE_DEST;
           const double aij = STINGER_EDGE_WEIGHT;
-          OMP(atomic) val_ws[j] += aij * alphaxi;
+          OMP(omp atomic) val_ws[j] += aij * alphaxi;
           if (loc_ws[j] < 0) {
             OMP(critical) {
               if (loc_ws[j] < 0) {
@@ -194,7 +194,7 @@ void stinger_dspmTspv_ompsimple (const int64_t nv, const double alpha, const str
       }
 
     /* Pack the values back into the shorter form. */
-    OMP(for)
+    OMP(omp for)
       for (int64_t k = 0; k < y_deg; ++k) {
         y_val[k] = val_ws[y_idx[k]];
         val_ws[y_idx[k]] = 0.0;
@@ -212,18 +212,18 @@ void stinger_unit_dspmTspv_ompsimple (const int64_t nv, const double alpha, cons
   int64_t * restrict loc_ws = loc_ws_in;
   double * restrict val_ws = val_ws_in;
 
-  OMP(parallel) {
+  OMP(omp parallel) {
     setup_workspace (nv, &loc_ws, &val_ws);
     setup_sparse_y (beta, y_deg, y_idx, y_val, loc_ws, val_ws);
 
-    OMP(for)
+    OMP(omp for)
       for (int64_t xk = 0; xk < x_deg; ++xk) {
         const int64_t i = x_idx[xk];
         const double alphaxi = ALPHAXI_VAL (alpha, x_val[xk]);
         STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, i) {
           const int64_t j = STINGER_EDGE_DEST;
           const double aij = STINGER_EDGE_WEIGHT;
-          OMP(atomic) val_ws[j] += alphaxi;
+          OMP(omp atomic) val_ws[j] += alphaxi;
           if (loc_ws[j] < 0) {
             OMP(critical) {
               if (loc_ws[j] < 0) {
@@ -237,7 +237,7 @@ void stinger_unit_dspmTspv_ompsimple (const int64_t nv, const double alpha, cons
       }
 
     /* Pack the values back into the shorter form. */
-    OMP(for)
+    OMP(omp for)
       for (int64_t k = 0; k < y_deg; ++k) {
         y_val[k] = val_ws[y_idx[k]];
         val_ws[y_idx[k]] = 0.0;
@@ -255,11 +255,11 @@ void stinger_dspmTspv_degscaled_ompsimple (const int64_t nv, const double alpha,
   int64_t * loc_ws = loc_ws_in;
   double * restrict val_ws = val_ws_in;
 
-  OMP(parallel) {
+  OMP(omp parallel) {
     setup_workspace (nv, &loc_ws, &val_ws);
     setup_sparse_y (beta, y_deg, y_idx, y_val, loc_ws, val_ws);
 
-    OMP(for)
+    OMP(omp for)
       for (int64_t xk = 0; xk < x_deg; ++xk) {
         const int64_t i = x_idx[xk];
         const double alphaxi = ALPHAXI_VAL (alpha, x_val[xk]);
@@ -268,7 +268,7 @@ void stinger_dspmTspv_degscaled_ompsimple (const int64_t nv, const double alpha,
         STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, i) {
           const int64_t j = STINGER_EDGE_DEST;
           const double aij = STINGER_EDGE_WEIGHT;
-          OMP(atomic) val_ws[j] += aij * alphaxi_deg;
+          OMP(omp atomic) val_ws[j] += aij * alphaxi_deg;
           if (loc_ws[j] < 0) {
             OMP(critical) {
               if (loc_ws[j] < 0) {
@@ -282,7 +282,7 @@ void stinger_dspmTspv_degscaled_ompsimple (const int64_t nv, const double alpha,
       }
 
     /* Pack the values back into the shorter form. */
-    OMP(for)
+    OMP(omp for)
       for (int64_t k = 0; k < y_deg; ++k) {
         y_val[k] = val_ws[y_idx[k]];
         val_ws[y_idx[k]] = 0.0;
