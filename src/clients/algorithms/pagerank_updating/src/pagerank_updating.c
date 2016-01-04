@@ -254,7 +254,7 @@ main(int argc, char *argv[])
       }
       compute_b_time = toc ();
       OMP(parallel) {
-        OMP(for nowait reduction(+: b0n) OMP_SIMD)
+        OMP(for OMP_SIMD nowait reduction(+: b0n))
           for (int64_t k = 0; k < b.nv; ++k) b0n += fabs (b.val[k]);
         /* OMP(for) */
         /*   for (int64_t k = 0; k < nv; ++k) dzero_workspace[k] = 0.0; */

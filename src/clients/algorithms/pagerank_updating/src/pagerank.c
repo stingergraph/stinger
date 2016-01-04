@@ -111,7 +111,7 @@ pagerank_core (const int64_t nv,
 
     for (int k = 0; rho >= termthresh && k < maxiter; ++k) {
       OMP(master) niter = k+1;
-      OMP(for nowait OMP_SIMD)
+      OMP(for OMP_SIMD nowait)
         for (int64_t kk = 0; kk < nv; ++kk)
           xnew[kk] = kv[kk];
       OMP(single)
@@ -120,7 +120,7 @@ pagerank_core (const int64_t nv,
 
       stinger_unit_dspmTv_degscaled_ompcas_batch (nv, alpha, S, x, 1.0, xnew);
 
-      OMP(for reduction(+: norm1_xnew_diff) OMP_SIMD)
+      OMP(for OMP_SIMD reduction(+: norm1_xnew_diff))
         for (int64_t kk = 0; kk < nv; ++kk)
           norm1_xnew_diff += fabs(xnew[kk] - x[kk]);
 
@@ -134,7 +134,7 @@ pagerank_core (const int64_t nv,
         x = t;
         norm1_x = 0.0;
       }
-      OMP(for reduction(+: norm1_x) OMP_SIMD)
+      OMP(for OMP_SIMD reduction(+: norm1_x))
         for (int64_t kk = 0; kk < nv; ++kk)
           norm1_x += fabs(x[kk]);
     }
@@ -217,7 +217,7 @@ pagerank_dpr (const int64_t nv, struct stinger * S,
     const int64_t bdeg = *b_deg;
     OMP(master) new_dpr_deg = dpr_deg = bdeg; /* Relies on barriers below */
 
-    OMP(for reduction(+:cb) OMP_SIMD)
+    OMP(for OMP_SIMD reduction(+:cb))
       for (int64_t k = 0; k < bdeg; ++k)
         cb += fabs (b_val[k]);
     OMP(for  OMP_SIMD)
@@ -239,7 +239,7 @@ pagerank_dpr (const int64_t nv, struct stinger * S,
                                                     1.0,
                                                     &new_dpr_deg, new_dpr_idx, new_dpr_val,
                                                     mark, dzero_workspace, &total_vol);
-      OMP(for reduction(+: new_rho) OMP_SIMD)
+      OMP(for OMP_SIMD reduction(+: new_rho))
         for (int64_t k = 0; k < new_dpr_deg; ++k) {
           /* XXX: Again, assuming pattern is being super-setted and kept in order. */
           assert(k >= dpr_deg || new_dpr_idx[k] == dpr_idx[k]);
@@ -310,10 +310,10 @@ pagerank_dpr_held (const int64_t nv, struct stinger * S,
     const int64_t bdeg = *b_deg;
     OMP(master) new_dpr_deg = dpr_deg = bdeg; /* Relies on barriers below */
 
-    OMP(for reduction(+:cb) OMP_SIMD)
+    OMP(for OMP_SIMD reduction(+:cb))
       for (int64_t k = 0; k < bdeg; ++k)
         cb += fabs (b_val[k]);
-    OMP(for reduction(+:ndpr) OMP_SIMD)
+    OMP(for OMP_SIMD reduction(+:ndpr))
       for (int64_t k = 0; k < bdeg; ++k) {
         b_val[k] /= cb;
         new_dpr_idx[k] = dpr_idx[k] = b_idx[k];
@@ -337,7 +337,7 @@ pagerank_dpr_held (const int64_t nv, struct stinger * S,
                                                          &new_dpr_deg, new_dpr_idx, new_dpr_val,
                                                          mark, dzero_workspace, &total_vol);
       OMP(single) ndpr = 0.0;
-      OMP(for reduction(+: new_rho, ndpr) OMP_SIMD)
+      OMP(for OMP_SIMD reduction(+: new_rho, ndpr))
         for (int64_t k = 0; k < new_dpr_deg; ++k) {
           /* XXX: Again, assuming pattern is being super-setted and kept in order. */
           assert(k >= dpr_deg || new_dpr_idx[k] == dpr_idx[k]);
