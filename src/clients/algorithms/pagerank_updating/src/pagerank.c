@@ -51,6 +51,7 @@ termthresh_dpr (const int64_t nv, struct stinger *S)
   return x;
 }
 
+OMP(omp declare simd)
 static inline double
 safediv (const double numer, const double denom)
 {
@@ -64,7 +65,7 @@ norm1 (const int64_t N, const double * restrict v)
 {
   static double out;
   OMP(omp single) out = 0.0;
-  OMP(omp for reduction(+: out))
+  OMP(omp for OMP_SIMD reduction(+: out))
     for (int64_t k = 0; k < N; ++k)
       out += fabs (v[k]);
   return out;
@@ -75,7 +76,7 @@ norm1_diff (const int64_t N, const double * restrict v, const double * restrict 
 {
   static double out;
   OMP(omp single) out = 0.0;
-  OMP(omp for reduction(+: out))
+  OMP(omp for OMP_SIMD reduction(+: out))
     for (int64_t k = 0; k < N; ++k)
       out += fabs (v[k] - w[k]);
   return out;
@@ -84,7 +85,7 @@ norm1_diff (const int64_t N, const double * restrict v, const double * restrict 
 static inline void
 vdiv (const double alpha, const int64_t nv, double * v)
 {
-  OMP(omp for)
+  OMP(omp for OMP_SIMD)
     for (int64_t k = 0; k < nv; ++k)
       v[k] /= alpha;
 }
