@@ -108,8 +108,9 @@ main(int argc, char *argv[])
   int64_t pr_vol[NPR_ALG] = { 0 };
   int64_t pr_nupd[NPR_ALG] = { 0 };
   double pr_nberr[NPR_ALG] = { 0.0 };
+  double pr_resdiff[NPR_ALG] = { 0.0 };
 
-  double alpha = 0.5;
+  double alpha = 0.85;
   int maxiter = 100;
 
   struct spvect x;
@@ -288,7 +289,8 @@ main(int argc, char *argv[])
       for (int64_t k = 0; k < nv; ++k)
         assert (!isnan(pr_val[pr_val_init][k]));
 #endif
-      calc_residual (nv, NE, alg->stinger, pr_val[pr_val_init], v, alpha, residual[pr_val_init]);
+      double ini_berr = calc_residual (nv, NE, alg->stinger, pr_val[pr_val_init], v, alpha, residual[pr_val_init]);
+      fprintf (stderr, "INITIAL BERR %20e\n", ini_berr);
       /* Copy the starting vector */
       for (int k = 0; k < NPR_ALG; ++k)
         if (run_alg[k] && k != pr_val_init) {
@@ -369,6 +371,7 @@ main(int argc, char *argv[])
         pr_time[RESTART] = toc ();
         pr_nupd[RESTART] = nv;
         pr_nberr[RESTART] = calc_residual (nv, NE, S, pr_val[RESTART], v, alpha, residual[RESTART]);
+        pr_resdiff[DPR_HELD] = 0.0;
       }
 
       if (run_alg[DPR_HELD]) {
@@ -382,11 +385,14 @@ main(int argc, char *argv[])
 #else
         pr_nberr[DPR_HELD] = 0.0;
         const double * restrict R = residual[DPR_HELD];
-        double nberr = 0.0;
-        OMP(omp parallel for OMP_SIMD reduction(+: nberr))
-          for (int64_t k = 0; k < nv; ++k)
+        double nberr = 0.0, resdiff = 0.0;
+        OMP(omp parallel for OMP_SIMD reduction(+: nberr, resdiff))
+          for (int64_t k = 0; k < nv; ++k) {
             nberr += fabs(R[k]);
+            resdiff += fabs(R[k] - residual[RESTART][k]);
+          }
         pr_nberr[DPR_HELD] = nberr / 2.0;
+        pr_resdiff[DPR_HELD] = resdiff;
 #endif
 
         OMP(omp parallel for OMP_SIMD)
@@ -404,6 +410,7 @@ main(int argc, char *argv[])
         pr_time[BASELINE] = toc ();
         pr_nupd[BASELINE] = nv;
         pr_nberr[BASELINE] = calc_residual (nv, NE, S, pr_val[BASELINE], v, alpha, residual[BASELINE]);
+        pr_resdiff[BASELINE] = -1.0;
       }
 
       if (run_alg[DPR]) {
@@ -412,15 +419,17 @@ main(int argc, char *argv[])
         dpr_update (nv, S, &x, &b, &dpr, residual[DPR], pr_val[DPR], alpha, maxiter, mark, iworkspace, workspace, dzero_workspace, &niter[DPR], &pr_vol[DPR]);
         pr_time[DPR] = toc () + pr_pre_time[DPR];
         pr_nupd[DPR] = dpr.nv;
-#if 1
+#if 0
         pr_nberr[DPR] = calc_residual (nv, NE, S, pr_val[DPR], v, alpha, residual[DPR]);
 #else
         pr_nberr[DPR] = 0.0;
         const double * restrict R = residual[DPR];
-        double nberr = 0.0;
-        OMP(omp parallel for OMP_SIMD reduction(+: nberr))
-          for (int64_t k = 0; k < nv; ++k)
+        double nberr = 0.0, resdiff = 0.0;
+        OMP(omp parallel for OMP_SIMD reduction(+: nberr, resdiff))
+          for (int64_t k = 0; k < nv; ++k) {
             nberr += fabs(R[k]);
+            resdiff += fabs(R[k] - residual[RESTART][k]);
+          }
         pr_nberr[DPR] = nberr / 2.0;
 #endif
 
@@ -443,10 +452,12 @@ main(int argc, char *argv[])
 #else
         pr_nberr[DPR_ALL] = 0.0;
         const double * restrict R = residual[DPR_ALL];
-        double nberr = 0.0;
-        OMP(omp parallel for OMP_SIMD reduction(+: nberr))
-          for (int64_t k = 0; k < nv; ++k)
+        double nberr = 0.0, resdiff = 0.0;
+        OMP(omp parallel for OMP_SIMD reduction(+: nberr, resdiff))
+          for (int64_t k = 0; k < nv; ++k) {
             nberr += fabs(R[k]);
+            resdiff += fabs(R[k] - residual[RESTART][k]);
+          }
         pr_nberr[DPR_ALL] = nberr / 2.0;
 #endif
 
@@ -480,10 +491,10 @@ main(int argc, char *argv[])
               if (pri > mxval) mxval = pri;
               if (ei > 0.0) ++nerr;
             }
-        fprintf (stderr, "%ld: %12s %d\t%d %10g %8ld %10e %10e %8ld %8ld %10e\n",
+        fprintf (stderr, "%ld: %12s %d\t%d %10g %8ld %10e %10e %8ld %8ld %10e ... %10e\n",
                  (long)iter, pr_name[alg], alg,
                  niter[alg], pr_time[alg], pr_vol[alg], err, (mxval? mxerr/mxval : 0.0), 
-                 (long)nerr, (long)pr_nupd[alg], pr_nberr[alg]);
+                 (long)nerr, (long)pr_nupd[alg], pr_nberr[alg], pr_resdiff[alg]);
       }
   }
 
@@ -759,7 +770,7 @@ calc_residual (const int64_t nv, const int64_t NE, struct stinger * S, const dou
       if (tmp > norminf_r) norminf_r = tmp;
     }
 
-  //fprintf (stderr, "ugh %g\n", norminf_r);
+  //fprintf (stderr, "XXXPRXXX ugh %e %e %ld\n", norm1_r/nv, norminf_r, (long)nv);
 
-  return norm1_r / 2.0;
+  return norminf_r / 2.0;
 }

@@ -32,9 +32,10 @@ termthresh_pr (const int64_t nv, struct stinger *S)
 {
   const double x =
 #if defined(USE_INFNORM)
-    8.0*FLT_EPSILON;
+       4096.0*DBL_EPSILON;
 #else
-  1.0e-5;
+  //1.0e-5;
+  128.0*FLT_EPSILON;
 #endif
   return x;
 }
@@ -44,9 +45,10 @@ termthresh_dpr (const int64_t nv, struct stinger *S)
 {
   const double x =
 #if defined(USE_INFNORM)
-    8.0*FLT_EPSILON;
+       4096.0*DBL_EPSILON;
 #else
-    1.0e-5;
+  //1.0e-5;
+  128.0*FLT_EPSILON;
 #endif
   return x;
 }
@@ -307,7 +309,7 @@ pagerank_dpr (const int64_t nv, struct stinger * S,
         new_dpr_val[k] = dpr_val[k] = b_val[k];
       }
 
-    const double termthresh = termthresh_dpr (nv, S) / cb; // / (1+alpha);
+    const double termthresh = termthresh_dpr (nv, S) / cb / (1+alpha);
     int niter;
 
     /* On each iteration, new_dpr_deg enters with dpr_deg's pattern and b's values. */
@@ -324,7 +326,7 @@ pagerank_dpr (const int64_t nv, struct stinger * S,
           /* XXX: Again, assuming pattern is being super-setted and kept in order. */
           assert(k >= dpr_deg || new_dpr_idx[k] == dpr_idx[k]);
           new_dpr_val[k] += residual[new_dpr_idx[k]]/cb;
-#if USE_INFNORM
+#if defined(USE_INFNORM)
           {
             const int64_t idx = new_dpr_idx[k];
             const double relval = 1.0; //old_pr[idx];
@@ -470,7 +472,7 @@ pagerank_dpr_held (const int64_t nv, struct stinger * S,
           /* XXX: Again, assuming pattern is being super-setted and kept in order. */
           assert(k >= dpr_deg || new_dpr_idx[k] == dpr_idx[k]);
           new_dpr_val[k] += residual[new_dpr_idx[k]]/cb;
-#if USE_INFNORM
+#if defined(USE_INFNORM)
           {
             const int64_t idx = new_dpr_idx[k];
             const double relval = 1.0; //old_pr[idx];

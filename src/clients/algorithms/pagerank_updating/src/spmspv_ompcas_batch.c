@@ -240,7 +240,7 @@ static void setup_sparse_y (const double beta,
 }
 
 /* Want this in L1... */
-#define BATCH_SIZE 256
+#define BATCH_SIZE 128
 struct batch {
      int64_t n;
      int64_t idx[BATCH_SIZE];
