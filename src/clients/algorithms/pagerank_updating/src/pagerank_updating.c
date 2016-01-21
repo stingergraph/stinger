@@ -607,16 +607,17 @@ gather_pre (const stinger_registered_alg * alg, struct spvect * x, int64_t * res
   const stinger_edge_update * restrict ins = alg->insertions;
   const stinger_edge_update * restrict rem = alg->deletions;
 
+  /* Only gather the *source*... */
   OMP(omp parallel) {
     OMP(omp for nowait)
       for (int64_t k = 0; k < nins; ++k) {
         append_to_vlist (&x->nv, x->idx, mark, ins[k].source);
-        append_to_vlist (&x->nv, x->idx, mark, ins[k].destination);
+        /* append_to_vlist (&x->nv, x->idx, mark, ins[k].destination); */
       }
     OMP(omp for)
       for (int64_t k = 0; k < nrem; ++k) {
         append_to_vlist (&x->nv, x->idx, mark, rem[k].source);
-        append_to_vlist (&x->nv, x->idx, mark, rem[k].destination);
+        /* append_to_vlist (&x->nv, x->idx, mark, rem[k].destination); */
       }
     OMP(omp for OMP_SIMD)
       for (int64_t k = 0; k < x->nv; ++k)
