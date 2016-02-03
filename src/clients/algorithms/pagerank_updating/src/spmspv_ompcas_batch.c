@@ -300,7 +300,7 @@ dspmTspv_accum (const struct stinger * S, const int64_t i, const double alphaxi,
     if (i != j) {
       const double aij = STINGER_EDGE_WEIGHT;
       atomic_daccum (&y[j], aij * alphaxi);
-      enqueue (b, j, y_deg, y_idx, loc_ws);
+      if (loc_ws[j] < 0) enqueue (b, j, y_deg, y_idx, loc_ws);
     }
   } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
 }
@@ -314,7 +314,7 @@ dspmTspv_unit_accum (const struct stinger * S, const int64_t i, const double alp
     const int64_t j = STINGER_EDGE_DEST;
     if (i != j) {
       atomic_daccum (&y[j], alphaxi);
-      enqueue (b, j, y_deg, y_idx, loc_ws);
+      if (loc_ws[j] < 0) enqueue (b, j, y_deg, y_idx, loc_ws);
     }
   } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
 }
