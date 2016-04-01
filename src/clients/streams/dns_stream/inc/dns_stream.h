@@ -21,10 +21,9 @@ using namespace gt::stinger;
 
 int64_t get_current_timestamp(void);
 
-struct DnsParse {
+struct NetflowParse {
 
 	std::string src, dest, protocol, src_port, dest_port;
-    std::string qname, rdata;
 	double duration;
 	int packets, bytes, flows;
 	int64_t time;
