@@ -142,7 +142,7 @@ This method takes no parameters.
 ```
 
 
-## get_data_descriptions
+## get_data_description
 
 This method retrieves the data fields published by an algorithm.
 
