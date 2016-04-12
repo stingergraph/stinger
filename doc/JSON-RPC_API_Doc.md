@@ -20,7 +20,7 @@ Method Summary
 
 ## get_server_info
 
-This method returns basic information about the STINGER server.
+This method returns basic information about the STINGER server.get_data_descriptions
 
 ### Input
 
@@ -142,7 +142,7 @@ This method takes no parameters.
 ```
 
 
-## get_data_descriptiona
+## get_data_descriptions
 
 This method retrieves the data fields published by an algorithm.
 
