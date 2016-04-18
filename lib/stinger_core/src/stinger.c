@@ -712,12 +712,14 @@ stinger_fragmentation (struct stinger *S, uint64_t NV, struct stinger_fragmentat
       else {
         /* for each edge in the current block */
         for (uint64_t j = 0; j < curBlock->high && j < STINGER_EDGEBLOCKSIZE; j++) {
-          if (stinger_eb_is_blank (curBlock, j)) {
-            numSpaces++;
-            found = 1;
-          }
-          else {
-            numEdges++; 
+          if (stinger_eb_direction_out(curBlock, j)) {
+            if (stinger_eb_is_blank (curBlock, j)) {
+              numSpaces++;
+              found = 1;
+            }
+            else {
+              numEdges++;
+            }
           }
         }
       }
