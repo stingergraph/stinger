@@ -9,6 +9,16 @@ set(sources
   src/static_components.c
   src/weakly_connected_components.c
   src/streaming_connected_components.c
+  src/shortest_paths.cpp
+  src/diameter.cpp
+  src/independent_sets.c
+  src/graph_partition.c
+  src/hits_centrality.c
+  src/diameter.cpp
+  src/independent_sets.c
+  src/graph_partition.c
+  src/hits_centrality.c
+  src/modularity.c
 )
 set(headers
   inc/adamic_adar.h
@@ -21,6 +31,14 @@ set(headers
   inc/static_components.h
   inc/weakly_connected_components.h
   inc/streaming_connected_components.h
+  inc/shortest_paths.h
+  inc/diameter.h
+  inc/independent_sets.h
+  inc/graph_partition.h
+  inc/hits_centrality.h
+  inc/graph_partition.h
+  inc/hits_centrality.h
+  inc/modularity.h
 )
 
 publish_headers(headers "${CMAKE_BINARY_DIR}/include/stinger_alg")
