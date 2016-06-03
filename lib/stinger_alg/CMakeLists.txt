@@ -8,6 +8,11 @@ set(sources
   src/rmat.c
   src/static_components.c
   src/weakly_connected_components.c
+  src/shortest_paths.cpp
+        src/diameter.cpp
+        src/independent_sets.c
+        src/graph_partition.c
+        src/hits_centrality.c
 )
 set(headers
   inc/adamic_adar.h
@@ -19,6 +24,11 @@ set(headers
   inc/rmat.h
   inc/static_components.h
   inc/weakly_connected_components.h
+  inc/shortest_paths.h
+  inc/diameter.h
+  inc/independent_sets.h
+        inc/graph_partition.h
+        inc/hits_centrality.h
 )
 
 file(COPY ${headers} DESTINATION "${CMAKE_BINARY_DIR}/include/stinger_alg")
