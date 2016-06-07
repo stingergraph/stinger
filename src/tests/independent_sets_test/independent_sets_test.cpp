@@ -91,14 +91,14 @@ TEST_F(IndependentTest, medium_DAG) {
             STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, v){
                                         if(iset[STINGER_EDGE_DEST]){
                                             //FAIL
-                                            printf("%ld => %ld \n", v, STINGER_EDGE_DEST);
+                                            //printf("%ld => %ld \n", v, STINGER_EDGE_DEST);
                                             ASSERT_EQ(0,1);
                                         }
                                     }STINGER_FORALL_OUT_EDGES_OF_VTX_END();
             STINGER_FORALL_IN_EDGES_OF_VTX_BEGIN(S, v){
                                         if(iset[STINGER_EDGE_DEST]){
                                             //FAIL
-                                            printf("%ld => %ld \n", v, STINGER_EDGE_DEST);
+                                            //printf("%ld => %ld \n", v, STINGER_EDGE_DEST);
                                             ASSERT_EQ(0,1);
                                         }
                                     }STINGER_FORALL_IN_EDGES_OF_VTX_END();
