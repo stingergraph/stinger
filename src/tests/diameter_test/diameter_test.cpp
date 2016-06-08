@@ -46,9 +46,9 @@ TEST_F(DiameterTest, simple_directed) {
     int64_t nv = stinger_max_active_vertex(S)+1;
     int64_t pDiam;
     int64_t eDiam;
-    pDiam = pseudo_diameter(S,nv, 1);
+    pDiam = pseudo_diameter(S,nv, 1, 0, false);
     EXPECT_EQ(2,pDiam);
-    pDiam = pseudo_diameter(S,nv, 0);
+    pDiam = pseudo_diameter(S, nv, 0, 0, false);
     EXPECT_EQ(4,pDiam);
 
     eDiam = exact_diameter(S, nv);

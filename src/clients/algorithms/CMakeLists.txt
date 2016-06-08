@@ -27,3 +27,6 @@ target_link_libraries(stinger_test_alg stinger_net stinger_alg)
 
 add_executable(stinger_weakly_connected_components weakly_connected_components/src/main.c)
 target_link_libraries(stinger_weakly_connected_components stinger_net stinger_alg)
+
+add_executable(stinger_graph_partition graph_partition/src/graph_partition.c)
+target_link_libraries(stinger_graph_partition stinger_net stinger_alg)

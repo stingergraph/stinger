@@ -6,15 +6,15 @@
 
 //this algorithm gives an approximation of the graph diameter
 int64_t
-pseudo_diameter(stinger_t * S,int64_t NV , int64_t source){
+pseudo_diameter(stinger_t * S,int64_t NV , int64_t source, int64_t dist, bool ignore_weights){
     //int64_t source = 1; // start at the first vertex in the graph, this could be any vertex
-    int64_t dist = 0;
+    dist = 0;
     int64_t target = source;
 
     std::vector<int64_t> paths(NV);
     while(1){
         int64_t new_source = target;
-        paths = dijkstra(S, NV, new_source, false);
+        paths = dijkstra(S, NV, new_source, ignore_weights);
         int64_t max = std::numeric_limits<int64_t>::min();
         int64_t max_index = 0;
         for( int64_t i = 0; i< NV; i++){
