@@ -3,6 +3,8 @@
 //
 
 #include <stdint.h>
+#include <stinger_net/stinger_alg.h>
+
 extern "C" {
 #include "stinger_core/stinger.h"
 #include "stinger_core/xmalloc.h"
@@ -12,6 +14,7 @@ extern "C" {
 }
 #include "stinger_alg/diameter.h"
 
+
 int
 main(int argc, char *argv[]) {
     int64_t source_vertex = 0;
@@ -19,24 +22,30 @@ main(int argc, char *argv[]) {
     bool ignore_weights = false;
 
     char * alg_name = "pseudo_diameter";
+    stinger_register_alg_params params;
+    params.name= "pseudo_diameter";
+    params.data_per_vertex=sizeof(int64_t);
+    params.data_description="l vertexPool";
+    params.host="localhost";
+    stinger_registered_alg *alg = stinger_register_alg_impl(params);
 
-    stinger_registered_alg * alg =
-    stinger_register_alg(
-            .name="graphpartition",
-    .data_per_vertex=sizeof(int64_t) + sizeof(int64_t),
-    .data_description="ll partitions partition_sizes",
-    .host="localhost",
-    );
-
+   /* stinger_registered_alg *alg =
+            stinger_register_alg(
+                    .name="pseudo_diameter",
+                    .data_per_vertex=sizeof(int64_t),
+                    .data_description="l vertexPool",
+                    .host="localhost",
+            );*/
+    int weighting;
     int opt = 0;
     while(-1 != (opt = getopt(argc, argv, "w:s:n:?h"))) {
         switch(opt) {
             case 'w': {
                 weighting = atof(optarg);
                 if(weighting > 1.0) {
-                    weighting = true;
+                    ignore_weights = true;
                 } else if(weighting <= 0.0) {
-                    weighting = false;
+                    ignore_weights = false;
                 }
             } break;
             case 's': {
@@ -66,7 +75,7 @@ main(int argc, char *argv[]) {
                                 "\n"
                                 "  -s <num>  Set source vertex (%d by default)\n"
                                 "  -n <str>  Set the algorithm name (%s by default)\n"
-                                "  -w <num>  Set the weighintg (0.0 - 1.0) (%lf by default)\n"
+                                "  -w <num>  Set the weighting (0.0 - 1.0) (%lf by default)\n"
                                 "\n", 0, weighting, alg_name, 0
                 );
                 return(opt);

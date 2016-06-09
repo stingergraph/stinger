@@ -46,9 +46,12 @@ main(int argc, char *argv[]) {
                 printf(
                         "GraphPartition\n"
                                 "==================================\n"
+                                "This algorithm partitions the verticies in the STINGER graph into a specified number of"
+                                "partitions using a linear greedy heuristic and limits the partition sizes based on the \n"
+                                "capacity constraint"
                                 "\n"
                                 "  -n        Set number of partitions (default: %ld)\n"
-                                "  -e        Set partition capacity (default: %0.1e)\n"
+                                "  -c        Set partition capacity (default: %0.1e)\n"
                                 "\n",num_partitons,partition_capacity);
                 return(opt);
             }

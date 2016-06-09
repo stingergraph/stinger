@@ -30,3 +30,12 @@ target_link_libraries(stinger_weakly_connected_components stinger_net stinger_al
 
 add_executable(stinger_graph_partition graph_partition/src/graph_partition.c)
 target_link_libraries(stinger_graph_partition stinger_net stinger_alg)
+
+add_executable(stinger_independent_sets independent_set/src/independet_set.c)
+target_link_libraries(stinger_independent_sets stinger_net stinger_alg)
+
+add_executable(stinger_diameter diameter/src/diameter.cpp)
+target_link_libraries(stinger_diameter stinger_net stinger_alg)
+
+add_executable(stinger_hits hits_centrality/src/hits.c)
+target_link_libraries(stinger_hits stinger_net stinger_alg)
