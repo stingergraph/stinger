@@ -3,8 +3,15 @@
 //
 #include "diameter.h"
 #include "shortest_paths.h"
-
-//this algorithm gives an approximation of the graph diameter
+/**
+ * this algorithm gives an approximation of the graph diameter.
+ * It works by starting from a source vertex, and finds an end vertex that is farthest away
+ * This process is repeated by treating that end vertex as the new starting vertex and ends
+ * when the graph distance no longer increases
+ * Inputs: S- the graph itself, nv - the total number of active verticies in the graph, source - a starting vertex
+ * dist - the variable that will hold the resulting diameter, and ignore_weights - a flag that controls wheither a user
+ * wants to consider the weights along the edge or not.
+ */
 int64_t
 pseudo_diameter(stinger_t * S,int64_t NV , int64_t source, int64_t dist, bool ignore_weights){
     //int64_t source = 1; // start at the first vertex in the graph, this could be any vertex
@@ -34,9 +41,12 @@ pseudo_diameter(stinger_t * S,int64_t NV , int64_t source, int64_t dist, bool ig
     }
     return dist;
 }
-//this gives an exact diameter for the graph, but is really slow :(
-//uses floyd warshall O(|V|^3) to calculate the all pairs shortest paths
-//finds the maximum shortest path in the graph
+/**
+ * this algorithm gives an exact diameter for the graph.
+ * It runs Dijkstras for every vertex in the graph, and returns the maximum shortest path
+ * Inputs: S- the graph itself, nv - the total number of active verticies in the graph
+*/
+
 int64_t
 exact_diameter(stinger_t * S, int64_t NV){
     std::vector<std::vector <int64_t> > all_pairs (NV, std::vector<int64_t>(NV));

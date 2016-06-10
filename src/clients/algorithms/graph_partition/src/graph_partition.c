@@ -31,9 +31,9 @@ main(int argc, char *argv[]) {
     double partition_capacity = (double)num_vertices/(double)num_partitons;
 
     int opt = 0;
-    while(-1 != (opt = getopt(argc, argv, "n:c:h"))) {
+    while(-1 != (opt = getopt(argc, argv, "p:c:h"))) {
         switch(opt) {
-            case 'n': {
+            case 'p': {
                 num_partitons = atof(optarg);
             } break;
             case 'c': {
@@ -46,11 +46,11 @@ main(int argc, char *argv[]) {
                 printf(
                         "GraphPartition\n"
                                 "==================================\n"
-                                "This algorithm partitions the verticies in the STINGER graph into a specified number of"
+                                "This algorithm partitions the verticies in the STINGER graph into a specified number of\n"
                                 "partitions using a linear greedy heuristic and limits the partition sizes based on the \n"
-                                "capacity constraint"
+                                "capacity constraint\n"
                                 "\n"
-                                "  -n        Set number of partitions (default: %ld)\n"
+                                "  -p        Set number of partitions (default: %ld)\n"
                                 "  -c        Set partition capacity (default: %0.1e)\n"
                                 "\n",num_partitons,partition_capacity);
                 return(opt);

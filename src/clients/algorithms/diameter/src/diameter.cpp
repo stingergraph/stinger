@@ -70,7 +70,7 @@ main(int argc, char *argv[]) {
                                 "\n"
                                 "Finds an approximate graph diameter on the STINGER graph.\n"
                                 "It works by starting from a source vertex, and finds an end vertex that is farthest away.\n"
-                                "This process is repeated by treating that end vertes as the new starting vertex, \n"
+                                "This process is repeated by treating that end vertex as the new starting vertex, \n"
                                 "and ends when the graph distance no longer increases. \n"
                                 "\n"
                                 "  -s <num>  Set source vertex (%d by default)\n"
