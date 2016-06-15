@@ -192,6 +192,11 @@ struct JSON_RPC_exact_diameter: JSON_RPCFunction {
     virtual int64_t operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
 };
 
+struct JSON_RPC_single_source_shortest_path: JSON_RPCFunction {
+    JSON_RPC_single_source_shortest_path(JSON_RPCServerState * state) : JSON_RPCFunction(state) { }
+    virtual int64_t operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
+};
+
 
 /* Helper Functions */
 int

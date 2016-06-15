@@ -35,7 +35,7 @@ set(sources
 	src/rpc_state.cpp
 	src/session_handling.cpp
 	src/stinger_rpc_functions.cpp
-		src/exact_diameter.cpp)
+		src/exact_diameter.cpp src/single_source_shortest_path.cpp)
 
 add_executable(stinger_json_rpc_server ${headers} ${sources})
 target_link_libraries(stinger_json_rpc_server stinger_net stinger_alg mongoose)

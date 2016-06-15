@@ -20,7 +20,7 @@ using namespace gt::stinger;
 int64_t
 JSON_RPC_exact_diameter::operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator)
 {
-    params_array_t vertices;
+    params_array_t vertices; //this isn't declared TODO FIX THIS
     bool strings;
 
     rpc_params_t p[] = {
