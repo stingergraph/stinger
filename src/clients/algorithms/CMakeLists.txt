@@ -39,3 +39,6 @@ target_link_libraries(stinger_diameter stinger_net stinger_alg)
 
 add_executable(stinger_hits hits_centrality/src/hits.c)
 target_link_libraries(stinger_hits stinger_net stinger_alg)
+
+add_executable(stinger_community_detection community_detection/src/community_detection.c)
+target_link_libraries(stinger_community_detection stinger_net stinger_alg)

@@ -66,7 +66,7 @@ JSON_RPC_single_source_shortest_path::operator()(rapidjson::Value * params, rapi
     std::vector<int64_t> paths = dijkstra(S, (int64_t)S->max_nv, source, ignore_weights);
 
     //int64_t num_candidates = adamic_adar(S, source, etype, &candidates, &scores);
-    for (uint64_t i = 0; i < (int64_t)S->max_nv; i++) {
+    for (uint64_t i = 0; i < (uint64_t)S->max_nv; i++) {
         uint64_t vtx =paths[i];
         vtx_id.PushBack(i,allocator);
         vtx_val.PushBack(vtx,allocator);

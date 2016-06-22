@@ -13,6 +13,7 @@ set(sources
         src/independent_sets.c
         src/graph_partition.c
         src/hits_centrality.c
+        src/modularity.c
 )
 set(headers
   inc/adamic_adar.h
@@ -29,6 +30,7 @@ set(headers
   inc/independent_sets.h
         inc/graph_partition.h
         inc/hits_centrality.h
+        inc/modularity.h
 )
 
 file(COPY ${headers} DESTINATION "${CMAKE_BINARY_DIR}/include/stinger_alg")
