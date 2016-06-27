@@ -222,7 +222,7 @@ get_scores_json(char * name) {
     double * dbl_scores = kve_get_ptr(val);
     int64_t nv = stinger_mapping_nv(S);
     for(int64_t v = 0; v < nv; v++) {
-      char num[128];
+      char num[1024];
       if(v != 0)
         sprintf(num, ",\n\"%ld\": %lf", v, dbl_scores[v]);
       else
