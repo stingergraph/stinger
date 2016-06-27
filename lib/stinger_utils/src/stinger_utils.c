@@ -544,6 +544,8 @@ void radix_sort_pairs (int64_t *x, int64_t length, int64_t numBits)
   int64_t * copy2 = xmalloc ( length * sizeof(int64_t));
   int64_t * tmp;
 
+  assert(length % 2 == 0);
+
   max = x[1];
   min = x[1];
   for (int64_t i = 0; i < length; i+=2) {
