@@ -71,7 +71,10 @@ handle_stream(void * args)
     } else {
       ++nfail;
       LOG_E("Parsing failed.");
-      if (nfail > 2) break;
+      if (nfail > 2) {
+        delete batch;
+        break;
+      }
     }
   }
 }
