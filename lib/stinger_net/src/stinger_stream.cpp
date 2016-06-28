@@ -11,18 +11,16 @@
 using namespace gt::stinger;
 
 extern "C" int stream_connect(char * host, int port) {
-  struct hostent * server = NULL;
   if(host && strlen(host)) {
-    server = gethostbyname(host);
+    return connect_to_batch_server (host, port);
   } else {
-    server = gethostbyname("localhost");
+    return connect_to_batch_server ("localhost", port);
   }
-  return connect_to_batch_server (server, port);
 }
 
 extern "C" void stream_send_batch(int sock_handle, int only_strings,
     stinger_edge_update * insertions, int64_t num_insertions,
-    stinger_edge_update * deletions, int64_t num_deletions, 
+    stinger_edge_update * deletions, int64_t num_deletions,
     stinger_vertex_update * vertex_updates, int64_t num_vertex_updates,
     bool undirected) {
 

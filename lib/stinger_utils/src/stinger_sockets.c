@@ -13,8 +13,15 @@
 #include "stinger_core/stinger_error.h"
 
 int
-connect_to_batch_server (struct hostent * server, int port)
+connect_to_batch_server (const char * hostname, int port)
 {
+  struct hostent * server = gethostbyname(hostname);
+
+  if(NULL == server) {
+    LOG_E_A("ERROR: server %s could not be resolved.", hostname);
+    exit(-1);
+  }
+
   /* start the connection */
   int sock_handle, n;
   struct sockaddr_in serv_addr;
