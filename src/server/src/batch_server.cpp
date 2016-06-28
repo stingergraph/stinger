@@ -11,6 +11,7 @@
 #include "server.h"
 #include "stinger_core/stinger_atomics.h"
 #include "stinger_net/stinger_server_state.h"
+#include "stinger_core/xmalloc.h"
 
 //#define LOG_AT_D
 #include "stinger_core/stinger_error.h"
@@ -125,7 +126,7 @@ start_tcp_batch_server (void * args)
       exit(-1);
     }
 
-    handle_stream_args * args = (handle_stream_args *)calloc(1, sizeof(handle_stream_args));
+    handle_stream_args * args = (handle_stream_args *)xcalloc(1, sizeof(handle_stream_args));
     args->S = S;
     args->sock = newsockfd;
 
