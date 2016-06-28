@@ -15,32 +15,38 @@
 int
 connect_to_batch_server (const char * hostname, int port)
 {
-  struct hostent * server = gethostbyname(hostname);
+  /* Look up the hostname */
+  struct addrinfo hints;
+  struct addrinfo *server_addr;
+  char port_string[128];
+  snprintf(port_string, 128, "%i", port);
+  memset(&hints, 0, sizeof(struct addrinfo));
+  hints.ai_family = AF_UNSPEC;     /* Allow IPv4 or IPv6 */
+  hints.ai_socktype = SOCK_STREAM; /* Stream socket */
+  hints.ai_flags = 0;
+  hints.ai_protocol = 0;           /* Any protocol */
+  int s = getaddrinfo(hostname, port_string, &hints, &server_addr);
 
-  if(NULL == server) {
+  if (s != 0) {
     LOG_E_A("ERROR: server %s could not be resolved.", hostname);
+    LOG_E_A("getaddrinfo: %s", gai_strerror(s));
     exit(-1);
   }
 
   /* start the connection */
   int sock_handle, n;
-  struct sockaddr_in serv_addr;
 
-  if (-1 == (sock_handle = socket(AF_INET, SOCK_STREAM, 0))) {
+  if (-1 == (sock_handle = socket(server_addr->ai_family, server_addr->ai_socktype, 0))) {
     perror("Socket create failed");
     return -1;
   }
 
-  bzero ((char *) &serv_addr, sizeof(serv_addr));
-  serv_addr.sin_family = AF_INET;
-  bcopy ((char *) server->h_addr, (char *) &serv_addr.sin_addr.s_addr, server->h_length);
-  serv_addr.sin_port = htons(port);
-
-  if(-1 == connect(sock_handle, (const struct sockaddr_in *) &serv_addr, sizeof(serv_addr))) {
+  if(-1 == connect(sock_handle, server_addr->ai_addr, server_addr->ai_addrlen)) {
     perror("Connection failed");
     return -1;
   }
 
+  freeaddrinfo(server_addr);
   return sock_handle;
 }
 
@@ -50,30 +56,34 @@ get_shared_map_info (char * hostname, int port, char ** name, size_t name_len, s
   LOG_D("called...");
 
   int sock, n;
-  unsigned int length;
-  struct sockaddr_in server, from;
-  struct hostent *hp;
   char buffer[256];
 
-  sock = socket(AF_INET, SOCK_DGRAM, 0);
+  /* Look up the hostname */
+  struct addrinfo hints;
+  struct addrinfo *server_addr;
+  char port_string[128];
+  snprintf(port_string, 128, "%i", port);
+  memset(&hints, 0, sizeof(struct addrinfo));
+  hints.ai_family = AF_UNSPEC;     /* Allow IPv4 or IPv6 */
+  hints.ai_socktype = SOCK_DGRAM;  /* Datagram socket */
+  hints.ai_flags = 0;
+  hints.ai_protocol = 0;           /* Any protocol */
+  int s = getaddrinfo(hostname, port_string, &hints, &server_addr);
+
+  if (s != 0) {
+    LOG_E_A("ERROR: server %s could not be resolved.", hostname);
+    LOG_E_A("getaddrinfo: %s", gai_strerror(s));
+    exit(-1);
+  }
+
+  /* Create the socket */
+  sock = socket(server_addr->ai_family, server_addr->ai_socktype, 0);
   if (sock < 0) {
     LOG_F("Failed to create socket");
     exit(-1);
   }
 
-  server.sin_family = AF_INET;
-  hp = gethostbyname(hostname);
-  if (hp == 0) {
-    LOG_F_A("Failed to find hostname %s", hostname);
-    exit(-1);
-  }
-
-  bcopy ((char *) hp->h_addr, (char *) &server.sin_addr, hp->h_length);
-  server.sin_port = htons(port);
-  length = sizeof(struct sockaddr_in);
-
   /* Set 5 second timeout on UDP socket */
-
   struct timeval tv;
   tv.tv_sec = 5;
   tv.tv_usec = 0;
@@ -86,14 +96,14 @@ get_shared_map_info (char * hostname, int port, char ** name, size_t name_len, s
 
   /* Send "NAME" to server */
   sprintf(buffer, "NAME");
-  n = sendto(sock, buffer, strlen(buffer), 0, (const struct sockaddr *) &server, length);
+  n = sendto(sock, buffer, strlen(buffer), 0, server_addr->ai_addr, server_addr->ai_addrlen);
   if (n < 0) {
     LOG_F("Unable to send");
     exit(-1);
   }
 
   /* Receive back the string containing the name of the shared map */
-  n = recvfrom (sock, buffer, 256, 0, (struct sockaddr *) &from, &length);
+  n = recvfrom (sock, buffer, 256, 0, NULL, NULL);
   if (n < 0) {
     LOG_F("Unable to receive");
     exit(-1);
@@ -103,14 +113,14 @@ get_shared_map_info (char * hostname, int port, char ** name, size_t name_len, s
 
   /* Send "SIZE" to server */
   sprintf(buffer, "SIZE");
-  n = sendto(sock, buffer, strlen(buffer), 0, (const struct sockaddr *) &server, length);
+  n = sendto(sock, buffer, strlen(buffer), 0, server_addr->ai_addr, server_addr->ai_addrlen);
   if (n < 0) {
     LOG_F("Unable to send");
     exit(-1);
   }
 
   /* Receive the size of the map */
-  n = recvfrom (sock, buffer, 256, 0, (struct sockaddr *) &from, &length);
+  n = recvfrom (sock, buffer, 256, 0, NULL, NULL);
   if (n < 0) {
     LOG_F("Unable to receive");
     exit(-1);
@@ -119,6 +129,7 @@ get_shared_map_info (char * hostname, int port, char ** name, size_t name_len, s
   *graph_sz = atol(found+1);
 
   close(sock);
+  freeaddrinfo(server_addr);
   return 0;
 }
 
