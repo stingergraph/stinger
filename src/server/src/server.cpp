@@ -39,9 +39,8 @@ static char * stinger_config_file = NULL;
 
 static int start_pipe[2] = {-1, -1};
 
-/* we need a socket that can reply with the shmem name & size of the graph */
-pid_t master_pid;
-static pthread_t batch_pid;
+pid_t master_tid;
+static pthread_t batch_server_tid, alg_server_tid;
 
 static StingerServerState & server_state = StingerServerState::get_server_state();
 
@@ -240,9 +239,9 @@ int main(int argc, char *argv[])
   /* print configuration to the terminal */
   LOG_I_A("Name: %s", graph_name);
 #ifdef __APPLE__
-  master_pid = syscall(SYS_thread_selfid);
+  master_tid = syscall(SYS_thread_selfid);
 #else
-  master_pid = getpid();
+  master_tid = syscall(SYS_gettid);
 #endif
 
   /* If being a "daemon" (after a fashion), wait on the child to finish initializing and then exit. */
@@ -377,7 +376,8 @@ int main(int argc, char *argv[])
 
   /* this thread will handle the batch & alg servers */
   /* TODO: bring the thread creation for the alg server to this level */
-  pthread_create (&batch_pid, NULL, start_tcp_batch_server, NULL);
+  pthread_create(&batch_server_tid, NULL, start_batch_server, NULL);
+  pthread_create(&alg_server_tid, NULL, start_alg_handling, NULL);
 
   {
     /* Inform the parent that we're ready for connections. */
@@ -416,10 +416,15 @@ cleanup (void)
   tid = syscall(SYS_gettid);
 #endif
   /* Only the main thread executes */
-  if (tid == master_pid) {
+  if (tid == master_tid) {
     LOG_I("Shutting down the batch server..."); fflush(stdout);
-    pthread_cancel(batch_pid);
-    pthread_join(batch_pid, NULL);
+    pthread_cancel(batch_server_tid);
+    pthread_join(batch_server_tid, NULL);
+    LOG_I("done."); fflush(stdout);
+
+    LOG_I("Shutting down the alg server..."); fflush(stdout);
+    pthread_cancel(alg_server_tid);
+    pthread_join(alg_server_tid, NULL);
     LOG_I("done."); fflush(stdout);
 
     struct stinger * S = server_state.get_stinger();

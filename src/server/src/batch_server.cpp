@@ -80,7 +80,7 @@ handle_stream(void * args)
 }
 
 void *
-start_tcp_batch_server (void * args)
+start_batch_server (void * args)
 {
   StingerServerState & server_state = StingerServerState::get_server_state();
 
@@ -117,9 +117,6 @@ start_tcp_batch_server (void * args)
 
   LOG_V_A("STINGER server listening for input on port %d",
       (int)port_streams);
-
-  pthread_t alg_handling;
-  pthread_create(&alg_handling, NULL, start_alg_handling, NULL);
 
   while (1) {
     newsockfd = accept (sock_handle, (struct sockaddr *) &cli_addr, &clilen);
