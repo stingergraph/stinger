@@ -22,7 +22,7 @@ struct delete_functor
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
  * PRIVATE METHODS
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
-StingerServerState::StingerServerState() : port_names(10101), port_streams(10102), port_algs(10103),
+StingerServerState::StingerServerState() : port_streams(10102), port_algs(10103),
 				    convert_num_to_string(1), batch_count(0),
 				    alg_lock(1), stream_lock(1), batch_lock(1), dep_lock(1), mon_lock(1),
 				    write_alg_data(false), write_names(false), history_cap(0), out_dir("./"),
@@ -72,17 +72,6 @@ StingerServerState::get_server_state()
 }
 
 /**
-* @brief Get the current names port number.
-*
-* @return The current names port number.
-*/
-int
-StingerServerState::get_port_names() 
-{
-  return port_names;
-}
-
-/**
 * @brief Get the current streams port number.
 *
 * @return The current streams port number.
@@ -110,22 +99,14 @@ StingerServerState::get_port_algs()
 * NOTE: Should only be called during initialization - i.e. when parsing
 * options.  This will not change the port once the server is running.
 *
-* @param new_port_names The new port number for the graph name server (1 - 65535, but really 1024 ~ 35000 or so).
 * @param new_port_streams The new port number for streams to connect to (1 - 65535, but really 1024 ~ 35000 or so).
 * @param new_port_algs The new port number for algorithms to connect to (1 - 65535, but really 1024 ~ 35000 or so).
 *
 * @return 0 on success, -1 on failure.
 */
 int
-StingerServerState::set_port(int new_port_names, int new_port_streams, int new_port_algs)
+StingerServerState::set_port(int new_port_streams, int new_port_algs)
 {
-  if (new_port_names > 0 && new_port_names < 65535) {
-    port_names = new_port_names;
-  } else {
-    LOG_W_A("New names port number %ld is invalid", (long) new_port_names);
-    return -1;
-  }
-
   if (new_port_streams > 0 && new_port_streams < 65535) {
     port_streams = new_port_streams;
   } else {
