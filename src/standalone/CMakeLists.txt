@@ -107,4 +107,11 @@ target_link_libraries(stinger_streaming_connected_components stinger_utils)
 
 ##############################################################################
 
+set(_streaming_connected_components_hipc_sources
+  streaming_connected_components_hipc/main.c
+)
+
+add_executable(stinger_streaming_connected_components_hipc_sources ${_streaming_connected_components_hipc_sources})
+target_link_libraries(stinger_streaming_connected_components_hipc_sources stinger_utils)
+
 
