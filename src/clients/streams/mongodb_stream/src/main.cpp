@@ -10,7 +10,6 @@
 #include "stinger_core/xmalloc.h"
 #include "stinger_core/stinger_error.h"
 #include "stinger_utils/timer.h"
-#include "stinger_utils/stinger_sockets.h"
 #include "stinger_net/proto/stinger-batch.pb.h"
 #include "stinger_net/send_rcv.h"
 
@@ -104,7 +103,7 @@ main(int argc, char *argv[])
     stinger_hostname = "localhost";
   }
 
-  int sock_handle = connect_to_batch_server (stinger_hostname, stinger_port);
+  int sock_handle = connect_to_server (stinger_hostname, stinger_port);
   if (sock_handle == -1) exit(-1);
   /* End STINGER */
 

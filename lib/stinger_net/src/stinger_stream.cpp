@@ -4,7 +4,6 @@
 #include <sys/types.h>
 
 #include "proto/stinger-batch.pb.h"
-#include "stinger_utils/stinger_sockets.h"
 #include "stinger_alg.h"
 #include "send_rcv.h"
 
@@ -12,9 +11,9 @@ using namespace gt::stinger;
 
 extern "C" int stream_connect(char * host, int port) {
   if(host && strlen(host)) {
-    return connect_to_batch_server (host, port);
+    return connect_to_server (host, port);
   } else {
-    return connect_to_batch_server ("localhost", port);
+    return connect_to_server ("localhost", port);
   }
 }
 

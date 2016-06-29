@@ -4,7 +4,6 @@
 #include <time.h>
 #include <netdb.h>
 
-#include "stinger_utils/stinger_sockets.h"
 #include "stinger_utils/timer.h"
 #include "stinger_net/send_rcv.h"
 #include "explore_json.h"
@@ -71,7 +70,7 @@ main(int argc, char *argv[])
   }
 
   /* start the connection */
-  int sock_handle = connect_to_batch_server (hostname, port);
+  int sock_handle = connect_to_server (hostname, port);
   if (sock_handle == -1) exit(-1);
 
 

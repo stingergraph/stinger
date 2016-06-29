@@ -8,7 +8,6 @@ set(sources
 	src/metisish_support.c
 	src/stinger_extract.c
 	src/stinger_la.c
-	src/stinger_sockets.c
 	src/stinger_test.c
 	src/stinger_utils.c
 	src/timer.c
@@ -22,7 +21,6 @@ set(headers
 	inc/json_support.h
 	inc/metisish_support.h
 	inc/stinger_la.h
-	inc/stinger_sockets.h
 	inc/stinger_test.h
 	inc/stinger_utils.h
 	inc/timer.h

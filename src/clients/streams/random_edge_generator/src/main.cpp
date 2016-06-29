@@ -20,7 +20,6 @@ extern "C" {
 #include "stinger_core/xmalloc.h"
 #include "stinger_utils/csv.h"
 #include "stinger_utils/timer.h"
-#include "stinger_utils/stinger_sockets.h"
 }
 
 #include "random_edge_generator.h"
@@ -108,7 +107,7 @@ main(int argc, char *argv[])
   }
 
   /* start the connection */
-  int sock_handle = connect_to_batch_server (hostname, port);
+  int sock_handle = connect_to_server (hostname, port);
   if (sock_handle == -1) exit(-1);
 
   /* actually generate and send the batches */
