@@ -12,6 +12,7 @@
 #define INFINITY_MY INT64_MAX>>2
 #define EMPTY_NEIGHBOR INT64_MIN>>2
 
+
 // #define INFINITY_MY 1073741824
 // #define EMPTY_NEIGHBOR -1073741824
 
@@ -72,7 +73,6 @@ static long nbatch;
 
 static struct stinger * S;
 
-static double * update_time_trace;
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
  * inline function definitions
@@ -588,25 +588,10 @@ int64_t bfs_component_stats (uint64_t nv, int64_t * sizes, int64_t previous_num)
 int streaming_connected_components (const int argc, char *argv[])
 {
   parse_args (argc, argv, &initial_graph_name, &action_stream_name, &batch_size, &nbatch);
-  // STATS_INIT();
-#if CC_STATS && CSV
-  time_t rawtime;
-  struct tm * timeinfo;
-  time(&rawtime);
-  timeinfo = localtime(&rawtime);
-  char date[128];
-  strftime(date, 128, "%Y.%m.%d.%H.%M.%S", timeinfo);
-  sprintf(filename, "%s.%s", date, initial_graph_name);
-#endif
 
   load_graph_and_action_stream (initial_graph_name, &nv, &ne, (int64_t**)&off,
 	  (int64_t**)&ind, (int64_t**)&weight, (int64_t**)&graphmem,
 	  action_stream_name, &naction, (int64_t**)&action, (int64_t**)&actionmem);
-
-  // print_initial_graph_stats (nv, ne, batch_size, nbatch, naction);
-  // BATCH_SIZE_CHECK();
-
-  update_time_trace = xmalloc (nbatch * sizeof(*update_time_trace));
 
   /* Convert to STINGER */
   tic ();
@@ -658,8 +643,6 @@ int streaming_connected_components (const int argc, char *argv[])
 	}
   }
   double time_bfs = toc ();
-  //PRINT_STAT_DOUBLE("time_bfs_components", time_bfs); fflush(stdout);
-  //PRINT_STAT_INT64("bfs_components", bfs_num_components);
 
   /* Updates */
   int64_t ntrace = 0;
@@ -678,23 +661,11 @@ int streaming_connected_components (const int argc, char *argv[])
 	int64_t *actionStream = &action[2*actno];
 	int64_t numActions = endact - actno;
 
-#if CC_STATS
-	CC_STAT_START(ntrace);
-	bfs_deletes_in_tree = 0;
-	bfs_inserts_in_tree_as_parents = 0;
-	bfs_inserts_in_tree_as_neighbors = 0;
-	bfs_inserts_in_tree_as_replacement = 0;
-	bfs_inserts_bridged = 0;
-	bfs_real_deletes = 0;
-	bfs_real_inserts = 0;
-	bfs_total_deletes = 0;
-	bfs_total_inserts = 0;
-	bfs_unsafe_deletes = 0;
-#endif
+	stinger_connected_components_stats stats;
+	stinger_scc_reset_stats(&stats);
 
 #if 1
 	/* parallel for all insertions */
-
 	OMP("omp parallel for reduction(+:bfs_real_inserts, bfs_total_inserts, bfs_inserts_bridged)")
 	for (int64_t k = 0; k < numActions; k++) {
 		int64_t i = actionStream[2 * k];
@@ -744,8 +715,8 @@ int streaming_connected_components (const int argc, char *argv[])
 
 	  if(Ci_size > Cj_size) {
 		SWAP_UINT64(i,j)
-		  SWAP_UINT64(Ci, Cj)
-		  SWAP_UINT64(Ci_size, Cj_size)
+		SWAP_UINT64(Ci, Cj)
+		SWAP_UINT64(Ci_size, Cj_size)
 	  }
 
 	  parentArray[i*parentsPerVertex] = j;
@@ -761,13 +732,8 @@ int streaming_connected_components (const int argc, char *argv[])
 	  }
 	}
 
-	CC_STAT(bfs_num_components = bfs_component_stats(nv, bfs_component_sizes, bfs_num_components));
-	CC_STAT_INT64("bfs_inserts_in_tree_as_parents", bfs_inserts_in_tree_as_parents);
-	CC_STAT_INT64("bfs_inserts_in_tree_as_neighbors", bfs_inserts_in_tree_as_neighbors);
-	CC_STAT_INT64("bfs_inserts_in_tree_as_replacement", bfs_inserts_in_tree_as_replacement);
-	CC_STAT_INT64("bfs_inserts_bridged", bfs_inserts_bridged);
-	CC_STAT_INT64("bfs_real_inserts", bfs_real_inserts);
-	CC_STAT_INT64("bfs_total_inserts", bfs_total_inserts);
+	// CC_STAT(bfs_num_components = bfs_component_stats(nv, bfs_component_sizes, bfs_num_components));
+	stinger_scc_print_insert_stats(&stats);
 #endif
 
 #if 1
@@ -876,16 +842,10 @@ int streaming_connected_components (const int argc, char *argv[])
 	  }
 	}
 
-	CC_STAT(bfs_num_components = bfs_component_stats(nv, bfs_component_sizes, bfs_num_components));
-	CC_STAT_INT64("bfs_deletes_in_tree", bfs_deletes_in_tree);
-	CC_STAT_INT64("bfs_real_deletes", bfs_real_deletes);
-	CC_STAT_INT64("bfs_total_deletes", bfs_total_deletes);
-	CC_STAT_INT64("bfs_unsafe_deletes", bfs_unsafe_deletes);
+	// CC_STAT(bfs_num_components = bfs_component_stats(nv, bfs_component_sizes, bfs_num_components));
+	stinger_scc_print_delete_stats(&stats);
 #endif
 
-	update_time_trace[ntrace] = toc();
-
-	//PRINT_STAT_INT64("batch_done", ntrace);
 	num_components = parallel_shiloach_vishkin_components_of_type(S, components,0);
 	//PRINT_STAT_INT64("shiloach vishkin components", num_components); fflush(stdout);
 	{
@@ -909,7 +869,6 @@ int streaming_connected_components (const int argc, char *argv[])
   free(queue); 
   free(parentArray);
 
-  free(update_time_trace);
   stinger_free_all (S);
   free (actionmem);
   // STATS_END();
