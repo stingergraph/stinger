@@ -40,9 +40,9 @@
     #define CC_STAT_DOUBLE(X,Y) printf("\"%s\",%lf,",X,Y)
     static char filename[300];
   #else
-    #define CC_STAT_START(X) PRINT_STAT_INT64("stats_start", X)
-    #define CC_STAT_INT64(X,Y) PRINT_STAT_INT64(X,Y)
-    #define CC_STAT_DOUBLE(X,Y) PRINT_STAT_DOUBLE(X,Y)
+    #define CC_STAT_START(X) //PRINT_STAT_INT64("stats_start", X)
+    #define CC_STAT_INT64(X,Y) //PRINT_STAT_INT64(X,Y)
+    #define CC_STAT_DOUBLE(X,Y) //PRINT_STAT_DOUBLE(X,Y)
   #endif
   #define CC_STAT(X) X
 #else
@@ -70,18 +70,20 @@ static int64_t * restrict action;
 static int64_t * restrict graphmem;
 static int64_t * restrict actionmem;
 
-static char * initial_graph_name = INITIAL_GRAPH_NAME_DEFAULT;
-static char * action_stream_name = ACTION_STREAM_NAME_DEFAULT;
+// static char * initial_graph_name = INITIAL_GRAPH_NAME_DEFAULT;
+// static char * action_stream_name = ACTION_STREAM_NAME_DEFAULT;
+// static long batch_size = BATCH_SIZE_DEFAULT;
+// static long nbatch = NBATCH_DEFAULT;
 
-static long batch_size = BATCH_SIZE_DEFAULT;
-static long nbatch = NBATCH_DEFAULT;
+static char * initial_graph_name;
+static char * action_stream_name;
+static long batch_size;
+static long nbatch;
+
 
 static struct stinger * S;
 
 static double * update_time_trace;
-
-int64_t parallel_shiloach_vishkin_components (struct stinger *S, int64_t nv,
-                                              int64_t * component_map);
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
  * inline function definitions
@@ -608,7 +610,7 @@ int64_t bfs_component_stats (uint64_t nv, int64_t * sizes, int64_t previous_num)
 int streaming_connected_components (const int argc, char *argv[])
 {
   parse_args (argc, argv, &initial_graph_name, &action_stream_name, &batch_size, &nbatch);
-  STATS_INIT();
+  // STATS_INIT();
 
   #if CC_STATS && CSV
     time_t rawtime;
@@ -625,7 +627,7 @@ int streaming_connected_components (const int argc, char *argv[])
       action_stream_name, &naction, (int64_t**)&action, (int64_t**)&actionmem);
 
   print_initial_graph_stats (nv, ne, batch_size, nbatch, naction);
-  BATCH_SIZE_CHECK();
+  // BATCH_SIZE_CHECK();
 
   update_time_trace = xmalloc (nbatch * sizeof(*update_time_trace));
 
@@ -633,7 +635,7 @@ int streaming_connected_components (const int argc, char *argv[])
   tic ();
   S = stinger_new ();
   stinger_set_initial_edges (S, nv, 0, off, ind, weight, NULL, NULL, 0);
-  PRINT_STAT_DOUBLE ("time_stinger", toc ());
+  //PRINT_STAT_DOUBLE ("time_stinger", toc ());
   fflush(stdout);
 
   free(graphmem);
@@ -642,14 +644,14 @@ int streaming_connected_components (const int argc, char *argv[])
   uint64_t errorCode = stinger_consistency_check (S, nv);
   double time_check = toc ();
   printf("\n\t\"error_code\": 0x%lx", errorCode);
-  PRINT_STAT_DOUBLE ("time_check", time_check);
+  //PRINT_STAT_DOUBLE ("time_check", time_check);
 
   uint64_t * components = xmalloc(nv * sizeof(uint64_t));
   tic();
-  uint64_t num_components = parallel_shiloach_vishkin_components(S, nv, components);
+  uint64_t num_components = parallel_shiloach_vishkin_components_of_type(S, components,0);
   double sv_time = toc();
-  PRINT_STAT_INT64("components before",  num_components); 
-  PRINT_STAT_DOUBLE("shiloach vishkin time", sv_time);
+  //PRINT_STAT_INT64("components before",  num_components); 
+  //PRINT_STAT_DOUBLE("shiloach vishkin time", sv_time);
   fflush(stdout);
 
   int64_t * queue = xmalloc(4*nv*sizeof(uint64_t));
@@ -684,8 +686,8 @@ int streaming_connected_components (const int argc, char *argv[])
     }
   }
   double time_bfs = toc ();
-  PRINT_STAT_DOUBLE("time_bfs_components", time_bfs); fflush(stdout);
-  PRINT_STAT_INT64("bfs_components", bfs_num_components);
+  //PRINT_STAT_DOUBLE("time_bfs_components", time_bfs); fflush(stdout);
+  //PRINT_STAT_INT64("bfs_components", bfs_num_components);
 
   /* Updates */
   int64_t ntrace = 0;
@@ -925,9 +927,9 @@ int streaming_connected_components (const int argc, char *argv[])
 
     update_time_trace[ntrace] = toc();
 
-    PRINT_STAT_INT64("batch_done", ntrace);
-    num_components = parallel_shiloach_vishkin_components(S, nv, components);
-    PRINT_STAT_INT64("shiloach vishkin components", num_components); fflush(stdout);
+    //PRINT_STAT_INT64("batch_done", ntrace);
+    num_components = parallel_shiloach_vishkin_components_of_type(S, components,0);
+    //PRINT_STAT_INT64("shiloach vishkin components", num_components); fflush(stdout);
     {
       uint64_t cmp = 0;
       OMP("omp parallel for reduction(+:cmp)")
@@ -937,19 +939,19 @@ int streaming_connected_components (const int argc, char *argv[])
 	  cmp++;
       }
 
-      PRINT_STAT_INT64("bfs_components_wrong", cmp);
+      //PRINT_STAT_INT64("bfs_components_wrong", cmp);
     }
-    //PRINT_STAT_INT64("full_tree_check", is_full_tree_wrong(S,nv,parentArray,parentCounter,level,parentsPerVertex));
+    ////PRINT_STAT_INT64("full_tree_check", is_full_tree_wrong(S,nv,parentArray,parentCounter,level,parentsPerVertex));
 
     ntrace++;
   } /* End of batch */
   
 
   tic();
-  num_components = parallel_shiloach_vishkin_components(S, nv, components);
+  num_components = parallel_shiloach_vishkin_components_of_type(S, components,0);
   sv_time = toc();
-  PRINT_STAT_INT64("components after",  num_components); 
-  PRINT_STAT_DOUBLE("shiloach vishkin time", sv_time);
+  //PRINT_STAT_INT64("components after",  num_components); 
+  //PRINT_STAT_DOUBLE("shiloach vishkin time", sv_time);
   fflush(stdout);
 
   /* Print the times */
@@ -957,14 +959,14 @@ int streaming_connected_components (const int argc, char *argv[])
   for (int64_t k = 0; k < nbatch; k++) {
     time_updates += update_time_trace[k];
   }
-  PRINT_STAT_DOUBLE ("time_updates", time_updates);
-  PRINT_STAT_DOUBLE ("updates_per_sec", (nbatch * batch_size) / time_updates); 
+  //PRINT_STAT_DOUBLE ("time_updates", time_updates);
+  //PRINT_STAT_DOUBLE ("updates_per_sec", (nbatch * batch_size) / time_updates); 
 
   tic ();
   errorCode = stinger_consistency_check (S, nv);
   time_check = toc ();
   printf("\n\t\"error_code\": 0x%lx", errorCode);
-  PRINT_STAT_DOUBLE ("time_check", time_check);
+  //PRINT_STAT_DOUBLE ("time_check", time_check);
 
   free(queue); 
   free(parentArray);
@@ -972,6 +974,6 @@ int streaming_connected_components (const int argc, char *argv[])
   free(update_time_trace);
   stinger_free_all (S);
   free (actionmem);
-  STATS_END();
+  // STATS_END();
 }
 
