@@ -51,4 +51,13 @@ void stinger_scc_print_delete_stats(stinger_connected_components_stats* stats){
 }
 
 
+typedef struct stinger_scc_internal stinger_scc_internal; 
+
+
+// Recommended default for (parentsPerVertex==4).
+void stinger_scc_initialize_internals(struct stinger * S, int64_t nv, stinger_scc_internal* scc_internal, int64_t parentsPerVertex);
+
+void stinger_scc_release_internals(stinger_scc_internal* scc_internal);
+
+
 #endif

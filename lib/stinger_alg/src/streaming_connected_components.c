@@ -555,277 +555,295 @@ int64_t bfs_component_stats (uint64_t nv, int64_t * sizes, int64_t previous_num)
   return num_components;
 }
 
+
+struct stinger_scc_internal{
+	int64_t * bfsDataPtr;
+	int64_t * queue;
+	int64_t * level;
+	int64_t * found;
+	int64_t * same_level_queue;  
+
+	int64_t * parentsDataPtr;
+	int64_t * parentArray;
+	int64_t * parentCounter;
+	int64_t * bfs_components;
+	int64_t * bfs_component_sizes;
+
+	int64_t   parentsPerVertex;
+	int64_t   initCCCount;
+};
+
+void stinger_scc_initialize_internals(struct stinger * S, int64_t nv, stinger_scc_internal* scc_internal, int64_t parentsPerVertex){
+	scc_internal->bfsDataPtr = xmalloc(4*nv*sizeof(uint64_t));
+	scc_internal->queue = &(scc_internal->bfsDataPtr[0]);
+	scc_internal->level = &(scc_internal->bfsDataPtr[nv]);
+	scc_internal->found = &(scc_internal->bfsDataPtr[2*nv]);
+	scc_internal->same_level_queue = &(scc_internal->bfsDataPtr[3*nv]);
+	scc_internal->parentsPerVertex = parentsPerVertex;
+
+	scc_internal->parentsDataPtr	= xmalloc((parentsPerVertex + 3) * nv * sizeof(uint64_t));	
+	scc_internal->parentArray		= &(scc_internal->parentsDataPtr[0]);
+	scc_internal->parentCounter	    = &(scc_internal->parentsDataPtr[(parentsPerVertex) * nv]);
+	scc_internal->bfs_components	= &(scc_internal->parentsDataPtr[(parentsPerVertex + 1) * nv]);
+	scc_internal->bfs_component_sizes = &(scc_internal->parentsDataPtr[(parentsPerVertex + 2) * nv]);
+
+	OMP("omp parallel for")
+	for(int i = 0; i < nv; i++) {
+		scc_internal->bfs_components[i] = i;
+		scc_internal->bfs_component_sizes[i] = 0;
+		scc_internal->level[i] = INFINITY_MY;
+		scc_internal->parentCounter[i] = 0;
+	}
+
+	scc_internal->initCCCount = 0;
+	for(uint64_t i = 0; i < nv; i++) {
+		if(scc_internal->level[i] == INFINITY_MY) {
+		 	scc_internal->bfs_component_sizes[i] =  bfs_build_component(S, i, scc_internal->queue, scc_internal->level, 
+		 		scc_internal->parentArray, scc_internal->parentsPerVertex, scc_internal->parentCounter, scc_internal->bfs_components);
+		 	scc_internal->initCCCount++;
+		}
+	}
+
+
+
+}
+void stinger_scc_release_internals(stinger_scc_internal* scc_internal){
+  free(scc_internal->bfsDataPtr); 
+  free(scc_internal->parentsDataPtr);
+}
+
 // int main (const int argc, char *argv[])
 // int streaming_connected_components (const int argc, char *argv[])
 int streaming_connected_components (struct stinger * S, int64_t nv)
 {
-  uint64_t * components = xmalloc(nv * sizeof(uint64_t));
-  tic();
-  uint64_t num_components = parallel_shiloach_vishkin_components_of_type(S, components,0);
-  double sv_time = toc();
-  //PRINT_STAT_INT64("components before",  num_components); 
-  //PRINT_STAT_DOUBLE("shiloach vishkin time", sv_time);
-  fflush(stdout);
+	uint64_t * components = xmalloc(nv * sizeof(uint64_t));
+	uint64_t num_components = parallel_shiloach_vishkin_components_of_type(S, components,0);
+	//PRINT_STAT_INT64("components before",  num_components); 
+	//PRINT_STAT_DOUBLE("shiloach vishkin time", sv_time);
 
-  int64_t * queue = xmalloc(4*nv*sizeof(uint64_t));
-  int64_t * level = &(queue[nv]);
-  int64_t * found = &(queue[2*nv]);
-  int64_t * same_level_queue = &(queue[3*nv]);
+	stinger_scc_internal scc_internal;
+	stinger_scc_initialize_internals(S,nv,&scc_internal,4);
 
-  int64_t   parentsPerVertex = 4;
-  int64_t * parentArray		= xmalloc((parentsPerVertex + 3) * nv * sizeof(uint64_t));
-  int64_t * parentCounter	= &(parentArray[(parentsPerVertex) * nv]);
-  int64_t * bfs_components	= &(parentArray[(parentsPerVertex + 1) * nv]);
-  int64_t * bfs_component_sizes = &(parentArray[(parentsPerVertex + 2) * nv]);
-
-  tic ();
-  OMP("omp parallel for")
-	for(int i = 0; i < nv; i++) {
-	  bfs_components[i] = i;
-	  bfs_component_sizes[i] = 0;
-	  level[i] = INFINITY_MY;
-	  parentCounter[i] = 0;
-	}
-
-  CC_STAT_START(-1L);
-  uint64_t bfs_num_components = 0;
-  for(uint64_t i = 0; i < nv; i++) {
-	if(level[i] == INFINITY_MY) {
-	  bfs_component_sizes[i] = 
-		bfs_build_component (
-			S, i, queue,level, parentArray, 
-			parentsPerVertex, parentCounter, bfs_components);
-	  bfs_num_components++;
-	}
-  }
-  double time_bfs = toc ();
 
   /* Updates */
-  int64_t ntrace = 0;
+ //  int64_t ntrace = 0;
 
-  int64_t * action_stack = malloc(sizeof(int64_t) * batch_size * 2 * 2);
-  int64_t * action_stack_components = malloc(sizeof(int64_t) * batch_size * 2 * 2);
-  int64_t delete_stack_top;
-  int64_t insert_stack_top;
+ //  int64_t * action_stack = malloc(sizeof(int64_t) * batch_size * 2 * 2);
+ //  int64_t * action_stack_components = malloc(sizeof(int64_t) * batch_size * 2 * 2);
+ //  int64_t delete_stack_top;
+ //  int64_t insert_stack_top;
 
-  for (int64_t actno = 0; actno < nbatch * batch_size; actno += batch_size) {
-	tic();
-	delete_stack_top = 0;
-	insert_stack_top = batch_size * 2 * 2 - 2;
+ //  for (int64_t actno = 0; actno < nbatch * batch_size; actno += batch_size) {
+	// tic();
+	// delete_stack_top = 0;
+	// insert_stack_top = batch_size * 2 * 2 - 2;
 
-	const int64_t endact = (actno + batch_size > naction ? naction : actno + batch_size);
-	int64_t *actionStream = &action[2*actno];
-	int64_t numActions = endact - actno;
+	// const int64_t endact = (actno + batch_size > naction ? naction : actno + batch_size);
+	// int64_t *actionStream = &action[2*actno];
+	// int64_t numActions = endact - actno;
 
-	stinger_connected_components_stats stats;
-	stinger_scc_reset_stats(&stats);
+	// stinger_connected_components_stats stats;
+	// stinger_scc_reset_stats(&stats);
 
-	/* parallel for all insertions */
-	OMP("omp parallel for reduction(+:bfs_real_inserts, bfs_total_inserts, bfs_inserts_bridged)")
-	for (int64_t k = 0; k < numActions; k++) {
-		int64_t i = actionStream[2 * k];
-		int64_t j = actionStream[2 * k + 1];
+	// /* parallel for all insertions */
+	// OMP("omp parallel for reduction(+:bfs_real_inserts, bfs_total_inserts, bfs_inserts_bridged)")
+	// for (int64_t k = 0; k < numActions; k++) {
+	// 	int64_t i = actionStream[2 * k];
+	// 	int64_t j = actionStream[2 * k + 1];
 
-		/* if an insertion and not self-loop */
-		if(i >= 0 && i != j) {
-		  CC_STAT(bfs_total_inserts += 2);
-		  /* if a new edge in stinger, update parents */
-		  if(stinger_insert_edge(S, 0, i, j, 1, ntrace+1) == 1) {
-			CC_STAT(bfs_real_inserts++);
-			if(update_tree_for_insert_directed(parentArray, parentCounter, level, bfs_components, parentsPerVertex, i, j)) {
-			  CC_STAT(bfs_inserts_bridged++);
-			  /* if component ids are not the same       *
-			   * tree update not handled, push onto queue*/
-			  int64_t which = stinger_int64_fetch_add(&insert_stack_top, -2);
-			  action_stack[which] = i;
-			  action_stack[which+1] = j;
-			}
-		  }
-		  /* same but for reverse edge j,i */
-		  if(stinger_insert_edge(S, 0, j, i, 1, ntrace+1) == 1) {
-			CC_STAT(bfs_real_inserts++);
-			if(update_tree_for_insert_directed(parentArray, parentCounter, level, bfs_components, parentsPerVertex, j, i)) {
-			  CC_STAT(bfs_inserts_bridged++);
-			  int64_t which = stinger_int64_fetch_add(&insert_stack_top, -2);
-			  action_stack[which] = j;
-			  action_stack[which+1] = i;
-			}
-		  }
-		}
-	} 
+	// 	/* if an insertion and not self-loop */
+	// 	if(i >= 0 && i != j) {
+	// 	  CC_STAT(bfs_total_inserts += 2);
+	// 	  /* if a new edge in stinger, update parents */
+	// 	  if(stinger_insert_edge(S, 0, i, j, 1, ntrace+1) == 1) {
+	// 		CC_STAT(bfs_real_inserts++);
+	// 		if(update_tree_for_insert_directed(parentArray, parentCounter, level, bfs_components, parentsPerVertex, i, j)) {
+	// 		  CC_STAT(bfs_inserts_bridged++);
+	// 		  /* if component ids are not the same       *
+	// 		   * tree update not handled, push onto queue*/
+	// 		  int64_t which = stinger_int64_fetch_add(&insert_stack_top, -2);
+	// 		  action_stack[which] = i;
+	// 		  action_stack[which+1] = j;
+	// 		}
+	// 	  }
+	// 	  /* same but for reverse edge j,i */
+	// 	  if(stinger_insert_edge(S, 0, j, i, 1, ntrace+1) == 1) {
+	// 		CC_STAT(bfs_real_inserts++);
+	// 		if(update_tree_for_insert_directed(parentArray, parentCounter, level, bfs_components, parentsPerVertex, j, i)) {
+	// 		  CC_STAT(bfs_inserts_bridged++);
+	// 		  int64_t which = stinger_int64_fetch_add(&insert_stack_top, -2);
+	// 		  action_stack[which] = j;
+	// 		  action_stack[which+1] = i;
+	// 		}
+	// 	  }
+	// 	}
+	// } 
 
-	/* serial for-all insertions that joined components */
-	for(int64_t k = batch_size * 2 * 2 - 2; k > insert_stack_top; k -= 2) {
-	  int64_t i = action_stack[k]; 
-	  int64_t j = action_stack[k+1];
+	// /* serial for-all insertions that joined components */
+	// for(int64_t k = batch_size * 2 * 2 - 2; k > insert_stack_top; k -= 2) {
+	//   int64_t i = action_stack[k]; 
+	//   int64_t j = action_stack[k+1];
 
-	  int64_t Ci = bfs_components[i];
-	  int64_t Cj = bfs_components[j];
+	//   int64_t Ci = bfs_components[i];
+	//   int64_t Cj = bfs_components[j];
 
-	  if(Ci == Cj)
-		continue;
+	//   if(Ci == Cj)
+	// 	continue;
 
-	  int64_t Ci_size = bfs_component_sizes[Ci];
-	  int64_t Cj_size = bfs_component_sizes[Cj];
+	//   int64_t Ci_size = bfs_component_sizes[Ci];
+	//   int64_t Cj_size = bfs_component_sizes[Cj];
 
-	  if(Ci_size > Cj_size) {
-		SWAP_UINT64(i,j)
-		SWAP_UINT64(Ci, Cj)
-		SWAP_UINT64(Ci_size, Cj_size)
-	  }
+	//   if(Ci_size > Cj_size) {
+	// 	SWAP_UINT64(i,j)
+	// 	SWAP_UINT64(Ci, Cj)
+	// 	SWAP_UINT64(Ci_size, Cj_size)
+	//   }
 
-	  parentArray[i*parentsPerVertex] = j;
-	  parentCounter[i] = 1;
-	  /* handle singleton */
-	  if(Ci_size == 1) {
-		bfs_component_sizes[Ci] = 0;
-		bfs_component_sizes[Cj]++;
-		bfs_components[i] = Cj;
-	  } else {
-		bfs_component_sizes[Cj] += bfs_build_new_component(S, i, Cj, (level[j] >= 0 ? level[j] : ~level[j])+1, queue, level, parentArray, parentsPerVertex, parentCounter, bfs_components);
-		bfs_component_sizes[Ci] = 0;
-	  }
-	}
+	//   parentArray[i*parentsPerVertex] = j;
+	//   parentCounter[i] = 1;
+	//   /* handle singleton */
+	//   if(Ci_size == 1) {
+	// 	bfs_component_sizes[Ci] = 0;
+	// 	bfs_component_sizes[Cj]++;
+	// 	bfs_components[i] = Cj;
+	//   } else {
+	// 	bfs_component_sizes[Cj] += bfs_build_new_component(S, i, Cj, (level[j] >= 0 ? level[j] : ~level[j])+1, queue, level, parentArray, parentsPerVertex, parentCounter, bfs_components);
+	// 	bfs_component_sizes[Ci] = 0;
+	//   }
+	// }
 
-	// CC_STAT(bfs_num_components = bfs_component_stats(nv, bfs_component_sizes, bfs_num_components));
-	stinger_scc_print_insert_stats(&stats);
+	// // CC_STAT(bfs_num_components = bfs_component_stats(nv, bfs_component_sizes, bfs_num_components));
+	// stinger_scc_print_insert_stats(&stats);
 
-	
+	// /* Parallel forall deletions */
+	// OMP("omp parallel for reduction(+:bfs_total_deletes, bfs_real_deletes)")
+	// for (int64_t k = 0; k < numActions; k++) {
+	// 	int64_t i = actionStream[2 * k];
+	// 	int64_t j = actionStream[2 * k + 1];
 
-	/* Parallel forall deletions */
-	OMP("omp parallel for reduction(+:bfs_total_deletes, bfs_real_deletes)")
-	for (int64_t k = 0; k < numActions; k++) {
-		int64_t i = actionStream[2 * k];
-		int64_t j = actionStream[2 * k + 1];
+	// 	/* is a delete and not a self-loop */
+	// 	if(i < 0 && i != j) {
+	// 	  CC_STAT(bfs_total_deletes += 2);
+	// 	  /* for contenience */
+	// 	  i = ~i;
+	// 	  j = ~j;
 
-		/* is a delete and not a self-loop */
-		if(i < 0 && i != j) {
-		  CC_STAT(bfs_total_deletes += 2);
-		  /* for contenience */
-		  i = ~i;
-		  j = ~j;
+	// 	  /* if a real edge in stinger, update parents, push onto queue to check safety later */
+	// 	  if(stinger_remove_edge(S, 0, i, j) == 1) {
+	// 		CC_STAT(bfs_real_deletes++);
+	// 		uint64_t which = stinger_int64_fetch_add(&delete_stack_top, 2);
+	// 		action_stack[which] = i;
+	// 		action_stack[which+1] = j;
+	// 		action_stack_components[which] = bfs_components[i];
+	// 		action_stack_components[which+1] = bfs_components[j];
+	// 		update_tree_for_delete_directed(parentArray, parentCounter, level, parentsPerVertex, i, j);
+	// 	  }
 
-		  /* if a real edge in stinger, update parents, push onto queue to check safety later */
-		  if(stinger_remove_edge(S, 0, i, j) == 1) {
-			CC_STAT(bfs_real_deletes++);
-			uint64_t which = stinger_int64_fetch_add(&delete_stack_top, 2);
-			action_stack[which] = i;
-			action_stack[which+1] = j;
-			action_stack_components[which] = bfs_components[i];
-			action_stack_components[which+1] = bfs_components[j];
-			update_tree_for_delete_directed(parentArray, parentCounter, level, parentsPerVertex, i, j);
-		  }
+	// 	  /* if a real edge in stinger, update parents, push onto queue to check safety later */
+	// 	  if(stinger_remove_edge(S, 0, j, i) == 1) {
+	// 		CC_STAT(bfs_real_deletes++);
+	// 		uint64_t which = stinger_int64_fetch_add(&delete_stack_top, 2);
+	// 		action_stack[which] = j;
+	// 		action_stack[which+1] = i;
+	// 		action_stack_components[which] = bfs_components[j];
+	// 		action_stack_components[which+1] = bfs_components[i];
+	// 		update_tree_for_delete_directed(parentArray, parentCounter, level, parentsPerVertex, j, i);
+	// 	  }
+	// 	} 
+	//   }
 
-		  /* if a real edge in stinger, update parents, push onto queue to check safety later */
-		  if(stinger_remove_edge(S, 0, j, i) == 1) {
-			CC_STAT(bfs_real_deletes++);
-			uint64_t which = stinger_int64_fetch_add(&delete_stack_top, 2);
-			action_stack[which] = j;
-			action_stack[which+1] = i;
-			action_stack_components[which] = bfs_components[j];
-			action_stack_components[which+1] = bfs_components[i];
-			update_tree_for_delete_directed(parentArray, parentCounter, level, parentsPerVertex, j, i);
-		  }
-		} 
-	  }
+	// /* parallel safety check */
+	// OMP("omp parallel for reduction(+:bfs_unsafe_deletes)")
+	//   for(uint64_t k = 0; k < delete_stack_top; k += 2) {
+	// 	int64_t i = action_stack[k];
+	// 	int64_t j = action_stack[k+1];
+	// 	if(!(is_delete_unsafe(parentArray, parentCounter, level, parentsPerVertex, i))) {
+	// 	  action_stack[k] = -1;
+	// 	  action_stack[k+1] = -1;
+	// 	}
+	// 	CC_STAT(else bfs_unsafe_deletes += 2);
+	// }
 
-	/* parallel safety check */
-	OMP("omp parallel for reduction(+:bfs_unsafe_deletes)")
-	  for(uint64_t k = 0; k < delete_stack_top; k += 2) {
-		int64_t i = action_stack[k];
-		int64_t j = action_stack[k+1];
-		if(!(is_delete_unsafe(parentArray, parentCounter, level, parentsPerVertex, i))) {
-		  action_stack[k] = -1;
-		  action_stack[k+1] = -1;
-		}
-		CC_STAT(else bfs_unsafe_deletes += 2);
-	}
+	// /* explicitly not parallel for all unsafe deletes */
+	// for(uint64_t k = 0; k < delete_stack_top; k += 2) {
+	//   int64_t i = action_stack[k];
+	//   int64_t j = action_stack[k+1];
+	//   int64_t Ci_prev = action_stack_components[k];
+	//   int64_t Cj_prev = action_stack_components[k+1];
+	//   if(i != -1)  {
+	// 	int64_t Ci = bfs_components[i];
+	// 	int64_t Cj = bfs_components[j];
 
-	/* explicitly not parallel for all unsafe deletes */
-	for(uint64_t k = 0; k < delete_stack_top; k += 2) {
-	  int64_t i = action_stack[k];
-	  int64_t j = action_stack[k+1];
-	  int64_t Ci_prev = action_stack_components[k];
-	  int64_t Cj_prev = action_stack_components[k+1];
-	  if(i != -1)  {
-		int64_t Ci = bfs_components[i];
-		int64_t Cj = bfs_components[j];
+	// 	if(Ci == Cj && Ci == Ci_prev) {
+	// 	  if(Ci != i && stinger_outdegree(S, i) == 0) {
+	// 		bfs_component_sizes[Ci]--;
+	// 		bfs_components[i] = i;
+	// 		bfs_component_sizes[i] = 1;
+	// 	  } else if(Cj != j && stinger_outdegree(S, j) == 0) {
+	// 		bfs_component_sizes[Cj]--;
+	// 		bfs_components[j] = j;
+	// 		bfs_component_sizes[j] = 1;
+	// 	  } else {
+	// 		int64_t level_i = level[i];
+	// 		int64_t level_j = level[j];
 
-		if(Ci == Cj && Ci == Ci_prev) {
-		  if(Ci != i && stinger_outdegree(S, i) == 0) {
-			bfs_component_sizes[Ci]--;
-			bfs_components[i] = i;
-			bfs_component_sizes[i] = 1;
-		  } else if(Cj != j && stinger_outdegree(S, j) == 0) {
-			bfs_component_sizes[Cj]--;
-			bfs_components[j] = j;
-			bfs_component_sizes[j] = 1;
-		  } else {
-			int64_t level_i = level[i];
-			int64_t level_j = level[j];
+	// 		if(level_i < 0)
+	// 		  level_i = ~level_i;
+	// 		if(level_j < 0)
+	// 		  level_j = ~level_j;
 
-			if(level_i < 0)
-			  level_i = ~level_i;
-			if(level_j < 0)
-			  level_j = ~level_j;
+	// 		if(level_i > level_j) {
+	// 		  if(is_delete_unsafe(parentArray, parentCounter, level, parentsPerVertex, i)) {
+	// 			parentCounter[i] = 0;
+	// 			bfs_component_sizes[i] = bfs_rebuild_component(S, i, i, (level[i] >= 0 ? level[i] : ~level[i]), queue, level, parentArray, parentsPerVertex, parentCounter, bfs_components, same_level_queue);
+	// 			if(bfs_components[i] != i) {
+	// 			  bfs_component_sizes[i] = 0;
+	// 			} else {
+	// 			  bfs_component_sizes[Cj] -= bfs_component_sizes[i];
+	// 			}
+	// 		  }
+	// 		} else {
+	// 		  if(is_delete_unsafe(parentArray, parentCounter, level, parentsPerVertex, j)) {
+	// 			parentCounter[j] = 0;
+	// 			bfs_component_sizes[j] = bfs_rebuild_component(S, j, j, (level[j] >= 0 ? level[j] : ~level[j]), queue, level, parentArray, parentsPerVertex, parentCounter, bfs_components, same_level_queue);
+	// 			if(bfs_components[j] != j) {
+	// 			  bfs_component_sizes[j] = 0;
+	// 			} else {
+	// 			  bfs_component_sizes[Ci] -= bfs_component_sizes[j];
+	// 			}
+	// 		  }
+	// 		}
+	// 	  }
+	// 	}
+	// 	Ci = bfs_components[i];
+	// 	Cj = bfs_components[j];
+	//   }
+	// }
 
-			if(level_i > level_j) {
-			  if(is_delete_unsafe(parentArray, parentCounter, level, parentsPerVertex, i)) {
-				parentCounter[i] = 0;
-				bfs_component_sizes[i] = bfs_rebuild_component(S, i, i, (level[i] >= 0 ? level[i] : ~level[i]), queue, level, parentArray, parentsPerVertex, parentCounter, bfs_components, same_level_queue);
-				if(bfs_components[i] != i) {
-				  bfs_component_sizes[i] = 0;
-				} else {
-				  bfs_component_sizes[Cj] -= bfs_component_sizes[i];
-				}
-			  }
-			} else {
-			  if(is_delete_unsafe(parentArray, parentCounter, level, parentsPerVertex, j)) {
-				parentCounter[j] = 0;
-				bfs_component_sizes[j] = bfs_rebuild_component(S, j, j, (level[j] >= 0 ? level[j] : ~level[j]), queue, level, parentArray, parentsPerVertex, parentCounter, bfs_components, same_level_queue);
-				if(bfs_components[j] != j) {
-				  bfs_component_sizes[j] = 0;
-				} else {
-				  bfs_component_sizes[Ci] -= bfs_component_sizes[j];
-				}
-			  }
-			}
-		  }
-		}
-		Ci = bfs_components[i];
-		Cj = bfs_components[j];
-	  }
-	}
-
-	// CC_STAT(bfs_num_components = bfs_component_stats(nv, bfs_component_sizes, bfs_num_components));
-	stinger_scc_print_delete_stats(&stats);
+	// // CC_STAT(bfs_num_components = bfs_component_stats(nv, bfs_component_sizes, bfs_num_components));
+	// stinger_scc_print_delete_stats(&stats);
 
 
-	num_components = parallel_shiloach_vishkin_components_of_type(S, components,0);
-	//PRINT_STAT_INT64("shiloach vishkin components", num_components); fflush(stdout);
-	{
-	  uint64_t cmp = 0;
-	  OMP("omp parallel for reduction(+:cmp)")
-		for(uint64_t p = 0; p < nv; p++) {
-		  uint64_t Cp_shiloach = components[p];
-		  if(bfs_components[p] != bfs_components[Cp_shiloach])
-			cmp++;
-		}
-	  //PRINT_STAT_INT64("bfs_components_wrong", cmp);
-	}
-	////PRINT_STAT_INT64("full_tree_check", is_full_tree_wrong(S,nv,parentArray,parentCounter,level,parentsPerVertex));
+	// num_components = parallel_shiloach_vishkin_components_of_type(S, components,0);
+	// //PRINT_STAT_INT64("shiloach vishkin components", num_components); fflush(stdout);
+	// {
+	//   uint64_t cmp = 0;
+	//   OMP("omp parallel for reduction(+:cmp)")
+	// 	for(uint64_t p = 0; p < nv; p++) {
+	// 	  uint64_t Cp_shiloach = components[p];
+	// 	  if(bfs_components[p] != bfs_components[Cp_shiloach])
+	// 		cmp++;
+	// 	}
+	//   //PRINT_STAT_INT64("bfs_components_wrong", cmp);
+	// }
+	// ////PRINT_STAT_INT64("full_tree_check", is_full_tree_wrong(S,nv,parentArray,parentCounter,level,parentsPerVertex));
 
-	ntrace++;
-  } /* End of batch */
+	// ntrace++;
+ //  } /* End of batch */
 
   // num_components = parallel_shiloach_vishkin_components_of_type(S, components,0);
 
-
-  free(queue); 
-  free(parentArray);
-
-
-
+	stinger_scc_release_internals(&scc_internal);
 
 }
 
