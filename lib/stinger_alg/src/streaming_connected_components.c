@@ -72,19 +72,15 @@ void stinger_scc_reset_stats(stinger_connected_components_stats* stats){
 	stats->bfs_unsafe_deletes = 0;
 }
 void stinger_scc_print_insert_stats(stinger_connected_components_stats* stats){
-	printf("bfs_inserts_in_tree_as_parents %ld", stats->bfs_inserts_in_tree_as_parents);
-	printf("bfs_inserts_in_tree_as_neighbors %ld", stats->bfs_inserts_in_tree_as_neighbors);
-	printf("bfs_inserts_in_tree_as_replacement  %ld", stats->bfs_inserts_in_tree_as_replacement);
-	printf("bfs_inserts_bridged  %ld", stats->bfs_inserts_bridged);
-	// printf("bfs_real_inserts  %ld", stats->bfs_real_inserts);
-	// printf("bfs_total_inserts  %ld", stats->bfs_total_inserts);	
+	printf("bfs_inserts_in_tree_as_parents %ld\n", stats->bfs_inserts_in_tree_as_parents);
+	printf("bfs_inserts_in_tree_as_neighbors %ld\n", stats->bfs_inserts_in_tree_as_neighbors);
+	printf("bfs_inserts_in_tree_as_replacement  %ld\n", stats->bfs_inserts_in_tree_as_replacement);
+	printf("bfs_inserts_bridged  %ld\n", stats->bfs_inserts_bridged);
 }
 
 void stinger_scc_print_delete_stats(stinger_connected_components_stats* stats){
-	printf("bfs_deletes_in_tree %ld", stats->bfs_deletes_in_tree);
-	// printf("bfs_real_deletes %ld", stats->bfs_real_deletes);
-	// printf("bfs_total_deletes %ld", stats->bfs_total_deletes);
-	printf("bfs_unsafe_deletes %ld", stats->bfs_unsafe_deletes);
+	printf("bfs_deletes_in_tree %ld\n", stats->bfs_deletes_in_tree);
+	printf("bfs_unsafe_deletes %ld\n", stats->bfs_unsafe_deletes);
 }
 
 // struct stinger_scc_internal{
@@ -646,7 +642,6 @@ int stinger_scc_update(struct stinger * S, int64_t nv,
 	int64_t bfs_inserts_bridged=0;
 
 	/* parallel for all insertions */
-	// OMP("omp parallel for reduction(+:bfs_real_inserts, bfs_total_inserts, bfs_inserts_bridged)")
 	OMP("omp parallel for reduction(+:bfs_inserts_bridged)")
 	for (int64_t k = 0; k < numActions; k++) {
 		int64_t i = actionStream[2 * k];
@@ -654,10 +649,7 @@ int stinger_scc_update(struct stinger * S, int64_t nv,
 
 		/* if an insertion and not self-loop */
 		if(i >= 0 && i != j) {
-		  // CC_STAT(bfs_total_inserts += 2);
 		  /* if a new edge in stinger, update parents */
-		  // if(stinger_insert_edge(S, 0, i, j, 1, timeStamp) == 1) {
-			// CC_STAT(bfs_real_inserts++);
 			if(update_tree_for_insert_directed(scc_internal.parentArray, scc_internal.parentCounter, 
 				scc_internal.level, scc_internal.bfs_components, scc_internal.parentsPerVertex, i, j,stats)) {
 			  bfs_inserts_bridged++;
@@ -667,10 +659,7 @@ int stinger_scc_update(struct stinger * S, int64_t nv,
 			  action_stack[which] = i;
 			  action_stack[which+1] = j;
 			}
-		  // }
 		  /* same but for reverse edge j,i */
-		  // if(stinger_insert_edge(S, 0, j, i, 1, timeStamp) == 1) {
-			// CC_STAT(bfs_real_inserts++);
 			if(update_tree_for_insert_directed(scc_internal.parentArray, scc_internal.parentCounter, 
 				scc_internal.level, scc_internal.bfs_components, scc_internal.parentsPerVertex, j, i,stats)) {
 			  bfs_inserts_bridged++;
@@ -678,7 +667,6 @@ int stinger_scc_update(struct stinger * S, int64_t nv,
 			  action_stack[which] = j;
 			  action_stack[which+1] = i;
 			}
-		  // }
 		}
 	} 
 
@@ -719,8 +707,6 @@ int stinger_scc_update(struct stinger * S, int64_t nv,
 	  }
 	}
 
-	// // CC_STAT(bfs_num_components = bfs_component_stats(nv, bfs_component_sizes, bfs_num_components));
-
 	/* Parallel forall deletions */
 	OMP("omp parallel for")
 	for (int64_t k = 0; k < numActions; k++) {
@@ -729,14 +715,11 @@ int stinger_scc_update(struct stinger * S, int64_t nv,
 
 		/* is a delete and not a self-loop */
 		if(i < 0 && i != j) {
-		  // CC_STAT(bfs_total_deletes += 2);
 		  /* for contenience */
 		  i = ~i;
 		  j = ~j;
 
 		  /* if a real edge in stinger, update parents, push onto queue to check safety later */
-		  if(stinger_remove_edge(S, 0, i, j) == 1) {
-			// CC_STAT(bfs_real_deletes++);
 			uint64_t which = stinger_int64_fetch_add(&delete_stack_top, 2);
 			action_stack[which] = i;
 			action_stack[which+1] = j;
@@ -744,19 +727,15 @@ int stinger_scc_update(struct stinger * S, int64_t nv,
 			action_stack_components[which+1] = scc_internal.bfs_components[j];
 			update_tree_for_delete_directed(scc_internal.parentArray, scc_internal.parentCounter, 
 				scc_internal.level, scc_internal.parentsPerVertex, i, j,stats);
-		  }
 
 		  /* if a real edge in stinger, update parents, push onto queue to check safety later */
-		  if(stinger_remove_edge(S, 0, j, i) == 1) {
-			// CC_STAT(bfs_real_deletes++);
-			uint64_t which = stinger_int64_fetch_add(&delete_stack_top, 2);
+			which = stinger_int64_fetch_add(&delete_stack_top, 2);
 			action_stack[which] = j;
 			action_stack[which+1] = i;
 			action_stack_components[which] = scc_internal.bfs_components[j];
 			action_stack_components[which+1] = scc_internal.bfs_components[i];
 			update_tree_for_delete_directed(scc_internal.parentArray, scc_internal.parentCounter, 
 				scc_internal.level, scc_internal.parentsPerVertex, j, i,stats);
-		  }
 		} 
 	  }
 
@@ -840,30 +819,9 @@ int stinger_scc_update(struct stinger * S, int64_t nv,
 	  }
 	}
 
-	// CC_STAT(bfs_num_components = bfs_component_stats(nv, bfs_component_sizes, bfs_num_components));
-
-
-	// num_components = parallel_shiloach_vishkin_components_of_type(S, components,0);
-	// //PRINT_STAT_INT64("shiloach vishkin components", num_components); fflush(stdout);
-	// {
-	//   uint64_t cmp = 0;
-	//   OMP("omp parallel for reduction(+:cmp)")
-	// 	for(uint64_t p = 0; p < nv; p++) {
-	// 	  uint64_t Cp_shiloach = components[p];
-	// 	  if(bfs_components[p] != bfs_components[Cp_shiloach])
-	// 		cmp++;
-	// 	}
-	//   //PRINT_STAT_INT64("bfs_components_wrong", cmp);
-	// }
-	////PRINT_STAT_INT64("full_tree_check", is_full_tree_wrong(S,nv,parentArray,parentCounter,level,parentsPerVertex));
-
-  // num_components = parallel_shiloach_vishkin_components_of_type(S, components,0);
-
-
 	free(action_stack);
 	free(action_stack_components);
 
-	// free(components);
 }
 
 
