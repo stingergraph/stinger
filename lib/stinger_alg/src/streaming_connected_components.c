@@ -14,50 +14,6 @@
 // #define INFINITY_MY 1073741824
 // #define EMPTY_NEIGHBOR -1073741824
 
-#define CC_STATS 1
-
-#if CC_STATS
-	// static uint64_t bfs_deletes_in_tree = 0;
-	// static uint64_t bfs_inserts_in_tree_as_parents = 0;
-	// static uint64_t bfs_inserts_in_tree_as_neighbors = 0;
-	// static uint64_t bfs_inserts_in_tree_as_replacement = 0;
-	// static uint64_t bfs_inserts_bridged = 0;
-	// static uint64_t bfs_real_deletes = 0;
-	// static uint64_t bfs_real_inserts = 0;
-	// static uint64_t bfs_total_deletes = 0;
-	// static uint64_t bfs_total_inserts = 0;
-	// static uint64_t bfs_unsafe_deletes = 0;
-	#define CC_STAT_START(X) printf("\n%ld,", X)
-	#define CC_STAT_INT64(X,Y) printf("\"%s\",%ld,",X,Y)
-	#define CC_STAT_DOUBLE(X,Y) printf("\"%s\",%lf,",X,Y)
-	// #define CC_STAT(X) X
-#else
-	#define CC_STAT_START(X)
-	#define CC_STAT_INT64(X,Y) 
-	#define CC_STAT_DOUBLE(X,Y) 
-	#define CC_STAT(X) 
-#endif
-
-// static int64_t  naction;
-// static int64_t * restrict action;
-// static long batch_size;
-// static long nbatch;
-
-
-
-
-// struct stinger_connected_components_stats{
-// 	uint64_t bfs_deletes_in_tree;
-// 	uint64_t bfs_inserts_in_tree_as_parents;
-// 	uint64_t bfs_inserts_in_tree_as_neighbors;
-// 	uint64_t bfs_inserts_in_tree_as_replacement;
-// 	uint64_t bfs_inserts_bridged;
-// 	// uint64_t bfs_real_deletes;
-// 	// uint64_t bfs_real_inserts;
-// 	// uint64_t bfs_total_deletes;
-// 	// uint64_t bfs_total_inserts;
-// 	uint64_t bfs_unsafe_deletes;
-// };
 
 void stinger_scc_reset_stats(stinger_connected_components_stats* stats){
 	stats->bfs_deletes_in_tree = 0;
@@ -65,10 +21,6 @@ void stinger_scc_reset_stats(stinger_connected_components_stats* stats){
 	stats->bfs_inserts_in_tree_as_neighbors = 0;
 	stats->bfs_inserts_in_tree_as_replacement = 0;
 	stats->bfs_inserts_bridged = 0;
-	// stats->bfs_real_deletes = 0;
-	// stats->bfs_real_inserts = 0;
-	// stats->bfs_total_deletes = 0;
-	// stats->bfs_total_inserts = 0;
 	stats->bfs_unsafe_deletes = 0;
 }
 void stinger_scc_print_insert_stats(stinger_connected_components_stats* stats){
@@ -82,23 +34,6 @@ void stinger_scc_print_delete_stats(stinger_connected_components_stats* stats){
 	printf("bfs_deletes_in_tree %ld\n", stats->bfs_deletes_in_tree);
 	printf("bfs_unsafe_deletes %ld\n", stats->bfs_unsafe_deletes);
 }
-
-// struct stinger_scc_internal{
-// 	int64_t * bfsDataPtr;
-// 	int64_t * queue;
-// 	int64_t * level;
-// 	int64_t * found;
-// 	int64_t * same_level_queue;  
-
-// 	int64_t * parentsDataPtr;
-// 	int64_t * parentArray;
-// 	int64_t * parentCounter;
-// 	int64_t * bfs_components;
-// 	int64_t * bfs_component_sizes;
-
-// 	int64_t   parentsPerVertex;
-// 	int64_t   initCCCount;
-// };
 
 const int64_t* stinger_scc_get_components(stinger_scc_internal scc_internal){
 	return scc_internal.bfs_components;
@@ -184,10 +119,6 @@ uint64_t bfs_build_component (struct stinger* S, uint64_t currRoot, uint64_t* qu
 		}
 		qStart = old_qEnd;
   	}
-
-  // char component_name[256];
-  // sprintf(component_name, "component_depth[%ld]", currRoot);
-  // CC_STAT_INT64(component_name, depth);
 
   return qEnd;
 }
@@ -595,37 +526,22 @@ int64_t bfs_component_stats (uint64_t nv, int64_t * sizes, int64_t previous_num)
 
   avg /= (double)num_components;
 
-  CC_STAT_INT64("bfs_component_stats_max", max);
-  CC_STAT_INT64("bfs_component_stats_min", min);
-  CC_STAT_DOUBLE("bfs_component_stats_avg", avg);
-  CC_STAT_INT64("bfs_component_stats_num", num_components);
-
-  for(int64_t i = 0; i < histogram_max; i++) {
-	char histogram_string[256];
-	sprintf(histogram_string, "bfs_componnet_histogra_%ld", i);
-	CC_STAT_INT64(histogram_string, size_histogram[i]);
-  }
+  printf("bfs_component_stats_max %ld\n", max);
+  printf("bfs_component_stats_min %ld\n", min);
+  printf("bfs_component_stats_avg %lf\n", avg);
+  printf("bfs_component_stats_num %ld\n", num_components);
 
   if(previous_num < num_components) {
-	CC_STAT_INT64("bfs_component_created", num_components - previous_num);
+	printf("bfs_component_created %ld\n", num_components - previous_num);
   } else {
-	CC_STAT_INT64("bfs_component_joined", previous_num - num_components);
+	printf("bfs_component_joined %ld\n", previous_num - num_components);
   }
 
   return num_components;
 }
 
-
-
-int stinger_scc_update(struct stinger * S, int64_t nv, 
-	stinger_scc_internal scc_internal, stinger_connected_components_stats* stats,
-	int64_t *batch,int64_t batch_size)
-{
-
-	// uint64_t * components = xmalloc(nv * sizeof(uint64_t));
-	// uint64_t num_components = parallel_shiloach_vishkin_components_of_type(S, components,0);
-
-
+int stinger_scc_update(struct stinger * S, int64_t nv,  stinger_scc_internal scc_internal, 
+	stinger_connected_components_stats* stats, int64_t *batch,int64_t batch_size){
   	/* Updates */
 	int64_t * action_stack = malloc(sizeof(int64_t) * batch_size * 2 * 2);
 	int64_t * action_stack_components = malloc(sizeof(int64_t) * batch_size * 2 * 2);
@@ -669,8 +585,8 @@ int stinger_scc_update(struct stinger * S, int64_t nv,
 			}
 		}
 	} 
-
 	stats->bfs_inserts_bridged = bfs_inserts_bridged;
+
 	/* serial for-all insertions that joined components */
 	for(int64_t k = batch_size * 2 * 2 - 2; k > insert_stack_top; k -= 2) {
 	  int64_t i = action_stack[k]; 
@@ -825,28 +741,6 @@ int stinger_scc_update(struct stinger * S, int64_t nv,
 }
 
 
-int scc_main_demo(struct stinger * S, int64_t nv, int64_t *batch,int64_t batch_size){
-
-	stinger_scc_internal scc_internal;
-	stinger_scc_initialize_internals(S,nv,&scc_internal,4);
-
-	stinger_connected_components_stats stats;
-
-	while(1){
-		stinger_scc_reset_stats(&stats);
-		stinger_scc_update(S,nv,scc_internal,&	stats,batch,batch_size);
-		stinger_scc_print_insert_stats(&stats);
-		stinger_scc_print_delete_stats(&stats);
-		const int64_t* currComponents = stinger_scc_get_components(scc_internal);
-		break;
-	}
-
-	stinger_scc_release_internals(&scc_internal);
-
-}
-
-
-
 void stinger_scc_initialize_internals(struct stinger * S, int64_t nv, stinger_scc_internal* scc_internal, int64_t parentsPerVertex){
 	scc_internal->bfsDataPtr = xmalloc(4*nv*sizeof(uint64_t));
 	scc_internal->queue = &(scc_internal->bfsDataPtr[0]);
@@ -883,4 +777,37 @@ void stinger_scc_release_internals(stinger_scc_internal* scc_internal){
   free(scc_internal->bfsDataPtr); 
   free(scc_internal->parentsDataPtr);
 }
+
+
+
+// The following is a demo main on how to run the streaming connected components code.
+int scc_main_demo(struct stinger * S, int64_t nv, int64_t *batch,int64_t batch_size){
+
+	stinger_scc_internal scc_internal;
+	stinger_scc_initialize_internals(S,nv,&scc_internal,4);
+
+	stinger_connected_components_stats stats;
+
+	while(1){
+		stinger_scc_reset_stats(&stats);
+		stinger_scc_update(S,nv,scc_internal,&	stats,batch,batch_size);
+		stinger_scc_print_insert_stats(&stats);
+		stinger_scc_print_delete_stats(&stats);
+		const int64_t* actual_components = stinger_scc_get_components(scc_internal);
+
+		uint64_t actual_num_components=0;
+		  	for(uint64_t v = 0; v < nv; v++) {
+			    if (v==actual_components[v])
+			      actual_num_components++;
+		  	}  
+
+		// break; // For one batch
+		// continue // For numerous batches
+	}
+
+	stinger_scc_release_internals(&scc_internal);
+
+}
+
+
 
