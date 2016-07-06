@@ -2,6 +2,11 @@
 #define STINGER_STREAMING_CONNECTED_COMPONENTS_H_
 #include <stdint.h>
 
+// Additional information on this algorithm can be found in
+// "A New Parallel Algorithm for Connected Components in Dynamic Graphs", 
+// R. McColl, O. Green, and D.A. Bader, The 20th Annual IEEE International
+// Conference on High Performance Computing (HiPC), Hyderabad, India, December 18-21, 2013.
+
 #include "stinger_core/stinger_atomics.h"
 #include "stinger_core/x86_full_empty.h"
 #include "stinger_utils/stinger_utils.h"
