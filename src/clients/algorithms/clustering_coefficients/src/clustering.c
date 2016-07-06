@@ -140,5 +140,6 @@ main(int argc, char *argv[])
   }
 
   LOG_I("Algorithm complete... shutting down");
-
+  xfree(affected);
+  xfree(alg);
 }

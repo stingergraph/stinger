@@ -142,4 +142,5 @@ main(int argc, char *argv[])
     if(do_weighted) {
         free(sample_bc);
     }
+    xfree(alg);
 }
