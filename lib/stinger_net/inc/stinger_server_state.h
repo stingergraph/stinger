@@ -66,7 +66,6 @@ namespace gt {
 	int64_t timeout_granularity;
 
 
-	int port_names;
 	int port_streams;
 	int port_algs;
 	int convert_num_to_string;
@@ -92,9 +91,6 @@ namespace gt {
 	 * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 	static StingerServerState &
 	get_server_state();
-
-	int
-	get_port_names();
 	
 	int
 	get_port_streams();
@@ -103,7 +99,7 @@ namespace gt {
 	get_port_algs();
 
 	int
-	set_port(int new_port_names, int new_port_streams, int new_port_algs);
+	set_port(int new_port_streams, int new_port_algs);
 
 	int
 	convert_numbers_only_to_strings();

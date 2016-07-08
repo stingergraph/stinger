@@ -121,7 +121,7 @@ convert_el_match_to_relabel (const struct el g,
   CDECL(g);
 
 #if !defined(NDEBUG)
-  int64_t * count = calloc (g.ne, sizeof (*count));
+  int64_t * count = xcalloc (g.ne, sizeof (*count));
   OMP("omp parallel") {
     OMP("omp for schedule(static)") MTA("mta assert parallel") MTA_STREAMS
       for (intvtx_t ki = 0; ki < NV; ++ki) {

@@ -17,7 +17,7 @@ main(int argc, char *argv[])
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
   char name[1024];
   if(argc > 1) {
-    sprintf(name, "clustering_coeff_%s", argv[1]);
+    snprintf(name, 1024, "clustering_coeff_%s", argv[1]);
   }
 
   stinger_registered_alg * alg =
@@ -140,5 +140,6 @@ main(int argc, char *argv[])
   }
 
   LOG_I("Algorithm complete... shutting down");
-
+  xfree(affected);
+  xfree(alg);
 }

@@ -28,7 +28,7 @@ main(int argc, char *argv[])
   while(-1 != (opt = getopt(argc, argv, "t:e:f:i:d?h"))) {
     switch(opt) {
       case 't': {
-        sprintf(name, "pagerank_%s", optarg);
+        snprintf(name, 1024, "pagerank_%s", optarg);
         strcpy(type_str,optarg);
         type_specified = 1;
       } break;   
@@ -143,4 +143,5 @@ main(int argc, char *argv[])
   LOG_I("Algorithm complete... shutting down");
 
   free(tmp_pr);
+  xfree(alg);
 }

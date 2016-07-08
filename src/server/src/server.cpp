@@ -39,9 +39,8 @@ static char * stinger_config_file = NULL;
 
 static int start_pipe[2] = {-1, -1};
 
-/* we need a socket that can reply with the shmem name & size of the graph */
-pid_t master_pid;
-static pthread_t name_pid, batch_pid;
+pid_t master_tid;
+static pthread_t batch_server_tid, alg_server_tid;
 
 static StingerServerState & server_state = StingerServerState::get_server_state();
 
@@ -55,9 +54,8 @@ int main(int argc, char *argv[])
 
 
   /* default global options */
-  int port_names = 10101;
-  int port_streams = port_names + 1;
-  int port_algs = port_names + 2;
+  int port_streams = 10102;
+  int port_algs = 10103;
   int unleash_daemon = 0;
 
   graph_name = (char *) xmalloc (128*sizeof(char));
@@ -72,15 +70,11 @@ int main(int argc, char *argv[])
 
   /* parse command line configuration */
   int opt = 0;
-  while(-1 != (opt = getopt(argc, argv, "C:a:s:p:b:n:i:t:1h?dkvc:f:"))) {
+  while(-1 != (opt = getopt(argc, argv, "C:a:s:b:n:i:t:1h?dkvc:f:"))) {
     switch(opt) {
       case 'C': {
         strcpy(stinger_config_file,optarg);
       		} break;
-
-      case 'p': {
-		  port_names = atoi(optarg);
-		} break;
 
       case 'a': {
 		  port_algs = atoi(optarg);
@@ -128,7 +122,6 @@ int main(int argc, char *argv[])
       case 'h': {
 		  printf("Usage:    %s\n"
        "   [-C Stinger Config file]\n"
-       "   [-p port_names]\n"
 			 "   [-a port_algs]\n"
 			 "   [-s port_streams]\n"
 			 "   [-n graph_name]\n"
@@ -140,7 +133,7 @@ int main(int argc, char *argv[])
 			 "   [-v write vertex name mapping to disk]\n"
 			 "   [-f output directory for vertex names, alg states]\n"
 			 "   [-c cap number of history files to keep per alg]  \n", argv[0]);
-		  printf("Defaults:\n\tport_names: %d\n\tport_algs: %d\n\tport_streams: %d\n\tgraph_name: %s\n", port_names, port_algs, port_streams, graph_name);
+		  printf("Defaults:\n\tport_algs: %d\n\tport_streams: %d\n\tgraph_name: %s\n", port_algs, port_streams, graph_name);
 		  exit(0);
 		} break;
 
@@ -246,9 +239,9 @@ int main(int argc, char *argv[])
   /* print configuration to the terminal */
   LOG_I_A("Name: %s", graph_name);
 #ifdef __APPLE__
-  master_pid = syscall(SYS_thread_selfid);
+  master_tid = syscall(SYS_thread_selfid);
 #else
-  master_pid = getpid();
+  master_tid = syscall(SYS_gettid);
 #endif
 
   /* If being a "daemon" (after a fashion), wait on the child to finish initializing and then exit. */
@@ -378,15 +371,13 @@ int main(int argc, char *argv[])
   server_state.set_stinger(S);
   server_state.set_stinger_loc(graph_name);
   server_state.set_stinger_sz(graph_sz);
-  server_state.set_port(port_names, port_streams, port_algs);
+  server_state.set_port(port_streams, port_algs);
   server_state.set_mon_stinger(graph_name, sizeof(stinger_t) + S->length);
- 
-  /* this thread will handle the shared memory name mapping */
-  pthread_create (&name_pid, NULL, start_udp_graph_name_server, NULL);
 
   /* this thread will handle the batch & alg servers */
   /* TODO: bring the thread creation for the alg server to this level */
-  pthread_create (&batch_pid, NULL, start_tcp_batch_server, NULL);
+  pthread_create(&batch_server_tid, NULL, start_batch_server, NULL);
+  pthread_create(&alg_server_tid, NULL, start_alg_handling, NULL);
 
   {
     /* Inform the parent that we're ready for connections. */
@@ -425,16 +416,15 @@ cleanup (void)
   tid = syscall(SYS_gettid);
 #endif
   /* Only the main thread executes */
-  if (tid == master_pid) {
-    LOG_I("Shutting down the name server..."); fflush(stdout);
-    int status;
-    pthread_cancel(name_pid);
-    pthread_join(name_pid, NULL);
+  if (tid == master_tid) {
+    LOG_I("Shutting down the batch server..."); fflush(stdout);
+    pthread_cancel(batch_server_tid);
+    pthread_join(batch_server_tid, NULL);
     LOG_I("done."); fflush(stdout);
 
-    LOG_I("Shutting down the batch server..."); fflush(stdout);
-    pthread_cancel(batch_pid);
-    pthread_join(batch_pid, NULL);
+    LOG_I("Shutting down the alg server..."); fflush(stdout);
+    pthread_cancel(alg_server_tid);
+    pthread_join(alg_server_tid, NULL);
     LOG_I("done."); fflush(stdout);
 
     struct stinger * S = server_state.get_stinger();

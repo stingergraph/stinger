@@ -1,5 +1,6 @@
 set(sources
 	src/mon_handling.cpp
+	src/send_rcv.cpp
 	src/stinger_alg.cpp
 	src/stinger_alg_state.cpp
 	src/stinger_alg_state_c.cpp

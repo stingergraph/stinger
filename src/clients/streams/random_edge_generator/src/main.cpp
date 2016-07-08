@@ -20,7 +20,6 @@ extern "C" {
 #include "stinger_core/xmalloc.h"
 #include "stinger_utils/csv.h"
 #include "stinger_utils/timer.h"
-#include "stinger_utils/stinger_sockets.h"
 }
 
 #include "random_edge_generator.h"
@@ -47,7 +46,7 @@ main(int argc, char *argv[])
   int is_int = 0;
   int delay = 2;
   long seed = DEFAULT_SEED;
-  struct hostent * server = NULL;
+  char * hostname = NULL;
 
   int opt = 0;
   while(-1 != (opt = getopt(argc, argv, "p:b:a:x:y:n:is:d:"))) {
@@ -79,11 +78,7 @@ main(int argc, char *argv[])
       } break;
 
       case 'a': {
-	server = gethostbyname(optarg);
-	if(NULL == server) {
-	  E_A("ERROR: server %s could not be resolved.", optarg);
-	  exit(-1);
-	}
+	hostname = optarg;
       } break;
 
       case 'n': {
@@ -107,16 +102,12 @@ main(int argc, char *argv[])
   V_A("Running with: port: %d\n", port);
 
   /* connect to localhost if server is unspecified */
-  if(NULL == server) {
-    server = gethostbyname("localhost");
-    if(NULL == server) {
-      E_A("ERROR: server %s could not be resolved.", "localhost");
-      exit(-1);
-    }
+  if(NULL == hostname) {
+    hostname = "localhost";
   }
 
   /* start the connection */
-  int sock_handle = connect_to_batch_server (server, port);
+  int sock_handle = connect_to_server (hostname, port);
   if (sock_handle == -1) exit(-1);
 
   /* actually generate and send the batches */
