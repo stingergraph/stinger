@@ -11,10 +11,6 @@
 #include "stinger_net/stinger_server_state.h"
 #include "server.h"
 
-#if !defined(MTA)
-#define MTA(x)
-#endif
-
 #include <cstdio>
 #include <limits>
 #include <sys/types.h>

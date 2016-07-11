@@ -23,8 +23,6 @@ extern "C" {
 
 #include    "stinger_atomics.h"
 
-#if !defined(__MTA__) /* x86 only */
-
 #include  <stdint.h>
 #define MARKER UINT64_MAX
 
@@ -42,8 +40,6 @@ writeff(uint64_t * v, uint64_t new_val);
 
 uint64_t
 writexf(uint64_t * v, uint64_t new_val);
-
-#endif  /* x86 only */
 
 #ifdef __cplusplus
 }

@@ -34,4 +34,4 @@ include_directories("${CMAKE_BINARY_DIR}/include/stinger_core")
 
 add_library(stinger_utils SHARED ${sources} ${headers})
 
-target_link_libraries(stinger_utils stinger_core fmemopen int_hm_seq string)
+target_link_libraries(stinger_utils stinger_core fmemopen int_hm_seq string compat)

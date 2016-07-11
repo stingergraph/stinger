@@ -241,7 +241,7 @@ stinger_etype_names_count(const stinger_t * S) {
 
 
 
-MTA ("mta expect parallel context") MTA ("mta inline")
+ 
 static void
 get_from_ebpool (const struct stinger * S, eb_index_t *out, size_t k)
 {
@@ -257,8 +257,6 @@ get_from_ebpool (const struct stinger * S, eb_index_t *out, size_t k)
       abort();
     }
     OMP("omp parallel for")
-      MTA ("mta assert nodep")
-      MTASTREAMS ()MTA ("mta block schedule")
       for (size_t ki = 0; ki < k; ++ki)
         out[ki] = ebt0 + ki;
   }
@@ -574,7 +572,7 @@ stinger_consistency_check (struct stinger *S, uint64_t NV)
   struct stinger_eb * ebpool_priv = ebpool->ebpool;
   // check blocks
   OMP("omp parallel for reduction(|:returnCode)")
-  MTA("mta assert nodep")
+  
   for (uint64_t i = 0; i < NV; i++) {
     uint64_t curOutDegree = 0;
     uint64_t curInDegree = 0;
@@ -648,7 +646,7 @@ stinger_consistency_check (struct stinger *S, uint64_t NV)
   }
 
   OMP("omp parallel for reduction(|:returnCode)")
-  MTA("mta assert nodep")
+  
   for (uint64_t i = 0; i < NV; i++) {
     if (inDegree[i] != stinger_indegree_get(S,i)) {
       LOG_E_A("%ld -- curInDegree: %ld != stinger_indegree: %ld",i,inDegree[i],stinger_indegree_get(S,i));
@@ -657,7 +655,7 @@ stinger_consistency_check (struct stinger *S, uint64_t NV)
   }
 
   OMP("omp parallel for reduction(|:returnCode)")
-  MTA("mta assert nodep")
+  
   for (uint64_t i = 0; i < NV; i++) {
     if (outDegree[i] != stinger_outdegree_get(S,i)){
       LOG_E_A("%ld -- curOutDegree: %ld != stinger_outdegree: %ld",i,outDegree[i],stinger_outdegree_get(S,i));
@@ -666,7 +664,7 @@ stinger_consistency_check (struct stinger *S, uint64_t NV)
   }
 
   OMP("omp parallel for reduction(|:returnCode)")
-  MTA("mta assert nodep")
+  
   for (uint64_t i = 0; i < NV; i++) {
     if (degree[i] != stinger_degree_get(S,i)){
       LOG_E_A("%ld -- curDegree: %ld != stinger_degree: %ld",i,degree[i],stinger_degree_get(S,i));
@@ -770,7 +768,7 @@ stinger_etype_array_size(int64_t nebs)
  *
  *  @return Pointer to struct stinger
  */
-MTA ("mta inline")
+
 struct stinger *stinger_new_full (struct stinger_config_t * config)
 {
   int64_t nv      = config->nv      ? config->nv      : STINGER_DEFAULT_VERTICES;
@@ -840,9 +838,7 @@ struct stinger *stinger_new_full (struct stinger_config_t * config)
   ebpool->ebpool_tail = 1;
   ebpool->is_shared = 0;
 
-  OMP ("omp parallel for")
-  MTA ("mta assert parallel")
-  MTASTREAMS ()
+  OMP ("omp parallel for") 
   for (i = 0; i < netypes; ++i) {
     ETA(G,i)->length = nebs;
     ETA(G,i)->high = 0;
@@ -860,7 +856,7 @@ struct stinger *stinger_new_full (struct stinger_config_t * config)
  *
  *  @return Pointer to struct stinger
  */
-MTA ("mta inline")
+
 struct stinger *stinger_new (void)
 {
   struct stinger_config_t * config = (struct stinger_config_t *)xcalloc(1,sizeof(struct stinger_config_t));
@@ -909,7 +905,7 @@ stinger_free_all (struct stinger *S)
 }
 
 /* TODO inspect possibly move out with other EB POOL stuff */
-MTA ("mta expect parallel context")
+
 static eb_index_t new_eb (struct stinger * S, int64_t etype, int64_t from)
 {
   MAP_STING(S);
@@ -926,7 +922,7 @@ static eb_index_t new_eb (struct stinger * S, int64_t etype, int64_t from)
   return out;
 }
 
-MTA ("mta expect parallel context")
+
 void
 new_ebs (struct stinger * S, eb_index_t *out, size_t neb, int64_t etype,
          int64_t from)
@@ -938,9 +934,6 @@ new_ebs (struct stinger * S, eb_index_t *out, size_t neb, int64_t etype,
   MAP_STING(S);
 
   OMP ("omp parallel for")
-    //MTA("mta assert nodep")
-    MTASTREAMS ()MTA ("mta block schedule")
-    //MTA("mta parallel single processor")
     for (size_t i = 0; i < neb; ++i) {
       struct stinger_eb * block = ebpool->ebpool + out[i];
       xzero (block, sizeof (*block));
@@ -951,7 +944,7 @@ new_ebs (struct stinger * S, eb_index_t *out, size_t neb, int64_t etype,
     }
 }
 
-MTA ("mta expect serial context")
+
 void
 new_blk_ebs (eb_index_t *out, const struct stinger *restrict G,
              const int64_t nvtx, const size_t * restrict blkoff,
@@ -966,8 +959,6 @@ new_blk_ebs (eb_index_t *out, const struct stinger *restrict G,
   MAP_STING(G);
 
   OMP ("omp parallel for")
-    MTA ("mta assert nodep")
-    MTASTREAMS ()MTA ("mta block schedule")
     for (size_t k = 0; k < neb; ++k) {
       struct stinger_eb * block = ebpool->ebpool + out[k];
       xzero (block, sizeof (*block));
@@ -977,16 +968,14 @@ new_blk_ebs (eb_index_t *out, const struct stinger *restrict G,
     }
 
   OMP ("omp parallel for")
-    MTA ("mta assert nodep")
-    MTASTREAMS ()MTA ("mta interleave schedule")
     for (int64_t v = 0; v < nvtx; ++v) {
       const int64_t from = v;
       const size_t blkend = blkoff[v + 1];
-      MTA ("mta assert nodep")
+      
         for (size_t k = blkoff[v]; k < blkend; ++k)
           ebpool->ebpool[out[k]].vertexID = from;
       if (blkend)
-        MTA ("mta assert nodep")
+        
           for (size_t k = blkoff[v]; k < blkend - 1; ++k)
             ebpool->ebpool[out[k]].next = out[k + 1];
     }
@@ -994,7 +983,7 @@ new_blk_ebs (eb_index_t *out, const struct stinger *restrict G,
 
 /* }}} */
 
-MTA ("mta inline")
+
 void
 push_ebs (struct stinger *G, size_t neb,
           eb_index_t * restrict eb)
@@ -1016,12 +1005,12 @@ push_ebs (struct stinger *G, size_t neb,
   eb_index_t *blocks;
   blocks = ETA(G,etype)->blocks;
 
-  MTA ("mta assert nodep")
+  
   for (int64_t k = 0; k < neb; ++k)
     blocks[place + k] = eb[k];
 }
 
-MTA ("mta inline")
+
 struct curs
 etype_begin (stinger_t * S, int64_t v, int etype)
 {
@@ -1037,7 +1026,7 @@ etype_begin (stinger_t * S, int64_t v, int etype)
   return out;
 }
 
-MTA ("mta inline")
+
 void
 update_edge_data_and_direction (struct stinger * S, struct stinger_eb *eb,
                   uint64_t index, int64_t neighbor, int64_t in_weight,
@@ -1268,7 +1257,7 @@ stinger_update_directed_edge(struct stinger *G,
  *  @param timestamp Edge timestamp
  *  @return 1 if edge is inserted successfully for the first time, 0 if edge is already found and updated, -1 if error.
  */
-MTA ("mta inline") MTA("mta serial")
+ 
 int
 stinger_insert_edge (struct stinger *G,
                      int64_t type, int64_t from, int64_t to,
@@ -1341,7 +1330,7 @@ stinger_typed_degree (const struct stinger * S, int64_t i, int64_t type) {
  *  @param timestamp Edge timestamp
  *  @return 1
  */
-MTA ("mta inline")
+
 int
 stinger_incr_edge (struct stinger *G,
                    int64_t type, int64_t from, int64_t to,
@@ -1378,7 +1367,7 @@ stinger_incr_edge (struct stinger *G,
  *  @param timestamp Edge timestamp
  *  @return Number of edges inserted successfully
  */
-MTA ("mta inline")
+
 int
 stinger_insert_edge_pair (struct stinger *G,
                           int64_t type, int64_t from, int64_t to,
@@ -1409,7 +1398,7 @@ stinger_insert_edge_pair (struct stinger *G,
  *  @param timestamp Edge timestamp
  *  @return 1
  */
-MTA ("mta inline")
+
 int
 stinger_incr_edge_pair (struct stinger *G,
                         int64_t type, int64_t from, int64_t to,
@@ -1439,7 +1428,7 @@ stinger_incr_edge_pair (struct stinger *G,
  *  @param to Destination vertex ID
  *  @return 1 on success, 0 if the edge is not found.
  */
-MTA ("mta inline") MTA ("mta serial")
+ 
 int
 stinger_remove_edge (struct stinger *G,
                      int64_t type, int64_t from, int64_t to)
@@ -1560,7 +1549,7 @@ stinger_remove_edge (struct stinger *G,
  *  @param to Destination vertex ID
  *  @return 1 on success, 0 if the edge is not found.
  */
-MTA ("mta inline")
+
 int
 stinger_remove_edge_pair (struct stinger *G,
                           int64_t type, int64_t from, int64_t to)
@@ -1577,7 +1566,7 @@ stinger_remove_edge_pair (struct stinger *G,
     return rtn | (rtn2 << 1);
 }
 
-MTA("mta parallel default")
+
 
 /* FIXME: Doesn't follow the STINGER direction standards.  Only inserts out edges */
 
@@ -1598,7 +1587,7 @@ MTA("mta parallel default")
  *  @param single_ts Value for timestamps if either of the above is NULL
  *  @return Void
  */
-MTA ("mta inline")
+
 void
 stinger_set_initial_edges (struct stinger *G,
                            const size_t nv,
@@ -1641,28 +1630,16 @@ stinger_set_initial_edges (struct stinger *G,
   block = xcalloc (nblk_total, sizeof (*block));
 
   new_blk_ebs (&block[0], G, nv, blkoff, etype);
-
-  /* XXX: AUGH! I cannot find what really is blocking parallelization. */
-  MTA ("mta assert parallel")
-  MTA ("mta dynamic schedule")
+  
   OMP ("omp parallel for")
-  MTA ("mta assert noalias *block")
-  MTA ("mta assert nodep *block")
-  MTA ("mta assert noalias *G")
-  MTA ("mta assert nodep *G")
-  MTA ("mta assert nodep *phys_adj")
-  MTA ("mta assert nodep *vertices")
-  MTA ("mta assert nodep *blkoff")
   for (int64_t v = 0; v < nv; ++v) {
     const size_t nextoff = off[v + 1];
     size_t kgraph = off[v];
-    MTA ("mta assert may reorder kgraph") int64_t from;
+     int64_t from;
 
     from = v;
 
-    // Need to assert this loop is not to be parallelized!
-    MTA ("mta assert nodep *block")
-    MTA ("mta assert nodep *vertices")
+    // This loop is not to be parallelized!
     for (size_t kblk = blkoff[v]; kblk < blkoff[v + 1]; ++kblk) {
       size_t n_to_copy, voff;
       struct stinger_edge * restrict edge;
@@ -1682,11 +1659,6 @@ stinger_set_initial_edges (struct stinger *G,
       eb = ebpool->ebpool + block[kblk];
       edge = &eb->edges[0];
 
-      /* XXX: remove the next two asserts once the outer is unlocked. */
-      MTA ("mta assert nodep")
-      MTASTREAMS ()MTA ("mta assert nodep *phys_adj")
-      MTA ("mta assert nodep *edge")
-      MTA ("mta assert nodep *vertices")
       for (size_t i = 0; i < n_to_copy; ++i) {
         const int64_t to = phys_adj[voff + i];
         const int64_t dir = direction[voff + i];
@@ -1705,9 +1677,6 @@ stinger_set_initial_edges (struct stinger *G,
       }
 
       if (ts || first_ts) {
-        /* XXX: remove the next two asserts once the outer is unlocked. */
-        MTA ("mta assert nodep")
-        MTASTREAMS ()MTA ("mta assert nodep *edge")
         for (size_t i = 0; i < n_to_copy; ++i) {
           if (edge[i].timeFirst < tslb) {
             tslb = edge[i].timeFirst;
@@ -1765,7 +1734,7 @@ stinger_set_initial_edges (struct stinger *G,
  *  @param max_outlen Length of out[] and recent[]
  *  @return Void
  */
-MTA ("mta inline")
+
 void
 stinger_gather_typed_predecessors (const struct stinger *G,
 				   int64_t type,
@@ -1807,7 +1776,7 @@ stinger_gather_typed_predecessors (const struct stinger *G,
  *  @param max_outlen Length of out[] and any optional buffers provided
  *  @return Void
  */
-MTA ("mta inline")
+
 void
 stinger_gather_predecessors (const struct stinger *G,
                                           int64_t v,
@@ -1864,7 +1833,7 @@ stinger_gather_predecessors (const struct stinger *G,
  *  @param max_outlen Length of out[] and any optional buffers provided
  *  @return Void
  */
-MTA ("mta inline")
+
 void
 stinger_gather_successors (const struct stinger *G,
                             int64_t v,
@@ -1917,7 +1886,7 @@ stinger_gather_successors (const struct stinger *G,
  *  @param max_outlen Length of out[] and recent[]
  *  @return Void
  */
-MTA ("mta inline")
+
 void
 stinger_gather_typed_successors (const struct stinger *G, int64_t type,
                                  int64_t v, size_t * outlen,
@@ -1954,7 +1923,7 @@ stinger_gather_typed_successors (const struct stinger *G, int64_t type,
  *  @param to Destination vertex ID
  *  @return 1 if found; 0 otherwise
  */
-MTA ("mta inline")
+
 int
 stinger_has_typed_successor (const struct stinger *G,
     int64_t type, int64_t from, int64_t to)
@@ -1991,7 +1960,7 @@ stinger_has_typed_successor (const struct stinger *G,
  *  @param max_outlen Length of out[] and any optional buffers provided
  *  @return Void
  */
-MTA ("mta inline")
+
 void
 stinger_gather_neighbors (const struct stinger *G,
                             int64_t v,
@@ -2044,7 +2013,7 @@ stinger_gather_neighbors (const struct stinger *G,
  *  @param max_outlen Length of out[] and recent[]
  *  @return Void
  */
-MTA ("mta inline")
+
 void
 stinger_gather_typed_neighbors (const struct stinger *G, int64_t type,
                                  int64_t v, size_t * outlen,
@@ -2081,7 +2050,7 @@ stinger_gather_typed_neighbors (const struct stinger *G, int64_t type,
  *  @param to Destination vertex ID
  *  @return 1 if found; 0 otherwise
  */
-MTA ("mta inline")
+
 int
 stinger_has_typed_neighbor (const struct stinger *G,
     int64_t type, int64_t from, int64_t to)
@@ -2111,7 +2080,7 @@ stinger_has_typed_neighbor (const struct stinger *G,
  *  @param to Destination vertex ID
  *  @return 1 if found; 0 otherwise
  */
-MTA ("mta inline")
+
 int
 stinger_has_typed_predecessor (const struct stinger *G,
     int64_t type, int64_t from, int64_t to)
@@ -2143,7 +2112,7 @@ stinger_has_typed_predecessor (const struct stinger *G,
  *  @param type Edge type
  *  @return Edge weight
  */
-MTA ("mta inline")
+
 int64_t
 stinger_edgeweight (const struct stinger * G,
                     int64_t from, int64_t to, int64_t type)
@@ -2180,7 +2149,7 @@ stinger_edgeweight (const struct stinger * G,
  *  @param weight Edge weight to set
  *  @return 1 on success; 0 otherwise
  */
-MTA ("mta inline")
+
 int
 stinger_set_edgeweight (struct stinger *G,
                         int64_t from, int64_t to, int64_t type,
@@ -2214,7 +2183,7 @@ stinger_set_edgeweight (struct stinger *G,
  *  @param type Edge type
  *  @return First timestamp of edge; -1 if edge does not exist
  */
-MTA ("mta inline")
+
 int64_t
 stinger_edge_timestamp_first (const struct stinger * G,
                               int64_t from, int64_t to, int64_t type)
@@ -2246,7 +2215,7 @@ stinger_edge_timestamp_first (const struct stinger * G,
  *  @param type Edge type
  *  @return Recent timestamp of edge; -1 if edge does not exist
  */
-MTA ("mta inline")
+
 int64_t
 stinger_edge_timestamp_recent (const struct stinger * G,
                                int64_t from, int64_t to, int64_t type)
@@ -2278,7 +2247,7 @@ stinger_edge_timestamp_recent (const struct stinger * G,
  *  @param timestamp Timestamp to set recent
  *  @return 1 on success; 0 if failure
  */
-MTA ("mta inline")
+
 int
 stinger_edge_touch (struct stinger *G,
     int64_t from, int64_t to, int64_t type,
@@ -2347,8 +2316,8 @@ stinger_sort_actions (int64_t nactions, int64_t * actions,
   OMP("omp parallel") {
   /* Copy & make i positive if necessary.
      Negative j still implies deletion. */
-  MTA ("mta assert nodep")
-    MTA ("mta block schedule")
+  
+    
     OMP ("omp for")
     for (int64_t k = 0; k < nactions; k++) {
       const int64_t i = actions[2 * k];
@@ -2367,19 +2336,16 @@ stinger_sort_actions (int64_t nactions, int64_t * actions,
 
   OMP("omp single") {
   actlen = head;
-#if !defined(__MTA__)
+
   qsort (act, actlen, 2 * sizeof (act[0]), i2cmp);
   //radix_sort_pairs (act, actlen<<1, 6);
-#else
-  bucket_sort_pairs (act, actlen);
-#endif
 
   actk[0] = 0;
   n = 1;
   }
 
   /* Find local indices... */
-  MTA ("mta assert nodep")
+  
     OMP ("omp for")
     for (int64_t k = 1; k < actlen; k++) {
       if (act[2 * k] != act[2 * (k - 1)]) {
@@ -2392,21 +2358,21 @@ stinger_sort_actions (int64_t nactions, int64_t * actions,
   prefix_sum (actlen, actk);
   //XXX assert(actk[actlen-1] == n-1);
 
-  MTA ("mta assert nodep")
+  
     OMP ("omp for")
     for (int64_t k = 0; k <= n; k++)
       deloff[k] = 0;
 
   OMP ("omp for")
-    MTA ("mta assert nodep")
+    
     for (int64_t k = 0; k < actlen; k++)
       stinger_int64_fetch_add (&deloff[actk[k] + 1], 1);
 
   prefix_sum (n+1, deloff);
   assert (deloff[n] == actlen);
 
-  MTA ("mta assert nodep")
-    MTA ("mta loop norestructure")
+  
+    
     OMP ("omp for")
     for (int64_t k = 0; k < n; k++) {
       int off;
@@ -2445,7 +2411,7 @@ stinger_remove_all_edges_of_type (struct stinger *G, int64_t type)
   int64_t ne_removed = 0;
   MAP_STING(G);
   /* TODO fix bugs here */
-  MTA("mta assert parallel")
+  
   OMP("omp parallel for reduction(+: ne_removed)")
   for (uint64_t p = 0; p < ETA(G, type)->high; p++) {
     struct stinger_eb *current_eb = ebpool->ebpool + ETA(G,type)->blocks[p];
@@ -2541,7 +2507,7 @@ stinger_save_to_file (struct stinger * S, uint64_t maxVtx, const char * stingerf
   for(int64_t type = 0; type < (S->max_netypes); type++) {
     struct stinger_eb * local_ebpool = ebpool->ebpool;
     OMP("omp parallel for")
-    MTA("mta assert parallel")
+    
     for(uint64_t block = 0; block < ETA(S,type)->high; block++) {
       struct stinger_eb * cureb = local_ebpool + ETA(S, type)->blocks[block];
       int64_t num = cureb->numEdges;
@@ -2574,7 +2540,7 @@ stinger_save_to_file (struct stinger * S, uint64_t maxVtx, const char * stingerf
   for(int64_t type = 0; type < (S->max_netypes); type++) {
     struct stinger_eb * local_ebpool = ebpool->ebpool;
     OMP("omp parallel for")
-    MTA("mta assert parallel")
+    
     for(uint64_t block = 0; block < ETA(S,type)->high; block++) {
       struct stinger_eb * cureb = local_ebpool + ETA(S,type)->blocks[block];
       int64_t num = cureb->numEdges;
@@ -2596,7 +2562,6 @@ stinger_save_to_file (struct stinger * S, uint64_t maxVtx, const char * stingerf
   }
 #undef tdeg
 
-#if !defined(__MTA__)
   FILE * fp = fopen(stingerfile, "wb");
 
   if(!fp) {
@@ -2639,28 +2604,7 @@ stinger_save_to_file (struct stinger * S, uint64_t maxVtx, const char * stingerf
   stinger_names_save(stinger_etype_names_get(S), fp);
 
   fclose(fp);
-#else
-  xmt_luc_io_init();
-  int64_t etypes = (S->max_netypes);
-  int64_t written = 0;
-  size_t sz = (3 + etypes + 1 + (maxVtx+2) * etypes + 5 * type_offsets[etypes] + 2*maxVtx) * sizeof(int64_t);
-  int64_t * xmt_buf = xmalloc (sz);
-  xmt_buf[0] = endian_check;
-  xmt_buf[1] = maxVtx;
-  xmt_buf[2] = etypes;
-  for (int64_t i = 0; i < etypes+1; i++) {
-    xmt_buf[3+i] = type_offsets[i];
-  }
-  for (int64_t i = 0; i < (maxVtx+2) * etypes; i++) {
-    xmt_buf[3+etypes+1+i] = offsets[i];
-  }
-  for (int64_t i = 0; i < 5 * type_offsets[etypes]; i++) {
-    xmt_buf[3+etypes+1+(maxVtx+2)*etypes+i] = ind[i];
-  }
-  xmt_luc_snapout(stingerfile, xmt_buf, sz);
-  written = sz;
-  free(xmt_buf);
-#endif
+
   if(written != (3 + etypes + 1 + (maxVtx+2) * etypes + 5 * type_offsets[etypes] + 2*maxVtx)) {
     free(offsets); free(type_offsets); free(ind);
     return -1;
@@ -2679,14 +2623,12 @@ stinger_save_to_file (struct stinger * S, uint64_t maxVtx, const char * stingerf
 int
 stinger_open_from_file (const char * stingerfile, struct stinger * S, uint64_t * maxVtx)
 {
-#if !defined(__MTA__)
   FILE * fp = fopen(stingerfile, "rb");
 
   if(!fp) {
     fprintf (stderr, "%s %d: Can't open file \"%s\" for reading\n", __func__, __LINE__, stingerfile);
     return -1;
   }
-#endif
 
   if (!S) {
     return -1;
@@ -2694,7 +2636,6 @@ stinger_open_from_file (const char * stingerfile, struct stinger * S, uint64_t *
 
   int64_t local_endian;
   int64_t etypes = 0;
-#if !defined(__MTA__)
   int result = 0;
   result += fread(&local_endian, sizeof(int64_t), 1, fp);
   result += fread(maxVtx, sizeof(int64_t), 1, fp);
@@ -2704,16 +2645,6 @@ stinger_open_from_file (const char * stingerfile, struct stinger * S, uint64_t *
     fprintf (stderr, "%s %d: Fread of file \"%s\" failed.\n", __func__, __LINE__, stingerfile);
     return -1;
   }
-#else
-  xmt_luc_io_init();
-  size_t sz;
-  xmt_luc_stat(stingerfile, &sz);
-  int64_t * xmt_buf = (int64_t *) xmalloc (sz);
-  xmt_luc_snapin(stingerfile, xmt_buf, sz);
-  local_endian = xmt_buf[0];
-  *maxVtx = xmt_buf[1];
-  etypes = xmt_buf[2];
-#endif
 
   if(local_endian != endian_check) {
     *maxVtx = bs64(*maxVtx);
@@ -2729,7 +2660,6 @@ stinger_open_from_file (const char * stingerfile, struct stinger * S, uint64_t *
     return -1;
   }
 
-#if !defined(__MTA__)
   uint64_t * restrict offsets = xcalloc((*maxVtx+2) * etypes, sizeof(uint64_t));
   uint64_t * restrict type_offsets = xmalloc((etypes+1) * sizeof(uint64_t));
 
@@ -2740,17 +2670,12 @@ stinger_open_from_file (const char * stingerfile, struct stinger * S, uint64_t *
     fprintf (stderr, "%s %d: Fread of file \"%s\" failed. Types and type offsets failed.\n", __func__, __LINE__, stingerfile);
     return -1;
   }
-#else
-  uint64_t * restrict type_offsets = &xmt_buf[3];
-  uint64_t * restrict offsets = type_offsets + etypes+1;
-#endif
 
   if(local_endian != endian_check) {
     bs64_n(etypes + 1, type_offsets);
     bs64_n(*maxVtx + 2, offsets);
   }
 
-#if !defined(__MTA__)
   int64_t * restrict ind = xmalloc(5 * type_offsets[etypes] * sizeof(int64_t));
   int64_t * restrict dir = ind + type_offsets[etypes];
   int64_t * restrict weight = dir + type_offsets[etypes];
@@ -2762,13 +2687,6 @@ stinger_open_from_file (const char * stingerfile, struct stinger * S, uint64_t *
     fprintf (stderr, "%s %d: Fread of file \"%s\" failed. Edges and types failed.\n", __func__, __LINE__, stingerfile);
     return -1;
   }
-#else
-  int64_t * restrict ind = offsets + (*maxVtx+2)*etypes;
-  int64_t * restrict dir = ind + type_offsets[etypes];
-  int64_t * restrict weight = dir + type_offsets[etypes];
-  int64_t * restrict timefirst = weight + type_offsets[etypes];
-  int64_t * restrict timerecent = timefirst + type_offsets[etypes];
-#endif
 
   if(local_endian != endian_check) {
     bs64_n(5 * type_offsets[etypes], ind);
@@ -2799,12 +2717,8 @@ stinger_open_from_file (const char * stingerfile, struct stinger * S, uint64_t *
   stinger_names_load(stinger_vtype_names_get(S), fp);
   stinger_names_load(stinger_etype_names_get(S), fp);
 
-#if !defined(__MTA__)
   fclose(fp);
   free(offsets); free(type_offsets); free(ind);
-#else
-  free(xmt_buf);
-#endif
   return 0;
 }
 
