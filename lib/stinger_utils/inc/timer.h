@@ -15,15 +15,6 @@ void stats_tic (char *);
 void stats_toc (void);
 void print_stats ();
 
-#if defined(__MTA__)
-struct stats {
-  char statname[257];
-  int64_t clock, issues, concurrency, load, store, ifa;
-};
-
-struct stats stats_tic_data, stats_toc_data;
-#endif
-
 #ifdef __cplusplus
 }
 #undef restrict

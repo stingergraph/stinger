@@ -14,10 +14,6 @@ extern "C" {
 
 #include "rpc_state.h"
 
-#if !defined(MTA)
-#define MTA(x)
-#endif
-
 #include <netdb.h>
 #include <cstdio>
 #include <limits>

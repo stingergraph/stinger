@@ -9,7 +9,7 @@ void update_edge_data (struct stinger * S, struct stinger_eb *eb,
   update_edge_data_and_direction (S, eb, index, neighbor, weight, ts, STINGER_EDGE_DIRECTION_OUT, operation);
 }
 
-MTA ("mta parallel off") MTA ("mta expect parallel context")
+ 
 /** @brief DEPRECATED Remove and insert edges incident on a common source vertex.
  *
  *  DEPRECATED
@@ -58,39 +58,18 @@ stinger_remove_and_insert_edges (struct stinger *G,
   int *kslot = NULL;
   int64_t nslot = 0, ninsert_remaining = ninsert;
 
-#if defined(__MTA__)
-  if (ninsert < 4) {
-    for (int64_t k = 0; k < 4 && ninsert > 0; k++) {
-      if (insert[k] >= 0)
-	nrem += stinger_insert_edge (G, type, from, insert[k],
-				    (weight ? weight[0] : 1), timestamp);
-      ninsert--;
-    }
-  }
-#else
   if (1 == ninsert) {
     if (insert[0] >= 0)
       nrem += stinger_insert_edge (G, type, from, insert[0],
                                   (weight ? weight[0] : 1), timestamp);
     ninsert = 0;
   }
-#endif
 
-#if defined(__MTA__)
-  if (nremove < 2) {
-    for (int64_t k = 0; k < 2 && nremove > 0; k++) {
-      if (remove[k] >= 0)
-	nrem += stinger_remove_edge (G, type, from, remove[k]);
-      nremove--;
-    }
-  }
-#else
   if (1 == nremove) {
     if (remove[0] >= 0)
       nrem = stinger_remove_edge (G, type, from, remove[0]);
     nremove = 0;
   }
-#endif
 
   /* Sort for binary search */
   if (nremove) {
@@ -170,7 +149,7 @@ stinger_remove_and_insert_edges (struct stinger *G,
 
 	if (nslot < ninsert_remaining) {
 	/* Gather any trailing slots. */
-	MTA ("mta assert nodep")
+	
 	  for (; endk < STINGER_EDGEBLOCKSIZE; ++endk) {
 	    int64_t which = stinger_int64_fetch_add (&nslot, 1);
 	    if (which < ninsert_remaining) {        /* Can be racy. */
@@ -199,10 +178,9 @@ stinger_remove_and_insert_edges (struct stinger *G,
     *prev_loc = ebs[0];
     push_ebs (G, neb, ebs);
 
-    MTA ("mta assert nodep")
+    
       for (int64_t kb = 0; kb < neb; ++kb) {
         struct stinger_eb *eb = ebpool_priv + ebs[kb];
-        MTA ("mta assert nodep") MTASTREAMS ()
           for (int64_t k = 0;
                nslot < ninsert_remaining
                  && k <
@@ -245,7 +223,7 @@ stinger_remove_and_insert_edges (struct stinger *G,
   free (has_slot);
   return (nrem + ninsert_remaining) > 0;
 }
-MTA("mta parallel default")
+
 
 /** @brief DEPRECATED Process edge removals and insertions as a batch.
  *
@@ -270,7 +248,7 @@ stinger_remove_and_insert_batch (struct stinger * G, int64_t type,
 {
   /* Separate each vertex's batch into deletions and insertions */
   OMP ("omp parallel for")
-  MTA ("mta assert nodep")
+  
   for (int k = 0; k < n; k++) {
     const int64_t i = act[2 * deloff[k]];
     const int64_t nrem = insoff[k] - deloff[k];
@@ -280,13 +258,13 @@ stinger_remove_and_insert_batch (struct stinger * G, int64_t type,
     torem = (nrem + nins ? xmalloc ((nrem + nins) * sizeof (*torem)) : NULL);
     toins = (torem ? &torem[nrem] : NULL);
 
-    MTA ("mta assert nodep")
+    
     for (int k2 = 0; k2 < nrem; ++k2) {
       torem[k2] = act[2 * (deloff[k] + k2) + 1];
       assert (act[2 * (deloff[k] + k2)] == i);
     }
 
-    MTA ("mta assert nodep")
+    
     for (int k2 = 0; k2 < nins; k2++) {
       toins[k2] = act[2 * (insoff[k] + k2) + 1];
       assert (act[2 * (insoff[k] + k2)] == i);

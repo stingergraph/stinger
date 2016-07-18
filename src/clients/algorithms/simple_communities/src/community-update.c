@@ -17,9 +17,6 @@
 #include "sorts.h"
 #include "graph-el.h"
 #include "community.h"
-
-#include "xmt-luc.h"
-
 #include "bsutil.h"
 
 #include "community-update.h"
@@ -65,7 +62,7 @@ init_community_state (struct community_state * cstate,
   cstate->lockspace = xmalloc (graph_nv * sizeof (*cstate->lockspace));
 #endif
   OMP("omp parallel") {
-    OMP("omp for nowait") MTA("mta assert nodep")
+    OMP("omp for nowait") 
       for (int64_t k = 0; k < graph_nv; ++k) {
         cstate->cmap[k] = k;
         cstate->csize[k] = 1;
@@ -145,7 +142,7 @@ cstate_check (struct community_state *cstate)
   const struct el el = cstate->cg;
   CDECL(el);
   OMP("omp parallel") {
-  OMP("omp for nowait") MTA("mta assert parallel")
+  OMP("omp for nowait") 
     for (int64_t k = 0; k < ne; ++k) {
       //fprintf (stderr, "%ld:  %ld %ld ; %ld\n", (long)k, (long)I(el,k), (long)J(el,k), (long)W(el,k));
       assert (I(el, k) < nv);
@@ -153,7 +150,7 @@ cstate_check (struct community_state *cstate)
       assert (I(el, k) >= 0);
       assert (J(el, k) >= 0);
     }
-  OMP("omp for") MTA("mta assert parallel")
+  OMP("omp for") 
     for (int64_t k = 0; k < graph_nv; ++k) {
       assert (csize[k] > 0);
     }
@@ -218,7 +215,7 @@ init_and_read_community_state (struct community_state * cstate, int64_t graph_nv
   tic ();
   needs_bs = el_snarf_graph (cg_name, &el);
   init_community_state_from_el (cstate, graph_nv, &el);
-  xmt_luc_snapin (cmap_name, cstate->cmap, cstate->graph_nv * sizeof (*cstate->cmap));
+  luc_snapin (cmap_name, cstate->cmap, cstate->graph_nv * sizeof (*cstate->cmap));
   if (needs_bs)
     comm_bs64_n (graph_nv, cstate->cmap);
   cstate_forcibly_update_csize (cstate);
@@ -276,8 +273,8 @@ cstate_update (struct community_state * cstate, const struct stinger * S)
   return toc ();
 }
 
-MTA("mta inline")
-MTA("mta expect parallel context")
+
+
 void
 qflush (struct insqueue * restrict q,
         struct el * restrict g)
@@ -286,7 +283,6 @@ qflush (struct insqueue * restrict q,
 #if !defined(NO_QUEUE)
   if (q->n != 0) {
     int64_t where;
-#if !defined(NO_SORTUNIQ_INSQUEUE) && !defined(__MTA__)
     int64_t kdst, idst, jdst, wdst;
     shellsort_ikii (q->q, q->n); /* Ideallly, quick pre-collapse in L1 */
     kdst = 0;
@@ -317,22 +313,12 @@ qflush (struct insqueue * restrict q,
       J(g, where+k) = q->q[1+3*k];
       W(g, where+k) = q->q[2+3*k];
     }
-#else /* on XMT */
-    /* Without locality, no point in pre-collapsing. */
-    where = int64_fetch_add (&g->ne, q->n);
-    assert (g->ne <= g->ne_orig);
-    for (int64_t k = 0; k < q->n; ++k) {
-      I(g, where+k) = q->q[3*k];
-      J(g, where+k) = q->q[1+3*k];
-      W(g, where+k) = q->q[2+3*k];
-    }
-#endif
     q->n = 0;
   }
 #endif /* NO_QUEUE */
 }
 
-MTA("mta expect parallel context") MTA("mta inline")
+ 
 void
 enqueue (struct insqueue * restrict q,
          intvtx_t i, intvtx_t j, intvtx_t w,
@@ -372,7 +358,7 @@ enqueue (struct insqueue * restrict q,
 #endif
 }
 
-MTA("mta expect parallel context") MTA("mta inline")
+ 
 static inline void
 extract_vertex (const int64_t v, const int64_t cv, const struct stinger * restrict S,
                 int64_t * restrict mark,
@@ -407,7 +393,7 @@ extract_vertices (const int64_t nvlist, const int64_t * restrict vlist, const in
                   int64_t * restrict mark,
                   int64_t * restrict ncomm, int64_t * restrict csize)
 {
-  OMP("omp parallel for schedule(guided)") MTA("mta interleave schedule")
+  OMP("omp parallel for schedule(guided)") 
     for (int64_t k = 0; k < nvlist; ++k) {
       assert (vlist[k] >= 0);
       extract_vertex (vlist[k], cmap[vlist[k]], S, mark, ncomm, csize);
@@ -446,13 +432,11 @@ extract_edges (const int64_t nvlist, const int64_t * restrict vlist, const int64
   int64_t n_new_edges = 0;
 
   OMP("omp parallel") {
-#if !defined(__MTA__)
     struct insqueue q;
     q.n = 0;
-#endif
 
     OMP("omp for reduction(+: n_new_edges)")
-      MTA("mta assert parallel")
+      
       for (int64_t k = 0; k < nvlist; ++k) {
         const int64_t i = vlist[k];
         const int64_t ci = cmap[i];
@@ -467,10 +451,6 @@ extract_edges (const int64_t nvlist, const int64_t * restrict vlist, const int64
         if (mi >= 0) {
           int64_t internal_cw = 0;
           int64_t internal_w = 0;
-#if defined(__MTA__)
-          struct insqueue q;
-          q.n = 0;
-#endif
 
           STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, i) {
             const int64_t j = STINGER_EDGE_DEST;
@@ -519,7 +499,7 @@ extract_edges (const int64_t nvlist, const int64_t * restrict vlist, const int64
     }
 
     OMP("omp for")
-      MTA("mta assert parallel")
+      
       for (int64_t k = 0; k < nvlist; ++k) {
         const int64_t i = vlist[k];
         const int64_t ci = cmap[i];
@@ -530,10 +510,6 @@ extract_edges (const int64_t nvlist, const int64_t * restrict vlist, const int64
         assert (ci >= 0 || mi >= 0);
 
         if (mi >= 0) {
-#if defined(__MTA__)
-          struct insqueue q;
-          q.n = 0;
-#endif
           STINGER_READ_ONLY_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, i) {
             const int64_t j = STINGER_RO_EDGE_DEST;
             const int64_t cj = cmap[j];
@@ -561,16 +537,9 @@ extract_edges (const int64_t nvlist, const int64_t * restrict vlist, const int64
             }
 
           } STINGER_READ_ONLY_FORALL_OUT_EDGES_OF_VTX_END();
-
-#if defined(__MTA__)
-          qflush (&q, g);
-#endif
         }
       }
-
-#if !defined(__MTA__)
     qflush (&q, g);
-#endif
   }
 }
 
@@ -579,7 +548,7 @@ commit_cmap_change (const int64_t nvlist, const int64_t * restrict vlist,
                     int64_t * restrict cmap,
                     int64_t * restrict mark)
 {
-  OMP("omp parallel for") MTA("mta assert nodep")
+  OMP("omp parallel for") 
     for (int64_t k = 0; k < nvlist; ++k) {
       const int64_t i = vlist[k];
       if (mark[i] >= 0) {
@@ -665,7 +634,7 @@ update_el (struct el * el,
   contract_self (el, *ws);
 }
 
-MTA("mta inline") MTA("mta expect parallel context")
+ 
 static inline int
 append_to_vlist (int64_t * restrict nvlist,
                  int64_t * restrict vlist,

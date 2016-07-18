@@ -30,11 +30,7 @@ usage (FILE * out, char *progname)
            "\t    number of batches = %d\n"
            "\t   initial-graph name = \"%s\"\n"
            "\t   action-stream name = \"%s\"\n",
-#if !defined(__MTA__)
            basename (progname),
-#else
-           progname,
-#endif
            BATCH_SIZE_DEFAULT, NBATCH_DEFAULT,
            INITIAL_GRAPH_NAME_DEFAULT, ACTION_STREAM_NAME_DEFAULT);
 }
@@ -247,7 +243,6 @@ edge_list_to_csr (int64_t nv, int64_t ne,
 
   /* Histogram source vertices for outer sort */
   OMP ("omp parallel for")
-    MTA ("mta assert no alias *offset *sv1")
     for (i = 0; i < ne; i++)
       stinger_int64_fetch_add (&offset[sv1[i]], 1);
 
@@ -258,7 +253,7 @@ edge_list_to_csr (int64_t nv, int64_t ne,
   offset--;
 
   if(timeRecent && timeFirst) {
-    OMP ("omp parallel for") MTA ("mta assert nodep")
+    OMP ("omp parallel for") 
     for (i = 0; i < ne; i++) {
       int64_t index = stinger_int64_fetch_add (&offset[sv1[i]], 1);
       ev2[index] = ev1[i];
@@ -267,7 +262,7 @@ edge_list_to_csr (int64_t nv, int64_t ne,
       t2[index] = timeRecent[i];
     }
   } else {
-    OMP ("omp parallel for") MTA ("mta assert nodep")
+    OMP ("omp parallel for") 
     for (i = 0; i < ne; i++) {
       int64_t index = stinger_int64_fetch_add (&offset[sv1[i]], 1);
       ev2[index] = ev1[i];
@@ -454,7 +449,7 @@ stinger_sort_edge_list (const struct stinger *S, const int64_t srcvtx,
 * @param array Input array of tuples to sort
 * @param num Number of tuples to sort
 */
-MTA("mta inline")
+
 void
 bucket_sort_pairs (int64_t *array, size_t num)
 {
@@ -464,12 +459,12 @@ bucket_sort_pairs (int64_t *array, size_t num)
 
   max = min = array[0];
 
-  MTA("mta assert nodep")
+  
   for (i = 2; i < num<<1; i+=2)
     if (max < array[i])
       max = array[i];
 
-  MTA("mta assert nodep")
+  
   for (i = 2; i < num<<1; i+=2)
     if (min > array[i])
       min = array[i];
@@ -486,7 +481,6 @@ bucket_sort_pairs (int64_t *array, size_t num)
   start += 2;
 
   /* Histogram key values */
-  MTA("mta assert no alias *start *array")
   for (i = 0; i < num<<1; i+=2)
     start[array[i]+offset] += 2;
 
@@ -498,7 +492,7 @@ bucket_sort_pairs (int64_t *array, size_t num)
 
   /* Move edges into its bucket's segment */
   OMP("omp parallel for")
-  MTA("mta assert nodep")
+  
   for (i = 0; i < num<<1; i+=2) {
     int64_t index = stinger_int64_fetch_add(start+array[i]+offset, 2);
     tmp[index] = array[i];
@@ -514,7 +508,7 @@ bucket_sort_pairs (int64_t *array, size_t num)
   start--;
 
   OMP("omp parallel for")
-  MTA("mta assert parallel")
+  
   for (i = 0; i < range; i++) {
     int64_t degree = start[i+1] - start[i];
     if (degree >= 4)
@@ -694,7 +688,7 @@ i64_cmp (const void *a, const void *b)
  * @param b Pointer to second integer pair.
  * @return > 0 if a is greater, < 0 if b is greater, 0 if equal.
  */
-MTA ("mta inline")
+
 int i2cmp (const void *va, const void *vb)
 {
   const int64_t *a = va;
@@ -718,7 +712,7 @@ int i2cmp (const void *va, const void *vb)
  * @param ary Array pointer.
  * @return Index in the array or -1 if not found.
  */
-MTA ("mta inline") MTA ("mta expect parallel context")
+ 
 int64_t
 find_in_sorted (const int64_t tofind,
                 const int64_t N, const int64_t * restrict ary)
@@ -758,8 +752,7 @@ find_in_sorted (const int64_t tofind,
  * a parallel OpenMP context - just DO NOT call this in OpenMP single or master
  * inside of a parallel region).
  *
- * If compiled without OpenMP this is implemented as a simple serial prefix sum  
- * that should be auto-parallelized by the Cray MTA/XMT compiler.
+ * If compiled without OpenMP this is implemented as a simple serial prefix sum.
  *
  * @param n The input array size.
  * @param ary The input array pointer.
@@ -817,7 +810,7 @@ prefix_sum (const int64_t n, int64_t *ary)
 }
 
 #else
-MTA("mta inline")
+
 int64_t
 prefix_sum (const int64_t n, int64_t *ary)
 {

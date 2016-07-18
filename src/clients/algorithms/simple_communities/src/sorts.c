@@ -16,7 +16,7 @@
   All integer compares are in increasing order.
 */
 
-MTA("mta expect parallel context")
+
 void
 insertion_iki (intvtx_t * restrict d, const size_t N)
 {
@@ -35,7 +35,7 @@ insertion_iki (intvtx_t * restrict d, const size_t N)
   }
 }
 
-MTA("mta expect parallel context")
+
 void
 insertion_ikii (intvtx_t * restrict d, const size_t N)
 {
@@ -57,7 +57,7 @@ insertion_ikii (intvtx_t * restrict d, const size_t N)
   }
 }
 
-MTA("mta expect parallel context")
+
 void
 shellsort_iki (intvtx_t * restrict d, const size_t N)
 {
@@ -86,7 +86,7 @@ shellsort_iki (intvtx_t * restrict d, const size_t N)
   }
 }
 
-MTA("mta expect parallel context")
+
 void
 shellsort_ikii (intvtx_t * restrict d, const size_t N)
 {
@@ -122,7 +122,7 @@ shellsort_ikii (intvtx_t * restrict d, const size_t N)
 #define SORT_THRESH 32
 #endif
 
-MTA("mta expect parallel context")
+
 static inline void
 thresh_shellsort_iki (intvtx_t * restrict d, const size_t N)
 {
@@ -151,7 +151,7 @@ thresh_shellsort_iki (intvtx_t * restrict d, const size_t N)
   }
 }
 
-MTA("mta expect parallel context")
+
 static inline void
 thresh_shellsort_ikii (intvtx_t * restrict d, const size_t N)
 {
@@ -183,7 +183,7 @@ thresh_shellsort_ikii (intvtx_t * restrict d, const size_t N)
   }
 }
 
-MTA("mta expect parallel context")
+
 static intvtx_t
 median_of_three (intvtx_t a, intvtx_t b, intvtx_t c)
 {
@@ -207,7 +207,7 @@ median_of_three (intvtx_t a, intvtx_t b, intvtx_t c)
   return b;
 }
 
-MTA("mta expect parallel context")
+
 static int
 floor_log2 (size_t x)
 {
@@ -235,7 +235,7 @@ floor_log2 (size_t x)
 #endif
 }
 
-MTA("mta expect parallel context")
+
 static intvtx_t
 partition_iki (intvtx_t * restrict d, intvtx_t i, intvtx_t j,
                const intvtx_t piv)
@@ -259,7 +259,7 @@ partition_iki (intvtx_t * restrict d, intvtx_t i, intvtx_t j,
   return j;
 }
 
-MTA("mta expect parallel context")
+
 static size_t
 partition_ikii (intvtx_t * restrict d, size_t i, size_t j,
                 const intvtx_t piv)
@@ -286,7 +286,7 @@ partition_ikii (intvtx_t * restrict d, size_t i, size_t j,
   return j;
 }
 
-MTA("mta expect parallel context")
+
 static void
 introsort_loop_iki (intvtx_t * restrict d, const size_t start, size_t end,
                     int depth_limit)
@@ -306,7 +306,7 @@ introsort_loop_iki (intvtx_t * restrict d, const size_t start, size_t end,
   }
 }
 
-MTA("mta expect parallel context")
+
 void
 introsort_iki (intvtx_t * restrict d, const size_t N)
 {
@@ -315,7 +315,7 @@ introsort_iki (intvtx_t * restrict d, const size_t N)
   insertion_iki (d, N);
 }
 
-MTA("mta expect parallel context")
+
 static void
 introsort_loop_ikii (intvtx_t * restrict d, const size_t start, size_t end,
                      int depth_limit)
@@ -335,7 +335,7 @@ introsort_loop_ikii (intvtx_t * restrict d, const size_t start, size_t end,
   }
 }
 
-MTA("mta expect parallel context")
+
 void
 introsort_ikii (intvtx_t * restrict d, const size_t N)
 {

@@ -182,7 +182,7 @@ extern "C" {
 
 #define STINGER_FORALL_ENABLE_PARALLEL_ \
   OMP("omp parallel for")               \
-  MTA("mta assert parallel")
+  
 
 // For all edges of vertex, in parallel
 #define STINGER_PARALLEL_FORALL_EDGES_OF_VTX_BEGIN(STINGER_,VTX_) \

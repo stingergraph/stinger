@@ -55,27 +55,12 @@ extern "C" {
 #include <math.h>
 #include <time.h>
 #include <assert.h>
-
-#if !defined(__MTA__)
 #include <libgen.h>
-#endif
 #include <getopt.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-
-#if defined(__MTA__)
-#define MTA(x) _Pragma(x)
-#if defined(MTA_STREAMS)
-#define MTASTREAMS() MTA(MTA_STREAMS)
-#else
-#define MTASTREAMS() MTA("mta use 70 streams")
-#endif
-#else
-#define MTA(x)
-#define MTASTREAMS()
-#endif
 
 #if defined(_OPENMP)
 #include <omp.h>
@@ -101,12 +86,6 @@ static inline int omp_get_thread_num (void) { return 0; }
 #define FNATTR_MALLOC
 #define UNLIKELY(x) x
 #define LIKELY(x) x
-#endif
-
-#if !defined(__MTA__) & 0
-#define XMTI MTA("mta inline")
-#else
-#define XMTI
 #endif
 
 #define STINGERASSERTS()		    \

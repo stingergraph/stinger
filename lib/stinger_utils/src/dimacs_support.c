@@ -32,7 +32,6 @@ SortStart (int64_t NV, int64_t NE, int64_t * sv1, int64_t * ev1, int64_t * w1, i
 
   /* Histogram key values */
   OMP("omp parallel for")
-  MTA("mta assert no alias *start *sv1")
   for (i = 0; i < NE; i++) stinger_int64_fetch_add(&start[sv1[i]], 1);
 
   /* Compute start index of each bucket */
@@ -42,7 +41,7 @@ SortStart (int64_t NV, int64_t NE, int64_t * sv1, int64_t * ev1, int64_t * w1, i
 
   /* Move edges into its bucket's segment */
   OMP("omp parallel for")
-  MTA("mta assert no dependence")
+  
   for (i = 0; i < NE; i++) {
     int64_t index = stinger_int64_fetch_add(&start[sv1[i]], 1);
     sv2[index] = sv1[i];
@@ -102,11 +101,7 @@ load_dimacs_graph (struct stinger * S, const char * filename)
 {
   int64_t i;
   int64_t NE, NV;
-#if !defined(__MTA__)
   off_t filesize;
-#else
-  size_t filesize;
-#endif
 
   /* initialize the IO subsystem */
   luc_io_init();
@@ -150,29 +145,6 @@ load_dimacs_graph (struct stinger * S, const char * filename)
 
   int64_t edgecount = 0;
 
-#if defined(__MTA__)
-  /* split the file into non-overlapping workloads and parallelize among threads */
-  MTA("mta assert parallel")
-    MTA("mta dynamic schedule")
-    MTA("mta use 100 streams")
-    for (i = 0; i < 5000; i++)
-    {
-      int64_t startV, endV, weight;
-      char *myPtr = ptr + (i*(filesize/5000));
-      char *endPtr = ptr + (i+1)*(filesize/5000);
-      if(i == 4999) endPtr = filemem+filesize-1;
-      if (myPtr > filemem+filesize-1) myPtr = endPtr+1;
-      myPtr = nextchar(myPtr, '\n');
-      while ( myPtr <= endPtr )
-      {
-	myPtr = readline(myPtr,	&startV, &endV, &weight);
-	int64_t k = stinger_int64_fetch_add(&edgecount, 1);
-	sV1[k] = startV;
-	eV1[k] = endV;
-	w1[k] = weight;
-      }
-    }
-#else
   /* we don't do this in parallel */
   {
     int64_t startV, endV, weight;
@@ -188,7 +160,6 @@ load_dimacs_graph (struct stinger * S, const char * filename)
       w1[k] = weight;
     }
   }
-#endif
 
   //printf("edges ingested: %ld\n", edgecount);
 
@@ -208,7 +179,7 @@ load_dimacs_graph (struct stinger * S, const char * filename)
   do { if (a OP X) { int64_t X2 = readfe (&X); if (a OP X2) X2 = a; writeef (&X, X2); } } while (0)
 
   int64_t minv = 2*NV, maxv = 0;
-  MTA("mta assert nodep")
+  
     for (i = 0; i < NE; ++i) {
       const int64_t sv = sV1[i], ev = eV1[i];
       if (sv < ev) {

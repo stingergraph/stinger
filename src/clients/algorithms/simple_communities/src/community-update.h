@@ -50,14 +50,9 @@ void cstate_preproc_acts (struct community_state * restrict,
                           const int64_t, const int64_t * restrict);
 
 #if !defined(INSQUEUE_SIZE)
-#if defined(__MTA__)
-/* Just to reduce hot spotting */
-#define INSQUEUE_SIZE 64
-#else
 /* Cache-based architectures should shoot for L1. */
 /* each edge is 3*8=24 bytes, L1 is... 64kb.  nedge: 1024? 512? */
 #define INSQUEUE_SIZE 1024
-#endif
 #endif
 struct insqueue {
   int n;
