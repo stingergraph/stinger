@@ -168,6 +168,8 @@ main (int argc, char ** argv)
   server_state.add_rpc_function("get_connected_component", new JSON_RPC_get_connected_component(&server_state));
   server_state.add_rpc_function("bfs_edges", new JSON_RPC_bfs_edges(&server_state));
   server_state.add_rpc_function("pagerank_subgraph", new JSON_RPC_pagerank_subgraph(&server_state));
+  server_state.add_rpc_function("exact diameter", new JSON_RPC_exact_diameter(&server_state));
+  server_state.add_rpc_function("single source shortest path", new JSON_RPC_single_source_shortest_path(&server_state));
 
   server_state.add_rpc_session("subgraph", new JSON_RPC_community_subgraph(0, &server_state));
   server_state.add_rpc_session("vertex_event_notifier", new JSON_RPC_vertex_event_notifier(0, &server_state));
