@@ -27,3 +27,6 @@ target_link_libraries(stinger_test_alg stinger_net stinger_alg)
 
 add_executable(stinger_weakly_connected_components weakly_connected_components/src/main.c)
 target_link_libraries(stinger_weakly_connected_components stinger_net stinger_alg)
+
+add_executable(stinger_streaming_connected_components_client streaming_connected_components/src/main.c)
+target_link_libraries(stinger_streaming_connected_components_client stinger_net stinger_alg)
