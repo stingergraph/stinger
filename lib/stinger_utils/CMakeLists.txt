@@ -27,11 +27,13 @@ set(headers
 	inc/xml_support.h
 )
 
-file(COPY ${headers} DESTINATION "${CMAKE_BINARY_DIR}/include/stinger_utils")
+publish_headers(headers "${CMAKE_BINARY_DIR}/include/stinger_utils")
 
 include_directories("${CMAKE_BINARY_DIR}/include/stinger_utils")
 include_directories("${CMAKE_BINARY_DIR}/include/stinger_core")
 
-add_library(stinger_utils SHARED ${sources} ${headers})
-
+# Need to declare an explicit dependency on rapidjson headers, since there's no associated target
+set_source_files_properties("${CMAKE_BINARY_DIR}/include/rapidjson/document.h" GENERATED)
+add_library(stinger_utils SHARED ${sources} ${headers} "${CMAKE_BINARY_DIR}/include/rapidjson/document.h")
+add_dependencies(stinger_utils rapidjson)
 target_link_libraries(stinger_utils stinger_core fmemopen int_hm_seq string compat)

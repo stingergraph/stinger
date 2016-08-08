@@ -1,6 +1,5 @@
 #include "stinger_vertex.h"
 #include "stinger_atomics.h"
-#include "xml_support.h"
 #include "x86_full_empty.h"
 
 #include <stdlib.h>

@@ -15,7 +15,7 @@ set(headers
 	include/writer.h
 )
 
-file(COPY ${headers} DESTINATION "${CMAKE_BINARY_DIR}/include/rapidjson")
-file(COPY ${headersInternal} DESTINATION "${CMAKE_BINARY_DIR}/include/rapidjson/internal")
-
+publish_headers(headers "${CMAKE_BINARY_DIR}/include/rapidjson")
+publish_headers(headersInternal "${CMAKE_BINARY_DIR}/include/rapidjson/internal")
+add_custom_target("rapidjson" DEPENDS ${headers} ${headersInternal})
 include_directories("${CMAKE_BINARY_DIR}/include/rapidjson")

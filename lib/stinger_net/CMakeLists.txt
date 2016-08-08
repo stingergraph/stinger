@@ -56,7 +56,7 @@ foreach(file ${proto})
 	set(_generated_files ${_generated_files} "${CMAKE_BINARY_DIR}/stinger_net/proto/${_file_name}.pb.cc" "${CMAKE_BINARY_DIR}/stinger_net/proto/${_file_name}.pb.h")
 endforeach()
 
-file(COPY ${headers} DESTINATION "${CMAKE_BINARY_DIR}/include/stinger_net")
+publish_headers(headers "${CMAKE_BINARY_DIR}/include/stinger_net")
 
 include_directories("${CMAKE_BINARY_DIR}/")
 include_directories("${CMAKE_BINARY_DIR}/stinger_net")

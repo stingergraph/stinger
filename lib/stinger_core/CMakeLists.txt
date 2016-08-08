@@ -33,7 +33,7 @@ set(config
 	stinger_defs.h
 )
 
-file(COPY ${headers} DESTINATION "${CMAKE_BINARY_DIR}/include/stinger_core")
+publish_headers(headers "${CMAKE_BINARY_DIR}/include/stinger_core")
 
 include_directories("${CMAKE_BINARY_DIR}/include/stinger_core")
 include_directories("${CMAKE_BINARY_DIR}/include/stinger_utils")
