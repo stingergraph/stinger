@@ -5,7 +5,7 @@ set(headers
 	inc/kv_store.h
 )
 
-file(COPY ${headers} DESTINATION "${CMAKE_BINARY_DIR}/include/kv_store")
+publish_headers(headers "${CMAKE_BINARY_DIR}/include/kv_store")
 
 include_directories("${CMAKE_BINARY_DIR}/include/kv_store")
 
