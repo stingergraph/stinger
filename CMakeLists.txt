@@ -125,8 +125,25 @@ set(STINGER_NAME_STR_MAX "255" CACHE STRING "Max string length in physmap")
 
 configure_file(${CMAKE_SOURCE_DIR}/lib/stinger_core/inc/stinger_defs.h.in ${CMAKE_BINARY_DIR}/include/stinger_core/stinger_defs.h @ONLY)
 configure_file(${CMAKE_SOURCE_DIR}/lib/stinger_core/inc/stinger_names.h.in ${CMAKE_BINARY_DIR}/include/stinger_core/stinger_names.h @ONLY)
-#file(COPY ${CMAKE_SOURCE_DIR}/lib/stinger_core/inc/stinger_defs.h DESTINATION ${CMAKE_BINARY_DIR}/include/stinger_core/)
-#file(COPY ${CMAKE_SOURCE_DIR}/lib/stinger_core/inc/stinger_names.h DESTINATION ${CMAKE_BINARY_DIR}/include/stinger_core/)
+
+# Define a custom function for copying headers to the build directory
+function(publish_headers header_list destination)
+  set(published_headers "")
+  foreach(header ${${header_list}})
+    get_filename_component(name ${header} NAME)
+    set(output "${destination}/${name}")
+    list(APPEND published_headers ${output})
+    add_custom_command(
+      OUTPUT ${output}
+      COMMAND ${CMAKE_COMMAND} -E make_directory ${destination}
+      COMMAND ${CMAKE_COMMAND} -E copy ${header} ${destination}
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+      DEPENDS ${header}
+    )
+  endforeach()
+  # Overwrite the list of headers in the caller, so targets depend on the published version
+  set(${header_list} ${published_headers} PARENT_SCOPE)
+endfunction()
 
 include_directories("${CMAKE_BINARY_DIR}/include")
 include_directories("${CMAKE_SOURCE_DIR}/external/googletest/include/")

@@ -140,4 +140,5 @@ main(int argc, char *argv[])
 
   LOG_I("Algorithm complete... shutting down");
   finalize_community_state (&cstate);
+  xfree(alg);
 }

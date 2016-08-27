@@ -8,6 +8,7 @@ set(sources
   src/rmat.c
   src/static_components.c
   src/weakly_connected_components.c
+  src/streaming_connected_components.c
 )
 set(headers
   inc/adamic_adar.h
@@ -19,9 +20,10 @@ set(headers
   inc/rmat.h
   inc/static_components.h
   inc/weakly_connected_components.h
+  inc/streaming_connected_components.h
 )
 
-file(COPY ${headers} DESTINATION "${CMAKE_BINARY_DIR}/include/stinger_alg")
+publish_headers(headers "${CMAKE_BINARY_DIR}/include/stinger_alg")
 
 include_directories("${CMAKE_BINARY_DIR}/include/stinger_alg")
 include_directories("${CMAKE_BINARY_DIR}/include/stinger_core")

@@ -18,7 +18,7 @@
  * @param b Pointer to second integer pair.
  * @return > 0 if a is greater, < 0 if b is greater, 0 if equal.
  */
-MTA ("mta inline")
+
 int i2cmp (const void *va, const void *vb)
 {
   const int64_t *a = va;
@@ -34,7 +34,7 @@ int i2cmp (const void *va, const void *vb)
   return 0;
 }
 
-MTA ("mta inline") MTA ("mta expect parallel context")
+ 
 int64_t
 bs64 (int64_t)
 #if defined(__GNUC__)
@@ -72,8 +72,7 @@ bs64_n (size_t n, int64_t * restrict d)
  * a parallel OpenMP context - just DO NOT call this in OpenMP single or master
  * inside of a parallel region).
  *
- * If compiled without OpenMP this is implemented as a simple serial prefix sum  
- * that should be auto-parallelized by the Cray MTA/XMT compiler.
+ * If compiled without OpenMP this is implemented as a simple serial prefix sum.
  *
  * @param n The input array size.
  * @param ary The input array pointer.
@@ -131,7 +130,7 @@ prefix_sum (const int64_t n, int64_t *ary)
 }
 
 #else
-MTA("mta inline")
+
 int64_t
 prefix_sum (const int64_t n, int64_t *ary)
 {
@@ -150,7 +149,7 @@ prefix_sum (const int64_t n, int64_t *ary)
  * @param ary Array pointer.
  * @return Index in the array or -1 if not found.
  */
-MTA ("mta inline") MTA ("mta expect parallel context")
+ 
 int64_t
 find_in_sorted (const int64_t tofind,
                 const int64_t N, const int64_t * restrict ary)

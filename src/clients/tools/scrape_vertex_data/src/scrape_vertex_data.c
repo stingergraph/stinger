@@ -44,7 +44,8 @@ main(int argc, char *argv[])
 
       for(; i <= stop && !feof(fp); i++) {
 	fread(&len, sizeof(int64_t), 1, fp);
-	fread(name, sizeof(char), len, fp);
+        if (len > max_len) { fprintf(stderr, "Name too long, file may be corrupt.\n"); return -1; }
+        else { fread(name, sizeof(char), len, fp); }
       }
       if(i != stop) {
 	printf("%.*s", (int) len, name);
@@ -58,7 +59,8 @@ main(int argc, char *argv[])
 
       for(int64_t i = 0; !feof(fp); i++) {
 	fread(&len, sizeof(int64_t), 1, fp);
-	fread(name, sizeof(char), len, fp);
+        if (len > max_len) { fprintf(stderr, "Name too long, file may be corrupt.\n"); return -1; }
+	else { fread(name, sizeof(char), len, fp); }
 	name[len] = '\0';
 	if(0 == strcmp(name, argv[2])) {
 	  printf("%ld ", (long)i);

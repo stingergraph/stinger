@@ -5,7 +5,7 @@ set(headers
 	inc/sqlite3.h
 )
 
-file(COPY ${headers} DESTINATION "${CMAKE_BINARY_DIR}/include/sqlite")
+publish_headers(headers "${CMAKE_BINARY_DIR}/include/sqlite")
 
 include_directories("${CMAKE_BINARY_DIR}/include/sqlite")
 

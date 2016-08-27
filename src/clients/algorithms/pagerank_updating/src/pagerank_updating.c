@@ -389,11 +389,12 @@ main(int argc, char *argv[])
   }
 
   LOG_I("Algorithm complete... shutting down");
+  xfree(alg);
 }
 
 /* Utility functions */
 
-MTA("mta inline") MTA("mta expect parallel context")
+ 
 int
 append_to_vlist (int64_t * restrict nvlist,
                  int64_t * restrict vlist,

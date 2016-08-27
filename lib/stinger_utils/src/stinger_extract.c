@@ -64,14 +64,14 @@ stinger_extract_bfs (/*const*/ struct stinger *S,
   while (nv < max_nv_out && lev < nlev) {
     for (int64_t k = f_start; k < nv; ++k) {
       const int64_t v = vlist[k];
-      STINGER_FORALL_EDGES_OF_VTX_BEGIN (S, v) {
+      STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN (S, v) {
         const int64_t w = STINGER_EDGE_DEST;
         if (label && label_to_match != label[w]) continue;
         if (!mark[w] && new_nv < max_nv_out) {
           vlist[new_nv] = w;
           mark[w] = ++new_nv;
         }
-      } STINGER_FORALL_EDGES_OF_VTX_END();
+      } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
     }
     f_start = nv;
     nv = new_nv;
@@ -138,7 +138,7 @@ stinger_extract_mod (/*const*/ struct stinger *S,
     const int64_t u = set[k];
     int64_t uvol = 0;
     int64_t vW = 0, vvol = 0;
-    STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, u) {
+    STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, u) {
       const int64_t v = STINGER_EDGE_DEST;
       int64_t where;
 
@@ -158,15 +158,15 @@ stinger_extract_mod (/*const*/ struct stinger *S,
       /* Annoying bit: will walk edges twice. */
       set[where] = v;
       mark[v] = where+1;
-      STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, v) {
+      STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, v) {
         const int64_t z = STINGER_EDGE_DEST;
         if (label && label_to_match != label[z]) continue;
         ++vvol;
         if (mark[z] > 0) ++vW;
-      } STINGER_FORALL_EDGES_OF_VTX_END();
+      } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
       Wvol[2*where] = vW;
       Wvol[1+2*where] = vvol;
-    } STINGER_FORALL_EDGES_OF_VTX_END();
+    } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
     setvol += uvol;
   }
 
@@ -209,7 +209,7 @@ stinger_extract_mod (/*const*/ struct stinger *S,
 
     /* expand u */
     int64_t vW = 0, vvol = 0;
-    STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, u) {
+    STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, u) {
       const int64_t v = STINGER_EDGE_DEST;
       int64_t where;
 
@@ -228,15 +228,15 @@ stinger_extract_mod (/*const*/ struct stinger *S,
       /* Annoying bit: will walk edges twice. */
       set[where] = v;
       mark[v] = where+1;
-      STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, v) {
+      STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, v) {
         const int64_t z = STINGER_EDGE_DEST;
         if (label && label_to_match != label[z]) continue;
         ++vvol;
         if (mark[z] > 0) ++vW;
-      } STINGER_FORALL_EDGES_OF_VTX_END();
+      } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
       Wvol[2*where] = vW;
       Wvol[1+2*where] = vvol;
-    } STINGER_FORALL_EDGES_OF_VTX_END();
+    } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
   }
 
   /* Copy set to the output, clear the frontier's locations */

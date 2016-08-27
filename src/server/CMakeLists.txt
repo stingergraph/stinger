@@ -3,7 +3,6 @@ set(sources
 	src/batch.cpp
 	src/batch_server.cpp
 	src/server.cpp
-	src/udp_name_server.cpp
 )
 
 set(headers

@@ -56,7 +56,7 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
   rapidjson::Value src_str, dst_str, etype, vtype, vtx_name;
 
   /* vertex has no edges -- this is easy */
-  if (stinger_outdegree (S, source) == 0 || stinger_indegree (S, target) == 0) {
+  if (stinger_outdegree (S, source) == 0) {
     result.AddMember("subgraph", a, allocator);
     return 0;
   }
@@ -103,12 +103,12 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
     for (it = cur.begin(); it != cur.end(); it++) {
       int64_t v = *it;
 
-      STINGER_FORALL_EDGES_OF_VTX_BEGIN (S, v) {
-	if (!found[STINGER_EDGE_DEST]) {
-	  frontier.insert(STINGER_EDGE_DEST);
-	  found[STINGER_EDGE_DEST] = 1;
-	}
-      } STINGER_FORALL_EDGES_OF_VTX_END();
+      STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN (S, v) {
+        if (!found[STINGER_EDGE_DEST]) {
+          frontier.insert(STINGER_EDGE_DEST);
+          found[STINGER_EDGE_DEST] = 1;
+        }
+      } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
 
     }
 
@@ -131,7 +131,7 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
   LOG_D_A("-------        levels, size %ld", levels.size());
   std::set<int64_t>& cur = levels.back();
 
-  STINGER_FORALL_EDGES_OF_VTX_BEGIN (S, target) {
+  STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN (S, target) {
     if (cur.find(STINGER_EDGE_DEST) != cur.end()) {
       Q->push(STINGER_EDGE_DEST); 
       /* return edge <target, STINGER_EDGE_DEST> */
@@ -141,50 +141,50 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
       val.PushBack(src, allocator);
       val.PushBack(dst, allocator);
       if(get_etypes) {
-	etype.SetInt64(STINGER_EDGE_TYPE);
-	val.PushBack(etype, allocator);
+        etype.SetInt64(STINGER_EDGE_TYPE);
+        val.PushBack(etype, allocator);
       }
       if(get_vtypes) {
-	char intstr[21];
-	sprintf(intstr, "%ld", (long)STINGER_EDGE_DEST);
-	vtype.SetInt64(stinger_vtype_get(S, STINGER_EDGE_DEST));
-	vtypes.AddMember(intstr, vtype, allocator);
-	if(strings) {
-	  char * name = NULL;
-	  uint64_t len = 0;
-	  stinger_mapping_physid_direct(S, STINGER_EDGE_DEST, &name, &len);
-	  char * vtype_name = stinger_vtype_names_lookup_name(S,stinger_vtype_get(S, STINGER_EDGE_DEST));
-	  vtype.SetString(vtype_name, strlen(vtype_name), allocator);
-	  vtx_name.SetString(name, len, allocator);
-	  vtypes_str.AddMember(vtx_name, vtype, allocator);
-	}
+        char intstr[21];
+        sprintf(intstr, "%ld", (long)STINGER_EDGE_DEST);
+        vtype.SetInt64(stinger_vtype_get(S, STINGER_EDGE_DEST));
+        vtypes.AddMember(intstr, vtype, allocator);
+        if(strings) {
+          char * name = NULL;
+          uint64_t len = 0;
+          stinger_mapping_physid_direct(S, STINGER_EDGE_DEST, &name, &len);
+          char * vtype_name = stinger_vtype_names_lookup_name(S,stinger_vtype_get(S, STINGER_EDGE_DEST));
+          vtype.SetString(vtype_name, strlen(vtype_name), allocator);
+          vtx_name.SetString(name, len, allocator);
+          vtypes_str.AddMember(vtx_name, vtype, allocator);
+        }
       }
       a.PushBack(val, allocator);
       if (strings) {
-	char * physID;
-	uint64_t len;
-	if(-1 == stinger_mapping_physid_direct(S, target, &physID, &len)) {
-	  src_str.SetString("", 0, allocator);
-	} else {
-	  src_str.SetString(physID, len, allocator);
-	}
-	if(-1 == stinger_mapping_physid_direct(S, STINGER_EDGE_DEST, &physID, &len)) {
-	  dst_str.SetString("", 0, allocator);
-	} else {
-	  dst_str.SetString(physID, len, allocator);
-	}
-	val.SetArray();
-	val.PushBack(src_str, allocator);
-	val.PushBack(dst_str, allocator);
-	if(get_etypes) {
-	  char * etype_str = stinger_etype_names_lookup_name(S, STINGER_EDGE_TYPE);
-	  etype.SetString(etype_str, strlen(etype_str), allocator);
-	  val.PushBack(etype, allocator);
-	}
-	a_str.PushBack(val, allocator);
+        char * physID;
+        uint64_t len;
+        if(-1 == stinger_mapping_physid_direct(S, target, &physID, &len)) {
+          src_str.SetString("", 0, allocator);
+        } else {
+          src_str.SetString(physID, len, allocator);
+        }
+        if(-1 == stinger_mapping_physid_direct(S, STINGER_EDGE_DEST, &physID, &len)) {
+          dst_str.SetString("", 0, allocator);
+        } else {
+          dst_str.SetString(physID, len, allocator);
+        }
+        val.SetArray();
+        val.PushBack(src_str, allocator);
+        val.PushBack(dst_str, allocator);
+        if(get_etypes) {
+          char * etype_str = stinger_etype_names_lookup_name(S, STINGER_EDGE_TYPE);
+          etype.SetString(etype_str, strlen(etype_str), allocator);
+          val.PushBack(etype, allocator);
+        }
+        a_str.PushBack(val, allocator);
       }
     }
-  } STINGER_FORALL_EDGES_OF_VTX_END();
+  } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
 
   LOG_D_A("popping off of levels, size %ld", levels.size());
   levels.pop_back();
@@ -197,60 +197,60 @@ JSON_RPC_breadth_first_search::operator()(rapidjson::Value * params, rapidjson::
       int64_t v = Q->front();
       Q->pop();
 
-      STINGER_FORALL_EDGES_OF_VTX_BEGIN (S, v) {
-	if (cur.find(STINGER_EDGE_DEST) != cur.end()) {
-	  Qnext->push(STINGER_EDGE_DEST);
-	  /* return edge <target, STINGER_EDGE_DEST> */
-	  src.SetInt64(v);
-	  dst.SetInt64(STINGER_EDGE_DEST);
-	  val.SetArray();
-	  val.PushBack(src, allocator);
-	  val.PushBack(dst, allocator);
-	  if(get_etypes) {
-	    etype.SetInt64(STINGER_EDGE_TYPE);
-	    val.PushBack(etype, allocator);
-	  }
-	  if(get_vtypes) {
-	    char intstr[21];
-	    sprintf(intstr, "%ld", (long)STINGER_EDGE_DEST);
-	    vtype.SetInt64(stinger_vtype_get(S, STINGER_EDGE_DEST));
-	    vtypes.AddMember(intstr, vtype, allocator);
-	    if(strings) {
-	      char * name = NULL;
-	      uint64_t len = 0;
-	      stinger_mapping_physid_direct(S, STINGER_EDGE_DEST, &name, &len);
-	      char * vtype_name = stinger_vtype_names_lookup_name(S,stinger_vtype_get(S, STINGER_EDGE_DEST));
-	      vtype.SetString(vtype_name, strlen(vtype_name), allocator);
-	      vtx_name.SetString(name, len, allocator);
-	      vtypes_str.AddMember(vtx_name, vtype, allocator);
-	    }
-	  }
-	  a.PushBack(val, allocator);
-	  if (strings) {
-	    char * physID;
-	    uint64_t len;
-	    if(-1 == stinger_mapping_physid_direct(S, v, &physID, &len)) {
-	      src_str.SetString("", 0, allocator);
-	    } else {
-	      src_str.SetString(physID, len, allocator);
-	    }
-	    if(-1 == stinger_mapping_physid_direct(S, STINGER_EDGE_DEST, &physID, &len)) {
-	      dst_str.SetString("", 0, allocator);
-	    } else {
-	      dst_str.SetString(physID, len, allocator);
-	    }
-	    val.SetArray();
-	    val.PushBack(src_str, allocator);
-	    val.PushBack(dst_str, allocator);
-	    if(get_etypes) {
-	      char * etype_str = stinger_etype_names_lookup_name(S, STINGER_EDGE_TYPE);
-	      etype.SetString(etype_str, strlen(etype_str), allocator);
-	      val.PushBack(etype, allocator);
-	    }
-	    a_str.PushBack(val, allocator);
-	  }
-	}
-      } STINGER_FORALL_EDGES_OF_VTX_END();
+      STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN (S, v) {
+        if (cur.find(STINGER_EDGE_DEST) != cur.end()) {
+          Qnext->push(STINGER_EDGE_DEST);
+          /* return edge <target, STINGER_EDGE_DEST> */
+          src.SetInt64(v);
+          dst.SetInt64(STINGER_EDGE_DEST);
+          val.SetArray();
+          val.PushBack(src, allocator);
+          val.PushBack(dst, allocator);
+          if(get_etypes) {
+            etype.SetInt64(STINGER_EDGE_TYPE);
+            val.PushBack(etype, allocator);
+          }
+          if(get_vtypes) {
+            char intstr[21];
+            sprintf(intstr, "%ld", (long)STINGER_EDGE_DEST);
+            vtype.SetInt64(stinger_vtype_get(S, STINGER_EDGE_DEST));
+            vtypes.AddMember(intstr, vtype, allocator);
+            if(strings) {
+              char * name = NULL;
+              uint64_t len = 0;
+              stinger_mapping_physid_direct(S, STINGER_EDGE_DEST, &name, &len);
+              char * vtype_name = stinger_vtype_names_lookup_name(S,stinger_vtype_get(S, STINGER_EDGE_DEST));
+              vtype.SetString(vtype_name, strlen(vtype_name), allocator);
+              vtx_name.SetString(name, len, allocator);
+              vtypes_str.AddMember(vtx_name, vtype, allocator);
+            }
+          }
+          a.PushBack(val, allocator);
+          if (strings) {
+            char * physID;
+            uint64_t len;
+            if(-1 == stinger_mapping_physid_direct(S, v, &physID, &len)) {
+              src_str.SetString("", 0, allocator);
+            } else {
+              src_str.SetString(physID, len, allocator);
+            }
+            if(-1 == stinger_mapping_physid_direct(S, STINGER_EDGE_DEST, &physID, &len)) {
+              dst_str.SetString("", 0, allocator);
+            } else {
+              dst_str.SetString(physID, len, allocator);
+            }
+            val.SetArray();
+            val.PushBack(src_str, allocator);
+            val.PushBack(dst_str, allocator);
+            if(get_etypes) {
+              char * etype_str = stinger_etype_names_lookup_name(S, STINGER_EDGE_TYPE);
+              etype.SetString(etype_str, strlen(etype_str), allocator);
+              val.PushBack(etype, allocator);
+            }
+            a_str.PushBack(val, allocator);
+          }
+        }
+      } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
     }
 
     LOG_D_A("popping off of levels, size %ld", levels.size());

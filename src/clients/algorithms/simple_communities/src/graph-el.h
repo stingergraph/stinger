@@ -68,7 +68,7 @@ struct csr el_to_csr (struct el);
 struct csr alloc_csr (intvtx_t, intvtx_t);
 struct csr free_csr (struct csr);
 
-MTA("mta inline")
+
 inline static void
 canonical_order_edge (intvtx_t * restrict ip, intvtx_t * restrict jp)
 {

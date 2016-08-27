@@ -37,7 +37,7 @@ parallel_shiloach_vishkin_components (struct stinger * S, int64_t nv,
 
     /* Tree climbing with OpenMP parallel for */
     OMP ("omp parallel for")
-      MTA ("mta assert nodep")
+      
       for (uint64_t i = 0; i < nv; i++) {
         while (component_map[i] != component_map[component_map[i]]) {
           component_map[i] = component_map[component_map[i]];

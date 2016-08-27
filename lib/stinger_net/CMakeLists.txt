@@ -1,5 +1,6 @@
 set(sources
 	src/mon_handling.cpp
+	src/send_rcv.cpp
 	src/stinger_alg.cpp
 	src/stinger_alg_state.cpp
 	src/stinger_alg_state_c.cpp
@@ -55,7 +56,7 @@ foreach(file ${proto})
 	set(_generated_files ${_generated_files} "${CMAKE_BINARY_DIR}/stinger_net/proto/${_file_name}.pb.cc" "${CMAKE_BINARY_DIR}/stinger_net/proto/${_file_name}.pb.h")
 endforeach()
 
-file(COPY ${headers} DESTINATION "${CMAKE_BINARY_DIR}/include/stinger_net")
+publish_headers(headers "${CMAKE_BINARY_DIR}/include/stinger_net")
 
 include_directories("${CMAKE_BINARY_DIR}/")
 include_directories("${CMAKE_BINARY_DIR}/stinger_net")

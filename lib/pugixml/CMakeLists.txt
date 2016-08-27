@@ -7,7 +7,7 @@ set(headers
 	inc/pugixml.hpp
 )
 
-file(COPY ${headers} DESTINATION "${CMAKE_BINARY_DIR}/include/pugixml")
+publish_headers(headers "${CMAKE_BINARY_DIR}/include/pugixml")
 
 include_directories("${CMAKE_BINARY_DIR}/include/pugixml")
 

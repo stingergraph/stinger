@@ -5,6 +5,9 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <sys/un.h>
+#include <netdb.h>
+#include <errno.h>
 
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
@@ -15,6 +18,11 @@
 #define LOG_AT_W 1
 #include "stinger_core/stinger_error.h"
 
+int
+listen_for_client(int port);
+
+int
+connect_to_server(const char * hostname, int port);
 
 template<typename T>
 bool

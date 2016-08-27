@@ -80,12 +80,12 @@ JSON_RPC_community_subgraph::update(const StingerBatch & batch)
     if (!(_data->equal(_source, *it))) {
       LOG_D("but is no longer in the group");
 
-      STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, *it) {
-	/* edge used to be in the community */
-	if ( _vertices.find(STINGER_EDGE_DEST) != _vertices.end() ) {
-	  _deletions.insert(std::make_pair(*it, STINGER_EDGE_DEST));
-	}
-      } STINGER_FORALL_EDGES_OF_VTX_END();
+      STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, *it) {
+        /* edge used to be in the community */
+        if ( _vertices.find(STINGER_EDGE_DEST) != _vertices.end() ) {
+          _deletions.insert(std::make_pair(*it, STINGER_EDGE_DEST));
+        }
+      } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
 
       _vertices.erase(*it);  /* remove it from the vertex set */
 
@@ -99,13 +99,13 @@ JSON_RPC_community_subgraph::update(const StingerBatch & batch)
       LOG_D_A("Vertex %ld is in the community, but not in the vertices list", (long) i);
       _vertices.insert(i);
 
-      STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, i) {
-	/* if the edge is in the community */
-	if (_data->equal(i, STINGER_EDGE_DEST)) {
-	  LOG_D_A("and it has an edge inside the community to %ld", (long) STINGER_EDGE_DEST);
-	  _insertions.insert(std::make_pair(i, STINGER_EDGE_DEST));
-	}
-      } STINGER_FORALL_EDGES_OF_VTX_END();
+      STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, i) {
+        /* if the edge is in the community */
+        if (_data->equal(i, STINGER_EDGE_DEST)) {
+          LOG_D_A("and it has an edge inside the community to %ld", (long) STINGER_EDGE_DEST);
+          _insertions.insert(std::make_pair(i, STINGER_EDGE_DEST));
+        }
+      } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
     }
   }
 
@@ -252,35 +252,35 @@ JSON_RPC_community_subgraph::onRegister(
   /* Get all edges within the community */
   std::set<int64_t>::iterator it;
   for (it = _vertices.begin(); it != _vertices.end(); ++it) {
-    STINGER_FORALL_EDGES_OF_VTX_BEGIN (S, *it) {
+    STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN (S, *it) {
       if (_vertices.find(STINGER_EDGE_DEST) != _vertices.end()) {
-	// edge is in the community
-	src.SetInt64(*it);
-	dst.SetInt64(STINGER_EDGE_DEST);
-	edge.SetArray();
-	edge.PushBack(src, allocator);
-	edge.PushBack(dst, allocator);
-	a.PushBack(edge, allocator);
-	if(_strings) {
-	  char * physID;
-	  uint64_t len;
-	  if(-1 == stinger_mapping_physid_direct(S, (*it), &physID, &len)) {
-	    physID = (char *) "";
-	    len = 0;
-	  }
-	  src_str.SetString(physID, len, allocator);
-	  if(-1 == stinger_mapping_physid_direct(S, STINGER_EDGE_DEST, &physID, &len)) {
-	    physID = (char *) "";
-	    len = 0;
-	  }
-	  dst_str.SetString(physID, len, allocator);
-	  edge_str.SetArray();
-	  edge_str.PushBack(src_str, allocator);
-	  edge_str.PushBack(dst_str, allocator);
-	  a_str.PushBack(edge_str, allocator);
-	}
+        // edge is in the community
+        src.SetInt64(*it);
+        dst.SetInt64(STINGER_EDGE_DEST);
+        edge.SetArray();
+        edge.PushBack(src, allocator);
+        edge.PushBack(dst, allocator);
+        a.PushBack(edge, allocator);
+        if(_strings) {
+          char * physID;
+          uint64_t len;
+          if(-1 == stinger_mapping_physid_direct(S, (*it), &physID, &len)) {
+            physID = (char *) "";
+            len = 0;
+          }
+          src_str.SetString(physID, len, allocator);
+          if(-1 == stinger_mapping_physid_direct(S, STINGER_EDGE_DEST, &physID, &len)) {
+            physID = (char *) "";
+            len = 0;
+          }
+          dst_str.SetString(physID, len, allocator);
+          edge_str.SetArray();
+          edge_str.PushBack(src_str, allocator);
+          edge_str.PushBack(dst_str, allocator);
+          a_str.PushBack(edge_str, allocator);
+        }
       }
-    } STINGER_FORALL_EDGES_OF_VTX_END();
+    } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
   }
 
   result.AddMember("subgraph", a, allocator);
@@ -439,29 +439,64 @@ JSON_RPC_vertex_event_notifier::onRegister(
   std::set<int64_t>::iterator it;
   for (it = _vertices.begin(); it != _vertices.end(); ++it) {
     STINGER_FORALL_EDGES_OF_VTX_BEGIN (S, *it) {
-      src.SetInt64(*it);
-      dst.SetInt64(STINGER_EDGE_DEST);
-      edge.SetArray();
-      edge.PushBack(src, allocator);
-      edge.PushBack(dst, allocator);
-      a.PushBack(edge, allocator);
-      if(_strings) {
-	char * physID;
-	uint64_t len;
-	if(-1 == stinger_mapping_physid_direct(S, (*it), &physID, &len)) {
-	  physID = (char *) "";
-	  len = 0;
-	}
-	src_str.SetString(physID, len, allocator);
-	if(-1 == stinger_mapping_physid_direct(S, STINGER_EDGE_DEST, &physID, &len)) {
-	  physID = (char *) "";
-	  len = 0;
-	}
-	dst_str.SetString(physID, len, allocator);
-	edge_str.SetArray();
-	edge_str.PushBack(src_str, allocator);
-	edge_str.PushBack(dst_str, allocator);
-	a_str.PushBack(edge_str, allocator);
+      int64_t src_id, dst_id;
+      if (STINGER_IS_OUT_EDGE) {
+        src_id = (*it);
+        dst_id = STINGER_EDGE_DEST;
+
+        src.SetInt64(src_id);
+        dst.SetInt64(dst_id);
+        edge.SetArray();
+        edge.PushBack(src, allocator);
+        edge.PushBack(dst, allocator);
+        a.PushBack(edge, allocator);
+        if(_strings) {
+          char * physID;
+          uint64_t len;
+          if(-1 == stinger_mapping_physid_direct(S, src_id, &physID, &len)) {
+            physID = (char *) "";
+            len = 0;
+          }
+          src_str.SetString(physID, len, allocator);
+          if(-1 == stinger_mapping_physid_direct(S, dst_id, &physID, &len)) {
+            physID = (char *) "";
+            len = 0;
+          }
+          dst_str.SetString(physID, len, allocator);
+          edge_str.SetArray();
+          edge_str.PushBack(src_str, allocator);
+          edge_str.PushBack(dst_str, allocator);
+          a_str.PushBack(edge_str, allocator);
+        }
+      }
+      if (STINGER_IS_IN_EDGE) {
+        src_id = STINGER_EDGE_DEST;
+        dst_id = (*it);
+
+        src.SetInt64(src_id);
+        dst.SetInt64(dst_id);
+        edge.SetArray();
+        edge.PushBack(src, allocator);
+        edge.PushBack(dst, allocator);
+        a.PushBack(edge, allocator);
+        if(_strings) {
+          char * physID;
+          uint64_t len;
+          if(-1 == stinger_mapping_physid_direct(S, src_id, &physID, &len)) {
+            physID = (char *) "";
+            len = 0;
+          }
+          src_str.SetString(physID, len, allocator);
+          if(-1 == stinger_mapping_physid_direct(S, dst_id, &physID, &len)) {
+            physID = (char *) "";
+            len = 0;
+          }
+          dst_str.SetString(physID, len, allocator);
+          edge_str.SetArray();
+          edge_str.PushBack(src_str, allocator);
+          edge_str.PushBack(dst_str, allocator);
+          a_str.PushBack(edge_str, allocator);
+        }
       }
     } STINGER_FORALL_EDGES_OF_VTX_END();
   }
@@ -874,8 +909,8 @@ JSON_RPC_get_latlon_twitter::update(const StingerBatch & batch)
     if (document.HasMember("categories") && document["categories"].IsArray()) {
       const rapidjson::Value& a = document["categories"];
       for (rapidjson::SizeType i = 0; i < a.Size(); i++) {
-	categories += a[i].GetString();
-	categories += ",";
+        categories += a[i].GetString();
+        categories += ",";
       }
     }
   

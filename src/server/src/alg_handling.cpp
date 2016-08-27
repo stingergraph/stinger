@@ -11,10 +11,6 @@
 #include "stinger_net/stinger_server_state.h"
 #include "server.h"
 
-#if !defined(MTA)
-#define MTA(x)
-#endif
-
 #include <cstdio>
 #include <limits>
 #include <sys/types.h>
@@ -28,7 +24,7 @@ get cross-platform threading and sockets code */
 #include <pthread.h> 
 
 /* Must be included last */
-#define LOG_AT_I
+//#define LOG_AT_I
 #include "stinger_core/stinger_error.h"
 
 /* A note on the design of this server:
@@ -715,58 +711,12 @@ start_alg_handling(void *)
 {
   StingerServerState & server_state = StingerServerState::get_server_state();
 
+  int port_algs = server_state.get_port_algs();
+
   LOG_D("Opening the socket");
-  int sock_handle;
-  int port = server_state.get_port_algs();
+  int sock_handle = listen_for_client(port_algs);
 
-#ifdef STINGER_USE_TCP
-  struct sockaddr_in sock_addr;
-  memset(&sock_addr, 0, sizeof(sock_addr));
-  sock_addr.sin_family = AF_INET;
-  sock_addr.sin_port   = htons(port);
-#else
-  struct sockaddr_un sock_addr;
-  memset(&sock_addr, 0, sizeof(sock_addr));
-  sock_addr.sun_family = AF_UNIX;
-  strncpy(sock_addr.sun_path, "/tmp/stinger.sock", sizeof(sock_addr.sun_path)-1);
-  unlink("/tmp/stinger.sock");
-#endif
-
-#ifdef STINGER_USE_TCP
-  if(-1 == (sock_handle = socket(AF_INET, SOCK_STREAM, 0))) {
-    LOG_F_A("Socket create failed: %s", strerror(errno));
-    exit(-1);
-  }
-
-  if(-1 == bind(sock_handle, (const sockaddr *)&sock_addr, sizeof(sock_addr))) {
-    LOG_F_A("Socket bind failed: %s", strerror(errno));
-    exit(-1);
-  }
-
-  if(-1 == listen(sock_handle, 16)) {
-    LOG_F_A("Socket listen failed: %s", strerror(errno));
-    exit(-1);
-  }
-
-  LOG_V_A("Algorithm Server listening on port %d", port);
-#else
-  if(-1 == (sock_handle = socket(AF_UNIX, SOCK_STREAM, 0))) {
-    LOG_F_A("Socket create failed: %s", strerror(errno));
-    exit(-1);
-  }
-
-  if(-1 == bind(sock_handle, (const sockaddr *)&sock_addr, sizeof(sock_addr))) {
-    LOG_F_A("Socket bind failed: %s", strerror(errno));
-    exit(-1);
-  }
-
-  if(-1 == listen(sock_handle, 16)) {
-    LOG_F_A("Socket listen failed: %s", strerror(errno));
-    exit(-1);
-  }
-
-  LOG_V_A("Algorithm Server listening on port %d", port);
-#endif
+  LOG_V_A("STINGER alg server listening for input on port %d", port_algs);
 
   pthread_t main_loop_thread;
   pthread_create(&main_loop_thread, NULL, &process_loop_handler, NULL);

@@ -45,11 +45,11 @@ stinger_matvec(stinger_t * S, eweight_t * vec_in, int64_t nv, eweight_t * vec_ou
   for(int64_t v = 0; v < nv; v++) {
     eweight_t out = empty;
     eweight_t cur = empty;
-    STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, v) {
+    STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, v) {
       if(STINGER_EDGE_DEST < nv) {
-	out = reduce(multiply(STINGER_EDGE_WEIGHT, vec_in[STINGER_EDGE_DEST]), out);
+        out = reduce(multiply(STINGER_EDGE_WEIGHT, vec_in[STINGER_EDGE_DEST]), out);
       }
-    } STINGER_FORALL_EDGES_OF_VTX_END();
+    } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
     vec_out[v] = out;
   }
 }

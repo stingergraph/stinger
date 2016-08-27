@@ -5,7 +5,7 @@ set(headers
 	inc/int64vector.h
 )
 
-file(COPY ${headers} DESTINATION "${CMAKE_BINARY_DIR}/include/int64vector")
+publish_headers(headers "${CMAKE_BINARY_DIR}/include/int64vector")
 
 include_directories("${CMAKE_BINARY_DIR}/include/int64vector")
 

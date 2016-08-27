@@ -29,50 +29,8 @@ stinger_register_alg_impl(stinger_register_alg_params params)
 {
   LOG_D_A("Registering alg %s", params.name);
 
-#ifdef STINGER_USE_TCP
-  struct sockaddr_in sock_addr;
-  memset(&sock_addr, 0, sizeof(struct sockaddr_in));
-  struct hostent * hp = gethostbyname(params.host);
-
-  if(!hp) {
-    LOG_E_A("Error resolving host [%s]", params.host);
-    return NULL;
-  }
-
-  int sock = socket(AF_INET, SOCK_STREAM, 0);
-  if(-1 == sock) {
-    LOG_E("Error opening socket");
-    return NULL;
-  }
-
-  memcpy(&sock_addr.sin_addr.s_addr, hp->h_addr, hp->h_length);
-  sock_addr.sin_family = AF_INET;
-
-  if(params.port) {
-    sock_addr.sin_port = htons(params.port);
-  } else {
-    sock_addr.sin_port = htons(10103);
-  }
-
-  LOG_D_A("Socket open, connecting to host %s %s", params.host, inet_ntoa(**(struct in_addr **)hp->h_addr_list));
-#else
-  struct sockaddr_un sock_addr;
-  memset(&sock_addr, 0, sizeof(sock_addr));
-  int sock = socket(AF_UNIX, SOCK_STREAM, 0);
-  if(-1 == sock) {
-    LOG_E("Error opening socket");
-    return NULL;
-  }
-  strncpy(sock_addr.sun_path, "/tmp/stinger.sock", sizeof(sock_addr.sun_path)-1);
-  sock_addr.sun_family = AF_UNIX;
-
-  LOG_D_A("Socket open, connecting to host %s", params.host);
-#endif
-
-  if(-1 == connect(sock, (sockaddr *)&sock_addr, sizeof(sock_addr))) {
-    LOG_E("Error connecting socket");
-    return NULL;
-  }
+  int sock = connect_to_server(params.host, params.port ? params.port : 10103);
+  if (sock == -1) { return NULL; }
 
   LOG_D("Connected to server");
 

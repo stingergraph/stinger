@@ -79,7 +79,7 @@ int main (int argc, char *argv[])
   int64_t ne = 0;
 
   for (int64_t i = 0; i < nv; i++) {
-    STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, i) {
+    STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, i) {
       fprintf(fp, "%ld %ld %ld %ld %ld %ld\n",  STINGER_EDGE_SOURCE, 
 					    STINGER_EDGE_DEST,
 					    STINGER_EDGE_TYPE,
@@ -87,7 +87,7 @@ int main (int argc, char *argv[])
 					    STINGER_EDGE_TIME_FIRST,
 					    STINGER_EDGE_TIME_RECENT);
       ne++;
-    } STINGER_FORALL_EDGES_OF_VTX_END();
+    } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
   }
 
   /* Release the lock */
