@@ -102,7 +102,7 @@ class Insert(Resource):
                         edge_weight = int(x["weight"]) if 'weight' in x else 0
                         timestamp = int(x["time"]) if 'time' in x else 0
                         s.add_insert(source, destination, edge_type,
-                            weight = edge_weight, ts=timestamp,
+                            weight=edge_weight, ts=timestamp,
                             insert_strings=only_strings)
                         # print "added edge", source, destination, edge_type, timestamp
                     except Exception as e:
