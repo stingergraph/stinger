@@ -58,6 +58,7 @@ class Insert(Resource):
         'src': fields.String(required=True, description='Source vertex'),
         'dest': fields.String(required=True, description='Destination vertex'),
         'type': fields.String(required=False, description='Edge type'),
+        'weight': fields.Integer(required=False, description='Edge weight'),
         'time': fields.Integer(required=False, description='Timestamp')
     })
     edgesSpec = api.model('Insert', {
@@ -98,8 +99,11 @@ class Insert(Resource):
                             source = x["src"]
                             destination = x["dest"]
                         edge_type = x["type"] if 'type' in x else 0
+                        edge_weight = int(x["weight"]) if 'weight' in x else 0
                         timestamp = int(x["time"]) if 'time' in x else 0
-                        s.add_insert(source, destination, edge_type, ts=timestamp, insert_strings=only_strings)
+                        s.add_insert(source, destination, edge_type,
+                            weight=edge_weight, ts=timestamp,
+                            insert_strings=only_strings)
                         # print "added edge", source, destination, edge_type, timestamp
                     except Exception as e:
                         print(traceback.format_exc())
