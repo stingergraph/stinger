@@ -64,7 +64,7 @@ s_start()
 
   ./bin/stinger_json_rpc_server &>>$STINGER_LOGDIR/stinger_rpc.log &
 
-    python ../flask/stinger_flask.py &>>$STINGER_LOGDIR/stinger_flask.log &
+    python ../util/flask/stinger_flask.py &>>$STINGER_LOGDIR/stinger_flask.log &
 
   echo -e "\n\t[  ${GRN}OK${NC}  ]"
 }
