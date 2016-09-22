@@ -567,6 +567,56 @@ Calculates the Adamic-Adar score for all vertices not adjacent to _source_.
     }
 ```
 
+## community_on_demand
+
+Calculates the TBD
+
+### Input
+
+CORRECT/COMPLETE:
+* source: Vertex ID or String
+* strings: If True, return vertex identifier strings
+* include_neighbors: Also calculate Adamic-Adar index for neighbors of _source_
+
+```
+CORRECT/COMPLETE:
+    {
+      "jsonrpc": "2.0",
+      "method": "adamic_adar_index",
+      "params": {
+        "source": Integer/String,
+        "strings": Boolean,                    /* OPTIONAL */
+        "include_neighbors": Boolean           /* OPTIONAL */
+      },
+      "id": Integer
+    }
+```
+
+### Output
+CORRECT/COMPLETE:
+
+* source: Vertex ID
+* source_str: Vertex string identifier
+* vertex_id: Array of vertex IDs
+* vertex_str: Array of vertex string identifiers
+* value: Array of Adamic-Adar scores
+
+```
+CORRECT/COMPLETE:
+    {
+      "jsonrpc": "2.0",
+      "result": {
+        "source": Integer,
+        "source_str": String,
+        "vertex_id": [ Integer ],
+        "vertex_str": [ String ],
+        "value": [ Double ]
+      },
+      "id": Integer,
+      "millis": Float
+    }
+```
+
 ## label_breadth_first_search
 
 

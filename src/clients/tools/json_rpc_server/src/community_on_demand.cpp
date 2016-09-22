@@ -15,14 +15,10 @@ using namespace gt::stinger;
 int64_t 
 JSON_RPC_community_on_demand::operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator)
 {
-  int64_t source;
   bool strings;
-  int64_t etype;
 
   rpc_params_t p[] = {
-    {"source", TYPE_VERTEX, &source, false, 0},
     {"strings", TYPE_BOOL, &strings, true, 0},
-    {"etype", TYPE_EDGE_TYPE , &etype, true, -1},
     {NULL, TYPE_NONE, NULL, false, 0}
   };
 
@@ -42,39 +38,25 @@ JSON_RPC_community_on_demand::operator()(rapidjson::Value * params, rapidjson::V
   rapidjson::Value vtx_str (rapidjson::kArrayType);
   rapidjson::Value vtx_val (rapidjson::kArrayType);
 
-  /* this part of the response needs to be set no matter what */
-  src.SetInt64(source);
-  result.AddMember("source", src, allocator);
-  if (strings) {
-    char * physID;
-    uint64_t len;
-    if(-1 == stinger_mapping_physid_direct(S, source, &physID, &len)) {
-      physID = (char *) "";
-      len = 0;
-    }
-    src_str.SetString(physID, len, allocator);
-    result.AddMember("source_str", src_str, allocator);
-  }
+  int64_t * vertices = NULL;
+  int64_t * partitions = NULL;
 
-  int64_t * candidates = NULL;
-  double * scores = NULL;
+  int64_t num_vertices = community_on_demand(S, &vertices, &partitions);
 
-  int64_t num_candidates = community_on_demand(S, source, etype, &candidates, &scores);
-
-  for (int64_t i = 0; i < num_candidates; i++) {
-    name.SetInt64(candidates[i]);
+  for (int64_t i = 0; i < num_vertices; i++) {
+    name.SetInt64(vertices[i]);
     vtx_id.PushBack(name, allocator);
     if (strings) {
       char * physID;
       uint64_t len;
-      if(-1 == stinger_mapping_physid_direct(S, candidates[i], &physID, &len)) {
+      if(-1 == stinger_mapping_physid_direct(S, vertices[i], &physID, &len)) {
         physID = (char *) "";
         len = 0;
       }
       vtx_phys.SetString(physID, len, allocator);
       vtx_str.PushBack(vtx_phys, allocator);
     }
-    value.SetDouble(scores[i]);
+    value.SetInt64(partitions[i]);
     vtx_val.PushBack(value, allocator);
   }
 
@@ -83,12 +65,12 @@ JSON_RPC_community_on_demand::operator()(rapidjson::Value * params, rapidjson::V
     result.AddMember("vertex_str", vtx_str, allocator);
   result.AddMember("value", vtx_val, allocator);
 
-  if (candidates != NULL) {
-    xfree(candidates);
+  if (vertices != NULL) {
+    xfree(vertices);
   }
 
-  if (scores != NULL) {
-    xfree(scores);
+  if (partitions != NULL) {
+    xfree(partitions);
   }
 
   return 0;
