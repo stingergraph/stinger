@@ -1,8 +1,9 @@
 #include "community_on_demand.h"
+#include "modularity.h"
 #include "stinger_core/stinger_error.h"
 
 /*
- *  Community-on-demand stub
+ *  On-demand community detection
  *
  */
 int64_t community_on_demand(const stinger_t * S, int64_t ** vertices, int64_t ** partitions) {
@@ -13,24 +14,27 @@ int64_t community_on_demand(const stinger_t * S, int64_t ** vertices, int64_t **
   int64_t * output_vertices = NULL;
   int64_t * output_partitions = NULL;
 
-  int64_t fake_vtx;
-
   /* Initialize to NULL in case of error */
   *vertices = output_vertices;
   *partitions = output_partitions;
 
   /* Allocate output array */
-  output_vertices = (int64_t *) xmalloc (10 * sizeof(int64_t));
-  output_partitions = (int64_t *) xmalloc (10 * sizeof(int64_t));
+  int64_t nv = stinger_max_active_vertex(S);
+  output_vertices = (int64_t *) xmalloc (nv * sizeof(int64_t));
+  output_partitions = (int64_t *) xmalloc (nv * sizeof(int64_t));
 
-  /* Set fake values */
-  for (fake_vtx = 0; fake_vtx < 10; fake_vtx += 1) {
-      output_vertices[fake_vtx] = fake_vtx;
-      output_partitions[fake_vtx] = fake_vtx;
+  /* Initialize vertex numbers */
+  int64_t v;
+  for (v = 0; v < nv; v += 1) {
+      output_vertices[v] = v;
   }
+
+  /* Note wiring of max iterations to 5 */
+  community_detection(S, nv, output_partitions, (int64_t) 5);
+
   /* Set output arrays */
   *vertices = output_vertices;
   *partitions = output_partitions;
 
-  return 10;
+  return nv;
 }
