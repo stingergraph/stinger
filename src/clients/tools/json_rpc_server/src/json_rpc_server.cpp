@@ -195,8 +195,8 @@ main (int argc, char ** argv)
   if(unleash_daemon) {
     while(1) { sleep(10); }
   } else {
-    printf("Press <q> to shut down the server...\n");
-    while (getchar() != 'q');
+    printf("Press Ctrl-C to shut down the server...\n");
+    while(1) { sleep(10); }
   }
 
   return 0;
