@@ -397,11 +397,9 @@ int main(int argc, char *argv[])
     close (start_pipe[1]);
     while(1) { sleep(10); }
   } else {
-    LOG_I("Press <q> to shut down the server...");
-    while (getchar() != 'q');
+    LOG_I("Press Ctrl-C to shut down the server...");
+    while(1) { sleep(10); }
   }
-
-  cleanup ();
 
   return 0;
 }
