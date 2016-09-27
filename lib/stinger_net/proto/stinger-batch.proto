@@ -1,3 +1,4 @@
+syntax = "proto2";
 package gt.stinger;
 
 /* Note: while source numbers and strings are

@@ -1,3 +1,4 @@
+syntax = "proto2";
 package gt.stinger;
 
 import "stinger_net/proto/stinger-batch.proto";
