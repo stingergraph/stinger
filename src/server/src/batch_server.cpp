@@ -77,6 +77,7 @@ handle_stream(void * args)
       }
     }
   }
+  return NULL;
 }
 
 void *
