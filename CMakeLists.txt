@@ -161,5 +161,22 @@ add_test(StingerPagerankTest ${CMAKE_BINARY_DIR}/bin/stinger_pagerank_test)
 add_test(StingerAdamicAdarTest ${CMAKE_BINARY_DIR}/bin/stinger_adamic_adar_test)
 add_test(StingerBetweennessTest ${CMAKE_BINARY_DIR}/bin/stinger_betweenness_test)
 
-add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1 --verbose DEPENDS stinger_names_test stinger_core_test stinger_physmap_test stinger_traversal_test stinger_pagerank_test stinger_adamic_adar_test stinger_betweenness_test)
+find_program(BASH bash REQUIRED)
+add_test(
+  NAME ClientServerTest
+  COMMAND ${BASH} "${CMAKE_SOURCE_DIR}/src/tests/client_server_test/client_server_test.sh" "${CMAKE_BINARY_DIR}" "${STINGER_USE_TCP}"
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/util/
+)
+
+add_custom_target(check
+  COMMAND ${CMAKE_CTEST_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1 --verbose
+  DEPENDS
+    stinger_names_test
+    stinger_core_test
+    stinger_physmap_test
+    stinger_traversal_test
+    stinger_pagerank_test
+    stinger_adamic_adar_test
+    stinger_betweenness_test
+)
 

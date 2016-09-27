@@ -1,10 +1,5 @@
 #!/bin/bash
 
-if [[ "$(whoami)" != "root" ]]; then
-  echo "stingerctl requires root privileges if log directories do not exist."
-#  exit 1
-fi
-
 RED='\033[0;31m'
 GRN='\033[0;32m'
 CYN='\033[0;36m'
@@ -12,81 +7,155 @@ LBL='\033[0;34m'
 ORG='\033[0;33m'
 NC='\033[0m'
 
+s_ok()
+{
+  echo -e "\t[  ${GRN}OK${NC}  ]"
+}
+
+s_error()
+{
+  echo -e "\t[  ${RED}FAILED${NC}  ] "
+  echo "$1"
+}
+
+# FIXME set better defaults that don't require root
+# or prompt user to create /var/log/stinger
 : ${STINGER_ROOT_PATH=/opt/stinger/build}
 : ${STINGER_RUN=/var/run}
 : ${STINGER_FILE=$STINGER_RUN/stinger.graph}
 : ${STINGER_FILE_TYPE=r}
 : ${STINGER_LOGDIR=/var/log/stinger}
-: ${PORT_NAMES=10101}
 : ${PORT_STREAMS=10102}
 : ${PORT_ALGS=10103}
 : ${STINGER_MAX_MEMSIZE=4G}
+: ${STINGER_USE_TCP="OFF"} # FIXME synchonize with cmake variable
 
 # required to be in the right directory to relatively reference binaries
 cd $STINGER_ROOT_PATH
 
-graceful_kill()
+s_server_is_running()
 {
-  patience=10
-  while
-    pkill -SIGHUP -f $1 # ask nicely first
-    [[ $? -eq 0 && $(( --patience )) -gt 0 ]]
-  do
-    sleep 2
+  # Check for existence of process
+  if ! pgrep -f stinger_server >& /dev/null; then
+    return 1;
+  fi
+
+  # Check if ports are open
+  if [[ ${STINGER_USE_TCP} == "OFF" || ${STINGER_USE_TCP} == "FALSE" || ${STINGER_USE_TCP} == "NO" ]]; then
+    if [[ -S "/tmp/stinger.sock.${PORT_STREAMS}" && -S "/tmp/stinger.sock.${PORT_ALGS}" ]]; then
+      return 0;
+    else
+      return 1;
+    fi
+  else
+    if [[ -n "ss -nl | grep ${PORT_STREAMS}" && "ss -nl | grep ${PORT_ALGS}" ]]; then
+      return 0;
+    else
+      return 1;
+    fi
+  fi
+}
+
+# Waits a few seconds, then checks to see if a newly spawned subprocess has died
+s_watch_with_timeout()
+{
+  sleep 2
+  if ! kill -0 $1 >& /dev/null; then
+    s_error "$1 failed to start, check logfile"
+    exit 1
+  fi
+}
+
+s_patient_kill()
+{
+  # Send SIGTERM, and report error if process is not found
+  pkill -SIGTERM -f $1
+  rc=$?
+  if [[ $rc -eq 2 || $rc -eq 3 ]]; then
+    s_error "Failed to kill $1"
+    return 1
+  elif [[ $rc -eq 1 ]]; then
+    echo "$1 is not running"
+    return 1
+  fi
+  # Wait for process to actually exit
+  timeout=9
+  for i in `seq 0 $timeout`; do
+    pgrep -f $1 >& /dev/null
+    if [[ $? -eq 1 ]]; then
+      return 0;
+    else
+      echo -n "."
+      sleep 1
+    fi
   done
-  [[ $patience -lt 0 ]] && pkill -SIGQUIT -f $1
+  s_error "$1 is not responding to SIGTERM"
+  exit 1
 }
 
 s_start()
 {
-  echo -n "Starting stinger stack..."
-  if [[ -S /tmp/stinger.sock ]]; then
-    echo -e "\n\t[  ${RED}FAILED${NC}  ]  stinger already running. Try restart?" 1>&2
+  echo -n "Starting stinger server..."
+
+  if s_server_is_running; then
+    s_error "stinger already running. Try restart?"
     return 1
   fi
 
   mkdir -p $STINGER_LOGDIR &>/dev/null && test -w $STINGER_LOGDIR
   if [[ $? -ne 0 ]]; then
-    echo -e "\n\t[  ${RED}FAILED${NC}  ]  Could not set up logging in $STINGER_LOGDIR. Check permissions?" 1>&2
+    s_error "Could not set up logging in $STINGER_LOGDIR. Run as sudo or set STINGER_LOGDIR"
     return 1
   fi
 
-  while [[ -z $(ss -anl | grep $PORT_STREAMS) ]]
-  do
-    env STINGER_MAX_MEMSIZE=$STINGER_MAX_MEMSIZE \
-      ./bin/stinger_server -p $PORT_NAMES -s $PORT_STREAMS -a $PORT_ALGS \
-      -i $STINGER_FILE -t $STINGER_FILE_TYPE &>>$STINGER_LOGDIR/stinger_server.log &
-    # hopefully eventually stinger will signal when it's good to go, until then
-    # this heuristic seems to be a safe bet for amount of time to wait
-    sleep $(( 5 + ${STINGER_MAX_MEMSIZE%?} ))
+  test -w $STINGER_RUN
+  if [[ $? -ne 0 ]]; then
+    s_error "$STINGER_RUN is not writable. Run as sudo or set STINGER_RUN"
+  fi
+
+  env STINGER_MAX_MEMSIZE=$STINGER_MAX_MEMSIZE \
+    ./bin/stinger_server -s $PORT_STREAMS -a $PORT_ALGS \
+    -i $STINGER_FILE -t $STINGER_FILE_TYPE &>>$STINGER_LOGDIR/stinger_server.log &
+
+  # Check for early process crash
+  s_watch_with_timeout $!
+
+  # Wait for sockets to come up before proceeding
+  while ! s_server_is_running; do
+    sleep 1
     echo -n "."
   done
+  s_ok
 
+  echo -n "Starting JSON RPC server..."
   ./bin/stinger_json_rpc_server &>>$STINGER_LOGDIR/stinger_rpc.log &
+  s_watch_with_timeout $!
+  s_ok
 
-    python ../util/flask/stinger_flask.py &>>$STINGER_LOGDIR/stinger_flask.log &
-
-  echo -e "\n\t[  ${GRN}OK${NC}  ]"
+#  echo -n "Starting Flask..."
+#  python ../util/flask/stinger_flask.py &>>$STINGER_LOGDIR/stinger_flask.log &
+#  s_watch_with_timeout $!
+#  s_ok
 }
 
 s_stop()
 {
-  echo -n "Stopping stinger stack..."
-  if [[ ! -S /tmp/stinger.sock ]]; then
-    echo -e "\n\t[  ${RED}FAILED${NC}  ]  stinger is not currently running."
+  if ! s_server_is_running; then
+    s_error "stinger is not currently running."
     return 1
   fi
 
-  graceful_kill stinger_flask
-  graceful_kill stinger_json_rpc_server
-  graceful_kill stinger_server
+#  echo -n "Stopping Flask..."
+#  s_patient_kill stinger_flask
+#  s_ok
 
-  [[ ! -S /tmp/stinger.sock ]] || rm -f /tmp/stinger.sock &>/dev/null
-  if [[ $? -ne 0 ]]; then
-    echo -e "\n\t[  ${RED}FAILED${NC}  ]  Could not clean up socket. Check permissions?"
-    return 1
-  fi
-  echo -e "\n\t[  ${GRN}OK${NC}  ]"
+  echo -n "Stopping JSON RPC server..."
+  s_patient_kill stinger_json_rpc_server
+  s_ok
+
+  echo -n "Stopping stinger server..."
+  s_patient_kill stinger_server
+  s_ok
 }
 
 s_restart()
@@ -96,8 +165,7 @@ s_restart()
     rm -f $STINGER_FILE
     echo "Erased stinger backup at: $STINGER_FILE"
   fi
-  while [[ -n $(ss -anl | grep $PORT_STREAMS) ]];
-  do echo "Waiting for sockets to free..."; sleep 5;done
+
   s_start
 }
 
@@ -120,13 +188,13 @@ s_daemon-start()
 {
   echo -n "Starting stingerd daemon..."
   if [[ -e $STINGER_RUN/stingerd.pid && $(ps $(cat $STINGER_RUN/stingerd.pid)) ]]; then
-    echo -e "\n\t[  ${RED}FAILED${NC}  ]  Daemon already running."
+    s_error "Daemon already running."
     return 1
   fi
   s_init_daemon &>/dev/null &
   echo $! > $STINGER_RUN/stingerd.pid
   while ! pgrep -f "stinger_" &>/dev/null; do sleep 1; done
-  echo -e "\n\t[  ${GRN}OK${NC}  ]"
+  s_ok
 
 }
 
@@ -135,56 +203,70 @@ s_daemon-stop()
   echo -n "Stopping stingerd daemon..."
   kill $(cat $STINGER_RUN/stingerd.pid 2>/dev/null) &>/dev/null
   if [[ $? -ne 0 ]]; then
-    echo -e "\n\t[  ${RED}FAILED${NC}  ]  No running instance of daemon found."
+    s_error "No running instance of daemon found."
     rm $STINGER_RUN/stingerd.pid &>/dev/null
     return 1
   fi
   rm $STINGER_RUN/stingerd.pid &>/dev/null
-  echo -e "\n\t[  ${GRN}OK${NC}  ]"
+  s_ok
 }
 
 s_addalg()
 {
-  echo "Adding algorithm ${2}..."
+  echo -n "Adding algorithm ${2}..."
   if [[ ! -e ./bin/stinger_"$2" ]]; then
-    echo -e "\n\t[  ${RED}FAILED${NC}  ] Algorithm $2 not found in $STINGER_ROOT_PATH."
+    s_error "Algorithm $2 not found in $STINGER_ROOT_PATH."
+    return 1
+  elif ! s_server_is_running; then
+    s_error "stinger is not running; start the server before adding algs"
     return 1
   fi
+
   ./bin/stinger_"$2" "${@:3}" &>>$STINGER_LOGDIR/stinger_"$2".log &
-  echo -e "\n\t[  ${GRN}OK${NC}  ]"
+  s_watch_with_timeout $!
+  s_ok
   echo "Algorithm added. Check log for details at: $STINGER_LOGDIR/stinger_$2.log"
 }
 
 s_remalg()
 {
-  echo "Removing algorithm ${2}..."
+  echo -n "Stopping algorithm ${2}..."
   if [[ ! -e ./bin/stinger_"$2" ]]; then
-    echo -e "\n\t[  ${RED}FAILED${NC}  ] Algorithm $2 not found in $STINGER_ROOT_PATH."
+    s_error "Algorithm $2 not found in $STINGER_ROOT_PATH."
     return 1
   fi
-  ./bin/stinger_"$2" "${@:3}" &>>$STINGER_LOGDIR/stinger_"$2".log &
-  echo -e "\n\t[  ${GRN}OK${NC}  ]"
-  echo "Algorithm added. Check log for details at: $STINGER_LOGDIR/stinger_$2.log"
+  s_patient_kill stinger_"$2"
+  s_ok
 }
 
 s_exec()
 {
   echo "Executing stinger_${2}..."
   if [[ ! -e ./bin/stinger_"$2" ]]; then
-    echo -e "\n\t[  ${RED}FAILED${NC}  ] Program $2 not found."
+    s_error "Program $2 not found."
     return 1
   fi
   ./bin/stinger_"$2" "${@:3}"
 }
 
+
 s_check_daemon()
 {
   if [[ -e $STINGER_RUN/stingerd.pid ]]; then
-    echo -e "\t[  ${ORG}INFO${NC}  ]  Daemon running. Stop it to use stingerctl manually."
+    echo "Daemon running. Stop it to use stingerctl manually."
     exit 1
   fi
 }
 case "$1" in
+  status)
+    if s_server_is_running; then
+      echo "Server is running"
+      exit 0
+    else
+      echo "Server is not running"
+      exit 1
+    fi
+    ;;
   start)
     s_check_daemon
     s_start
@@ -211,6 +293,14 @@ case "$1" in
     fi
     s_addalg "$@"
     ;;
+  remalg)
+    if [[ $# -lt 2 ]]; then
+      echo $"Usage: $0 remalg <NAME>"
+      echo "ex. $0 remalg pagerank"
+      exit 1
+    fi
+    s_remalg "$@"
+    ;;
   nuke)
     s_check_daemon
     s_restart nuke
@@ -231,10 +321,10 @@ case "$1" in
     ${CYN}STINGER_FILE${NC}=${LBL}\$STINGER_RUN${NC}/stinger.graph
     ${CYN}STINGER_FILE${NC}_TYPE=r
     ${CYN}STINGER_LOGDIR${NC}=/var/log/stinger
-    ${CYN}PORT_NAMES${NC}=10101
     ${CYN}PORT_STREAMS${NC}=10102
     ${CYN}PORT_ALGS${NC}=10103
     ${CYN}STINGER_MAX_MEMSIZE${NC}=4G
+    ${CYN}STINGER_USE_TCP${NC}=OFF
     "
     echo "Usage: stingerctl command [OPTIONS]"
     echo
@@ -242,10 +332,11 @@ case "$1" in
     column -s "|" -t <<< "
     start | Start stinger.
     stop | Stop stinger.
+    status | Check if stinger is running.
     restart | Restart stinger.
     nuke | Nuke stinger's disk store and restart.
-    exec NAME [OPTS] | Execute the provided stinger program NAME with given options.
     addalg NAME [OPTS] | Add the provided algorithm NAME to the running stinger.
+    remalg NAME | Remove the algorithm NAME from the running stinger.
     daemon-start | Initializes a watcher process to restart stinger if it crashes.
     daemon-stop | Kill the watcher process.
     "
