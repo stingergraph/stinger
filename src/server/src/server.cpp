@@ -443,6 +443,15 @@ cleanup (void)
     free(input_file);
     free(file_type);
 
+#ifndef STINGER_USE_TCP
+    /* Clean up unix sockets, which were created when the batch/alg server started up */
+    char socket_path[128];
+    snprintf(socket_path, sizeof(socket_path)-1, "/tmp/stinger.sock.%i", server_state.get_port_algs());
+    unlink(socket_path);
+    snprintf(socket_path, sizeof(socket_path)-1, "/tmp/stinger.sock.%i", server_state.get_port_streams());
+    unlink(socket_path);
+#endif
+
     /* clean up algorithm data stores */
     for (size_t i = 0; i < server_state.get_num_algs(); i++) {
       StingerAlgState * alg_state = server_state.get_alg(i);
