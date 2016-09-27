@@ -282,6 +282,7 @@ new_connection_handler(void * data)
   }
 
   free(accepted_sock);
+  return NULL;
 }
 
 void *
