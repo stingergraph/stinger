@@ -19,7 +19,7 @@ int64_t community_on_demand(const stinger_t * S, int64_t ** vertices, int64_t **
   *partitions = output_partitions;
 
   /* Allocate output array */
-  int64_t nv = stinger_max_active_vertex(S);
+  int64_t nv = stinger_max_active_vertex(S) + 1;
   output_vertices = (int64_t *) xmalloc (nv * sizeof(int64_t));
   output_partitions = (int64_t *) xmalloc (nv * sizeof(int64_t));
 
