@@ -49,7 +49,7 @@ foreach(file ${proto})
 	add_custom_command(
 		OUTPUT "${CMAKE_BINARY_DIR}/stinger_net/proto/${_file_name}.pb.cc" "${CMAKE_BINARY_DIR}/stinger_net/proto/${_file_name}.pb.h"
 		COMMAND ./protoc ${_protobuf_include_path} ${_protobuf_proto_path} ${_protobuf_output_path} ${_abs_file_name}
-		DEPENDS protobuf
+		DEPENDS protobuf ${_abs_file_name}
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/bin
 	)
 

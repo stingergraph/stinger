@@ -63,8 +63,7 @@ endif()
 #protobuf
 ExternalProject_Add(protobuf
   PREFIX              ${CMAKE_BINARY_DIR}/external
-  URL                 file://${CMAKE_SOURCE_DIR}/external/protobuf-2.5.0.tar.gz
-  URL_MD5             b751f772bdeb2812a2a8e7202bf1dae8
+  URL                 file://${CMAKE_SOURCE_DIR}/external/protobuf-cpp-3.1.0.tar.gz
   UPDATE_COMMAND      ""
   PATCH_COMMAND       ""
   CONFIGURE_COMMAND   CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} ${CMAKE_BINARY_DIR}/external/src/protobuf/configure
