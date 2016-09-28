@@ -139,7 +139,7 @@ void stinger_dspmTspv_ompsimple (const int64_t nv, const double alpha, const str
           const double aij = STINGER_EDGE_WEIGHT;
           OMP("omp atomic") val_ws[j] += aij * alphaxi;
           if (loc_ws[j] < 0) {
-            OMP("omp criticial") {
+            OMP("omp critical") {
               if (loc_ws[j] < 0) {
                 int64_t yk = loc_ws[j] = y_deg++;
                 assert (yk < nv);
@@ -182,7 +182,7 @@ void stinger_unit_dspmTspv_ompsimple (const int64_t nv, const double alpha, cons
           const double aij = STINGER_EDGE_WEIGHT;
           OMP("omp atomic") val_ws[j] += alphaxi;
           if (loc_ws[j] < 0) {
-            OMP("omp criticial") {
+            OMP("omp critical") {
               if (loc_ws[j] < 0) {
                 int64_t yk = loc_ws[j] = y_deg++;
                 assert (yk < nv);
