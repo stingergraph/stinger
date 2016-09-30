@@ -69,8 +69,8 @@ ExternalProject_Add(protobuf
   CONFIGURE_COMMAND   CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} ${CMAKE_BINARY_DIR}/external/src/protobuf/configure
     --prefix=${CMAKE_BINARY_DIR}
     --enable-shared
-  BUILD_COMMAND make
-  INSTALL_COMMAND make install
+  BUILD_COMMAND $(MAKE)
+  INSTALL_COMMAND $(MAKE) install
 )
 
 #libconfig
@@ -84,8 +84,8 @@ ExternalProject_Add(libconfig
     --prefix=${CMAKE_BINARY_DIR}
     --enable-shared
     --disable-examples
-  BUILD_COMMAND cp ${CMAKE_BINARY_DIR}/external/src/libconfig/lib/libconfig.h ${CMAKE_BINARY_DIR}/external/src/libconfig-build/lib/ && make
-  INSTALL_COMMAND make install
+  BUILD_COMMAND cp ${CMAKE_BINARY_DIR}/external/src/libconfig/lib/libconfig.h ${CMAKE_BINARY_DIR}/external/src/libconfig-build/lib/ && $(MAKE)
+  INSTALL_COMMAND $(MAKE) install
 )
 
 if(APPLE)
