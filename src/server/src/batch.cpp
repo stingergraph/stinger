@@ -126,6 +126,7 @@ process_batch(stinger_t * S, StingerBatch & batch)
   StingerServerState & server_state = StingerServerState::get_server_state();
   min_batch_ts = std::numeric_limits<int64_t>::max();
   max_batch_ts = std::numeric_limits<int64_t>::min();
+  int64_t chunksize = 8192;
 
 #define TS(ea_) do { const int64_t ts = (ea_).time(); if (ts > mxts) mxts = ts; if (ts < mnts) mnts = ts; } while (0)
 
@@ -136,7 +137,7 @@ process_batch(stinger_t * S, StingerBatch & batch)
 
       case NUMBERS_ONLY: {
 	if(server_state.convert_numbers_only_to_strings()) {
-	  OMP("omp for")
+	  OMP("omp parallel for schedule(dynamic, chunksize)")
 	    for (size_t i = 0; i < batch.insertions_size(); i++) {
 	      EdgeInsertion & in = *batch.mutable_insertions(i);
 	      int64_t u, v;
@@ -166,7 +167,7 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	      }
 	    }
 
-	  OMP("omp for")
+	  OMP("omp parallel for schedule(dynamic, chunksize)")
 	    for(size_t d = 0; d < batch.deletions_size(); d++) {
 	      EdgeDeletion & del = *batch.mutable_deletions(d);
 	      if(batch.make_undirected()) {
@@ -193,7 +194,7 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	      }
 	    }
 	} else {
-	  OMP("omp for")
+	  OMP("omp parallel for schedule(dynamic, chunksize)")
 	    for (size_t i = 0; i < batch.insertions_size(); i++) {
 	      EdgeInsertion & in = *batch.mutable_insertions(i);
 	      int64_t u, v;
@@ -209,7 +210,7 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	      }
 	    }
 
-	  OMP("omp for")
+	  OMP("omp parallel for schedule(dynamic, chunksize)")
 	    for(size_t d = 0; d < batch.deletions_size(); d++) {
 	      EdgeDeletion & del = *batch.mutable_deletions(d);
 	      if(batch.make_undirected()) {
@@ -231,7 +232,7 @@ process_batch(stinger_t * S, StingerBatch & batch)
       } break;
 
       case STRINGS_ONLY:
-	OMP("omp for")
+	OMP("omp parallel for schedule(dynamic, chunksize)")
 	  for (size_t i = 0; i < batch.insertions_size(); i++) {
 	    EdgeInsertion & in = *batch.mutable_insertions(i);
 	    int64_t u, v;
@@ -253,7 +254,7 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	    }
 	  }
 
-	OMP("omp for")
+	OMP("omp parallel for schedule(dynamic, chunksize)")
 	  for(size_t d = 0; d < batch.deletions_size(); d++) {
 	    EdgeDeletion & del = *batch.mutable_deletions(d);
 	    int64_t u, v;
@@ -285,7 +286,7 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	break;
 
       case MIXED:
-	OMP("omp for")
+	OMP("omp parallel for schedule(dynamic, chunksize)")
 	  for (size_t i = 0; i < batch.insertions_size(); i++) {
 	    EdgeInsertion & in = *batch.mutable_insertions(i);
 	    int64_t u = -1, v = -1;
@@ -304,7 +305,7 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	    }
 	  }
 
-	OMP("omp for")
+	OMP("omp parallel for schedule(dynamic, chunksize)")
 	  for(size_t d = 0; d < batch.deletions_size(); d++) {
 	    EdgeDeletion & del = *batch.mutable_deletions(d);
 	    int64_t u, v;
