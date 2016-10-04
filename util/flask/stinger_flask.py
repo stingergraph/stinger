@@ -43,8 +43,8 @@ import stinger.stinger_net as sn
 import stinger.stinger_core as sc
 
 # Value of -1 in either field disables its use as a threshold
-TIMEOUT_SECS = 5
-BATCH_THRESHOLD = 500
+TIMEOUT_SECS = 1
+BATCH_THRESHOLD = -1
 
 application = Flask(__name__)
 api = Api(application, version='1.1', title='STINGER API',
