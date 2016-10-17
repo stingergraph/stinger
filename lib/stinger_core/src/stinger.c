@@ -90,10 +90,8 @@ stinger_indegree_increment_atomic(const stinger_t * S, vindex_t v, vdegree_t d) 
 
 /* OUT DEGREE */
 
-/* inline vdegree_t */
-/* stinger_outdegree_get(const stinger_t * S, vindex_t v) { */
-/*   return stinger_vertex_outdegree_get(stinger_vertices_get(S), v); */
-/* } */
+extern vdegree_t
+stinger_outdegree_get(const stinger_t * S, vindex_t v);
 
 inline vdegree_t
 stinger_outdegree_set(const stinger_t * S, vindex_t v, vdegree_t d) {
