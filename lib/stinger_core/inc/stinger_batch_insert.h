@@ -2,7 +2,9 @@
 #define STINGER_BATCH_INSERT_H_
 
 #include "stinger.h"
-#include <stinger_net/stinger_alg.h>
+// HACK
+#include <stinger_alg.h>
+//#include <stinger_net/stinger_alg.h>
 
 #include <vector>
 

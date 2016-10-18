@@ -50,16 +50,8 @@ TEST_F(StingerBatchTest, stinger_batch_edge_insertion) {
         updates.push_back(u);
     }
 
-    // Insert them into the graph, the old way
-    OMP("parallel for")
-    for (std::vector<stinger_edge_update>::iterator f = updates.begin(); f != updates.end(); ++f)
-    {
-        stinger_incr_edge(S, f->type, f->source, f->destination, f->weight, f->time);
-    }
-
     // Insert the new way
     stinger_batch_update(S, updates, STINGER_EDGE_DIRECTION_OUT, EDGE_WEIGHT_INCR);
-
 
     int64_t consistency = stinger_consistency_check(S,S->max_nv);
     EXPECT_EQ(consistency,0);

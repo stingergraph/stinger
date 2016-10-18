@@ -4,7 +4,6 @@
 #include "stinger_atomics.h"
 
 #include "x86_full_empty.h"
-#include <stinger_net/stinger_alg.h>
 
 #include <vector>
 #include <algorithm>
