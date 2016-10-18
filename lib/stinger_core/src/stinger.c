@@ -904,7 +904,7 @@ stinger_free_all (struct stinger *S)
 
 /* TODO inspect possibly move out with other EB POOL stuff */
 
-static eb_index_t new_eb (struct stinger * S, int64_t etype, int64_t from)
+eb_index_t new_eb (struct stinger * S, int64_t etype, int64_t from)
 {
   MAP_STING(S);
   size_t k;
@@ -1112,6 +1112,7 @@ update_edge_data_and_direction (struct stinger * S, struct stinger_eb *eb,
     }
   } 
 }
+
 
 int
 stinger_update_directed_edge(struct stinger *G,

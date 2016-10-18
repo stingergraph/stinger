@@ -192,6 +192,7 @@ add_custom_target(check
   DEPENDS
     stinger_names_test
     stinger_core_test
+    stinger_batch_test
     stinger_physmap_test
     stinger_traversal_test
     stinger_pagerank_test

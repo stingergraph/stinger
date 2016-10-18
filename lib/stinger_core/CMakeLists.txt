@@ -9,6 +9,7 @@ set(sources
 	src/stinger_vertex.c
 	src/xmalloc.c
 	src/x86_full_empty.c
+	src/stinger_batch_insert.cpp
 )
 set(headers
 	inc/core_util.h
@@ -24,6 +25,7 @@ set(headers
 	inc/stinger_vertex.h
 	inc/x86_full_empty.h
 	inc/xmalloc.h
+	inc/stinger_batch_insert.h
 )
 
 set(config

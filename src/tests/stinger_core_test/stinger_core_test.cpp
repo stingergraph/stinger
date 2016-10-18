@@ -365,6 +365,8 @@ TEST_F(StingerCoreTest, stinger_edge_insertion) {
   EXPECT_EQ(consistency,0);
 }
 
+
+
 TEST_F(StingerCoreTest, stinger_delete_edges) {
   int64_t ret;
 

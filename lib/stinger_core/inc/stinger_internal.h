@@ -199,6 +199,7 @@ void update_edge_data_and_direction (struct stinger * S, struct stinger_eb *eb,
 
 void remove_edge (struct stinger * S, struct stinger_eb *eb, uint64_t index);
 
+eb_index_t new_eb (struct stinger * S, int64_t etype, int64_t from);
 void new_ebs (struct stinger * S, eb_index_t *out, size_t neb, int64_t etype, int64_t from);
 
 void push_ebs (struct stinger *G, size_t neb,
