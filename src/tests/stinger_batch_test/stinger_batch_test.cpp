@@ -16,7 +16,7 @@ protected:
     stinger_config = (struct stinger_config_t *)xcalloc(1,sizeof(struct stinger_config_t));
     stinger_config->nv = 1<<13;
     stinger_config->nebs = 1<<16;
-    stinger_config->netypes = 2;
+    stinger_config->netypes = 1;
     stinger_config->nvtypes = 2;
     stinger_config->memory_size = 1<<30;
     S = stinger_new_full(stinger_config);
@@ -34,10 +34,10 @@ protected:
 TEST_F(StingerBatchTest, stinger_batch_edge_insertion) {
     int64_t total_edges = 0;
 
-
     // Create batch to insert
     std::vector<stinger_edge_update> updates;
-    for (int i = 0; i < updates.size(); ++i)
+    typedef std::vector<stinger_edge_update>::iterator update_iterator;
+    for (int i = 0; i < 100; ++i)
     {
         stinger_edge_update u = {
             0, NULL, // type, type_str
@@ -52,6 +52,11 @@ TEST_F(StingerBatchTest, stinger_batch_edge_insertion) {
 
     // Insert the new way
     stinger_batch_update(S, updates, STINGER_EDGE_DIRECTION_OUT, EDGE_WEIGHT_INCR);
+
+    for (update_iterator u = updates.begin(); u != updates.end(); ++u)
+    {
+        EXPECT_EQ(u->result, 11);
+    }
 
     int64_t consistency = stinger_consistency_check(S,S->max_nv);
     EXPECT_EQ(consistency,0);

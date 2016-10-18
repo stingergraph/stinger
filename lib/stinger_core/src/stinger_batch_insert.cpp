@@ -20,7 +20,7 @@ static bool stinger_edge_update_compare(const stinger_edge_update &a, const stin
 }
 
 // Used to get a list of unique source vertices in a batch of updates below
-static bool
+static int64_t
 stinger_edge_update_get_source(const stinger_edge_update &x){
     return x.source;
 }
@@ -35,31 +35,6 @@ stinger_edge_update_compare_destinations(const stinger_edge_update &a, const sti
     return a.destination < b.destination;
 }
 
-// Used to find a contiguous chunk of updates for the same source below
-struct stinger_edge_update_source_comparator
-{
-    int64_t source;
-    bool equals;
-    stinger_edge_update_source_comparator(int64_t source, bool equals)
-    : source(source), equals(equals) {}
-    bool operator()(const stinger_edge_update &x) {
-        return equals ? x.source == source : x.source != source;
-    }
-};
-
-// Used to find updates that match an edge in a block
-struct stinger_edge_update_dest_comparator
-{
-    int64_t dest;
-    bool equals;
-    stinger_edge_update_dest_comparator(int64_t dest, bool equals)
-    : dest(dest), equals(equals) {}
-    bool operator()(const stinger_edge_update &x) {
-        return equals ? x.destination == dest : x.destination != dest;
-    }
-};
-
-
 void
 stinger_batch_update(stinger * G, std::vector<stinger_edge_update> &updates, int64_t direction, int64_t operation)
 {
@@ -70,7 +45,10 @@ stinger_batch_update(stinger * G, std::vector<stinger_edge_update> &updates, int
     std::vector<int64_t> unique_sources;
     std::transform(updates.begin(), updates.end(), std::back_inserter(unique_sources),
         stinger_edge_update_get_source);
-    std::unique(unique_sources.begin(), unique_sources.end());
+    unique_sources.erase(
+        std::unique(unique_sources.begin(), unique_sources.end()),
+        unique_sources.end()
+    );
 
     OMP("parallel for")
     for (std::vector<int64_t>::iterator f = unique_sources.begin(); f != unique_sources.end(); ++f)
@@ -120,7 +98,6 @@ update_iterator find_next_pending_update(update_iterator pos, update_iterator en
     while (pos->result != 0 && pos != end) { ++pos; }
     return pos;
 }
-
 
 void
 stinger_update_directed_edges_for_vertex(
@@ -175,10 +152,9 @@ Possibilities:
     // TODO add a stable_partition here to skip edges that were already updated
 
     // Track the next edge that should be inserted
-    update_iterator next_pending_update = find_next_pending_update(updates_begin, updates_begin);
-    if (next_pending_update == updates_end) { return; }
+    update_iterator next_pending_update = find_next_pending_update(updates_begin, updates_end);
 
-    while (1) {
+    while (next_pending_update != updates_end) {
         eb_index_t * block_ptr = curs.loc;
         curs.eb = readff((uint64_t *)curs.loc);
         /* 2: The edge isn't already there.  Check for an empty slot. */
@@ -192,7 +168,7 @@ Possibilities:
 
                     if (k < endk) {
                         // Check for edges that were added by another thread since we last checked
-                        update_iterator u = find_updates(updates_begin, updates_end, myNeighbor);
+                        update_iterator u = find_updates(next_pending_update, updates_end, myNeighbor);
                         for (;u != updates_end && u->destination == myNeighbor; u = find_next_pending_update(u, updates_end)){
                             // Edge was recently added, and we missed it above
                             if (direction & tmp->edges[k].neighbor) {
@@ -202,6 +178,7 @@ Possibilities:
                             }
                             update_edge_data_and_direction (G, tmp, k, u->destination, u->weight, u->time, direction, operation);
                         }
+                        next_pending_update = find_next_pending_update(next_pending_update, updates_end);
                     }
 
                     if (myNeighbor < 0 || k >= endk) {
@@ -235,11 +212,11 @@ Possibilities:
             block_ptr = &(tmp->next);
         }
 
-        update_iterator next_pending_update = find_next_pending_update(updates_begin, updates_begin);
+        next_pending_update = find_next_pending_update(updates_begin, updates_begin);
         if (next_pending_update == updates_end) { return; }
 
         /* 3: Needs a new block to be inserted at end of list. */
-        eb_index_t old_eb = readfe ((uint64_t *)block_ptr );
+        eb_index_t old_eb = readfe (block_ptr);
         if (!old_eb) {
             eb_index_t newBlock = new_eb (G, type, src);
             if (newBlock == 0) {
@@ -251,7 +228,6 @@ Possibilities:
                 }
                 return;
             } else {
-                next_pending_update = find_next_pending_update(next_pending_update, updates_begin);
                 for (update_iterator u = next_pending_update; u != updates_end && u->destination == next_pending_update->destination; ++u){
                     u->result = u == next_pending_update ? EDGE_ADDED : EDGE_UPDATED;
                     update_edge_data_and_direction (G, ebpool_priv + newBlock, 0, u->destination, u->weight, u->time, direction,
@@ -261,9 +237,11 @@ Possibilities:
                 ebpool_priv[newBlock].next = 0;
                 push_ebs (G, 1, &newBlock);
                 writeef (block_ptr, (uint64_t)newBlock);
+                next_pending_update = find_next_pending_update(next_pending_update, updates_begin);
             }
+        } else {
+            writeef (block_ptr, (uint64_t)old_eb);
         }
-        writeef (block_ptr, (uint64_t)old_eb);
     }
 
 }
