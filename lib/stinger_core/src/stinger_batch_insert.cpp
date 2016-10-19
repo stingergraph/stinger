@@ -7,8 +7,15 @@
 
 #include <vector>
 #include <algorithm>
+#include <stinger_alg.h>
 
 typedef std::vector<stinger_edge_update>::iterator update_iterator;
+
+// FIXME subtract 10 from all return codes before returning
+const int64_t PENDING = 0;
+const int64_t EDGE_ADDED = 11;
+const int64_t EDGE_UPDATED = 10;
+const int64_t EDGE_NOT_ADDED = 9;
 
 // Used to sort a vector of stinger_edge_updates below
 static bool stinger_edge_update_compare(const stinger_edge_update &a, const stinger_edge_update &b){
@@ -84,20 +91,60 @@ Iter binary_find(Iter begin, Iter end, T val, Compare comp)
         return end; // not found
 }
 
-// Find the first update with destination 'dest'
+
+// Find the first pending update with destination 'dest'
 update_iterator find_updates(update_iterator begin, update_iterator end, int64_t dest)
 {
     stinger_edge_update key;
     key.destination = dest;
-    return binary_find(begin, end, key, stinger_edge_update_compare_destinations);
+    update_iterator pos = binary_find(begin, end, key, stinger_edge_update_compare_destinations);
+    return (pos->result == PENDING) ? pos : end;
 }
 
-// Skip to the next update that hasn't happened yet
-update_iterator find_next_pending_update(update_iterator pos, update_iterator end)
+class next_update_tracker
 {
-    while (pos->result != 0 && pos != end) { ++pos; }
-    return pos;
+protected:
+    update_iterator pos;
+    update_iterator end;
+public:
+    next_update_tracker(update_iterator begin, update_iterator end)
+    : pos(begin), end(end) {}
+
+    update_iterator operator () ()
+    {
+        while (pos->result != PENDING && pos != end) { ++pos; }
+        return pos;
+    }
+};
+
+/*
+ * result - Result code to set on first update. Result of duplicate updates will always be EDGE_UPDATED
+ * create - Are we inserting into an empty slot, or just updating an existing slot
+ * pos - pointer to first update
+ * updates_end - pointer to end of update list
+ * G - pointer to STINGER
+ * eb - pointer to edge block
+ * e - edge index within block
+ * direction - edge direction
+ * operation - EDGE_WEIGHT_SET or EDGE_WEIGHT_INCR
+ */
+
+static void do_edge_updates(int64_t result, bool create, update_iterator pos, update_iterator updates_end, stinger * G, stinger_eb *eb, size_t e, int64_t direction, int64_t operation)
+{
+    int64_t dest = pos->destination;
+
+    for (update_iterator u = pos; u != updates_end && u->destination == dest; ++u){
+        if (u == pos)
+        {
+            u->result = result;
+            update_edge_data_and_direction (G, eb, e, u->destination, u->weight, u->time, direction, create ? EDGE_WEIGHT_SET : operation);
+        } else {
+            u->result = EDGE_UPDATED;
+            update_edge_data_and_direction (G, eb, e, u->destination, u->weight, u->time, direction, operation);
+        }
+    }
 }
+
 
 void
 stinger_update_directed_edges_for_vertex(
@@ -108,18 +155,8 @@ stinger_update_directed_edges_for_vertex(
 {
 
     MAP_STING(G);
-
-    curs curs;
-    stinger_eb *tmp;
     stinger_eb *ebpool_priv = ebpool->ebpool;
-
-    // FIXME subtract 10 from all return codes before returning
-    const int64_t PENDING = 0;
-    const int64_t EDGE_ADDED = 11;
-    const int64_t EDGE_UPDATED = 10;
-    const int64_t EDGE_NOT_ADDED = 9;
-
-    curs = etype_begin (G, src, type);
+    curs curs = etype_begin (G, src, type);
 
     /*
 Possibilities:
@@ -129,36 +166,32 @@ Possibilities:
 */
 
     /* 1: Check if the edge already exists. */
-    for (tmp = ebpool_priv + curs.eb; tmp != ebpool_priv; tmp = ebpool_priv + readff(&tmp->next)) {
+    for (stinger_eb *tmp = ebpool_priv + curs.eb; tmp != ebpool_priv; tmp = ebpool_priv + readff(&tmp->next)) {
         if(type == tmp->etype) {
             size_t k, endk;
             endk = tmp->high;
             // For each edge in the block
             for (k = 0; k < endk; ++k) {
+                // Mask off direction bits to get the raw neighbor of this edge
                 int64_t dest = (tmp->edges[k].neighbor & (~STINGER_EDGE_DIRECTION_MASK));
+                // Find updates for this destination
                 update_iterator u = find_updates(updates_begin, updates_end, dest);
-                for (;u != updates_end && u->destination == dest; u = find_next_pending_update(u, updates_end)){
-                    if (direction & tmp->edges[k].neighbor) {
-                        u->result = EDGE_UPDATED;
-                    } else {
-                        u->result = EDGE_ADDED;
-                    }
-                    update_edge_data_and_direction (G, tmp, k, u->destination, u->weight, u->time, direction, operation);
-                }
+                // If we already have an in-edge for this destination, we will reuse the edge slot
+                // But the return code should reflect that we added an edge
+                int64_t result = (direction & tmp->edges[k].neighbor) ? EDGE_UPDATED : EDGE_ADDED;
+                do_edge_updates(result, false, u, updates_end, G, tmp, k, direction, operation);
             }
         }
     }
 
-    // TODO add a stable_partition here to skip edges that were already updated
-
     // Track the next edge that should be inserted
-    update_iterator next_pending_update = find_next_pending_update(updates_begin, updates_end);
+    next_update_tracker next_update(updates_begin, updates_end);
 
-    while (next_pending_update != updates_end) {
+    while (next_update() != updates_end) {
         eb_index_t * block_ptr = curs.loc;
-        curs.eb = readff((uint64_t *)curs.loc);
+        curs.eb = readff(curs.loc);
         /* 2: The edge isn't already there.  Check for an empty slot. */
-        for (tmp = ebpool_priv + curs.eb; tmp != ebpool_priv; tmp = ebpool_priv + readff(&tmp->next)) {
+        for (stinger_eb *tmp = ebpool_priv + curs.eb; tmp != ebpool_priv; tmp = ebpool_priv + readff(&tmp->next)) {
             if(type == tmp->etype) {
                 size_t k, endk;
                 endk = tmp->high;
@@ -166,19 +199,14 @@ Possibilities:
                 for (k = 0; k < STINGER_EDGEBLOCKSIZE; ++k) {
                     int64_t myNeighbor = (tmp->edges[k].neighbor & (~STINGER_EDGE_DIRECTION_MASK));
 
+                    // Check for edges that were added by another thread since we last checked
                     if (k < endk) {
-                        // Check for edges that were added by another thread since we last checked
-                        update_iterator u = find_updates(next_pending_update, updates_end, myNeighbor);
-                        for (;u != updates_end && u->destination == myNeighbor; u = find_next_pending_update(u, updates_end)){
-                            // Edge was recently added, and we missed it above
-                            if (direction & tmp->edges[k].neighbor) {
-                                u->result = EDGE_UPDATED;
-                            } else {
-                                u->result = EDGE_ADDED;
-                            }
-                            update_edge_data_and_direction (G, tmp, k, u->destination, u->weight, u->time, direction, operation);
-                        }
-                        next_pending_update = find_next_pending_update(next_pending_update, updates_end);
+                        // Find updates for this destination
+                        update_iterator u = find_updates(updates_begin, updates_end, myNeighbor);
+                        // If we already have an in-edge for this destination, we will reuse the edge slot
+                        // But the return code should reflect that we added an edge
+                        int64_t result = (direction & tmp->edges[k].neighbor) ? EDGE_UPDATED : EDGE_ADDED;
+                        do_edge_updates(result, false, u, updates_end, G, tmp, k, direction, operation);
                     }
 
                     if (myNeighbor < 0 || k >= endk) {
@@ -190,16 +218,11 @@ Possibilities:
                         update_iterator u = find_updates(updates_begin, updates_end, thisEdge);
                         if (thisEdge < 0 || k >= endk) {
                             // Slot is empty, add the edge
-                            next_pending_update = find_next_pending_update(next_pending_update, updates_end);
-                            stinger_edge_update & u = *next_pending_update;
-                            update_edge_data_and_direction (G, tmp, k, u.destination, u.weight, u.time, direction, EDGE_WEIGHT_SET);
-                            u.result = EDGE_ADDED;
+                            do_edge_updates(EDGE_ADDED, true, next_update(), updates_end, G, tmp, k, direction, operation);
                         } else if (u != updates_end) {
                             // Another thread just added the edge. Do a normal update
-                            for (;u != updates_end && u->destination == myNeighbor; u = find_next_pending_update(u, updates_end)){
-                                update_edge_data_and_direction (G, tmp, k, u->destination, u->weight, u->time, direction, operation);
-                                u->result = EDGE_UPDATED;
-                            }
+                            int64_t result = (direction & tmp->edges[k].neighbor) ? EDGE_UPDATED : EDGE_ADDED;
+                            do_edge_updates(result, false, u, updates_end, G, tmp, k, direction, operation);
                             writexf ( (uint64_t *)&(tmp->edges[k].timeFirst), timefirst);
                         } else {
                             // Another thread claimed the slot for a different edge, unlock and keep looking
@@ -212,36 +235,32 @@ Possibilities:
             block_ptr = &(tmp->next);
         }
 
-        next_pending_update = find_next_pending_update(updates_begin, updates_begin);
-        if (next_pending_update == updates_end) { return; }
+        if (next_update() == updates_end) { return; }
 
         /* 3: Needs a new block to be inserted at end of list. */
+        // Try to lock the tail pointer of the last block
         eb_index_t old_eb = readfe (block_ptr);
         if (!old_eb) {
+            // Create a new edge block
             eb_index_t newBlock = new_eb (G, type, src);
             if (newBlock == 0) {
                 // Ran out of edge blocks!
                 writeef (block_ptr, (uint64_t)old_eb);
-                for (; next_pending_update != updates_end; next_pending_update = find_next_pending_update(next_pending_update, updates_begin))
+                while(next_update() != updates_end)
                 {
-                    next_pending_update->result = EDGE_NOT_ADDED;
+                    next_update()->result = EDGE_NOT_ADDED;
                 }
                 return;
             } else {
-                for (update_iterator u = next_pending_update; u != updates_end && u->destination == next_pending_update->destination; ++u){
-                    u->result = u == next_pending_update ? EDGE_ADDED : EDGE_UPDATED;
-                    update_edge_data_and_direction (G, ebpool_priv + newBlock, 0, u->destination, u->weight, u->time, direction,
-                        u->result == EDGE_ADDED ? EDGE_WEIGHT_SET : operation); // Create it the first time, after that obey 'operation' param
-                }
+                // Add our edge to the first slot in the new edge block
+                do_edge_updates(EDGE_ADDED, true, next_update(), updates_end, G, ebpool_priv + newBlock, 0, direction, operation);
                 // Add the block to the list
                 ebpool_priv[newBlock].next = 0;
                 push_ebs (G, 1, &newBlock);
                 writeef (block_ptr, (uint64_t)newBlock);
-                next_pending_update = find_next_pending_update(next_pending_update, updates_begin);
             }
         } else {
             writeef (block_ptr, (uint64_t)old_eb);
         }
     }
-
 }
