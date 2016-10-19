@@ -8,6 +8,7 @@
 #include <vector>
 #include <algorithm>
 #include <stinger_alg.h>
+#include <stinger_net/stinger_alg.h>
 
 typedef std::vector<stinger_edge_update>::iterator update_iterator;
 
@@ -30,8 +31,8 @@ static bool stinger_edge_update_order_by_source(const stinger_edge_update &a, co
 
 static bool stinger_edge_update_order_by_dest(const stinger_edge_update &a, const stinger_edge_update &b){
     return (a.type != b.type) ? a.type < b.type :
-           (a.source != b.source) ? a.source < b.source :
            (a.destination != b.destination) ? a.destination < b.destination :
+           (a.source != b.source) ? a.source < b.source :
            (a.time != b.time) ? a.time < b.time :
            false;
 }
@@ -46,8 +47,18 @@ stinger_edge_update_compare_destinations(const stinger_edge_update &a, const sti
     return a.destination < b.destination;
 }
 
+static bool
+stinger_edge_update_sources_equal(const stinger_edge_update &a, const stinger_edge_update &b){
+    return a.source == b.source;
+}
+
+static bool
+stinger_edge_update_destinations_equal(const stinger_edge_update &a, const stinger_edge_update &b){
+    return a.destination == b.destination;
+}
+
 // Used to get a list of unique source/dest vertices in a batch of updates below
-typedef int64_t (*attr_getter)(const stinger_edge_update &);
+typedef int64_t (*update_attr_getter)(const stinger_edge_update &);
 
 static int64_t
 stinger_edge_update_get_source(const stinger_edge_update &x){
@@ -59,12 +70,27 @@ stinger_edge_update_get_destination(const stinger_edge_update &x){
     return x.destination;
 }
 
+void
+clear_results(update_iterator begin, update_iterator end)
+{
+    OMP("omp parallel for")
+    for (update_iterator u = begin; u < end; ++u) { u->result = PENDING; }
+}
+
+void
+remap_results(update_iterator begin, update_iterator end)
+{
+    OMP("omp parallel for")
+    for (update_iterator u = begin; u < end; ++u) { u->result = u->result - 10; }
+}
+
 struct function_group
 {
     int64_t direction;
-    attr_getter getter;
-    update_comparator sorter;
-    update_comparator comparator;
+    update_attr_getter get;
+    update_comparator sort;
+    update_comparator compare;
+    update_comparator equals;
 };
 
 void
@@ -74,38 +100,41 @@ stinger_batch_update(stinger * G, std::vector<stinger_edge_update> &updates, int
         STINGER_EDGE_DIRECTION_OUT,
         stinger_edge_update_get_source,
         stinger_edge_update_order_by_source,
-        stinger_edge_update_compare_sources
+        stinger_edge_update_compare_sources,
+        stinger_edge_update_sources_equal
     };
     function_group in = {
         STINGER_EDGE_DIRECTION_IN,
         stinger_edge_update_get_destination,
         stinger_edge_update_order_by_dest,
-        stinger_edge_update_compare_destinations
+        stinger_edge_update_compare_destinations,
+        stinger_edge_update_destinations_equal
     };
     const function_group groups[] = {out, in};
 
     for (int i = 0; i < 2; ++i) {
         function_group g = groups[i];
-        // Sort by type, src, dst, time ascending
-        std::sort(updates.begin(), updates.end(), g.sorter);
 
+        // Set all result codes to 0 - only the last iteration return codes survive
+        clear_results(updates.begin(), updates.end());
+
+        // Sort by type, src, dst, time ascending
+        std::sort(updates.begin(), updates.end(), g.sort);
         // Get a list of unique sources
         std::vector<stinger_edge_update> unique_sources;
-        unique_sources.erase(
-            std::unique(unique_sources.begin(), unique_sources.end(), g.comparator),
-            unique_sources.end()
-        );
+        std::unique_copy(updates.begin(), updates.end(), std::back_inserter(unique_sources), g.equals);
 
         OMP("parallel for")
-        for (update_iterator key = unique_sources.begin(); key != unique_sources.end(); ++key)
+        for (update_iterator key = unique_sources.begin(); key < unique_sources.end(); ++key)
         {
+
             // HACK also partition on etype
             assert(G->max_netypes == 1);
             int64_t type = 0;
             // Locate the range of updates for this source vertex
-            int64_t source = g.getter(*key);
+            int64_t source = g.get(*key);
             std::pair<update_iterator, update_iterator> pair =
-            std::equal_range(updates.begin(), updates.end(), *key, g.comparator);
+            std::equal_range(updates.begin(), updates.end(), *key, g.compare);
             update_iterator begin = pair.first;
             update_iterator end = pair.second;
 
@@ -114,6 +143,7 @@ stinger_batch_update(stinger * G, std::vector<stinger_edge_update> &updates, int
             stinger_update_directed_edges_for_vertex(G, source, type, begin, end, g.direction, operation);
         }
     }
+    remap_results(updates.begin(), updates.end());
 }
 
 // Finds an element in a sorted range using binary search

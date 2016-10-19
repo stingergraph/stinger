@@ -37,7 +37,7 @@ TEST_F(StingerBatchTest, stinger_batch_edge_insertion) {
     // Create batch to insert
     std::vector<stinger_edge_update> updates;
     typedef std::vector<stinger_edge_update>::iterator update_iterator;
-    for (int i = 0; i < 100; ++i)
+    for (int i = 0; i < 10; ++i)
     {
         stinger_edge_update u = {
             0, NULL, // type, type_str
@@ -55,7 +55,7 @@ TEST_F(StingerBatchTest, stinger_batch_edge_insertion) {
 
     for (update_iterator u = updates.begin(); u != updates.end(); ++u)
     {
-        EXPECT_EQ(u->result, 11);
+        EXPECT_EQ(u->result, 1);
     }
 
     int64_t consistency = stinger_consistency_check(S,S->max_nv);
