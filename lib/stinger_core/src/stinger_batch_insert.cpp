@@ -18,7 +18,9 @@ const int64_t EDGE_UPDATED = 10;
 const int64_t EDGE_NOT_ADDED = 9;
 
 // Used to sort a vector of stinger_edge_updates below
-static bool stinger_edge_update_compare(const stinger_edge_update &a, const stinger_edge_update &b){
+typedef bool (*update_comparator)(const stinger_edge_update &, const stinger_edge_update &);
+
+static bool stinger_edge_update_order_by_source(const stinger_edge_update &a, const stinger_edge_update &b){
     return (a.type != b.type) ? a.type < b.type :
            (a.source != b.source) ? a.source < b.source :
            (a.destination != b.destination) ? a.destination < b.destination :
@@ -26,10 +28,12 @@ static bool stinger_edge_update_compare(const stinger_edge_update &a, const stin
            false;
 }
 
-// Used to get a list of unique source vertices in a batch of updates below
-static int64_t
-stinger_edge_update_get_source(const stinger_edge_update &x){
-    return x.source;
+static bool stinger_edge_update_order_by_dest(const stinger_edge_update &a, const stinger_edge_update &b){
+    return (a.type != b.type) ? a.type < b.type :
+           (a.source != b.source) ? a.source < b.source :
+           (a.destination != b.destination) ? a.destination < b.destination :
+           (a.time != b.time) ? a.time < b.time :
+           false;
 }
 
 static bool
@@ -42,38 +46,73 @@ stinger_edge_update_compare_destinations(const stinger_edge_update &a, const sti
     return a.destination < b.destination;
 }
 
-void
-stinger_batch_update(stinger * G, std::vector<stinger_edge_update> &updates, int64_t direction, int64_t operation)
+// Used to get a list of unique source/dest vertices in a batch of updates below
+typedef int64_t (*attr_getter)(const stinger_edge_update &);
+
+static int64_t
+stinger_edge_update_get_source(const stinger_edge_update &x){
+    return x.source;
+}
+
+static int64_t
+stinger_edge_update_get_destination(const stinger_edge_update &x){
+    return x.destination;
+}
+
+struct function_group
 {
-    // Sort by type, src, dst, time ascending
-    std::sort(updates.begin(), updates.end(), stinger_edge_update_compare);
+    int64_t direction;
+    attr_getter getter;
+    update_comparator sorter;
+    update_comparator comparator;
+};
 
-    // Get a list of unique sources
-    std::vector<int64_t> unique_sources;
-    std::transform(updates.begin(), updates.end(), std::back_inserter(unique_sources),
-        stinger_edge_update_get_source);
-    unique_sources.erase(
-        std::unique(unique_sources.begin(), unique_sources.end()),
-        unique_sources.end()
-    );
+void
+stinger_batch_update(stinger * G, std::vector<stinger_edge_update> &updates, int64_t operation)
+{
+    function_group out = {
+        STINGER_EDGE_DIRECTION_OUT,
+        stinger_edge_update_get_source,
+        stinger_edge_update_order_by_source,
+        stinger_edge_update_compare_sources
+    };
+    function_group in = {
+        STINGER_EDGE_DIRECTION_IN,
+        stinger_edge_update_get_destination,
+        stinger_edge_update_order_by_dest,
+        stinger_edge_update_compare_destinations
+    };
+    const function_group groups[] = {out, in};
 
-    OMP("parallel for")
-    for (std::vector<int64_t>::iterator f = unique_sources.begin(); f != unique_sources.end(); ++f)
-    {
-        // HACK also partition on etype
-        assert(G->max_netypes == 1);
-        int64_t type = 0;
-        // Locate the range of updates for this source vertex
-        int64_t source = *f;
-        stinger_edge_update key; key.source = source;
-        std::pair<update_iterator, update_iterator> pair =
-        std::equal_range(updates.begin(), updates.end(), key, stinger_edge_update_compare_sources);
-        update_iterator begin = pair.first;
-        update_iterator end = pair.second;
+    for (int i = 0; i < 2; ++i) {
+        function_group g = groups[i];
+        // Sort by type, src, dst, time ascending
+        std::sort(updates.begin(), updates.end(), g.sorter);
 
-        // TODO call single update version if there's only a few edges for a vertex
-        // TODO split into smaller batches if there are a lot of edges for a vertex
-        stinger_update_directed_edges_for_vertex(G, source, type, begin, end, direction, operation);
+        // Get a list of unique sources
+        std::vector<stinger_edge_update> unique_sources;
+        unique_sources.erase(
+            std::unique(unique_sources.begin(), unique_sources.end(), g.comparator),
+            unique_sources.end()
+        );
+
+        OMP("parallel for")
+        for (update_iterator key = unique_sources.begin(); key != unique_sources.end(); ++key)
+        {
+            // HACK also partition on etype
+            assert(G->max_netypes == 1);
+            int64_t type = 0;
+            // Locate the range of updates for this source vertex
+            int64_t source = g.getter(*key);
+            std::pair<update_iterator, update_iterator> pair =
+            std::equal_range(updates.begin(), updates.end(), *key, g.comparator);
+            update_iterator begin = pair.first;
+            update_iterator end = pair.second;
+
+            // TODO call single update version if there's only a few edges for a vertex
+            // TODO split into smaller batches if there are a lot of edges for a vertex
+            stinger_update_directed_edges_for_vertex(G, source, type, begin, end, g.direction, operation);
+        }
     }
 }
 
@@ -157,6 +196,8 @@ stinger_update_directed_edges_for_vertex(
     MAP_STING(G);
     stinger_eb *ebpool_priv = ebpool->ebpool;
     curs curs = etype_begin (G, src, type);
+
+    assert(direction == STINGER_EDGE_DIRECTION_OUT || direction == STINGER_EDGE_DIRECTION_IN);
 
     /*
 Possibilities:

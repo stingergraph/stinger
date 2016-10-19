@@ -44,14 +44,14 @@ TEST_F(StingerBatchTest, stinger_batch_edge_insertion) {
             i, NULL, // source, source_str
             i+1, NULL, // destination, destination_str
             1, // weight
-            i*100, // times
+            i*100, // time
             0, 0 // result, meta_index
         };
         updates.push_back(u);
     }
 
     // Insert the new way
-    stinger_batch_update(S, updates, STINGER_EDGE_DIRECTION_OUT, EDGE_WEIGHT_INCR);
+    stinger_batch_update(S, updates, EDGE_WEIGHT_INCR);
 
     for (update_iterator u = updates.begin(); u != updates.end(); ++u)
     {
