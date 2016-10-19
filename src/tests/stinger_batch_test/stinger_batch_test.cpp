@@ -10,6 +10,8 @@ extern "C" {
 #include <vector>
 #include <scc_test.h>
 
+typedef std::vector<stinger_edge_update>::iterator update_iterator;
+
 class StingerBatchTest : public ::testing::Test {
 protected:
   virtual void SetUp() {
@@ -31,12 +33,38 @@ protected:
   struct stinger * S;
 };
 
-TEST_F(StingerBatchTest, stinger_batch_edge_insertion) {
+TEST_F(StingerBatchTest, single_insertion) {
     int64_t total_edges = 0;
 
     // Create batch to insert
     std::vector<stinger_edge_update> updates;
-    typedef std::vector<stinger_edge_update>::iterator update_iterator;
+    stinger_edge_update u = {
+        0, NULL, // type, type_str
+        4, NULL, // source, source_str
+        5, NULL, // destination, destination_str
+        1, // weight
+        100, // time
+        0, 0 // result, meta_index
+    };
+    updates.push_back(u);
+
+    stinger_batch_update(S, updates, EDGE_WEIGHT_INCR);
+
+    for (update_iterator u = updates.begin(); u != updates.end(); ++u)
+    {
+        EXPECT_EQ(u->result, 1);
+    }
+
+    int64_t consistency = stinger_consistency_check(S,S->max_nv);
+    EXPECT_EQ(consistency,0);
+}
+
+
+TEST_F(StingerBatchTest, simple_batch_insertion) {
+    int64_t total_edges = 0;
+
+    // Create batch to insert
+    std::vector<stinger_edge_update> updates;
     for (int i = 0; i < 10; ++i)
     {
         stinger_edge_update u = {
@@ -45,7 +73,7 @@ TEST_F(StingerBatchTest, stinger_batch_edge_insertion) {
             i+1, NULL, // destination, destination_str
             1, // weight
             i*100, // time
-            0, 0 // result, meta_index
+            0, 0 // result, meta_indesx
         };
         updates.push_back(u);
     }

@@ -127,7 +127,6 @@ stinger_batch_update(stinger * G, std::vector<stinger_edge_update> &updates, int
         OMP("parallel for")
         for (update_iterator key = unique_sources.begin(); key < unique_sources.end(); ++key)
         {
-
             // HACK also partition on etype
             assert(G->max_netypes == 1);
             int64_t type = 0;
@@ -200,16 +199,21 @@ public:
 
 static void do_edge_updates(int64_t result, bool create, update_iterator pos, update_iterator updates_end, stinger * G, stinger_eb *eb, size_t e, int64_t direction, int64_t operation)
 {
-    int64_t dest = pos->destination;
+    update_attr_getter get_neighbor;
+    switch (direction) {
+        case STINGER_EDGE_DIRECTION_OUT: get_neighbor = stinger_edge_update_get_destination; break;
+        case STINGER_EDGE_DIRECTION_IN:  get_neighbor = stinger_edge_update_get_source; break;
+        default: assert(0);
+    }
+    int64_t neighbor = get_neighbor(*pos);
 
-    for (update_iterator u = pos; u != updates_end && u->destination == dest; ++u){
-        if (u == pos)
-        {
+    for (update_iterator u = pos; u != updates_end && get_neighbor(*u) == neighbor; ++u) {
+        if (u == pos) {
             u->result = result;
-            update_edge_data_and_direction (G, eb, e, u->destination, u->weight, u->time, direction, create ? EDGE_WEIGHT_SET : operation);
+            update_edge_data_and_direction (G, eb, e, get_neighbor(*u), u->weight, u->time, direction, create ? EDGE_WEIGHT_SET : operation);
         } else {
             u->result = EDGE_UPDATED;
-            update_edge_data_and_direction (G, eb, e, u->destination, u->weight, u->time, direction, operation);
+            update_edge_data_and_direction (G, eb, e, get_neighbor(*u), u->weight, u->time, direction, operation);
         }
     }
 }
