@@ -316,13 +316,12 @@ Possibilities:
                             writexf ( (uint64_t *)&(tmp->edges[k].timeFirst), timefirst);
                         }
                     }
+                    if (next_update() == updates_end) { return; }
                 }
             }
 
             block_ptr = &(tmp->next);
         }
-
-        if (next_update() == updates_end) { return; }
 
         /* 3: Needs a new block to be inserted at end of list. */
         // Try to lock the tail pointer of the last block
