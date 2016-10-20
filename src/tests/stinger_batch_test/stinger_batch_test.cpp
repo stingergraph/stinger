@@ -146,6 +146,61 @@ TEST_F(StingerBatchTest, batch_insertion) {
 
 }
 
+TEST_F(StingerBatchTest, duplicate_batch_insertion) {
+    int64_t total_edges = 0;
+    int64_t consistency;
+
+    // Create batch to insert
+    std::vector<stinger_edge_update> updates;
+
+    const int num_dupes = 10;
+    int total_weight_per_edge = 0;
+    int64_t num_edges;
+    for (int d=0; d < num_dupes; ++d) {
+        num_edges = 0;
+        for (int i=0; i < 100; i++) {
+            for (int j=i+1; j < 100; j++) {
+                stinger_edge_update u = {
+                    0, NULL, // type, type_str
+                    i, NULL, // source, source_str
+                    j, NULL, // destination, destination_str
+                    d, // weight
+                    d, // time
+                    0, 0 // result, meta_index
+                };
+                updates.push_back(u);
+                num_edges++;
+            }
+        }
+        total_weight_per_edge += d;
+    }
+
+    // Do the updates
+    stinger_batch_update(S, updates, EDGE_WEIGHT_INCR);
+
+    // Only one update for each edge should return as "added", the rest should indicate "updated"
+
+    int64_t num_inserts = 0;
+    for (update_iterator u = updates.begin(); u < updates.end(); ++u)
+    {
+        if (u->result == 1) { ++num_inserts; }
+    }
+    EXPECT_EQ(num_inserts, num_edges);
+
+    // Timestamp should reflect the last update
+    STINGER_FORALL_EDGES_OF_ALL_TYPES_BEGIN(S) {
+        EXPECT_EQ(STINGER_EDGE_TIME_RECENT, num_dupes - 1);
+    }STINGER_FORALL_EDGES_OF_ALL_TYPES_END();
+
+    // Weight should be sum of all updates
+    STINGER_FORALL_EDGES_OF_ALL_TYPES_BEGIN(S) {
+        EXPECT_EQ(STINGER_EDGE_WEIGHT, total_weight_per_edge);
+    }STINGER_FORALL_EDGES_OF_ALL_TYPES_END();
+
+    consistency = stinger_consistency_check(S,S->max_nv);
+    EXPECT_EQ(consistency,0);
+
+}
 
 int
 main (int argc, char *argv[])
