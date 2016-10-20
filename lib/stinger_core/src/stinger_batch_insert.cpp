@@ -10,7 +10,8 @@
 #include <stinger_alg.h>
 #include <stinger_net/stinger_alg.h>
 
-typedef std::vector<stinger_edge_update>::iterator update_iterator;
+typedef stinger_edge_update update;
+typedef std::vector<update>::iterator update_iterator;
 
 // FIXME subtract 10 from all return codes before returning
 const int64_t PENDING = 0;
@@ -19,9 +20,9 @@ const int64_t EDGE_UPDATED = 10;
 const int64_t EDGE_NOT_ADDED = 9;
 
 // Used to sort a vector of stinger_edge_updates below
-typedef bool (*update_comparator)(const stinger_edge_update &, const stinger_edge_update &);
+typedef bool (*update_comparator)(const update &, const update &);
 
-static bool stinger_edge_update_order_by_source(const stinger_edge_update &a, const stinger_edge_update &b){
+static bool order_by_source(const update &a, const update &b){
     return (a.type != b.type) ? a.type < b.type :
            (a.source != b.source) ? a.source < b.source :
            (a.destination != b.destination) ? a.destination < b.destination :
@@ -29,7 +30,7 @@ static bool stinger_edge_update_order_by_source(const stinger_edge_update &a, co
            false;
 }
 
-static bool stinger_edge_update_order_by_dest(const stinger_edge_update &a, const stinger_edge_update &b){
+static bool order_by_dest(const update &a, const update &b){
     return (a.type != b.type) ? a.type < b.type :
            (a.destination != b.destination) ? a.destination < b.destination :
            (a.source != b.source) ? a.source < b.source :
@@ -38,48 +39,48 @@ static bool stinger_edge_update_order_by_dest(const stinger_edge_update &a, cons
 }
 
 static bool
-stinger_edge_update_compare_sources(const stinger_edge_update &a, const stinger_edge_update &b){
+compare_sources(const update &a, const update &b){
     return a.source < b.source;
 }
 
 static bool
-stinger_edge_update_compare_destinations(const stinger_edge_update &a, const stinger_edge_update &b){
+compare_destinations(const update &a, const update &b){
     return a.destination < b.destination;
 }
 
 static bool
-stinger_edge_update_sources_equal(const stinger_edge_update &a, const stinger_edge_update &b){
+sources_equal(const update &a, const update &b){
     return a.source == b.source;
 }
 
 static bool
-stinger_edge_update_destinations_equal(const stinger_edge_update &a, const stinger_edge_update &b){
+destinations_equal(const update &a, const update &b){
     return a.destination == b.destination;
 }
 
 // Used to get a list of unique source/dest vertices in a batch of updates below
-typedef int64_t (*update_attr_getter)(const stinger_edge_update &);
+typedef int64_t (*update_attr_getter)(const update &);
 
 static int64_t
-stinger_edge_update_get_source(const stinger_edge_update &x){
+get_source(const update &x){
     return x.source;
 }
 
 static int64_t
-stinger_edge_update_get_destination(const stinger_edge_update &x){
+get_destination(const update &x){
     return x.destination;
 }
 
 // Used to get a list of unique source/dest vertices in a batch of updates below
-typedef void (*update_attr_setter)(stinger_edge_update &, int64_t);
+typedef void (*update_attr_setter)(update &, int64_t);
 
 static void
-stinger_edge_update_set_source(stinger_edge_update &x, int64_t neighbor){
+set_source(update &x, int64_t neighbor){
     x.source = neighbor;
 }
 
 static void
-stinger_edge_update_set_destination(stinger_edge_update &x, int64_t neighbor){
+set_destination(update &x, int64_t neighbor){
     x.destination = neighbor;
 }
 
@@ -109,23 +110,23 @@ struct function_group
 
 function_group functions_out = {
     STINGER_EDGE_DIRECTION_OUT,
-    stinger_edge_update_get_source,
-    stinger_edge_update_set_source,
-    stinger_edge_update_order_by_source,
-    stinger_edge_update_compare_sources,
-    stinger_edge_update_sources_equal
+    get_source,
+    set_source,
+    order_by_source,
+    compare_sources,
+    sources_equal
 };
 function_group functions_in = {
     STINGER_EDGE_DIRECTION_IN,
-    stinger_edge_update_get_destination,
-    stinger_edge_update_set_destination,
-    stinger_edge_update_order_by_dest,
-    stinger_edge_update_compare_destinations,
-    stinger_edge_update_destinations_equal
+    get_destination,
+    set_destination,
+    order_by_dest,
+    compare_destinations,
+    destinations_equal
 };
 
 void
-stinger_batch_update(stinger * G, std::vector<stinger_edge_update> &updates, int64_t operation)
+stinger_batch_update(stinger * G, std::vector<update> &updates, int64_t operation)
 {
     const function_group groups[] = {functions_out, functions_in};
 
@@ -138,7 +139,7 @@ stinger_batch_update(stinger * G, std::vector<stinger_edge_update> &updates, int
         // Sort by type, src, dst, time ascending
         std::sort(updates.begin(), updates.end(), g.sort);
         // Get a list of unique sources
-        std::vector<stinger_edge_update> unique_sources;
+        std::vector<update> unique_sources;
         std::unique_copy(updates.begin(), updates.end(), std::back_inserter(unique_sources), g.equals);
 
         OMP("parallel for")
@@ -181,7 +182,7 @@ Iter binary_find(Iter begin, Iter end, T val, Compare comp)
 update_iterator find_updates(update_iterator begin, update_iterator end, int64_t neighbor, int64_t direction)
 {
     function_group &g = direction == STINGER_EDGE_DIRECTION_OUT ? functions_out : functions_in;
-    stinger_edge_update key;
+    update key;
     g.set(key, neighbor);
     update_iterator pos = binary_find(begin, end, key, g.compare);
     return (pos->result == PENDING) ? pos : end;
@@ -235,8 +236,8 @@ static void do_edge_updates(int64_t result, bool create, update_iterator pos, up
 void
 stinger_update_directed_edges_for_vertex(
         stinger *G, int64_t src, int64_t type,
-        std::vector<stinger_edge_update>::iterator updates_begin,
-        std::vector<stinger_edge_update>::iterator updates_end,
+        update_iterator updates_begin,
+        update_iterator updates_end,
         int64_t direction, int64_t operation)
 {
 
