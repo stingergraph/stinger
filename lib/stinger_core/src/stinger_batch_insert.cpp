@@ -222,10 +222,10 @@ static void do_edge_updates(int64_t result, bool create, update_iterator pos, up
     for (update_iterator u = pos; u != updates_end && g.get(*u) == neighbor; ++u) {
         if (u == pos) {
             u->result = result;
-            update_edge_data_and_direction (G, eb, e, g.get(*u), u->weight, u->time, direction, create ? EDGE_WEIGHT_SET : operation);
+            update_edge_data_and_direction (G, eb, e, neighbor, u->weight, u->time, direction, create ? EDGE_WEIGHT_SET : operation);
         } else {
             u->result = EDGE_UPDATED;
-            update_edge_data_and_direction (G, eb, e, g.get(*u), u->weight, u->time, direction, operation);
+            update_edge_data_and_direction (G, eb, e, neighbor, u->weight, u->time, direction, operation);
         }
     }
 }
