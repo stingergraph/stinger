@@ -107,14 +107,14 @@ struct function_group
     update_comparator equals;
 };
 
-function_group source_functions = {
+const function_group source_functions = {
     get_source,
     set_source,
     order_by_source,
     compare_sources,
     sources_equal
 };
-function_group destination_functions = {
+const function_group destination_functions = {
     get_destination,
     set_destination,
     order_by_dest,
@@ -129,7 +129,7 @@ stinger_batch_update(stinger * G, std::vector<update> &updates, int64_t operatio
         // First iteration: group by source and update out-edges
         // Second iteration: group by destination and update in-edges
         int64_t direction = (i == 0) ? STINGER_EDGE_DIRECTION_OUT : STINGER_EDGE_DIRECTION_IN;
-        function_group &g = (i == 0) ? source_functions : destination_functions;
+        const function_group &g = (i == 0) ? source_functions : destination_functions;
 
         // Set all result codes to 0 - only the last iteration return codes survive
         clear_results(updates.begin(), updates.end());
@@ -179,7 +179,7 @@ Iter binary_find(Iter begin, Iter end, T val, Compare comp)
 // Find the first pending update with destination 'dest'
 update_iterator find_updates(update_iterator begin, update_iterator end, int64_t neighbor, int64_t direction)
 {
-    function_group &g = direction == STINGER_EDGE_DIRECTION_OUT ? destination_functions : source_functions;
+    const function_group &g = direction == STINGER_EDGE_DIRECTION_OUT ? destination_functions : source_functions;
     update key;
     g.set(key, neighbor);
     update_iterator pos = binary_find(begin, end, key, g.compare);
@@ -216,7 +216,7 @@ public:
 
 static void do_edge_updates(int64_t result, bool create, update_iterator pos, update_iterator updates_end, stinger * G, stinger_eb *eb, size_t e, int64_t direction, int64_t operation)
 {
-    function_group &g = direction == STINGER_EDGE_DIRECTION_OUT ? destination_functions : source_functions;
+    const function_group &g = direction == STINGER_EDGE_DIRECTION_OUT ? destination_functions : source_functions;
     int64_t neighbor = g.get(*pos);
 
     for (update_iterator u = pos; u != updates_end && g.get(*u) == neighbor; ++u) {
