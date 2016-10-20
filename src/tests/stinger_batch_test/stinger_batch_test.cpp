@@ -65,7 +65,7 @@ TEST_F(StingerBatchTest, simple_batch_insertion) {
 
     // Create batch to insert
     std::vector<stinger_edge_update> updates;
-    for (int i = 0; i < 10; ++i)
+    for (int i = 0; i < 2; ++i)
     {
         stinger_edge_update u = {
             0, NULL, // type, type_str

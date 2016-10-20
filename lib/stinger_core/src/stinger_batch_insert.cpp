@@ -70,6 +70,19 @@ stinger_edge_update_get_destination(const stinger_edge_update &x){
     return x.destination;
 }
 
+// Used to get a list of unique source/dest vertices in a batch of updates below
+typedef void (*update_attr_setter)(stinger_edge_update &, int64_t);
+
+static void
+stinger_edge_update_set_source(stinger_edge_update &x, int64_t neighbor){
+    x.source = neighbor;
+}
+
+static void
+stinger_edge_update_set_destination(stinger_edge_update &x, int64_t neighbor){
+    x.destination = neighbor;
+}
+
 void
 clear_results(update_iterator begin, update_iterator end)
 {
@@ -88,29 +101,33 @@ struct function_group
 {
     int64_t direction;
     update_attr_getter get;
+    update_attr_setter set;
     update_comparator sort;
     update_comparator compare;
     update_comparator equals;
 };
 
+function_group functions_out = {
+    STINGER_EDGE_DIRECTION_OUT,
+    stinger_edge_update_get_source,
+    stinger_edge_update_set_source,
+    stinger_edge_update_order_by_source,
+    stinger_edge_update_compare_sources,
+    stinger_edge_update_sources_equal
+};
+function_group functions_in = {
+    STINGER_EDGE_DIRECTION_IN,
+    stinger_edge_update_get_destination,
+    stinger_edge_update_set_destination,
+    stinger_edge_update_order_by_dest,
+    stinger_edge_update_compare_destinations,
+    stinger_edge_update_destinations_equal
+};
+
 void
 stinger_batch_update(stinger * G, std::vector<stinger_edge_update> &updates, int64_t operation)
 {
-    function_group out = {
-        STINGER_EDGE_DIRECTION_OUT,
-        stinger_edge_update_get_source,
-        stinger_edge_update_order_by_source,
-        stinger_edge_update_compare_sources,
-        stinger_edge_update_sources_equal
-    };
-    function_group in = {
-        STINGER_EDGE_DIRECTION_IN,
-        stinger_edge_update_get_destination,
-        stinger_edge_update_order_by_dest,
-        stinger_edge_update_compare_destinations,
-        stinger_edge_update_destinations_equal
-    };
-    const function_group groups[] = {out, in};
+    const function_group groups[] = {functions_out, functions_in};
 
     for (int i = 0; i < 2; ++i) {
         function_group g = groups[i];
@@ -161,11 +178,12 @@ Iter binary_find(Iter begin, Iter end, T val, Compare comp)
 
 
 // Find the first pending update with destination 'dest'
-update_iterator find_updates(update_iterator begin, update_iterator end, int64_t dest)
+update_iterator find_updates(update_iterator begin, update_iterator end, int64_t neighbor, int64_t direction)
 {
+    function_group &g = direction == STINGER_EDGE_DIRECTION_OUT ? functions_out : functions_in;
     stinger_edge_update key;
-    key.destination = dest;
-    update_iterator pos = binary_find(begin, end, key, stinger_edge_update_compare_destinations);
+    g.set(key, neighbor);
+    update_iterator pos = binary_find(begin, end, key, g.compare);
     return (pos->result == PENDING) ? pos : end;
 }
 
@@ -199,21 +217,16 @@ public:
 
 static void do_edge_updates(int64_t result, bool create, update_iterator pos, update_iterator updates_end, stinger * G, stinger_eb *eb, size_t e, int64_t direction, int64_t operation)
 {
-    update_attr_getter get_neighbor;
-    switch (direction) {
-        case STINGER_EDGE_DIRECTION_OUT: get_neighbor = stinger_edge_update_get_destination; break;
-        case STINGER_EDGE_DIRECTION_IN:  get_neighbor = stinger_edge_update_get_source; break;
-        default: assert(0);
-    }
-    int64_t neighbor = get_neighbor(*pos);
+    function_group &g = direction == STINGER_EDGE_DIRECTION_OUT ? functions_out : functions_in;
+    int64_t neighbor = g.get(*pos);
 
-    for (update_iterator u = pos; u != updates_end && get_neighbor(*u) == neighbor; ++u) {
+    for (update_iterator u = pos; u != updates_end && g.get(*u) == neighbor; ++u) {
         if (u == pos) {
             u->result = result;
-            update_edge_data_and_direction (G, eb, e, get_neighbor(*u), u->weight, u->time, direction, create ? EDGE_WEIGHT_SET : operation);
+            update_edge_data_and_direction (G, eb, e, g.get(*u), u->weight, u->time, direction, create ? EDGE_WEIGHT_SET : operation);
         } else {
             u->result = EDGE_UPDATED;
-            update_edge_data_and_direction (G, eb, e, get_neighbor(*u), u->weight, u->time, direction, operation);
+            update_edge_data_and_direction (G, eb, e, g.get(*u), u->weight, u->time, direction, operation);
         }
     }
 }
@@ -250,7 +263,7 @@ Possibilities:
                 // Mask off direction bits to get the raw neighbor of this edge
                 int64_t dest = (tmp->edges[k].neighbor & (~STINGER_EDGE_DIRECTION_MASK));
                 // Find updates for this destination
-                update_iterator u = find_updates(updates_begin, updates_end, dest);
+                update_iterator u = find_updates(updates_begin, updates_end, dest, direction);
                 // If we already have an in-edge for this destination, we will reuse the edge slot
                 // But the return code should reflect that we added an edge
                 int64_t result = (direction & tmp->edges[k].neighbor) ? EDGE_UPDATED : EDGE_ADDED;
@@ -277,7 +290,7 @@ Possibilities:
                     // Check for edges that were added by another thread since we last checked
                     if (k < endk) {
                         // Find updates for this destination
-                        update_iterator u = find_updates(updates_begin, updates_end, myNeighbor);
+                        update_iterator u = find_updates(updates_begin, updates_end, myNeighbor, direction);
                         // If we already have an in-edge for this destination, we will reuse the edge slot
                         // But the return code should reflect that we added an edge
                         int64_t result = (direction & tmp->edges[k].neighbor) ? EDGE_UPDATED : EDGE_ADDED;
@@ -290,7 +303,7 @@ Possibilities:
                         int64_t thisEdge = (tmp->edges[k].neighbor & (~STINGER_EDGE_DIRECTION_MASK));
                         endk = tmp->high;
 
-                        update_iterator u = find_updates(updates_begin, updates_end, thisEdge);
+                        update_iterator u = find_updates(updates_begin, updates_end, thisEdge, direction);
                         if (thisEdge < 0 || k >= endk) {
                             // Slot is empty, add the edge
                             do_edge_updates(EDGE_ADDED, true, next_update(), updates_end, G, tmp, k, direction, operation);
