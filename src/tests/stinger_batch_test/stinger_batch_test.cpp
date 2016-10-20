@@ -96,26 +96,19 @@ TEST_F(StingerBatchTest, batch_insertion) {
 
     // Create batch to insert
     std::vector<stinger_edge_update> updates;
-    for (int i = 0; i < 100; ++i)
-    {
-        stinger_edge_update u = {
-            0, NULL, // type, type_str
-            i, NULL, // source, source_str
-            i+1, NULL, // destination, destination_str
-            1, // weight
-            i*100, // time
-            0, 0 // result, meta_index
-        };
-        updates.push_back(u);
-        stinger_edge_update v = {
-            0, NULL, // type, type_str
-            i+1, NULL, // source, source_str
-            i, NULL, // destination, destination_str
-            1, // weight
-            i*100, // time
-            0, 0 // result, meta_index
-        };
-        updates.push_back(v);
+    for (int i=0; i < 100; i++) {
+        int64_t timestamp = i+1;
+        for (int j=i+1; j < 100; j++) {
+            stinger_edge_update u = {
+                0, NULL, // type, type_str
+                i, NULL, // source, source_str
+                j, NULL, // destination, destination_str
+                1, // weight
+                timestamp, // time
+                0, 0 // result, meta_index
+            };
+            updates.push_back(u);
+        }
     }
 
     // Do the updates
