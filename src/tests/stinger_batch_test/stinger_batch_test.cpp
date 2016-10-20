@@ -48,7 +48,7 @@ TEST_F(StingerBatchTest, single_insertion) {
     };
     updates.push_back(u);
 
-    stinger_batch_update(S, updates, EDGE_WEIGHT_INCR);
+    stinger_batch_incr_edge(S, updates);
 
     for (update_iterator u = updates.begin(); u != updates.end(); ++u)
     {
@@ -79,15 +79,15 @@ TEST_F(StingerBatchTest, simple_batch_insertion) {
     }
 
     // Insert the new way
-    stinger_batch_update(S, updates, EDGE_WEIGHT_INCR);
+    stinger_batch_incr_edge(S, updates);
+
+    int64_t consistency = stinger_consistency_check(S,S->max_nv);
+    EXPECT_EQ(consistency,0);
 
     for (update_iterator u = updates.begin(); u != updates.end(); ++u)
     {
         EXPECT_EQ(u->result, 1);
     }
-
-    int64_t consistency = stinger_consistency_check(S,S->max_nv);
-    EXPECT_EQ(consistency,0);
 }
 
 TEST_F(StingerBatchTest, batch_insertion) {
@@ -112,7 +112,10 @@ TEST_F(StingerBatchTest, batch_insertion) {
     }
 
     // Do the updates
-    stinger_batch_update(S, updates, EDGE_WEIGHT_INCR);
+    stinger_batch_incr_edge(S, updates);
+
+    consistency = stinger_consistency_check(S,S->max_nv);
+    EXPECT_EQ(consistency,0);
 
     // Make sure all edges were detected as "new"
     for (update_iterator u = updates.begin(); u != updates.end(); ++u)
@@ -120,15 +123,15 @@ TEST_F(StingerBatchTest, batch_insertion) {
         EXPECT_EQ(u->result, 1);
     }
 
-    consistency = stinger_consistency_check(S,S->max_nv);
-    EXPECT_EQ(consistency,0);
-
     // Reset return codes so we can reuse this batch
     OMP("omp parallel for")
     for (update_iterator u = updates.begin(); u < updates.end(); ++u) { u->result = 0; }
 
     // Insert same batch again
-    stinger_batch_update(S, updates, EDGE_WEIGHT_INCR);
+    stinger_batch_incr_edge(S, updates);
+
+    consistency = stinger_consistency_check(S,S->max_nv);
+    EXPECT_EQ(consistency,0);
 
     // Make sure all edges were detected as "updated"
     for (update_iterator u = updates.begin(); u != updates.end(); ++u)
@@ -140,10 +143,6 @@ TEST_F(StingerBatchTest, batch_insertion) {
     STINGER_FORALL_EDGES_OF_ALL_TYPES_BEGIN(S) {
         EXPECT_EQ(STINGER_EDGE_WEIGHT, 2);
     }STINGER_FORALL_EDGES_OF_ALL_TYPES_END();
-
-    consistency = stinger_consistency_check(S,S->max_nv);
-    EXPECT_EQ(consistency,0);
-
 }
 
 TEST_F(StingerBatchTest, duplicate_batch_insertion) {
@@ -176,10 +175,12 @@ TEST_F(StingerBatchTest, duplicate_batch_insertion) {
     }
 
     // Do the updates
-    stinger_batch_update(S, updates, EDGE_WEIGHT_INCR);
+    stinger_batch_incr_edge(S, updates);
+
+    consistency = stinger_consistency_check(S,S->max_nv);
+    EXPECT_EQ(consistency,0);
 
     // Only one update for each edge should return as "added", the rest should indicate "updated"
-
     int64_t num_inserts = 0;
     for (update_iterator u = updates.begin(); u < updates.end(); ++u)
     {
@@ -196,10 +197,6 @@ TEST_F(StingerBatchTest, duplicate_batch_insertion) {
     STINGER_FORALL_EDGES_OF_ALL_TYPES_BEGIN(S) {
         EXPECT_EQ(STINGER_EDGE_WEIGHT, total_weight_per_edge);
     }STINGER_FORALL_EDGES_OF_ALL_TYPES_END();
-
-    consistency = stinger_consistency_check(S,S->max_nv);
-    EXPECT_EQ(consistency,0);
-
 }
 
 int

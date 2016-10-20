@@ -9,13 +9,12 @@
 #include <vector>
 
 void
-stinger_batch_update(stinger * G, std::vector<stinger_edge_update> &updates, int64_t operation);
-
+stinger_batch_incr_edge(stinger * G, std::vector<stinger_edge_update> &updates);
 void
-stinger_update_directed_edges_for_vertex(
-        stinger *G, int64_t src, int64_t type,
-        std::vector<stinger_edge_update>::iterator updates_begin,
-        std::vector<stinger_edge_update>::iterator updates_end,
-        int64_t direction, int64_t operation);
+stinger_batch_insert_edge(stinger * G, std::vector<stinger_edge_update> &updates);
+void
+stinger_batch_incr_edge_pair(stinger * G, std::vector<stinger_edge_update> &updates);
+void
+stinger_batch_incr_edge_pair(stinger * G, std::vector<stinger_edge_update> &updates);
 
 #endif //STINGER_BATCH_INSERT_H_

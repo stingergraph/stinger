@@ -13,11 +13,14 @@
 typedef stinger_edge_update update;
 typedef std::vector<update>::iterator update_iterator;
 
-// FIXME subtract 10 from all return codes before returning
-const int64_t PENDING = 0;
-const int64_t EDGE_ADDED = 11;
-const int64_t EDGE_UPDATED = 10;
-const int64_t EDGE_NOT_ADDED = 9;
+// Result codes
+// Before returning to caller, we subtract 10 to make return codes match up with functions like stinger_incr_edge
+enum result_codes {
+    PENDING = 0,
+    EDGE_ADDED = 11,    // 1
+    EDGE_UPDATED = 10,  // 0
+    EDGE_NOT_ADDED = 9  // -1
+};
 
 // Used to sort a vector of stinger_edge_updates below
 typedef bool (*update_comparator)(const update &, const update &);
@@ -58,6 +61,11 @@ destinations_equal(const update &a, const update &b){
     return a.destination == b.destination;
 }
 
+static bool
+source_less_than_destination(const update &x){
+    return x.source < x.destination;
+}
+
 // Used to get a list of unique source/dest vertices in a batch of updates below
 typedef int64_t (*update_attr_getter)(const update &);
 
@@ -84,20 +92,6 @@ set_destination(update &x, int64_t neighbor){
     x.destination = neighbor;
 }
 
-void
-clear_results(update_iterator begin, update_iterator end)
-{
-    OMP("omp parallel for")
-    for (update_iterator u = begin; u < end; ++u) { u->result = PENDING; }
-}
-
-void
-remap_results(update_iterator begin, update_iterator end)
-{
-    OMP("omp parallel for")
-    for (update_iterator u = begin; u < end; ++u) { u->result = u->result - 10; }
-}
-
 struct function_group
 {
     update_attr_getter get;
@@ -121,45 +115,6 @@ const function_group destination_functions = {
     compare_destinations,
     destinations_equal
 };
-
-void
-stinger_batch_update(stinger * G, std::vector<update> &updates, int64_t operation)
-{
-    for (int i = 0; i < 2; ++i) {
-        // First iteration: group by source and update out-edges
-        // Second iteration: group by destination and update in-edges
-        int64_t direction = (i == 0) ? STINGER_EDGE_DIRECTION_OUT : STINGER_EDGE_DIRECTION_IN;
-        const function_group &g = (i == 0) ? source_functions : destination_functions;
-
-        // Set all result codes to 0 - only the last iteration return codes survive
-        clear_results(updates.begin(), updates.end());
-
-        // Sort by type, src, dst, time ascending
-        std::sort(updates.begin(), updates.end(), g.sort);
-        // Get a list of unique sources
-        std::vector<update> unique_sources;
-        std::unique_copy(updates.begin(), updates.end(), std::back_inserter(unique_sources), g.equals);
-
-        OMP("parallel for")
-        for (update_iterator key = unique_sources.begin(); key < unique_sources.end(); ++key)
-        {
-            // HACK also partition on etype
-            assert(G->max_netypes == 1);
-            int64_t type = 0;
-            // Locate the range of updates for this source vertex
-            int64_t source = g.get(*key);
-            std::pair<update_iterator, update_iterator> pair =
-            std::equal_range(updates.begin(), updates.end(), *key, g.compare);
-            update_iterator begin = pair.first;
-            update_iterator end = pair.second;
-
-            // TODO call single update version if there's only a few edges for a vertex
-            // TODO split into smaller batches if there are a lot of edges for a vertex
-            stinger_update_directed_edges_for_vertex(G, source, type, begin, end, direction, operation);
-        }
-    }
-    remap_results(updates.begin(), updates.end());
-}
 
 // Finds an element in a sorted range using binary search
 // http://stackoverflow.com/a/446327/1877086
@@ -214,7 +169,8 @@ public:
  * operation - EDGE_WEIGHT_SET or EDGE_WEIGHT_INCR
  */
 
-static void do_edge_updates(int64_t result, bool create, update_iterator pos, update_iterator updates_end, stinger * G, stinger_eb *eb, size_t e, int64_t direction, int64_t operation)
+static void
+do_edge_updates(int64_t result, bool create, update_iterator pos, update_iterator updates_end, stinger * G, stinger_eb *eb, size_t e, int64_t direction, int64_t operation)
 {
     const function_group &g = direction == STINGER_EDGE_DIRECTION_OUT ? destination_functions : source_functions;
     int64_t neighbor = g.get(*pos);
@@ -231,8 +187,8 @@ static void do_edge_updates(int64_t result, bool create, update_iterator pos, up
 }
 
 
-void
-stinger_update_directed_edges_for_vertex(
+static void
+update_directed_edges_for_vertex(
         stinger *G, int64_t src, int64_t type,
         update_iterator updates_begin,
         update_iterator updates_end,
@@ -349,4 +305,109 @@ Possibilities:
             writeef (block_ptr, (uint64_t)old_eb);
         }
     }
+}
+
+static void
+do_batch_update(stinger * G, update_iterator updates_begin, update_iterator updates_end, int64_t direction, int64_t operation)
+{
+    // First iteration: group by source and update out-edges
+    // Second iteration: group by destination and update in-edges
+    // Unless swap_direction_order is set
+    const function_group &g = direction == STINGER_EDGE_DIRECTION_OUT ? source_functions : destination_functions;
+
+    // Sort by type, src, dst, time ascending
+    std::sort(updates_begin, updates_end, g.sort);
+    // Get a list of unique sources
+    std::vector<update> unique_sources;
+    std::unique_copy(updates_begin, updates_end, std::back_inserter(unique_sources), g.equals);
+
+    OMP("parallel for")
+    for (update_iterator key = unique_sources.begin(); key < unique_sources.end(); ++key)
+    {
+        // HACK also partition on etype
+        assert(G->max_netypes == 1);
+        int64_t type = 0;
+        // Locate the range of updates for this source vertex
+        int64_t source = g.get(*key);
+        std::pair<update_iterator, update_iterator> pair =
+                std::equal_range(updates_begin, updates_end, *key, g.compare);
+        update_iterator begin = pair.first;
+        update_iterator end = pair.second;
+
+        // TODO call single update version if there's only a few edges for a vertex
+        // TODO split into smaller batches if there are a lot of edges for a vertex
+        // TODO use OMP "collapse" here to parallelize over both loops
+        update_directed_edges_for_vertex(G, source, type, begin, end, direction, operation);
+    }
+}
+
+static void
+make_undirected(std::vector<stinger_edge_update> &updates)
+{
+    std::vector<update> reverse_edges;
+    for (update_iterator u = updates.begin(); u < updates.end(); ++u)
+    {
+        update v = *u;
+        std::swap(v.source, v.destination);
+        reverse_edges.push_back(v);
+    }
+    updates.insert(updates.end(), reverse_edges.begin(), reverse_edges.end());
+}
+
+// We use the result field to keep track of which updates have been performed
+// Between IN and OUT iterations, we clear it out to make sure all the updates are performed again
+static void
+clear_results(update_iterator begin, update_iterator end)
+{
+    OMP("omp parallel for")
+    for (update_iterator u = begin; u < end; ++u) { u->result = PENDING; }
+}
+
+static void
+remap_results(update_iterator begin, update_iterator end)
+{
+    OMP("omp parallel for")
+    for (update_iterator u = begin; u < end; ++u) { u->result = u->result - 10; }
+}
+
+static void
+batch_update_dispatch(stinger * G, std::vector<stinger_edge_update> &updates, int64_t operation, bool directed)
+{
+    if (!directed) { make_undirected(updates); }
+
+    // In order to avoid deadlock with concurrent deletions, we must always lock edges in the same order
+    const update_iterator pos = std::partition(updates.begin(), updates.end(), source_less_than_destination);
+
+    // All elements between begin and pos have src < dest. Update the out-edge slot first
+    do_batch_update(G, updates.begin(), pos, STINGER_EDGE_DIRECTION_OUT, operation);
+    clear_results(updates.begin(), pos);
+    do_batch_update(G, updates.begin(), pos, STINGER_EDGE_DIRECTION_IN, operation);
+
+    // All elements between pos and end have dest > src. Update the in-edge slot first
+    do_batch_update(G, pos, updates.end(), STINGER_EDGE_DIRECTION_IN, operation);
+    clear_results(pos, updates.end());
+    do_batch_update(G, pos, updates.end(), STINGER_EDGE_DIRECTION_OUT, operation);
+
+    remap_results(updates.begin(), updates.end());
+}
+
+void
+stinger_batch_incr_edge(stinger * G, std::vector<stinger_edge_update> &updates)
+{
+    batch_update_dispatch(G, updates, EDGE_WEIGHT_INCR, true);
+}
+void
+stinger_batch_insert_edge(stinger * G, std::vector<stinger_edge_update> &updates)
+{
+    batch_update_dispatch(G, updates, EDGE_WEIGHT_SET, true);
+}
+void
+stinger_batch_incr_edge_pair(stinger * G, std::vector<stinger_edge_update> &updates)
+{
+    batch_update_dispatch(G, updates, EDGE_WEIGHT_INCR, false);
+}
+void
+stinger_batch_insert_edge_pair(stinger * G, std::vector<stinger_edge_update> &updates)
+{
+    batch_update_dispatch(G, updates, EDGE_WEIGHT_SET, false);
 }
