@@ -33,6 +33,20 @@ protected:
   struct stinger * S;
 };
 
+struct stinger_edge_update_adapter : public stinger_edge_update
+{
+    int64_t get_type() const { return type; }
+    void set_type(int64_t v) { type = v; }
+    int64_t get_source() const { return source; }
+    void set_source(int64_t v) { source = v; }
+    int64_t get_dest() const { return destination; }
+    void set_dest(int64_t v) { destination = v; }
+    int64_t get_weight() const { return weight; }
+    int64_t get_time() const { return time; }
+    int64_t get_result() { return result; }
+    int64_t set_result(int64_t v) { result = v; }
+};
+
 TEST_F(StingerBatchTest, single_insertion) {
     int64_t total_edges = 0;
 
@@ -47,8 +61,8 @@ TEST_F(StingerBatchTest, single_insertion) {
         0, 0 // result, meta_index
     };
     updates.push_back(u);
-
-    stinger_batch_incr_edge(S, updates);
+    std::vector<stinger_edge_update_adapter> &a = *reinterpret_cast<std::vector<stinger_edge_update_adapter> *>(&updates);
+    stinger_batch_incr_edges(S, a.begin(), a.end());
 
     for (update_iterator u = updates.begin(); u != updates.end(); ++u)
     {
@@ -78,8 +92,8 @@ TEST_F(StingerBatchTest, simple_batch_insertion) {
         updates.push_back(u);
     }
 
-    // Insert the new way
-    stinger_batch_incr_edge(S, updates);
+    std::vector<stinger_edge_update_adapter> &a = *reinterpret_cast<std::vector<stinger_edge_update_adapter> *>(&updates);
+    stinger_batch_incr_edges(S, a.begin(), a.end());
 
     int64_t consistency = stinger_consistency_check(S,S->max_nv);
     EXPECT_EQ(consistency,0);
@@ -112,7 +126,8 @@ TEST_F(StingerBatchTest, batch_insertion) {
     }
 
     // Do the updates
-    stinger_batch_incr_edge(S, updates);
+    std::vector<stinger_edge_update_adapter> &a = *reinterpret_cast<std::vector<stinger_edge_update_adapter> *>(&updates);
+    stinger_batch_incr_edges(S, a.begin(), a.end());
 
     consistency = stinger_consistency_check(S,S->max_nv);
     EXPECT_EQ(consistency,0);
@@ -128,7 +143,7 @@ TEST_F(StingerBatchTest, batch_insertion) {
     for (update_iterator u = updates.begin(); u < updates.end(); ++u) { u->result = 0; }
 
     // Insert same batch again
-    stinger_batch_incr_edge(S, updates);
+    stinger_batch_incr_edges(S, a.begin(), a.end());
 
     consistency = stinger_consistency_check(S,S->max_nv);
     EXPECT_EQ(consistency,0);
@@ -175,7 +190,8 @@ TEST_F(StingerBatchTest, duplicate_batch_insertion) {
     }
 
     // Do the updates
-    stinger_batch_incr_edge(S, updates);
+    std::vector<stinger_edge_update_adapter> &a = *reinterpret_cast<std::vector<stinger_edge_update_adapter> *>(&updates);
+    stinger_batch_incr_edges(S, a.begin(), a.end());
 
     consistency = stinger_consistency_check(S,S->max_nv);
     EXPECT_EQ(consistency,0);

@@ -2,6 +2,8 @@
 #include <algorithm>
 #include <limits>
 #include <unistd.h>
+#include <stinger_net/stinger_alg.h>
+#include <stinger_core/stinger_batch_insert.h>
 
 #include "stinger_net/stinger_server_state.h"
 
@@ -109,6 +111,18 @@ handle_edge_names_types(EdgeInsertion & in, stinger_t * S, std::string & src, st
   }
 }
 
+void copy_protobuf_to_struct(EdgeInsertion & in, stinger_edge_update &u){
+    u.type = in.type();
+    u.type_str = in.type_str().c_str();
+    u.source = in.source();
+    u.source_str = in.source_str().c_str();
+    u.destination = in.destination();
+    u.destination_str = in.destination_str().c_str();
+    u.meta_index = in.meta_index();
+    u.result = in.result();
+    in.set_source(5);
+}
+
 /**
  * @brief Inserts and removes the edges contained in a batch.
  *
@@ -136,35 +150,45 @@ process_batch(stinger_t * S, StingerBatch & batch)
 
       case NUMBERS_ONLY: {
 	if(server_state.convert_numbers_only_to_strings()) {
-	  OMP("omp for")
+
+	    OMP("omp for")
 	    for (size_t i = 0; i < batch.insertions_size(); i++) {
-	      EdgeInsertion & in = *batch.mutable_insertions(i);
+          EdgeInsertion & in = *batch.mutable_insertions(i);
 	      int64_t u, v;
 	      TS(in);
 	      handle_edge_names_types<NUMBERS_ONLY>(in, S, src, dest, u, v);
-	      if(batch.make_undirected()) {
-		in.set_result(stinger_incr_edge_pair(S, in.type(), in.source(), in.destination(), in.weight(), in.time()));
-	      } else {
-		in.set_result(stinger_incr_edge(S, in.type(), in.source(), in.destination(), in.weight(), in.time()));
-	      }
-	      if(in.result() == -1) {
-		LOG_E_A("Error inserting edge <%ld, %ld>", in.source(), in.destination());
-	      } else {
-		char * name = NULL;
-		uint64_t name_len = 0;
-		if(-1 != stinger_mapping_physid_direct(S, in.source(), &name, &name_len))
-		  in.set_source_str(name, name_len);
-		else
-		  in.set_source_str("");
+        }
 
-		name = NULL;
-		name_len = 0;
-		if(-1 != stinger_mapping_physid_direct(S, in.destination(), &name, &name_len))
-		  in.set_destination_str(name, name_len);
-		else
-		  in.set_destination_str("");
-	      }
-	    }
+        if (batch.make_undirected())
+        {
+            stinger_batch_incr_edge_pairs(S, batch.insertions().begin(), batch.insertions().end());
+        } else {
+            stinger_batch_incr_edges(S, batch.insertions().begin(), batch.insertions().end());
+        }
+
+        OMP("omp for")
+        for (size_t i = 0; i < batch.insertions_size(); i++) {
+            EdgeInsertion & in = *batch.mutable_insertions(i);
+
+            if(in.result() == -1) {
+                LOG_E_A("Error inserting edge <%ld, %ld>", in.source(), in.destination());
+            } else {
+                char * name = NULL;
+                uint64_t name_len = 0;
+                if(-1 != stinger_mapping_physid_direct(S, in.source(), &name, &name_len))
+                    in.set_source_str(name, name_len);
+                else
+                    in.set_source_str("");
+
+                name = NULL;
+                name_len = 0;
+                if(-1 != stinger_mapping_physid_direct(S, in.destination(), &name, &name_len))
+                    in.set_destination_str(name, name_len);
+                else
+                    in.set_destination_str("");
+            }
+        }
+    }
 
 	  OMP("omp for")
 	    for(size_t d = 0; d < batch.deletions_size(); d++) {

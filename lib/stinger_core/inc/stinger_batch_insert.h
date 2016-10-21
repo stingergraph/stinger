@@ -9,10 +9,48 @@
 #include <vector>
 #include <algorithm>
 
-template<typename update, typename update_iterator>
+template <typename update_inserter>
+class BatchInserter;
+
+template <typename update_iterator>
+void
+stinger_batch_incr_edges(stinger *G, update_iterator begin, update_iterator end)
+{
+    BatchInserter<update_iterator>::batch_update_dispatch(G, begin, end, EDGE_WEIGHT_INCR, true);
+}
+template <typename update_iterator>
+void
+stinger_batch_insert_edges(stinger * G, update_iterator begin, update_iterator end)
+{
+    BatchInserter<update_iterator>::batch_update_dispatch(G, begin, end, EDGE_WEIGHT_SET, true);
+}
+template <typename update_iterator>
+void
+stinger_batch_incr_edge_pairs(stinger * G, update_iterator begin, update_iterator end)
+{
+    BatchInserter<update_iterator>::batch_update_dispatch(G, begin, end, EDGE_WEIGHT_INCR, false);
+}
+template <typename update_iterator>
+void
+stinger_batch_insert_edge_pairs(stinger * G, update_iterator begin, update_iterator end)
+{
+    BatchInserter<update_iterator>::batch_update_dispatch(G, begin, end, EDGE_WEIGHT_SET, false);
+}
+
+
+template<typename update_iterator>
 class BatchInserter
 {
 protected:
+
+    // *** Public interface ***
+    friend void stinger_batch_incr_edges<>(stinger *G, update_iterator begin, update_iterator end);
+    friend void stinger_batch_insert_edges<>(stinger * G, update_iterator begin, update_iterator end);
+    friend void stinger_batch_incr_edge_pairs<>(stinger * G, update_iterator begin, update_iterator end);
+    friend void stinger_batch_insert_edge_pairs<>(stinger * G, update_iterator begin, update_iterator end);
+
+    typedef typename std::iterator_traits<update_iterator>::value_type update;
+
     // Result codes
     // Before returning to caller, we subtract 10 to make return codes match up with functions like stinger_incr_edge
     enum result_codes {
@@ -26,7 +64,7 @@ protected:
     {
         static int64_t
         get(const update &x){
-            return x.source();
+            return x.get_source();
         }
         static void
         set(update &x, int64_t neighbor){
@@ -34,18 +72,18 @@ protected:
         }
         static bool
         equals(const update &a, const update &b){
-            return a.source() == b.source();
+            return a.get_source() == b.get_source();
         }
         static bool
         compare(const update &a, const update &b){
-            return a.source() < b.source();
+            return a.get_source() < b.get_source();
         }
         static bool
         sort(const update &a, const update &b){
-            return (a.type() != b.type()) ? a.type() < b.type() :
-                   (a.source() != b.source()) ? a.source() < b.source() :
-                   (a.destination() != b.destination()) ? a.destination() < b.destination() :
-                   (a.time() != b.time()) ? a.time() < b.time() :
+            return (a.get_type() != b.get_type()) ? a.get_type() < b.get_type() :
+                   (a.get_source() != b.get_source()) ? a.get_source() < b.get_source() :
+                   (a.get_dest() != b.get_dest()) ? a.get_dest() < b.get_dest() :
+                   (a.get_time() != b.get_time()) ? a.get_time() < b.get_time() :
                    false;
         }
     };
@@ -54,26 +92,26 @@ protected:
     {
         static int64_t
         get(const update &x){
-            return x.destination();
+            return x.get_dest();
         }
         static void
         set(update &x, int64_t neighbor){
-            x.set_destination(neighbor);
+            x.set_dest(neighbor);
         }
         static bool
         equals(const update &a, const update &b){
-            return a.destination() == b.destination();
+            return a.get_dest() == b.get_dest();
         }
         static bool
         compare(const update &a, const update &b){
-            return a.destination() < b.destination();
+            return a.get_dest() < b.get_dest();
         }
         static bool
         sort(const update &a, const update &b){
-            return (a.type() != b.type()) ? a.type() < b.type() :
-                   (a.destination() != b.destination()) ? a.destination() < b.destination() :
-                   (a.source() != b.source()) ? a.source() < b.source() :
-                   (a.time() != b.time()) ? a.time() < b.time() :
+            return (a.get_type() != b.get_type()) ? a.get_type() < b.get_type() :
+                   (a.get_dest() != b.get_dest()) ? a.get_dest() < b.get_dest() :
+                   (a.get_source() != b.get_source()) ? a.get_source() < b.get_source() :
+                   (a.get_time() != b.get_time()) ? a.get_time() < b.get_time() :
                    false;
         }
     };
@@ -81,7 +119,8 @@ protected:
     // Finds an element in a sorted range using binary search
     // http://stackoverflow.com/a/446327/1877086
     template<class Iter, class T, class Compare>
-    Iter binary_find(Iter begin, Iter end, T val, Compare comp)
+    static Iter
+    binary_find(Iter begin, Iter end, T val, Compare comp)
     {
         // Finds the lower bound in at most log(last - first) + 1 comparisons
         Iter i = std::lower_bound(begin, end, val, comp);
@@ -95,7 +134,8 @@ protected:
 
     // Find the first pending update with destination 'dest'
     template<class use_dest>
-    update_iterator find_updates(update_iterator begin, update_iterator end, int64_t neighbor)
+    static update_iterator
+    find_updates(update_iterator begin, update_iterator end, int64_t neighbor)
     {
         update key;
         use_dest::set(key, neighbor);
@@ -110,11 +150,12 @@ protected:
         update_iterator end;
     public:
         next_update_tracker(update_iterator begin, update_iterator end)
-                : pos(begin), end(end) {}
+        : pos(begin), end(end) {}
 
-        update_iterator operator () ()
+        update_iterator
+        operator () ()
         {
-            while (pos->result != PENDING && pos != end) { ++pos; }
+            while (pos->get_result() != PENDING && pos != end) { ++pos; }
             return pos;
         }
     };
@@ -139,11 +180,11 @@ protected:
 
         for (update_iterator u = pos; u != updates_end && use_dest::get(*u) == neighbor; ++u) {
             if (u == pos) {
-                u->result = result;
-                update_edge_data_and_direction (G, eb, e, neighbor, u->weight, u->time, direction, create ? EDGE_WEIGHT_SET : operation);
+                u->set_result(result);
+                update_edge_data_and_direction (G, eb, e, neighbor, u->get_weight(), u->get_time(), direction, create ? EDGE_WEIGHT_SET : operation);
             } else {
-                u->result = EDGE_UPDATED;
-                update_edge_data_and_direction (G, eb, e, neighbor, u->weight, u->time, direction, operation);
+                u->set_result(EDGE_UPDATED);
+                update_edge_data_and_direction (G, eb, e, neighbor, u->get_weight(), u->get_time(), direction, operation);
             }
         }
     }
@@ -307,7 +348,7 @@ protected:
 
     static bool
     source_less_than_destination(const update &x){
-        return x.source < x.destination;
+        return x.get_source() < x.get_dest();
     }
 
     // We use the result field to keep track of which updates have been performed
@@ -367,26 +408,8 @@ protected:
 
         remap_results(updates_begin, updates_end);
     }
-public:
-    void
-    incr_edges(stinger * G, update_iterator begin, update_iterator end)
-    {
-        batch_update_dispatch(G, begin, end, EDGE_WEIGHT_INCR, true);
-    }
-    void
-    insert_edges(stinger * G, update_iterator begin, update_iterator end)
-    {
-        batch_update_dispatch(G, begin, end, EDGE_WEIGHT_SET, true);
-    }
-    void
-    incr_edge_pairs(stinger * G, update_iterator begin, update_iterator end)
-    {
-        batch_update_dispatch(G, begin, end, EDGE_WEIGHT_INCR, false);
-    }
-    void
-    insert_edge_pairs(stinger * G, update_iterator begin, update_iterator end)
-    {
-        batch_update_dispatch(G, begin, end, EDGE_WEIGHT_SET, false);
-    }
 }; // end of class batch insert
+
+
 #endif //STINGER_BATCH_INSERT_H_
+
