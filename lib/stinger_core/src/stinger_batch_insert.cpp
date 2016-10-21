@@ -22,98 +22,60 @@ enum result_codes {
     EDGE_NOT_ADDED = 9  // -1
 };
 
-// Used to sort a vector of stinger_edge_updates below
-typedef bool (*update_comparator)(const update &, const update &);
-
-static bool order_by_source(const update &a, const update &b){
-    return (a.type != b.type) ? a.type < b.type :
-           (a.source != b.source) ? a.source < b.source :
-           (a.destination != b.destination) ? a.destination < b.destination :
-           (a.time != b.time) ? a.time < b.time :
-           false;
-}
-
-static bool order_by_dest(const update &a, const update &b){
-    return (a.type != b.type) ? a.type < b.type :
-           (a.destination != b.destination) ? a.destination < b.destination :
-           (a.source != b.source) ? a.source < b.source :
-           (a.time != b.time) ? a.time < b.time :
-           false;
-}
-
-static bool
-compare_sources(const update &a, const update &b){
-    return a.source < b.source;
-}
-
-static bool
-compare_destinations(const update &a, const update &b){
-    return a.destination < b.destination;
-}
-
-static bool
-sources_equal(const update &a, const update &b){
-    return a.source == b.source;
-}
-
-static bool
-destinations_equal(const update &a, const update &b){
-    return a.destination == b.destination;
-}
-
-static bool
-source_less_than_destination(const update &x){
-    return x.source < x.destination;
-}
-
-// Used to get a list of unique source/dest vertices in a batch of updates below
-typedef int64_t (*update_attr_getter)(const update &);
-
-static int64_t
-get_source(const update &x){
-    return x.source;
-}
-
-static int64_t
-get_destination(const update &x){
-    return x.destination;
-}
-
-// Used to get a list of unique source/dest vertices in a batch of updates below
-typedef void (*update_attr_setter)(update &, int64_t);
-
-static void
-set_source(update &x, int64_t neighbor){
-    x.source = neighbor;
-}
-
-static void
-set_destination(update &x, int64_t neighbor){
-    x.destination = neighbor;
-}
-
-struct function_group
+struct source_funcs
 {
-    update_attr_getter get;
-    update_attr_setter set;
-    update_comparator sort;
-    update_comparator compare;
-    update_comparator equals;
+    static int64_t
+    get(const update &x){
+        return x.source;
+    }
+    static void
+    set(update &x, int64_t neighbor){
+        x.source = neighbor;
+    }
+    static bool
+    equals(const update &a, const update &b){
+        return a.source == b.source;
+    }
+    static bool
+    compare(const update &a, const update &b){
+        return a.source < b.source;
+    }
+    static bool
+    sort(const update &a, const update &b){
+        return (a.type != b.type) ? a.type < b.type :
+               (a.source != b.source) ? a.source < b.source :
+               (a.destination != b.destination) ? a.destination < b.destination :
+               (a.time != b.time) ? a.time < b.time :
+               false;
+    }
 };
 
-const function_group source_functions = {
-    get_source,
-    set_source,
-    order_by_source,
-    compare_sources,
-    sources_equal
-};
-const function_group destination_functions = {
-    get_destination,
-    set_destination,
-    order_by_dest,
-    compare_destinations,
-    destinations_equal
+struct dest_funcs
+{
+    static int64_t
+    get(const update &x){
+        return x.destination;
+    }
+    static void
+    set(update &x, int64_t neighbor){
+        x.destination = neighbor;
+    }
+    static bool
+    equals(const update &a, const update &b){
+        return a.destination == b.destination;
+    }
+    static bool
+    compare(const update &a, const update &b){
+        return a.destination < b.destination;
+    }
+    static bool
+    sort(const update &a, const update &b){
+        return (a.type != b.type) ? a.type < b.type :
+               (a.destination != b.destination) ? a.destination < b.destination :
+               (a.source != b.source) ? a.source < b.source :
+               (a.time != b.time) ? a.time < b.time :
+               false;
+    }
 };
 
 // Finds an element in a sorted range using binary search
@@ -132,12 +94,12 @@ Iter binary_find(Iter begin, Iter end, T val, Compare comp)
 
 
 // Find the first pending update with destination 'dest'
-update_iterator find_updates(update_iterator begin, update_iterator end, int64_t neighbor, int64_t direction)
+template<class use_dest>
+update_iterator find_updates(update_iterator begin, update_iterator end, int64_t neighbor)
 {
-    const function_group &g = direction == STINGER_EDGE_DIRECTION_OUT ? destination_functions : source_functions;
     update key;
-    g.set(key, neighbor);
-    update_iterator pos = binary_find(begin, end, key, g.compare);
+    use_dest::set(key, neighbor);
+    update_iterator pos = binary_find(begin, end, key, use_dest::compare);
     return (pos->result == PENDING) ? pos : end;
 }
 
@@ -158,24 +120,24 @@ public:
 };
 
 /*
- * result - Result code to set on first update. Result of duplicate updates will always be EDGE_UPDATED
- * create - Are we inserting into an empty slot, or just updating an existing slot
+ * Arguments:
+ * result - Result code to set on first update for a neighbor. Result of duplicate updates will always be EDGE_UPDATED.
+ * create - Are we inserting into an empty slot, or just updating an existing slot?
  * pos - pointer to first update
  * updates_end - pointer to end of update list
  * G - pointer to STINGER
  * eb - pointer to edge block
  * e - edge index within block
- * direction - edge direction
- * operation - EDGE_WEIGHT_SET or EDGE_WEIGHT_INCR
+  * operation - EDGE_WEIGHT_SET or EDGE_WEIGHT_INCR
  */
 
+template<int64_t direction, class use_dest>
 static void
-do_edge_updates(int64_t result, bool create, update_iterator pos, update_iterator updates_end, stinger * G, stinger_eb *eb, size_t e, int64_t direction, int64_t operation)
+do_edge_updates(int64_t result, bool create, update_iterator pos, update_iterator updates_end, stinger * G, stinger_eb *eb, size_t e, int64_t operation)
 {
-    const function_group &g = direction == STINGER_EDGE_DIRECTION_OUT ? destination_functions : source_functions;
-    int64_t neighbor = g.get(*pos);
+    int64_t neighbor = use_dest::get(*pos);
 
-    for (update_iterator u = pos; u != updates_end && g.get(*u) == neighbor; ++u) {
+    for (update_iterator u = pos; u != updates_end && use_dest::get(*u) == neighbor; ++u) {
         if (u == pos) {
             u->result = result;
             update_edge_data_and_direction (G, eb, e, neighbor, u->weight, u->time, direction, create ? EDGE_WEIGHT_SET : operation);
@@ -186,13 +148,18 @@ do_edge_updates(int64_t result, bool create, update_iterator pos, update_iterato
     }
 }
 
-
+/*
+ * The core algorithm for updating edges in one direction.
+ * Similar to stinger_update_directed_edge(), but optimized to perform several updates for the same vertex.
+ *
+ */
+template<int64_t direction, class use_dest>
 static void
 update_directed_edges_for_vertex(
         stinger *G, int64_t src, int64_t type,
         update_iterator updates_begin,
         update_iterator updates_end,
-        int64_t direction, int64_t operation)
+        int64_t operation)
 {
 
     MAP_STING(G);
@@ -218,11 +185,11 @@ Possibilities:
                 // Mask off direction bits to get the raw neighbor of this edge
                 int64_t dest = (tmp->edges[k].neighbor & (~STINGER_EDGE_DIRECTION_MASK));
                 // Find updates for this destination
-                update_iterator u = find_updates(updates_begin, updates_end, dest, direction);
+                update_iterator u = find_updates<use_dest>(updates_begin, updates_end, dest);
                 // If we already have an in-edge for this destination, we will reuse the edge slot
                 // But the return code should reflect that we added an edge
                 int64_t result = (direction & tmp->edges[k].neighbor) ? EDGE_UPDATED : EDGE_ADDED;
-                do_edge_updates(result, false, u, updates_end, G, tmp, k, direction, operation);
+                do_edge_updates<direction, use_dest>(result, false, u, updates_end, G, tmp, k, operation);
             }
         }
     }
@@ -245,11 +212,11 @@ Possibilities:
                     // Check for edges that were added by another thread since we last checked
                     if (k < endk) {
                         // Find updates for this destination
-                        update_iterator u = find_updates(updates_begin, updates_end, myNeighbor, direction);
+                        update_iterator u = find_updates<use_dest>(updates_begin, updates_end, myNeighbor);
                         // If we already have an in-edge for this destination, we will reuse the edge slot
                         // But the return code should reflect that we added an edge
                         int64_t result = (direction & tmp->edges[k].neighbor) ? EDGE_UPDATED : EDGE_ADDED;
-                        do_edge_updates(result, false, u, updates_end, G, tmp, k, direction, operation);
+                        do_edge_updates<direction, use_dest>(result, false, u, updates_end, G, tmp, k, operation);
                     }
 
                     if (myNeighbor < 0 || k >= endk) {
@@ -258,14 +225,14 @@ Possibilities:
                         int64_t thisEdge = (tmp->edges[k].neighbor & (~STINGER_EDGE_DIRECTION_MASK));
                         endk = tmp->high;
 
-                        update_iterator u = find_updates(updates_begin, updates_end, thisEdge, direction);
+                        update_iterator u = find_updates<use_dest>(updates_begin, updates_end, thisEdge);
                         if (thisEdge < 0 || k >= endk) {
                             // Slot is empty, add the edge
-                            do_edge_updates(EDGE_ADDED, true, next_update(), updates_end, G, tmp, k, direction, operation);
+                            do_edge_updates<direction, use_dest>(EDGE_ADDED, true, next_update(), updates_end, G, tmp, k, operation);
                         } else if (u != updates_end) {
                             // Another thread just added the edge. Do a normal update
                             int64_t result = (direction & tmp->edges[k].neighbor) ? EDGE_UPDATED : EDGE_ADDED;
-                            do_edge_updates(result, false, u, updates_end, G, tmp, k, direction, operation);
+                            do_edge_updates<direction, use_dest>(result, false, u, updates_end, G, tmp, k, operation);
                             writexf ( (uint64_t *)&(tmp->edges[k].timeFirst), timefirst);
                         } else {
                             // Another thread claimed the slot for a different edge, unlock and keep looking
@@ -295,7 +262,7 @@ Possibilities:
                 return;
             } else {
                 // Add our edge to the first slot in the new edge block
-                do_edge_updates(EDGE_ADDED, true, next_update(), updates_end, G, ebpool_priv + newBlock, 0, direction, operation);
+                do_edge_updates<direction, use_dest>(EDGE_ADDED, true, next_update(), updates_end, G, ebpool_priv + newBlock, 0, operation);
                 // Add the block to the list
                 ebpool_priv[newBlock].next = 0;
                 push_ebs (G, 1, &newBlock);
@@ -307,19 +274,15 @@ Possibilities:
     }
 }
 
+template<int64_t direction, class use_source, class use_dest>
 static void
-do_batch_update(stinger * G, update_iterator updates_begin, update_iterator updates_end, int64_t direction, int64_t operation)
+do_batch_update(stinger * G, update_iterator updates_begin, update_iterator updates_end, int64_t operation)
 {
-    // First iteration: group by source and update out-edges
-    // Second iteration: group by destination and update in-edges
-    // Unless swap_direction_order is set
-    const function_group &g = direction == STINGER_EDGE_DIRECTION_OUT ? source_functions : destination_functions;
-
     // Sort by type, src, dst, time ascending
-    std::sort(updates_begin, updates_end, g.sort);
+    std::sort(updates_begin, updates_end, use_source::sort);
     // Get a list of unique sources
     std::vector<update> unique_sources;
-    std::unique_copy(updates_begin, updates_end, std::back_inserter(unique_sources), g.equals);
+    std::unique_copy(updates_begin, updates_end, std::back_inserter(unique_sources), use_source::equals);
 
     OMP("parallel for")
     for (update_iterator key = unique_sources.begin(); key < unique_sources.end(); ++key)
@@ -328,30 +291,23 @@ do_batch_update(stinger * G, update_iterator updates_begin, update_iterator upda
         assert(G->max_netypes == 1);
         int64_t type = 0;
         // Locate the range of updates for this source vertex
-        int64_t source = g.get(*key);
+        int64_t source = use_source::get(*key);
         std::pair<update_iterator, update_iterator> pair =
-                std::equal_range(updates_begin, updates_end, *key, g.compare);
+                std::equal_range(updates_begin, updates_end, *key, use_source::compare);
         update_iterator begin = pair.first;
         update_iterator end = pair.second;
 
         // TODO call single update version if there's only a few edges for a vertex
         // TODO split into smaller batches if there are a lot of edges for a vertex
         // TODO use OMP "collapse" here to parallelize over both loops
-        update_directed_edges_for_vertex(G, source, type, begin, end, direction, operation);
+        
+        update_directed_edges_for_vertex<direction, use_dest>(G, source, type, begin, end, operation);
     }
 }
 
-static void
-make_undirected(std::vector<stinger_edge_update> &updates)
-{
-    std::vector<update> reverse_edges;
-    for (update_iterator u = updates.begin(); u < updates.end(); ++u)
-    {
-        update v = *u;
-        std::swap(v.source, v.destination);
-        reverse_edges.push_back(v);
-    }
-    updates.insert(updates.end(), reverse_edges.begin(), reverse_edges.end());
+static bool
+source_less_than_destination(const update &x){
+    return x.source < x.destination;
 }
 
 // We use the result field to keep track of which updates have been performed
@@ -373,20 +329,41 @@ remap_results(update_iterator begin, update_iterator end)
 static void
 batch_update_dispatch(stinger * G, std::vector<stinger_edge_update> &updates, int64_t operation, bool directed)
 {
-    if (!directed) { make_undirected(updates); }
-
-    // In order to avoid deadlock with concurrent deletions, we must always lock edges in the same order
+    // Each edge is stored in two places: the out-edge at the source, and the in-edge at the destination
+    // First iteration: group by source and update out-edges
+    // Second iteration: group by destination and update in-edges
+    // But, in order to avoid deadlock with concurrent deletions, we must always lock edges in the same order
     const update_iterator pos = std::partition(updates.begin(), updates.end(), source_less_than_destination);
 
-    // All elements between begin and pos have src < dest. Update the out-edge slot first
-    do_batch_update(G, updates.begin(), pos, STINGER_EDGE_DIRECTION_OUT, operation);
-    clear_results(updates.begin(), pos);
-    do_batch_update(G, updates.begin(), pos, STINGER_EDGE_DIRECTION_IN, operation);
+    const int64_t OUT = STINGER_EDGE_DIRECTION_OUT;
+    const int64_t IN = STINGER_EDGE_DIRECTION_IN;
 
-    // All elements between pos and end have dest > src. Update the in-edge slot first
-    do_batch_update(G, pos, updates.end(), STINGER_EDGE_DIRECTION_IN, operation);
+    // All elements between begin and pos have src < dest. Update the out-edge slot first
+    do_batch_update<OUT, source_funcs, dest_funcs>(G, updates.begin(), pos, operation);
+    clear_results(updates.begin(), pos);
+    do_batch_update<IN, dest_funcs, source_funcs>(G, updates.begin(), pos, operation);
+
+    // All elements between pos and end have src > dest. Update the in-edge slot first
+    do_batch_update<IN, dest_funcs, source_funcs>(G, pos, updates.end(), operation);
     clear_results(pos, updates.end());
-    do_batch_update(G, pos, updates.end(), STINGER_EDGE_DIRECTION_OUT, operation);
+    do_batch_update<OUT, source_funcs, dest_funcs>(G, pos, updates.end(), operation);
+
+    // For undirected, do the same updates again in the opposite direction
+    if (!directed)
+    {
+        // TODO does anyone really care what happens when half of an undirected insert has a different return code?
+        clear_results(updates.begin(), updates.end());
+
+        // All elements between begin and pos have dest < src. Update the in-edge slot first
+        do_batch_update<OUT, dest_funcs, source_funcs>(G, updates.begin(), pos, operation);
+        clear_results(updates.begin(), pos);
+        do_batch_update<IN, source_funcs, dest_funcs>(G, updates.begin(), pos, operation);
+
+        // All elements between pos and end have dest > src. Update the out-edge slot first
+        do_batch_update<IN, source_funcs, dest_funcs>(G, pos, updates.end(), operation);
+        clear_results(pos, updates.end());
+        do_batch_update<OUT, dest_funcs, source_funcs>(G, pos, updates.end(), operation);
+    }
 
     remap_results(updates.begin(), updates.end());
 }
