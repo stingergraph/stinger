@@ -9,47 +9,27 @@
 #include <vector>
 #include <algorithm>
 
-template <typename update_inserter>
-class BatchInserter;
+template<typename adapter, typename iterator>
+void stinger_batch_incr_edges(stinger *G, iterator begin, iterator end);
+template<typename adapter, typename iterator>
+void stinger_batch_insert_edges(stinger * G, iterator begin, iterator end);
+template<typename adapter, typename iterator>
+void stinger_batch_incr_edge_pairs(stinger * G, iterator begin, iterator end);
+template<typename adapter, typename iterator>
+void stinger_batch_insert_edge_pairs(stinger * G, iterator begin, iterator end);
 
-template <typename update_iterator>
-void
-stinger_batch_incr_edges(stinger *G, update_iterator begin, update_iterator end)
-{
-    BatchInserter<update_iterator>::batch_update_dispatch(G, begin, end, EDGE_WEIGHT_INCR, true);
-}
-template <typename update_iterator>
-void
-stinger_batch_insert_edges(stinger * G, update_iterator begin, update_iterator end)
-{
-    BatchInserter<update_iterator>::batch_update_dispatch(G, begin, end, EDGE_WEIGHT_SET, true);
-}
-template <typename update_iterator>
-void
-stinger_batch_incr_edge_pairs(stinger * G, update_iterator begin, update_iterator end)
-{
-    BatchInserter<update_iterator>::batch_update_dispatch(G, begin, end, EDGE_WEIGHT_INCR, false);
-}
-template <typename update_iterator>
-void
-stinger_batch_insert_edge_pairs(stinger * G, update_iterator begin, update_iterator end)
-{
-    BatchInserter<update_iterator>::batch_update_dispatch(G, begin, end, EDGE_WEIGHT_SET, false);
-}
-
-
-template<typename update_iterator>
+template<typename adapter, typename iterator>
 class BatchInserter
 {
 protected:
 
     // *** Public interface ***
-    friend void stinger_batch_incr_edges<>(stinger *G, update_iterator begin, update_iterator end);
-    friend void stinger_batch_insert_edges<>(stinger * G, update_iterator begin, update_iterator end);
-    friend void stinger_batch_incr_edge_pairs<>(stinger * G, update_iterator begin, update_iterator end);
-    friend void stinger_batch_insert_edge_pairs<>(stinger * G, update_iterator begin, update_iterator end);
+    friend void stinger_batch_incr_edges<adapter, iterator>(stinger *G, iterator begin, iterator end);
+    friend void stinger_batch_insert_edges<adapter, iterator>(stinger * G, iterator begin, iterator end);
+    friend void stinger_batch_incr_edge_pairs<adapter, iterator>(stinger * G, iterator begin, iterator end);
+    friend void stinger_batch_insert_edge_pairs<adapter, iterator>(stinger * G, iterator begin, iterator end);
 
-    typedef typename std::iterator_traits<update_iterator>::value_type update;
+    typedef typename std::iterator_traits<iterator>::value_type update;
 
     // Result codes
     // Before returning to caller, we subtract 10 to make return codes match up with functions like stinger_incr_edge
@@ -64,26 +44,26 @@ protected:
     {
         static int64_t
         get(const update &x){
-            return x.get_source();
+            return adapter::get_source(x);
         }
         static void
         set(update &x, int64_t neighbor){
-            x.set_source(neighbor);
+            adapter::set_source(x, neighbor);
         }
         static bool
         equals(const update &a, const update &b){
-            return a.get_source() == b.get_source();
+            return adapter::get_source(a) == adapter::get_source(b);
         }
         static bool
         compare(const update &a, const update &b){
-            return a.get_source() < b.get_source();
+            return adapter::get_source(a) < adapter::get_source(b);
         }
         static bool
         sort(const update &a, const update &b){
-            return (a.get_type() != b.get_type()) ? a.get_type() < b.get_type() :
-                   (a.get_source() != b.get_source()) ? a.get_source() < b.get_source() :
-                   (a.get_dest() != b.get_dest()) ? a.get_dest() < b.get_dest() :
-                   (a.get_time() != b.get_time()) ? a.get_time() < b.get_time() :
+            return (adapter::get_type(a) != adapter::get_type(b)) ? adapter::get_type(a) < adapter::get_type(b) :
+                   (adapter::get_source(a) != adapter::get_source(b)) ? adapter::get_source(a) < adapter::get_source(b) :
+                   (adapter::get_dest(a) != adapter::get_dest(b)) ? adapter::get_dest(a) < adapter::get_dest(b) :
+                   (adapter::get_time(a) != adapter::get_time(b)) ? adapter::get_time(a) < adapter::get_time(b) :
                    false;
         }
     };
@@ -92,26 +72,26 @@ protected:
     {
         static int64_t
         get(const update &x){
-            return x.get_dest();
+            return adapter::get_dest(x);
         }
         static void
         set(update &x, int64_t neighbor){
-            x.set_dest(neighbor);
+            adapter::set_dest(x, neighbor);
         }
         static bool
         equals(const update &a, const update &b){
-            return a.get_dest() == b.get_dest();
+            return adapter::get_dest(a) == adapter::get_dest(b);
         }
         static bool
         compare(const update &a, const update &b){
-            return a.get_dest() < b.get_dest();
+            return adapter::get_dest(a) < adapter::get_dest(b);
         }
         static bool
         sort(const update &a, const update &b){
-            return (a.get_type() != b.get_type()) ? a.get_type() < b.get_type() :
-                   (a.get_dest() != b.get_dest()) ? a.get_dest() < b.get_dest() :
-                   (a.get_source() != b.get_source()) ? a.get_source() < b.get_source() :
-                   (a.get_time() != b.get_time()) ? a.get_time() < b.get_time() :
+            return (adapter::get_type(a) != adapter::get_type(b)) ? adapter::get_type(a) < adapter::get_type(b) :
+                   (adapter::get_dest(a) != adapter::get_dest(b)) ? adapter::get_dest(a) < adapter::get_dest(b) :
+                   (adapter::get_source(a) != adapter::get_source(b)) ? adapter::get_source(a) < adapter::get_source(b) :
+                   (adapter::get_time(a) != adapter::get_time(b)) ? adapter::get_time(a) < adapter::get_time(b) :
                    false;
         }
     };
@@ -134,28 +114,28 @@ protected:
 
     // Find the first pending update with destination 'dest'
     template<class use_dest>
-    static update_iterator
-    find_updates(update_iterator begin, update_iterator end, int64_t neighbor)
+    static iterator
+    find_updates(iterator begin, iterator end, int64_t neighbor)
     {
         update key;
         use_dest::set(key, neighbor);
-        update_iterator pos = binary_find(begin, end, key, use_dest::compare);
-        return (pos->result == PENDING) ? pos : end;
+        iterator pos = binary_find(begin, end, key, use_dest::compare);
+        return (adapter::get_result(*pos) == PENDING) ? pos : end;
     }
 
     class next_update_tracker
     {
     protected:
-        update_iterator pos;
-        update_iterator end;
+        iterator pos;
+        iterator end;
     public:
-        next_update_tracker(update_iterator begin, update_iterator end)
+        next_update_tracker(iterator begin, iterator end)
         : pos(begin), end(end) {}
 
-        update_iterator
+        iterator
         operator () ()
         {
-            while (pos->get_result() != PENDING && pos != end) { ++pos; }
+            while (adapter::get_result(*pos) != PENDING && pos != end) { ++pos; }
             return pos;
         }
     };
@@ -174,17 +154,17 @@ protected:
 
     template<int64_t direction, class use_dest>
     static void
-    do_edge_updates(int64_t result, bool create, update_iterator pos, update_iterator updates_end, stinger * G, stinger_eb *eb, size_t e, int64_t operation)
+    do_edge_updates(int64_t result, bool create, iterator pos, iterator updates_end, stinger * G, stinger_eb *eb, size_t e, int64_t operation)
     {
         int64_t neighbor = use_dest::get(*pos);
 
-        for (update_iterator u = pos; u != updates_end && use_dest::get(*u) == neighbor; ++u) {
+        for (iterator u = pos; u != updates_end && use_dest::get(*u) == neighbor; ++u) {
             if (u == pos) {
-                u->set_result(result);
-                update_edge_data_and_direction (G, eb, e, neighbor, u->get_weight(), u->get_time(), direction, create ? EDGE_WEIGHT_SET : operation);
+                adapter::set_result(*u, result);
+                update_edge_data_and_direction (G, eb, e, neighbor, adapter::get_weight(*u), adapter::get_time(*u), direction, create ? EDGE_WEIGHT_SET : operation);
             } else {
-                u->set_result(EDGE_UPDATED);
-                update_edge_data_and_direction (G, eb, e, neighbor, u->get_weight(), u->get_time(), direction, operation);
+                adapter::set_result(*u, EDGE_UPDATED);
+                update_edge_data_and_direction (G, eb, e, neighbor, adapter::get_weight(*u), adapter::get_time(*u), direction, operation);
             }
         }
     }
@@ -198,8 +178,8 @@ protected:
     static void
     update_directed_edges_for_vertex(
             stinger *G, int64_t src, int64_t type,
-            update_iterator updates_begin,
-            update_iterator updates_end,
+            iterator updates_begin,
+            iterator updates_end,
             int64_t operation)
     {
 
@@ -226,7 +206,7 @@ protected:
                     // Mask off direction bits to get the raw neighbor of this edge
                     int64_t dest = (tmp->edges[k].neighbor & (~STINGER_EDGE_DIRECTION_MASK));
                     // Find updates for this destination
-                    update_iterator u = find_updates<use_dest>(updates_begin, updates_end, dest);
+                    iterator u = find_updates<use_dest>(updates_begin, updates_end, dest);
                     // If we already have an in-edge for this destination, we will reuse the edge slot
                     // But the return code should reflect that we added an edge
                     int64_t result = (direction & tmp->edges[k].neighbor) ? EDGE_UPDATED : EDGE_ADDED;
@@ -253,7 +233,7 @@ protected:
                         // Check for edges that were added by another thread since we last checked
                         if (k < endk) {
                             // Find updates for this destination
-                            update_iterator u = find_updates<use_dest>(updates_begin, updates_end, myNeighbor);
+                            iterator u = find_updates<use_dest>(updates_begin, updates_end, myNeighbor);
                             // If we already have an in-edge for this destination, we will reuse the edge slot
                             // But the return code should reflect that we added an edge
                             int64_t result = (direction & tmp->edges[k].neighbor) ? EDGE_UPDATED : EDGE_ADDED;
@@ -266,7 +246,7 @@ protected:
                             int64_t thisEdge = (tmp->edges[k].neighbor & (~STINGER_EDGE_DIRECTION_MASK));
                             endk = tmp->high;
 
-                            update_iterator u = find_updates<use_dest>(updates_begin, updates_end, thisEdge);
+                            iterator u = find_updates<use_dest>(updates_begin, updates_end, thisEdge);
                             if (thisEdge < 0 || k >= endk) {
                                 // Slot is empty, add the edge
                                 do_edge_updates<direction, use_dest>(EDGE_ADDED, true, next_update(), updates_end, G, tmp, k, operation);
@@ -298,7 +278,7 @@ protected:
                     writeef (block_ptr, (uint64_t)old_eb);
                     while(next_update() != updates_end)
                     {
-                        next_update()->result = EDGE_NOT_ADDED;
+                        adapter::set_result(*next_update(), EDGE_NOT_ADDED);
                     }
                     return;
                 } else {
@@ -317,7 +297,7 @@ protected:
 
     template<int64_t direction, class use_source, class use_dest>
     static void
-    do_batch_update(stinger * G, update_iterator updates_begin, update_iterator updates_end, int64_t operation)
+    do_batch_update(stinger * G, iterator updates_begin, iterator updates_end, int64_t operation)
     {
         // Sort by type, src, dst, time ascending
         std::sort(updates_begin, updates_end, use_source::sort);
@@ -325,18 +305,18 @@ protected:
         std::vector<update> unique_sources;
         std::unique_copy(updates_begin, updates_end, std::back_inserter(unique_sources), use_source::equals);
 
-        OMP("parallel for")
-        for (update_iterator key = unique_sources.begin(); key < unique_sources.end(); ++key)
+        OMP("omp parallel for")
+        for (typename std::vector<update>::iterator key = unique_sources.begin(); key < unique_sources.end(); ++key)
         {
             // HACK also partition on etype
             assert(G->max_netypes == 1);
             int64_t type = 0;
             // Locate the range of updates for this source vertex
             int64_t source = use_source::get(*key);
-            std::pair<update_iterator, update_iterator> pair =
+            std::pair<iterator, iterator> pair =
                     std::equal_range(updates_begin, updates_end, *key, use_source::compare);
-            update_iterator begin = pair.first;
-            update_iterator end = pair.second;
+            iterator begin = pair.first;
+            iterator end = pair.second;
 
             // TODO call single update version if there's only a few edges for a vertex
             // TODO split into smaller batches if there are a lot of edges for a vertex
@@ -348,33 +328,33 @@ protected:
 
     static bool
     source_less_than_destination(const update &x){
-        return x.get_source() < x.get_dest();
+        return adapter::get_source(x) < adapter::get_dest(x);
     }
 
     // We use the result field to keep track of which updates have been performed
     // Between IN and OUT iterations, we clear it out to make sure all the updates are performed again
     static void
-    clear_results(update_iterator begin, update_iterator end)
+    clear_results(iterator begin, iterator end)
     {
         OMP("omp parallel for")
-        for (update_iterator u = begin; u < end; ++u) { u->result = PENDING; }
+        for (iterator u = begin; u < end; ++u) { adapter::set_result(*u, PENDING); }
     }
 
     static void
-    remap_results(update_iterator begin, update_iterator end)
+    remap_results(iterator begin, iterator end)
     {
         OMP("omp parallel for")
-        for (update_iterator u = begin; u < end; ++u) { u->result = u->result - 10; }
+        for (iterator u = begin; u < end; ++u) { adapter::set_result(*u, adapter::get_result(*u) - 10); }
     }
 
     static void
-    batch_update_dispatch(stinger * G, update_iterator updates_begin, update_iterator updates_end, int64_t operation, bool directed)
+    batch_update_dispatch(stinger * G, iterator updates_begin, iterator updates_end, int64_t operation, bool directed)
     {
         // Each edge is stored in two places: the out-edge at the source, and the in-edge at the destination
         // First iteration: group by source and update out-edges
         // Second iteration: group by destination and update in-edges
         // But, in order to avoid deadlock with concurrent deletions, we must always lock edges in the same order
-        const update_iterator pos = std::partition(updates_begin, updates_end, source_less_than_destination);
+        const iterator pos = std::partition(updates_begin, updates_end, source_less_than_destination);
 
         const int64_t OUT = STINGER_EDGE_DIRECTION_OUT;
         const int64_t IN = STINGER_EDGE_DIRECTION_IN;
@@ -409,6 +389,31 @@ protected:
         remap_results(updates_begin, updates_end);
     }
 }; // end of class batch insert
+
+template<typename adapter, typename iterator>
+void
+stinger_batch_incr_edges(stinger *G, iterator begin, iterator end)
+{
+    BatchInserter<adapter, iterator>::batch_update_dispatch(G, begin, end, EDGE_WEIGHT_INCR, true);
+}
+template<typename adapter, typename iterator>
+void
+stinger_batch_insert_edges(stinger * G, iterator begin, iterator end)
+{
+    BatchInserter<adapter, iterator>::batch_update_dispatch(G, begin, end, EDGE_WEIGHT_SET, true);
+}
+template<typename adapter, typename iterator>
+void
+stinger_batch_incr_edge_pairs(stinger * G, iterator begin, iterator end)
+{
+    BatchInserter<adapter, iterator>::batch_update_dispatch(G, begin, end, EDGE_WEIGHT_INCR, false);
+}
+template<typename adapter, typename iterator>
+void
+stinger_batch_insert_edge_pairs(stinger * G, iterator begin, iterator end)
+{
+    BatchInserter<adapter, iterator>::batch_update_dispatch(G, begin, end, EDGE_WEIGHT_SET, false);
+}
 
 
 #endif //STINGER_BATCH_INSERT_H_

@@ -111,18 +111,22 @@ handle_edge_names_types(EdgeInsertion & in, stinger_t * S, std::string & src, st
   }
 }
 
-void copy_protobuf_to_struct(EdgeInsertion & in, stinger_edge_update &u){
-    u.type = in.type();
-    u.type_str = in.type_str().c_str();
-    u.source = in.source();
-    u.source_str = in.source_str().c_str();
-    u.destination = in.destination();
-    u.destination_str = in.destination_str().c_str();
-    u.meta_index = in.meta_index();
-    u.result = in.result();
-    in.set_source(5);
-}
+// Allows an EdgeInsertion to be passed to stinger_batch functions
+struct EdgeInsertionAdapter
+{
+    typedef EdgeInsertion update;
 
+    static int64_t get_type(const update &u) { return u.type(); }
+    static void set_type(update &u, int64_t v) { u.set_type(v); }
+    static int64_t get_source(const update &u) { return u.source(); }
+    static void set_source(update &u, int64_t v) { u.set_source(v); }
+    static int64_t get_dest(const update &u) { return u.destination(); }
+    static void set_dest(update &u, int64_t v) { u.set_destination(v); }
+    static int64_t get_weight(const update &u) { return u.weight(); }
+    static int64_t get_time(const update &u) { return u.time(); }
+    static int64_t get_result(const update& u) { return u.result(); }
+    static int64_t set_result(update &u, int64_t v) { u.set_result(v); }
+};
 /**
  * @brief Inserts and removes the edges contained in a batch.
  *
@@ -143,7 +147,7 @@ process_batch(stinger_t * S, StingerBatch & batch)
 
 #define TS(ea_) do { const int64_t ts = (ea_).time(); if (ts > mxts) mxts = ts; if (ts < mnts) mnts = ts; } while (0)
 
-  OMP("omp parallel") {
+    OMP("omp parallel") {
     int64_t mxts = 0, mnts = std::numeric_limits<int64_t>::max();
     std::string src, dest; /* Thread-local buffers */
     switch (batch.type ()) {
@@ -159,11 +163,14 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	      handle_edge_names_types<NUMBERS_ONLY>(in, S, src, dest, u, v);
         }
 
+
         if (batch.make_undirected())
         {
-            stinger_batch_incr_edge_pairs(S, batch.insertions().begin(), batch.insertions().end());
+            stinger_batch_incr_edge_pairs<EdgeInsertionAdapter>(S,
+                batch.mutable_insertions()->begin(), batch.mutable_insertions()->end());
         } else {
-            stinger_batch_incr_edges(S, batch.insertions().begin(), batch.insertions().end());
+            stinger_batch_incr_edges<EdgeInsertionAdapter>(S,
+                batch.mutable_insertions()->begin(), batch.mutable_insertions()->end());
         }
 
         OMP("omp for")
@@ -188,7 +195,7 @@ process_batch(stinger_t * S, StingerBatch & batch)
                     in.set_destination_str("");
             }
         }
-    }
+
 
 	  OMP("omp for")
 	    for(size_t d = 0; d < batch.deletions_size(); d++) {
