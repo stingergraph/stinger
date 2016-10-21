@@ -26,10 +26,8 @@ set(_stinger_batch_test_sources
         )
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/stinger_batch_test)
-#HACK
-include_directories(${CMAKE_SOURCE_DIR}/lib/stinger_net/inc)
 add_executable(stinger_batch_test ${_stinger_batch_test_sources})
-target_link_libraries(stinger_batch_test stinger_core stinger_net gtest)
+target_link_libraries(stinger_batch_test stinger_core gtest)
 
 #================================
 
