@@ -337,14 +337,52 @@ protected:
     clear_results(iterator begin, iterator end)
     {
         OMP("omp parallel for")
-        for (iterator u = begin; u < end; ++u) { adapter::set_result(*u, PENDING); }
+        for (iterator u = begin; u < end; ++u) {
+            int64_t result = adapter::get_result(*u);
+            switch (result){
+                case EDGE_ADDED:
+                case EDGE_UPDATED:
+                case EDGE_NOT_ADDED:
+                    // Reset return code so we process this update next iteration
+                    adapter::set_result(*u, PENDING);
+                    break;
+                case -1:
+                case 1:
+                    // Caller must have set the return code, leave it be
+                    break;
+                case PENDING:
+                default:
+                    // We didn't finish all the updates, or invalid codes were set
+                    assert(0);
+
+            }
+        }
     }
 
     static void
     remap_results(iterator begin, iterator end)
     {
         OMP("omp parallel for")
-        for (iterator u = begin; u < end; ++u) { adapter::set_result(*u, adapter::get_result(*u) - 10); }
+        for (iterator u = begin; u < end; ++u) {
+            int64_t result = adapter::get_result(*u);
+            switch (result){
+                case EDGE_ADDED:
+                case EDGE_UPDATED:
+                case EDGE_NOT_ADDED:
+                    // Subtract 10 to get back to return code caller expects
+                    adapter::set_result(*u, result - 10);
+                    break;
+                case -1:
+                case 1:
+                    // Caller must have set the return code, leave it be
+                    break;
+                case PENDING:
+                default:
+                    // We didn't finish all the updates, or invalid codes were set
+                    assert(0);
+
+            }
+        }
     }
 
     static void
