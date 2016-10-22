@@ -5,6 +5,7 @@
 #include "stinger_internal.h"
 #include "stinger_atomics.h"
 #include "x86_full_empty.h"
+#include "stinger_error.h"
 
 #include <vector>
 #include <algorithm>
@@ -320,22 +321,23 @@ protected:
         std::sort(updates_begin, updates_end, use_source::sort);
         // Get a list of pointers to each element
         LOG_D("Finding unique sources...");
-        int64_t num_updates = updates_end - updates_begin;
+        int64_t num_updates = std::distance(updates_begin, updates_end);
         std::vector<iterator> pointers(num_updates);
         OMP("omp parallel for")
         for (int64_t i = 0; i < num_updates; ++i) { pointers[i] = updates_begin + i; }
         // Reduce down to a list of pointers to the beginning of each range of unique source ID's
         std::vector<iterator> unique_sources;
         std::unique_copy(pointers.begin(), pointers.end(), std::back_inserter(unique_sources), dereference_equals<use_source>);
+        unique_sources.push_back(updates_end);
 
         LOG_D("Entering parallel update loop...");
         OMP("omp parallel for")
-        for (typename std::vector<iterator>::iterator ptr = unique_sources.begin(); ptr < unique_sources.end(); ++ptr)
+        for (typename std::vector<iterator>::iterator ptr = unique_sources.begin(); ptr < unique_sources.end()-1; ++ptr)
         {
             // HACK also partition on etype
             assert(G->max_netypes == 1);
             int64_t type = 0;
-            // Locate the range of updates for this source vertex
+            // Get this thread's range of updates
             iterator begin = *ptr;
             iterator end = *(ptr + 1);
             int64_t source = use_source::get(*begin);
