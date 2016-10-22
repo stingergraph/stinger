@@ -117,10 +117,14 @@ protected:
     static iterator
     find_updates(iterator begin, iterator end, int64_t neighbor)
     {
+        // Create a dummy update object with the neighbor we are looking for
         update key;
         use_dest::set(key, neighbor);
+        // Find the updates for this neighbor
         iterator pos = binary_find(begin, end, key, use_dest::compare);
-        return (adapter::get_result(*pos) == PENDING) ? pos : end;
+        // If the first update is not pending, we have already done all the updates for this neighbor
+        if (pos != end && adapter::get_result(*pos) == PENDING) return pos;
+        else return end;
     }
 
     class next_update_tracker
@@ -135,7 +139,7 @@ protected:
         iterator
         operator () ()
         {
-            while (adapter::get_result(*pos) != PENDING && pos != end) { ++pos; }
+            while (pos != end && adapter::get_result(*pos) != PENDING) { ++pos; }
             return pos;
         }
     };
@@ -156,15 +160,18 @@ protected:
     static void
     do_edge_updates(int64_t result, bool create, iterator pos, iterator updates_end, stinger * G, stinger_eb *eb, size_t e, int64_t operation)
     {
-        int64_t neighbor = use_dest::get(*pos);
-
-        for (iterator u = pos; u != updates_end && use_dest::get(*u) == neighbor; ++u) {
+        // 'pos' points to the first update for this edge slot; there may be more than one, or none if it equals 'updates_end'
+        // Keep incrementing the iterator until we reach an update with a different neighbor
+        for (iterator u = pos; u != updates_end && use_dest::get(*u) == use_dest::get(*pos); ++u) {
+            int64_t neighbor = use_dest::get(*pos);
+            int64_t weight = adapter::get_weight(*u);
+            int64_t time = adapter::get_time(*u);
             if (u == pos) {
                 adapter::set_result(*u, result);
-                update_edge_data_and_direction (G, eb, e, neighbor, adapter::get_weight(*u), adapter::get_time(*u), direction, create ? EDGE_WEIGHT_SET : operation);
+                update_edge_data_and_direction (G, eb, e, neighbor, weight, time, direction, create ? EDGE_WEIGHT_SET : operation);
             } else {
                 adapter::set_result(*u, EDGE_UPDATED);
-                update_edge_data_and_direction (G, eb, e, neighbor, adapter::get_weight(*u), adapter::get_time(*u), direction, operation);
+                update_edge_data_and_direction (G, eb, e, neighbor, weight, time, direction, operation);
             }
         }
     }
