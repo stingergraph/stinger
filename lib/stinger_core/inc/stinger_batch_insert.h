@@ -302,33 +302,46 @@ protected:
         }
     }
 
+    // Don't use batch mode if a vertex has fewer than this many outgoing edges
+    static const int64_t out_degree_threshold = 512;
+
+    template <class use_source>
+    static bool dereference_equals(const iterator &a, const iterator &b)
+    {
+        return use_source::equals(*a, *b);
+    }
+
     template<int64_t direction, class use_source, class use_dest>
     static void
     do_batch_update(stinger * G, iterator updates_begin, iterator updates_end, int64_t operation)
     {
         // Sort by type, src, dst, time ascending
+        LOG_D("Sorting...");
         std::sort(updates_begin, updates_end, use_source::sort);
-        // Get a list of unique sources
-        std::vector<update> unique_sources;
-        std::unique_copy(updates_begin, updates_end, std::back_inserter(unique_sources), use_source::equals);
-
+        // Get a list of pointers to each element
+        LOG_D("Finding unique sources...");
+        int64_t num_updates = updates_end - updates_begin;
+        std::vector<iterator> pointers(num_updates);
         OMP("omp parallel for")
-        for (typename std::vector<update>::iterator key = unique_sources.begin(); key < unique_sources.end(); ++key)
+        for (int64_t i = 0; i < num_updates; ++i) { pointers[i] = updates_begin + i; }
+        // Reduce down to a list of pointers to the beginning of each range of unique source ID's
+        std::vector<iterator> unique_sources;
+        std::unique_copy(pointers.begin(), pointers.end(), std::back_inserter(unique_sources), dereference_equals<use_source>);
+
+        LOG_D("Entering parallel update loop...");
+        OMP("omp parallel for")
+        for (typename std::vector<iterator>::iterator ptr = unique_sources.begin(); ptr < unique_sources.end(); ++ptr)
         {
             // HACK also partition on etype
             assert(G->max_netypes == 1);
             int64_t type = 0;
             // Locate the range of updates for this source vertex
-            int64_t source = use_source::get(*key);
-            std::pair<iterator, iterator> pair =
-                    std::equal_range(updates_begin, updates_end, *key, use_source::compare);
-            iterator begin = pair.first;
-            iterator end = pair.second;
+            iterator begin = *ptr;
+            iterator end = *(ptr + 1);
+            int64_t source = use_source::get(*begin);
 
             // TODO call single update version if there's only a few edges for a vertex
             // TODO split into smaller batches if there are a lot of edges for a vertex
-            // TODO use OMP "collapse" here to parallelize over both loops
-
             update_directed_edges_for_vertex<direction, use_dest>(G, source, type, begin, end, operation);
         }
     }
@@ -399,19 +412,24 @@ protected:
         // First iteration: group by source and update out-edges
         // Second iteration: group by destination and update in-edges
         // But, in order to avoid deadlock with concurrent deletions, we must always lock edges in the same order
+        LOG_D("Partitioning batch to obey ordering constraints...");
         const iterator pos = std::partition(updates_begin, updates_end, source_less_than_destination);
 
         const int64_t OUT = STINGER_EDGE_DIRECTION_OUT;
         const int64_t IN = STINGER_EDGE_DIRECTION_IN;
 
         // All elements between begin and pos have src < dest. Update the out-edge slot first
+        LOG_D("Beginning OUT updates for first half of batch...");
         do_batch_update<OUT, source_funcs, dest_funcs>(G, updates_begin, pos, operation);
         clear_results(updates_begin, pos);
+        LOG_D("Beginning IN updates for first half of batch...");
         do_batch_update<IN, dest_funcs, source_funcs>(G, updates_begin, pos, operation);
 
         // All elements between pos and end have src > dest. Update the in-edge slot first
+        LOG_D("Beginning IN updates for second half of batch...");
         do_batch_update<IN, dest_funcs, source_funcs>(G, pos, updates_end, operation);
         clear_results(pos, updates_end);
+        LOG_D("Beginning OUT updates for second half of batch...");
         do_batch_update<OUT, source_funcs, dest_funcs>(G, pos, updates_end, operation);
 
         // For undirected, do the same updates again in the opposite direction
