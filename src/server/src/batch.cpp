@@ -130,13 +130,12 @@ struct EdgeInsertionAdapter
 template <int64_t type>
 void process_insertions(stinger_t * S, StingerBatch & batch)
 {
-    int64_t mxts = 0, mnts = std::numeric_limits<int64_t>::max();
-    std::string src, dest;
     OMP("omp parallel for")
     for (size_t i = 0; i < batch.insertions_size(); i++)
     {
         EdgeInsertion & in = *batch.mutable_insertions(i);
         int64_t u = -1, v = -1;
+        std::string src, dest;
         handle_edge_names_types<type>(in, S, src, dest, u, v);
         if(u == -1 || v == -1) {
             // Prevents batch update from trying to insert this edge
@@ -197,8 +196,8 @@ void process_insertions(stinger_t * S, StingerBatch & batch)
 
 template <int64_t type>
 void process_deletions(stinger_t * S, StingerBatch & batch){
-    std::string src, dest;
-    OMP("omp for")
+
+    OMP("omp parallel for")
     for(size_t d = 0; d < batch.deletions_size(); d++)
     {
         EdgeDeletion & del = *batch.mutable_deletions(d);
@@ -213,6 +212,7 @@ void process_deletions(stinger_t * S, StingerBatch & batch){
             } break;
             case STRINGS_ONLY:
             {
+                std::string src, dest;
                 src_string (del, src);
                 dest_string (del, dest);
                 u = stinger_mapping_lookup(S, src.c_str(), src.length());
@@ -220,6 +220,7 @@ void process_deletions(stinger_t * S, StingerBatch & batch){
             } break;
             case MIXED:
             {
+                std::string src, dest;
                 if (del.has_source()) {
                     u = del.source();
                     char * name = NULL;
