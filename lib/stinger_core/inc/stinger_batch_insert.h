@@ -19,6 +19,9 @@ void stinger_batch_incr_edge_pairs(stinger * G, iterator begin, iterator end);
 template<typename adapter, typename iterator>
 void stinger_batch_insert_edge_pairs(stinger * G, iterator begin, iterator end);
 
+// Try to give each thread this number of updates
+static const int64_t stinger_batch_insert_max_updates_per_thread = 512;
+
 template<typename adapter, typename iterator>
 class BatchInserter
 {
@@ -303,9 +306,6 @@ protected:
         }
     }
 
-    // Don't use batch mode if a vertex has fewer than this many outgoing edges
-    static const int64_t out_degree_threshold = 512;
-
     template <class use_source>
     static bool dereference_equals(const iterator &a, const iterator &b)
     {
@@ -319,16 +319,40 @@ protected:
         // Sort by type, src, dst, time ascending
         LOG_D("Sorting...");
         std::sort(updates_begin, updates_end, use_source::sort);
+
         // Get a list of pointers to each element
         LOG_D("Finding unique sources...");
         int64_t num_updates = std::distance(updates_begin, updates_end);
         std::vector<iterator> pointers(num_updates);
         OMP("omp parallel for")
         for (int64_t i = 0; i < num_updates; ++i) { pointers[i] = updates_begin + i; }
+
+        LOG_D("Splitting ranges...");
         // Reduce down to a list of pointers to the beginning of each range of unique source ID's
         std::vector<iterator> unique_sources;
         std::unique_copy(pointers.begin(), pointers.end(), std::back_inserter(unique_sources), dereference_equals<use_source>);
         unique_sources.push_back(updates_end);
+
+        // Split up long ranges of updates for the same source vertex
+        std::vector<iterator> update_ranges;
+        OMP("omp parallel for")
+        for (typename std::vector<iterator>::iterator ptr = unique_sources.begin(); ptr < unique_sources.end()-1; ++ptr)
+        {
+            std::vector<iterator> local_ranges;
+            iterator begin = *ptr;
+            iterator end = *(ptr + 1);
+
+            local_ranges.push_back(begin);
+            while (std::distance(begin, end) > stinger_batch_insert_max_updates_per_thread)
+            {
+                begin += stinger_batch_insert_max_updates_per_thread;
+                local_ranges.push_back(begin);
+            }
+            OMP("omp critical")
+            update_ranges.insert(update_ranges.end(), local_ranges.begin(), local_ranges.end());
+        }
+        update_ranges.push_back(updates_end);
+
 
         LOG_D("Entering parallel update loop...");
         OMP("omp parallel for")
@@ -343,7 +367,6 @@ protected:
             int64_t source = use_source::get(*begin);
 
             // TODO call single update version if there's only a few edges for a vertex
-            // TODO split into smaller batches if there are a lot of edges for a vertex
             update_directed_edges_for_vertex<direction, use_dest>(G, source, type, begin, end, operation);
         }
     }
@@ -479,7 +502,6 @@ stinger_batch_insert_edge_pairs(stinger * G, iterator begin, iterator end)
 {
     BatchInserter<adapter, iterator>::batch_update_dispatch(G, begin, end, EDGE_WEIGHT_SET, false);
 }
-
 
 #endif //STINGER_BATCH_INSERT_H_
 
