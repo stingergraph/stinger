@@ -202,11 +202,6 @@ TEST_F(StingerBatchTest, duplicate_batch_insertion) {
     }
     EXPECT_EQ(num_inserts, num_edges);
 
-    // Timestamp should reflect the last update
-    STINGER_FORALL_EDGES_OF_ALL_TYPES_BEGIN(S) {
-        EXPECT_EQ(STINGER_EDGE_TIME_RECENT, num_dupes - 1);
-    }STINGER_FORALL_EDGES_OF_ALL_TYPES_END();
-
     // Weight should be sum of all updates
     STINGER_FORALL_EDGES_OF_ALL_TYPES_BEGIN(S) {
         EXPECT_EQ(STINGER_EDGE_WEIGHT, total_weight_per_edge);
