@@ -1,39 +1,65 @@
+/*
+ * stinger_batch_insert.h
+ * Author: Eric Hein <ehein6@gatech.edu>
+ * Date: 10/24/2016
+ * Purpose:
+ *   Provides optimized edge insert/update routines for stinger.
+ *   Multiple updates for the same source vertex are dispatched to each thread,
+ *   reducing the number of edge-list traversals that need to be done.
+ *
+ * Accepts a pair of random-access iterators to the range of edge updates to perform.
+ * Caller must also provide an adapter template argument: a struct of static functions
+ * to access the source, destination, weight, time, and result code of the update.
+ * This implementation handles duplicates and sets the return code correctly.
+ */
+
 #ifndef STINGER_BATCH_INSERT_H_
 #define STINGER_BATCH_INSERT_H_
 
 #include "stinger.h"
 #include "stinger_internal.h"
 #include "stinger_atomics.h"
-#include "x86_full_empty.h"
 #include "stinger_error.h"
+#include "x86_full_empty.h"
 
 #include <vector>
 #include <algorithm>
 #include <utility>
 
+// *** Public interface (definitions at end of file) ***
 template<typename adapter, typename iterator>
-void stinger_batch_incr_edges(stinger *G, iterator begin, iterator end);
+void stinger_batch_incr_edges(stinger_t *G, iterator begin, iterator end);
 template<typename adapter, typename iterator>
-void stinger_batch_insert_edges(stinger * G, iterator begin, iterator end);
+void stinger_batch_insert_edges(stinger_t * G, iterator begin, iterator end);
 template<typename adapter, typename iterator>
-void stinger_batch_incr_edge_pairs(stinger * G, iterator begin, iterator end);
+void stinger_batch_incr_edge_pairs(stinger_t * G, iterator begin, iterator end);
 template<typename adapter, typename iterator>
-void stinger_batch_insert_edge_pairs(stinger * G, iterator begin, iterator end);
+void stinger_batch_insert_edge_pairs(stinger_t * G, iterator begin, iterator end);
 
-// Try to give each thread this number of updates
+// *** Implementation ***
+namespace gt { namespace stinger {
+
+// Performance tuning; try to give each thread this number of updates
 static const int64_t stinger_batch_insert_max_updates_per_thread = 512;
 
+/*
+ * Rather than add these template arguments to every function in the file, just wrap everything in a template class
+ *
+ * adapter - provides static methods for accessing fields of an update
+ * iterator - iterator for a collection of updates
+ */
 template<typename adapter, typename iterator>
 class BatchInserter
 {
 protected:
+    // Everything in this class is protected and static, these friend functions are the only public interface
+    BatchInserter() {}
+    friend void stinger_batch_incr_edges<adapter, iterator>(stinger_t *G, iterator begin, iterator end);
+    friend void stinger_batch_insert_edges<adapter, iterator>(stinger_t * G, iterator begin, iterator end);
+    friend void stinger_batch_incr_edge_pairs<adapter, iterator>(stinger_t * G, iterator begin, iterator end);
+    friend void stinger_batch_insert_edge_pairs<adapter, iterator>(stinger_t * G, iterator begin, iterator end);
 
-    // *** Public interface ***
-    friend void stinger_batch_incr_edges<adapter, iterator>(stinger *G, iterator begin, iterator end);
-    friend void stinger_batch_insert_edges<adapter, iterator>(stinger * G, iterator begin, iterator end);
-    friend void stinger_batch_incr_edge_pairs<adapter, iterator>(stinger * G, iterator begin, iterator end);
-    friend void stinger_batch_insert_edge_pairs<adapter, iterator>(stinger * G, iterator begin, iterator end);
-
+    // what 'iterator' points to
     typedef typename std::iterator_traits<iterator>::value_type update;
 
     // Result codes
@@ -45,6 +71,7 @@ protected:
         EDGE_NOT_ADDED = 9  // -1
     };
 
+    // Set of functions to sort/filter a collection of updates by source vertex
     struct source_funcs
     {
         static int64_t
@@ -73,6 +100,7 @@ protected:
         }
     };
 
+    // Set of functions to sort/filter a collection of updates by destination vertex
     struct dest_funcs
     {
         static int64_t
@@ -116,7 +144,6 @@ protected:
             return end; // not found
     }
 
-
     // Find the first pending update with destination 'dest'
     template<class use_dest>
     static iterator
@@ -132,6 +159,7 @@ protected:
         else return end;
     }
 
+    // Keeps track of the next pending update to insert into the graph
     class next_update_tracker
     {
     protected:
@@ -158,12 +186,11 @@ protected:
      * G - pointer to STINGER
      * eb - pointer to edge block
      * e - edge index within block
-      * operation - EDGE_WEIGHT_SET or EDGE_WEIGHT_INCR
+     * operation - EDGE_WEIGHT_SET or EDGE_WEIGHT_INCR
      */
-
     template<int64_t direction, class use_dest>
     static void
-    do_edge_updates(int64_t result, bool create, iterator pos, iterator updates_end, stinger * G, stinger_eb *eb, size_t e, int64_t operation)
+    do_edge_updates(int64_t result, bool create, iterator pos, iterator updates_end, stinger_t * G, stinger_eb *eb, size_t e, int64_t operation)
     {
         // 'pos' points to the first update for this edge slot; there may be more than one, or none if it equals 'updates_end'
         // Keep incrementing the iterator until we reach an update with a different neighbor
@@ -184,12 +211,13 @@ protected:
     /*
      * The core algorithm for updating edges in one direction.
      * Similar to stinger_update_directed_edge(), but optimized to perform several updates for the same vertex.
-     *
+     * direction - are we updating out-edges or in-edges?
+     * use_dest - Either source_funcs or dest_funcs (allows us to swap source/destination easily)
      */
     template<int64_t direction, class use_dest>
     static void
     update_directed_edges_for_vertex(
-            stinger *G, int64_t src, int64_t type,
+            stinger_t *G, int64_t src, int64_t type,
             iterator updates_begin,
             iterator updates_end,
             int64_t operation)
@@ -299,9 +327,11 @@ protected:
                     // Add the block to the list
                     ebpool_priv[newBlock].next = 0;
                     push_ebs (G, 1, &newBlock);
+                    // Unlock the tail pointer
                     writeef (block_ptr, (uint64_t)newBlock);
                 }
             } else {
+                // Another thread already added a block, unlock and try again
                 writeef (block_ptr, (uint64_t)old_eb);
             }
         }
@@ -313,9 +343,18 @@ protected:
         return use_source::equals(*a, *b);
     }
 
+    /*
+     * Splits a range of updates into chunks that all update the same source,
+     * then calls update_directed_edges_for_vertex() in parallel on each range
+     *
+     * Template arguments:
+     * direction - are we updating out-edges or in-edges?
+     * use_source - set of functions to use for working with the source vertex (source_funcs or dest_funcs)
+     * use_dest - set of functions to use for working with the destination vertex (source_funcs or dest_funcs)
+     */
     template<int64_t direction, class use_source, class use_dest>
     static void
-    do_batch_update(stinger * G, iterator updates_begin, iterator updates_end, int64_t operation)
+    do_batch_update(stinger_t * G, iterator updates_begin, iterator updates_end, int64_t operation)
     {
         // Sort by type, src, dst, time ascending
         LOG_D("Sorting...");
@@ -442,7 +481,7 @@ protected:
     }
 
     static void
-    batch_update_dispatch(stinger * G, iterator updates_begin, iterator updates_end, int64_t operation, bool directed)
+    batch_update_dispatch(stinger_t * G, iterator updates_begin, iterator updates_end, int64_t operation, bool directed)
     {
         // Each edge is stored in two places: the out-edge at the source, and the in-edge at the destination
         // First iteration: group by source and update out-edges
@@ -489,30 +528,31 @@ protected:
     }
 }; // end of class batch insert
 
+}} // end namespace gt::stinger
+
 template<typename adapter, typename iterator>
 void
-stinger_batch_incr_edges(stinger *G, iterator begin, iterator end)
+stinger_batch_incr_edges(stinger_t *G, iterator begin, iterator end)
 {
-    BatchInserter<adapter, iterator>::batch_update_dispatch(G, begin, end, EDGE_WEIGHT_INCR, true);
+    gt::stinger::BatchInserter<adapter, iterator>::batch_update_dispatch(G, begin, end, EDGE_WEIGHT_INCR, true);
 }
 template<typename adapter, typename iterator>
 void
-stinger_batch_insert_edges(stinger * G, iterator begin, iterator end)
+stinger_batch_insert_edges(stinger_t * G, iterator begin, iterator end)
 {
-    BatchInserter<adapter, iterator>::batch_update_dispatch(G, begin, end, EDGE_WEIGHT_SET, true);
+    gt::stinger::BatchInserter<adapter, iterator>::batch_update_dispatch(G, begin, end, EDGE_WEIGHT_SET, true);
 }
 template<typename adapter, typename iterator>
 void
-stinger_batch_incr_edge_pairs(stinger * G, iterator begin, iterator end)
+stinger_batch_incr_edge_pairs(stinger_t * G, iterator begin, iterator end)
 {
-    BatchInserter<adapter, iterator>::batch_update_dispatch(G, begin, end, EDGE_WEIGHT_INCR, false);
+    gt::stinger::BatchInserter<adapter, iterator>::batch_update_dispatch(G, begin, end, EDGE_WEIGHT_INCR, false);
 }
 template<typename adapter, typename iterator>
 void
-stinger_batch_insert_edge_pairs(stinger * G, iterator begin, iterator end)
+stinger_batch_insert_edge_pairs(stinger_t * G, iterator begin, iterator end)
 {
-    BatchInserter<adapter, iterator>::batch_update_dispatch(G, begin, end, EDGE_WEIGHT_SET, false);
+    gt::stinger::BatchInserter<adapter, iterator>::batch_update_dispatch(G, begin, end, EDGE_WEIGHT_SET, false);
 }
 
 #endif //STINGER_BATCH_INSERT_H_
-
