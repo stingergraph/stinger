@@ -19,8 +19,10 @@
 #include "stinger.h"
 #include "stinger_internal.h"
 #include "stinger_atomics.h"
-#include "stinger_error.h"
 #include "x86_full_empty.h"
+#define LOG_AT_V
+#include "stinger_error.h"
+#undef LOG_AT_V
 
 #include <vector>
 #include <algorithm>
@@ -38,9 +40,6 @@ void stinger_batch_insert_edge_pairs(stinger_t * G, iterator begin, iterator end
 
 // *** Implementation ***
 namespace gt { namespace stinger {
-
-// Performance tuning; try to give each thread this number of updates
-static const int64_t stinger_batch_insert_max_updates_per_thread = 512;
 
 /*
  * Rather than add these template arguments to every function in the file, just wrap everything in a template class
@@ -357,11 +356,11 @@ protected:
     do_batch_update(stinger_t * G, iterator updates_begin, iterator updates_end, int64_t operation)
     {
         // Sort by type, src, dst, time ascending
-        LOG_D("Sorting...");
+        LOG_V("Sorting...");
         std::sort(updates_begin, updates_end, use_source::sort);
 
         // Get a list of pointers to each element
-        LOG_D("Finding unique sources...");
+        LOG_V("Finding unique sources...");
         int64_t num_updates = std::distance(updates_begin, updates_end);
         std::vector<iterator> pointers(num_updates);
         OMP("omp parallel for")
@@ -373,7 +372,7 @@ protected:
         unique_sources.push_back(updates_end);
 
         // Split up long ranges of updates for the same source vertex
-        LOG_D("Splitting ranges...");
+        LOG_V("Splitting ranges...");
         typedef std::pair<iterator, iterator> range;
         typedef typename std::vector<range>::iterator range_iterator;
         std::vector<range> update_ranges;
@@ -384,27 +383,35 @@ protected:
             iterator end = *(ptr + 1);
 
             // Calculate number of updates for each range
-            const size_t target_size = stinger_batch_insert_max_updates_per_thread;
             size_t num_updates = std::distance(begin, end);
-            size_t num_ranges = std::ceil((double)num_updates / target_size);
+            size_t num_ranges = omp_get_num_threads();
             size_t updates_per_range = std::floor((double)num_updates / num_ranges);
 
-            std::vector<range> local_ranges;
-            for (size_t i = 0; i < num_ranges-1; ++i)
+            std::vector<range> local_ranges; local_ranges.reserve(num_ranges);
+            if (updates_per_range < omp_get_max_threads())
             {
-                local_ranges.push_back(make_pair(begin, begin + updates_per_range));
-                begin += updates_per_range;
+                // If there aren't many updates, just give them all to one thread
+                local_ranges.push_back(make_pair(begin, end));
+            } else {
+                // Split the updates evenly amoung threads
+                for (size_t i = 0; i < num_ranges-1; ++i)
+                {
+                    local_ranges.push_back(make_pair(begin, begin + updates_per_range));
+                    begin += updates_per_range;
+                }
+                // Last range may be a different size if work doesn't divide evenly
+                local_ranges.push_back(make_pair(begin, end));
             }
-            // Last range may be a different size if work doesn't divide evenly
-            local_ranges.push_back(make_pair(begin, end));
 
             // Combine all ranges into shared list
             OMP("omp critical")
             update_ranges.insert(update_ranges.end(), local_ranges.begin(), local_ranges.end());
         }
 
-        LOG_D_A("Entering parallel update loop, %ld ranges of max %ld updates each.", update_ranges.size(), stinger_batch_insert_max_updates_per_thread);
-        OMP("omp parallel for")
+
+        LOG_V_A("Entering parallel update loop: %ld updates for %ld vertices.",
+            std::distance(updates_begin, updates_end), unique_sources.size()-1);
+        OMP("omp parallel for schedule(static, 1)") // (static, 1) will interleave among threads to spread out updates for high-degree vertices
         for (range_iterator range = update_ranges.begin(); range < update_ranges.end(); ++range)
         {
             // HACK also partition on etype
@@ -416,7 +423,6 @@ protected:
             int64_t source = use_source::get(*begin);
 
             LOG_D_A("Thread %d processing %ld updates (%ld -> *)", omp_get_thread_num(), std::distance(begin, end), source);
-            // TODO call single update version if there's only a few edges for a vertex
             update_directed_edges_for_vertex<direction, use_dest>(G, source, type, begin, end, operation);
         }
     }
@@ -487,24 +493,24 @@ protected:
         // First iteration: group by source and update out-edges
         // Second iteration: group by destination and update in-edges
         // But, in order to avoid deadlock with concurrent deletions, we must always lock edges in the same order
-        LOG_D("Partitioning batch to obey ordering constraints...");
+        LOG_V("Partitioning batch to obey ordering constraints...");
         const iterator pos = std::partition(updates_begin, updates_end, source_less_than_destination);
 
         const int64_t OUT = STINGER_EDGE_DIRECTION_OUT;
         const int64_t IN = STINGER_EDGE_DIRECTION_IN;
 
         // All elements between begin and pos have src < dest. Update the out-edge slot first
-        LOG_D("Beginning OUT updates for first half of batch...");
+        LOG_V("Beginning OUT updates for first half of batch...");
         do_batch_update<OUT, source_funcs, dest_funcs>(G, updates_begin, pos, operation);
         clear_results(updates_begin, pos);
-        LOG_D("Beginning IN updates for first half of batch...");
+        LOG_V("Beginning IN updates for first half of batch...");
         do_batch_update<IN, dest_funcs, source_funcs>(G, updates_begin, pos, operation);
 
         // All elements between pos and end have src > dest. Update the in-edge slot first
-        LOG_D("Beginning IN updates for second half of batch...");
+        LOG_V("Beginning IN updates for second half of batch...");
         do_batch_update<IN, dest_funcs, source_funcs>(G, pos, updates_end, operation);
         clear_results(pos, updates_end);
-        LOG_D("Beginning OUT updates for second half of batch...");
+        LOG_V("Beginning OUT updates for second half of batch...");
         do_batch_update<OUT, source_funcs, dest_funcs>(G, pos, updates_end, operation);
 
         // For undirected, do the same updates again in the opposite direction
