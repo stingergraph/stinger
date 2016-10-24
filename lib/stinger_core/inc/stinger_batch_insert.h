@@ -9,6 +9,7 @@
 
 #include <vector>
 #include <algorithm>
+#include <utility>
 
 template<typename adapter, typename iterator>
 void stinger_batch_incr_edges(stinger *G, iterator begin, iterator end);
@@ -327,45 +328,55 @@ protected:
         OMP("omp parallel for")
         for (int64_t i = 0; i < num_updates; ++i) { pointers[i] = updates_begin + i; }
 
-        LOG_D("Splitting ranges...");
         // Reduce down to a list of pointers to the beginning of each range of unique source ID's
         std::vector<iterator> unique_sources;
         std::unique_copy(pointers.begin(), pointers.end(), std::back_inserter(unique_sources), dereference_equals<use_source>);
         unique_sources.push_back(updates_end);
 
         // Split up long ranges of updates for the same source vertex
-        std::vector<iterator> update_ranges;
+        LOG_D("Splitting ranges...");
+        typedef std::pair<iterator, iterator> range;
+        typedef typename std::vector<range>::iterator range_iterator;
+        std::vector<range> update_ranges;
         OMP("omp parallel for")
         for (typename std::vector<iterator>::iterator ptr = unique_sources.begin(); ptr < unique_sources.end()-1; ++ptr)
         {
-            std::vector<iterator> local_ranges;
             iterator begin = *ptr;
             iterator end = *(ptr + 1);
 
-            local_ranges.push_back(begin);
-            while (std::distance(begin, end) > stinger_batch_insert_max_updates_per_thread)
+            // Calculate number of updates for each range
+            const size_t target_size = stinger_batch_insert_max_updates_per_thread;
+            size_t num_updates = std::distance(begin, end);
+            size_t num_ranges = std::ceil((double)num_updates / target_size);
+            size_t updates_per_range = std::floor((double)num_updates / num_ranges);
+
+            std::vector<range> local_ranges;
+            for (size_t i = 0; i < num_ranges-1; ++i)
             {
-                begin += stinger_batch_insert_max_updates_per_thread;
-                local_ranges.push_back(begin);
+                local_ranges.push_back(make_pair(begin, begin + updates_per_range));
+                begin += updates_per_range;
             }
+            // Last range may be a different size if work doesn't divide evenly
+            local_ranges.push_back(make_pair(begin, end));
+
+            // Combine all ranges into shared list
             OMP("omp critical")
             update_ranges.insert(update_ranges.end(), local_ranges.begin(), local_ranges.end());
         }
-        update_ranges.push_back(updates_end);
 
-
-        LOG_D("Entering parallel update loop...");
+        LOG_D_A("Entering parallel update loop, %ld ranges of max %ld updates each.", update_ranges.size(), stinger_batch_insert_max_updates_per_thread);
         OMP("omp parallel for")
-        for (typename std::vector<iterator>::iterator ptr = unique_sources.begin(); ptr < unique_sources.end()-1; ++ptr)
+        for (range_iterator range = update_ranges.begin(); range < update_ranges.end(); ++range)
         {
             // HACK also partition on etype
             assert(G->max_netypes == 1);
             int64_t type = 0;
             // Get this thread's range of updates
-            iterator begin = *ptr;
-            iterator end = *(ptr + 1);
+            iterator begin = range->first;
+            iterator end = range->second;
             int64_t source = use_source::get(*begin);
 
+            LOG_D_A("Thread %d processing %ld updates (%ld -> *)", omp_get_thread_num(), std::distance(begin, end), source);
             // TODO call single update version if there's only a few edges for a vertex
             update_directed_edges_for_vertex<direction, use_dest>(G, source, type, begin, end, operation);
         }
