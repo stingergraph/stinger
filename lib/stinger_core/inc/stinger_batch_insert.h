@@ -418,7 +418,7 @@ protected:
 
         LOG_V_A("Entering parallel update loop: %ld updates for %ld vertices.",
             std::distance(updates_begin, updates_end), unique_sources.size()-1);
-        OMP("omp parallel for schedule(static, 1)") // (static, 1) will interleave among threads to spread out updates for high-degree vertices
+        OMP("omp parallel for schedule(dynamic)")
         for (range_iterator range = update_ranges.begin(); range < update_ranges.end(); ++range)
         {
             // HACK also partition on etype
