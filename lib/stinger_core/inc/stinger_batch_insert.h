@@ -355,6 +355,10 @@ protected:
     static void
     do_batch_update(stinger_t * G, iterator updates_begin, iterator updates_end, int64_t operation)
     {
+        typedef typename std::vector<iterator>::iterator iterator_ptr;
+        typedef typename std::pair<iterator, iterator> range;
+        typedef typename std::vector<range>::iterator range_iterator;
+
         // Sort by type, src, dst, time ascending
         LOG_V("Sorting...");
         std::sort(updates_begin, updates_end, use_source::sort);
@@ -367,17 +371,20 @@ protected:
         for (int64_t i = 0; i < num_updates; ++i) { pointers[i] = updates_begin + i; }
 
         // Reduce down to a list of pointers to the beginning of each range of unique source ID's
-        std::vector<iterator> unique_sources;
-        std::unique_copy(pointers.begin(), pointers.end(), std::back_inserter(unique_sources), dereference_equals<use_source>);
+        // NOTE: using std::back_inserter here would prevent std::unique_copy from running in parallel
+        //       So instead, allocate room for all the updates and shrink the vector afterwards
+        std::vector<iterator> unique_sources(num_updates);
+        iterator_ptr last_unique_source = std::unique_copy(
+            pointers.begin(), pointers.end(), unique_sources.begin(), dereference_equals<use_source>);
+        unique_sources.erase(last_unique_source, unique_sources.end());
+        // Now each consecutive pair of elements represents a range of updates for the same source ID
         unique_sources.push_back(updates_end);
 
         // Split up long ranges of updates for the same source vertex
         LOG_V("Splitting ranges...");
-        typedef std::pair<iterator, iterator> range;
-        typedef typename std::vector<range>::iterator range_iterator;
         std::vector<range> update_ranges;
         OMP("omp parallel for")
-        for (typename std::vector<iterator>::iterator ptr = unique_sources.begin(); ptr < unique_sources.end()-1; ++ptr)
+        for (iterator_ptr ptr = unique_sources.begin(); ptr < unique_sources.end()-1; ++ptr)
         {
             iterator begin = *ptr;
             iterator end = *(ptr + 1);
