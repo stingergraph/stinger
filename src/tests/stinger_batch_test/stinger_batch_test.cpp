@@ -70,6 +70,17 @@ TEST_F(StingerBatchTest, single_insertion) {
         EXPECT_EQ(u->result, 1);
     }
 
+    int64_t num_edges = 0;
+    STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, 4){
+        EXPECT_EQ(STINGER_EDGE_DEST, 5);
+        ++num_edges;
+    }STINGER_FORALL_OUT_EDGES_OF_VTX_END();
+
+    EXPECT_EQ(stinger_outdegree_get(S, 4), 1);
+    EXPECT_EQ(stinger_indegree_get(S, 5), 1);
+
+    EXPECT_EQ(num_edges, 1);
+
     int64_t consistency = stinger_consistency_check(S,S->max_nv);
     EXPECT_EQ(consistency,0);
 }
@@ -102,6 +113,25 @@ TEST_F(StingerBatchTest, simple_batch_insertion) {
     {
         EXPECT_EQ(u->result, 1);
     }
+
+    for (int i = 0; i < 2; ++i){
+        int64_t num_edges = 0;
+        STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, i){
+            EXPECT_EQ(STINGER_EDGE_DEST, i+1);
+            ++num_edges;
+        }STINGER_FORALL_OUT_EDGES_OF_VTX_END();
+        EXPECT_EQ(num_edges, 1);
+    }
+
+    EXPECT_EQ(stinger_outdegree_get(S, 0), 1);
+    EXPECT_EQ(stinger_indegree_get(S, 0), 0);
+
+    EXPECT_EQ(stinger_outdegree_get(S, 1), 1);
+    EXPECT_EQ(stinger_indegree_get(S, 1), 1);
+
+    EXPECT_EQ(stinger_outdegree_get(S, 2), 0);
+    EXPECT_EQ(stinger_indegree_get(S, 2), 1);
+
 }
 
 TEST_F(StingerBatchTest, batch_insertion) {
@@ -157,6 +187,10 @@ TEST_F(StingerBatchTest, batch_insertion) {
     STINGER_FORALL_EDGES_OF_ALL_TYPES_BEGIN(S) {
         EXPECT_EQ(STINGER_EDGE_WEIGHT, 2);
     }STINGER_FORALL_EDGES_OF_ALL_TYPES_END();
+
+    for (int i=0; i < 100; i++) {
+        EXPECT_EQ(stinger_outdegree_get(S, i), 99 - i);
+    }
 }
 
 TEST_F(StingerBatchTest, duplicate_batch_insertion) {
@@ -206,6 +240,10 @@ TEST_F(StingerBatchTest, duplicate_batch_insertion) {
     STINGER_FORALL_EDGES_OF_ALL_TYPES_BEGIN(S) {
         EXPECT_EQ(STINGER_EDGE_WEIGHT, total_weight_per_edge);
     }STINGER_FORALL_EDGES_OF_ALL_TYPES_END();
+
+    for (int i=0; i < 100; i++) {
+        EXPECT_EQ(stinger_outdegree_get(S, i), 99 - i);
+    }
 }
 
 int
