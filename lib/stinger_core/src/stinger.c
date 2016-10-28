@@ -804,9 +804,7 @@ struct stinger *stinger_new_full (struct stinger_config_t * config)
     }
   }
 
-  struct stinger *G = xmalloc (sizeof(struct stinger) + sizes.size);
-
-  xzero(G, sizeof(struct stinger) + sizes.size);
+  struct stinger *G = xcalloc (sizeof(struct stinger) + sizes.size, 1);
 
   G->max_nv       = nv;
   G->max_neblocks = nebs;
