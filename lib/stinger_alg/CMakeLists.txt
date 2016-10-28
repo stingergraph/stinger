@@ -2,6 +2,7 @@ set(sources
   src/adamic_adar.c
   src/betweenness.c
   src/clustering.c
+  src/community_on_demand.c
   src/kcore.c
   src/pagerank.c
   src/random.c
@@ -24,6 +25,7 @@ set(headers
   inc/adamic_adar.h
   inc/betweenness.h
   inc/clustering.h
+  inc/community_on_demand.h
   inc/kcore.h
   inc/pagerank.h
   inc/random.h

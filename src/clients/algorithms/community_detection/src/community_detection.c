@@ -62,7 +62,7 @@ main(int argc, char *argv[])
     stinger_register_alg(
             .name=alg_name,
     .data_per_vertex=sizeof(int64_t),
-    .data_description="d partitions",
+    .data_description="l partitions",
     .host="localhost",
     );
 
