@@ -159,6 +159,10 @@ add_test(StingerTraversalTest ${CMAKE_BINARY_DIR}/bin/stinger_traversal_test)
 add_test(StingerPagerankTest ${CMAKE_BINARY_DIR}/bin/stinger_pagerank_test)
 add_test(StingerAdamicAdarTest ${CMAKE_BINARY_DIR}/bin/stinger_adamic_adar_test)
 add_test(StingerBetweennessTest ${CMAKE_BINARY_DIR}/bin/stinger_betweenness_test)
+add_test(StingerHitsTest ${CMAKE_BINARY_DIR}/bin/stinger_hits_test)
+add_test(StingerDiameterTest ${CMAKE_BINARY_DIR}/bin/stinger_diameter_test)
+add_test(StingerIndependentSetsTest ${CMAKE_BINARY_DIR}/bin/stinger_independent_sets_test)
+add_test(StingerShortestPathsTest ${CMAKE_BINARY_DIR}/bin/stinger_shortest_paths)
 
 find_program(BASH bash REQUIRED)
 add_test(
@@ -177,5 +181,8 @@ add_custom_target(check
     stinger_pagerank_test
     stinger_adamic_adar_test
     stinger_betweenness_test
+    stinger_hits_test
+    stinger_diameter_test
+    stinger_independent_sets_test
+    stinger_shortest_paths
 )
-

@@ -31,7 +31,7 @@ main(int argc, char *argv[])
         snprintf(name, 1024, "pagerank_%s", optarg);
         strcpy(type_str,optarg);
         type_specified = 1;
-      } break;   
+      } break;
       case 'd': {
         directed = 1;
       } break;
@@ -44,20 +44,20 @@ main(int argc, char *argv[])
       case 'i': {
         maxiter = atol(optarg);
       } break;
-      default: 
+      default:
         printf("Unknown option '%c'\n", opt);
       case '?':
       case 'h': {
         printf(
-          "PageRank\n"
-          "==================================\n"
-          "\n"
-          "  -t <str>  Specify an edge type to run page rank over\n"
-          "  -d        Use a PageRank that is safe on directed graphs\n"
-          "  -e        Set PageRank Epsilon (default: %0.1e)\n"
-          "  -f        Set PageRank Damping Factor (default: %lf)\n"
-          "  -i        Set PageRank Max Iterations (default: %ld)\n"
-          "\n",EPSILON_DEFAULT,DAMPINGFACTOR_DEFAULT,MAXITER_DEFAULT);
+                "PageRank\n"
+                        "==================================\n"
+                        "\n"
+                        "  -t <str>  Specify an edge type to run page rank over\n"
+                        "  -d        Use a PageRank that is safe on directed graphs\n"
+                        "  -e        Set PageRank Epsilon (default: %0.1e)\n"
+                        "  -f        Set PageRank Damping Factor (default: %lf)\n"
+                        "  -i        Set PageRank Max Iterations (default: %ld)\n"
+                        "\n",EPSILON_DEFAULT,DAMPINGFACTOR_DEFAULT,MAXITER_DEFAULT);
         return(opt);
       }
     }
