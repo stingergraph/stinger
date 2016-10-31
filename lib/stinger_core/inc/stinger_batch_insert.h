@@ -337,9 +337,10 @@ protected:
     }
 
     template <class use_source>
-    static bool dereference_equals(const iterator &a, const iterator &b)
+    static bool same_source_and_type(const iterator &a, const iterator &b)
     {
-        return use_source::equals(*a, *b);
+        return adapter::get_type(*a) == adapter::get_type(*b)
+            && use_source::equals(*a, *b);
     }
 
     /*
@@ -375,9 +376,9 @@ protected:
         //       So instead, allocate room for all the updates and shrink the vector afterwards
         std::vector<iterator> unique_sources(num_updates);
         iterator_ptr last_unique_source = std::unique_copy(
-            pointers.begin(), pointers.end(), unique_sources.begin(), dereference_equals<use_source>);
+            pointers.begin(), pointers.end(), unique_sources.begin(), same_source_and_type<use_source>);
         unique_sources.erase(last_unique_source, unique_sources.end());
-        // Now each consecutive pair of elements represents a range of updates for the same source ID
+        // Now each consecutive pair of elements represents a range of updates for the same type and source ID
         unique_sources.push_back(updates_end);
 
         // Split up long ranges of updates for the same source vertex
@@ -421,12 +422,11 @@ protected:
         OMP("omp parallel for schedule(dynamic)")
         for (range_iterator range = update_ranges.begin(); range < update_ranges.end(); ++range)
         {
-            // HACK also partition on etype
-            assert(G->max_netypes == 1);
-            int64_t type = 0;
             // Get this thread's range of updates
             iterator begin = range->first;
             iterator end = range->second;
+            // Each range guaranteed to have same edge type and source vertex
+            int64_t type = adapter::get_type(*begin);
             int64_t source = use_source::get(*begin);
 
             LOG_D_A("Thread %d processing %ld updates (%ld -> *)", omp_get_thread_num(), std::distance(begin, end), source);
