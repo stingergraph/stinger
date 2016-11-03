@@ -1047,12 +1047,8 @@ update_edge_data_and_direction (struct stinger * S, struct stinger_eb *eb,
     /* is this a new edge */
     if (e->neighbor < 0 || index >= eb->high) {
       e->neighbor = neighbor | direction;
-      /* only edge in block? - assuming we have block effectively locked */
-      if(stinger_int64_fetch_add(&eb->numEdges, 1) == 0) {
-        eb->smallStamp = ts;
-        eb->largeStamp = ts;
-      }
       /* register new edge */
+      stinger_int64_fetch_add(&eb->numEdges, 1);
       if (direction & STINGER_EDGE_DIRECTION_OUT) { // This guarantees we don't add it twice      
         stinger_outdegree_increment_atomic(S, eb->vertexID, 1);
       } else if (direction & STINGER_EDGE_DIRECTION_IN) {        
