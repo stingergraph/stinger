@@ -62,12 +62,15 @@ protected:
     typedef typename std::iterator_traits<iterator>::value_type update;
 
     // Result codes
-    // Before returning to caller, we subtract 10 to make return codes match up with functions like stinger_incr_edge
+    // Caller initializes result code to 0, and expects 0 if edge is already present.
+    // But we need to use this field to track if the update has been processed yet.
+    // We use a fixed offset, then subtract it before returning to match behavior of functions like stinger_incr_edge.
+    static const int64_t result_code_offset = 10;
     enum result_codes {
-        PENDING = 0,
-        EDGE_ADDED = 11,    // 1
-        EDGE_UPDATED = 10,  // 0
-        EDGE_NOT_ADDED = 9  // -1
+        PENDING =           0,
+        EDGE_ADDED =        1 + result_code_offset,
+        EDGE_UPDATED =      0 + result_code_offset,
+        EDGE_NOT_ADDED =   -1 + result_code_offset
     };
 
     // Set of functions to sort/filter a collection of updates by source vertex
@@ -91,11 +94,15 @@ protected:
         }
         static bool
         sort(const update &a, const update &b){
-            return (adapter::get_type(a) != adapter::get_type(b)) ? adapter::get_type(a) < adapter::get_type(b) :
-                   (adapter::get_source(a) != adapter::get_source(b)) ? adapter::get_source(a) < adapter::get_source(b) :
-                   (adapter::get_dest(a) != adapter::get_dest(b)) ? adapter::get_dest(a) < adapter::get_dest(b) :
-                   (adapter::get_time(a) != adapter::get_time(b)) ? adapter::get_time(a) < adapter::get_time(b) :
-                   false;
+            if (adapter::get_type(a) != adapter::get_type(b))
+                return adapter::get_type(a) < adapter::get_type(b);
+            if (adapter::get_source(a) != adapter::get_source(b))
+                return adapter::get_source(a) < adapter::get_source(b);
+            if (adapter::get_dest(a) != adapter::get_dest(b))
+                return adapter::get_dest(a) < adapter::get_dest(b);
+            if (adapter::get_time(a) != adapter::get_time(b))
+                return adapter::get_time(a) < adapter::get_time(b);
+            return false;
         }
     };
 
@@ -120,11 +127,15 @@ protected:
         }
         static bool
         sort(const update &a, const update &b){
-            return (adapter::get_type(a) != adapter::get_type(b)) ? adapter::get_type(a) < adapter::get_type(b) :
-                   (adapter::get_dest(a) != adapter::get_dest(b)) ? adapter::get_dest(a) < adapter::get_dest(b) :
-                   (adapter::get_source(a) != adapter::get_source(b)) ? adapter::get_source(a) < adapter::get_source(b) :
-                   (adapter::get_time(a) != adapter::get_time(b)) ? adapter::get_time(a) < adapter::get_time(b) :
-                   false;
+            if (adapter::get_type(a) != adapter::get_type(b))
+                return adapter::get_type(a) < adapter::get_type(b);
+            if (adapter::get_dest(a) != adapter::get_dest(b))
+                return adapter::get_dest(a) < adapter::get_dest(b);
+            if (adapter::get_source(a) != adapter::get_source(b))
+                return adapter::get_source(a) < adapter::get_source(b);
+            if (adapter::get_time(a) != adapter::get_time(b))
+                return adapter::get_time(a) < adapter::get_time(b);
+            return false;
         }
     };
 
@@ -189,7 +200,9 @@ protected:
      */
     template<int64_t direction, class use_dest>
     static void
-    do_edge_updates(int64_t result, bool create, iterator pos, iterator updates_end, stinger_t * G, stinger_eb *eb, size_t e, int64_t operation)
+    do_edge_updates(
+        int64_t result, bool create, iterator pos, iterator updates_end,
+        stinger_t * G, stinger_eb *eb, size_t e, int64_t operation)
     {
         // 'pos' points to the first update for this edge slot; there may be more than one, or none if it equals 'updates_end'
         // Keep incrementing the iterator until we reach an update with a different neighbor
@@ -249,7 +262,8 @@ protected:
                     // If we already have an in-edge for this destination, we will reuse the edge slot
                     // But the return code should reflect that we added an edge
                     int64_t result = (direction & tmp->edges[k].neighbor) ? EDGE_UPDATED : EDGE_ADDED;
-                    do_edge_updates<direction, use_dest>(result, false, u, updates_end, G, tmp, k, operation);
+                    do_edge_updates<direction, use_dest>(result, false, u, updates_end,
+                        G, tmp, k, operation);
                 }
             }
         }
@@ -276,7 +290,8 @@ protected:
                             // If we already have an in-edge for this destination, we will reuse the edge slot
                             // But the return code should reflect that we added an edge
                             int64_t result = (direction & tmp->edges[k].neighbor) ? EDGE_UPDATED : EDGE_ADDED;
-                            do_edge_updates<direction, use_dest>(result, false, u, updates_end, G, tmp, k, operation);
+                            do_edge_updates<direction, use_dest>(result, false, u, updates_end,
+                                G, tmp, k, operation);
                         }
 
                         if (myNeighbor < 0 || k >= endk) {
@@ -288,11 +303,13 @@ protected:
                             iterator u = find_updates<use_dest>(updates_begin, updates_end, thisEdge);
                             if (thisEdge < 0 || k >= endk) {
                                 // Slot is empty, add the edge
-                                do_edge_updates<direction, use_dest>(EDGE_ADDED, true, next_update(), updates_end, G, tmp, k, operation);
+                                do_edge_updates<direction, use_dest>(EDGE_ADDED, true, next_update(), updates_end,
+                                    G, tmp, k, operation);
                             } else if (u != updates_end) {
                                 // Another thread just added the edge. Do a normal update
                                 int64_t result = (direction & tmp->edges[k].neighbor) ? EDGE_UPDATED : EDGE_ADDED;
-                                do_edge_updates<direction, use_dest>(result, false, u, updates_end, G, tmp, k, operation);
+                                do_edge_updates<direction, use_dest>(result, false, u, updates_end,
+                                    G, tmp, k, operation);
                                 writexf ( (uint64_t *)&(tmp->edges[k].timeFirst), timefirst);
                             } else {
                                 // Another thread claimed the slot for a different edge, unlock and keep looking
@@ -322,7 +339,8 @@ protected:
                     return;
                 } else {
                     // Add our edge to the first slot in the new edge block
-                    do_edge_updates<direction, use_dest>(EDGE_ADDED, true, next_update(), updates_end, G, ebpool_priv + newBlock, 0, operation);
+                    do_edge_updates<direction, use_dest>(EDGE_ADDED, true, next_update(), updates_end,
+                        G, ebpool_priv + newBlock, 0, operation);
                     // Add the block to the list
                     ebpool_priv[newBlock].next = 0;
                     push_ebs (G, 1, &newBlock);
@@ -454,8 +472,8 @@ protected:
                     // Reset return code so we process this update next iteration
                     adapter::set_result(*u, PENDING);
                     break;
-                case -1:
-                case 1:
+                case EDGE_ADDED-result_code_offset:
+                case EDGE_NOT_ADDED-result_code_offset:
                     // Caller must have set the return code, leave it be
                     break;
                 case PENDING:
@@ -478,10 +496,10 @@ protected:
                 case EDGE_UPDATED:
                 case EDGE_NOT_ADDED:
                     // Subtract 10 to get back to return code caller expects
-                    adapter::set_result(*u, result - 10);
+                    adapter::set_result(*u, result - result_code_offset);
                     break;
-                case -1:
-                case 1:
+                case EDGE_ADDED-result_code_offset:
+                case EDGE_NOT_ADDED-result_code_offset:
                     // Caller must have set the return code, leave it be
                     break;
                 case PENDING:
@@ -523,7 +541,7 @@ protected:
         // For undirected, do the same updates again in the opposite direction
         if (!directed)
         {
-            // TODO does anyone really care what happens when half of an undirected insert has a different return code?
+            // NOTE We are discarding the return code from the first update, assuming that it will be the same in both directions
             clear_results(updates_begin, updates_end);
 
             // All elements between begin and pos have dest < src. Update the in-edge slot first

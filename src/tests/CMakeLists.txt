@@ -10,9 +10,9 @@ target_link_libraries(stinger_names_test stinger_core gtest)
 #================================
 
 set(_stinger_core_test_sources
-        stinger_core_test/stinger_core_test.cpp
-        stinger_core_test/stinger_core_test.h
-        )
+  stinger_core_test/stinger_core_test.cpp
+  stinger_core_test/stinger_core_test.h
+)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/stinger_core_test)
 add_executable(stinger_core_test ${_stinger_core_test_sources})
@@ -21,9 +21,9 @@ target_link_libraries(stinger_core_test stinger_core gtest)
 #================================
 
 set(_stinger_batch_test_sources
-        stinger_batch_test/stinger_batch_test.cpp
-        stinger_batch_test/stinger_batch_test.h
-        )
+  stinger_batch_test/stinger_batch_test.cpp
+  stinger_batch_test/stinger_batch_test.h
+)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/stinger_batch_test)
 add_executable(stinger_batch_test ${_stinger_batch_test_sources})
