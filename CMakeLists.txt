@@ -60,18 +60,50 @@ if(BUILD_DOCUMENTATION)
   endif()
 endif()
 
+if(APPLE)
+  set(SHARED_LIB_EXT .dylib)
+else()
+  set(SHARED_LIB_EXT .so)
+endif()
+
 #protobuf
-ExternalProject_Add(protobuf
-  PREFIX              ${CMAKE_BINARY_DIR}/external
-  URL                 file://${CMAKE_SOURCE_DIR}/external/protobuf-cpp-3.1.0.tar.gz
-  UPDATE_COMMAND      ""
-  PATCH_COMMAND       ""
-  CONFIGURE_COMMAND   CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} ${CMAKE_BINARY_DIR}/external/src/protobuf/configure
-    --prefix=${CMAKE_BINARY_DIR}
-    --enable-shared
-  BUILD_COMMAND $(MAKE)
-  INSTALL_COMMAND $(MAKE) install
-)
+find_package(Protobuf)
+# Look for installed version
+if (${PROTOBUF_FOUND})
+  add_custom_target("protobuf")
+
+  add_library(_protobuf_library STATIC IMPORTED)
+  add_dependencies(_protobuf_library protobuf)
+  set_target_properties(_protobuf_library PROPERTIES IMPORTED_LOCATION ${PROTOBUF_LIBRARY})
+
+  add_library(_protobuf_lite_library STATIC IMPORTED)
+  add_dependencies(_protobuf_lite_library protobuf)
+  set_target_properties(_protobuf_lite_library PROPERTIES IMPORTED_LOCATION ${PROTOBUF_LITE_LIBRARY})
+# Download and build it ourselves
+else ()
+  ExternalProject_Add(protobuf
+    PREFIX              ${CMAKE_BINARY_DIR}/external
+    URL                 file://${CMAKE_SOURCE_DIR}/external/protobuf-cpp-3.1.0.tar.gz
+    UPDATE_COMMAND      ""
+    PATCH_COMMAND       ""
+    CONFIGURE_COMMAND   CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} ${CMAKE_BINARY_DIR}/external/src/protobuf/configure
+      --prefix=${CMAKE_BINARY_DIR}
+      --enable-shared
+    BUILD_COMMAND $(MAKE)
+    INSTALL_COMMAND $(MAKE) install
+  )
+
+  set(PROTOBUF_PROTOC_EXECUTABLE "./protoc")
+
+  add_library(_protobuf_library STATIC IMPORTED)
+  add_dependencies(_protobuf_library protobuf)
+  set_target_properties(_protobuf_library PROPERTIES IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/lib/libprotobuf${SHARED_LIB_EXT})
+
+  add_library(_protobuf_lite_library STATIC IMPORTED)
+  add_dependencies(_protobuf_lite_library protobuf)
+  set_target_properties(_protobuf_lite_library PROPERTIES IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/lib/libprotobuf-lite${SHARED_LIB_EXT})
+
+endif()
 
 #libconfig
 ExternalProject_Add(libconfig
@@ -88,12 +120,6 @@ ExternalProject_Add(libconfig
   INSTALL_COMMAND $(MAKE) install
 )
 
-if(APPLE)
-  set(SHARED_LIB_EXT .dylib)
-else()
-  set(SHARED_LIB_EXT .so)
-endif()
-
 add_library(_libconfig_library STATIC IMPORTED)
 add_dependencies(_libconfig_library libconfig)
 set_target_properties(_libconfig_library PROPERTIES IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/lib/libconfig${SHARED_LIB_EXT})
@@ -101,18 +127,6 @@ set_target_properties(_libconfig_library PROPERTIES IMPORTED_LOCATION ${CMAKE_BI
 add_library(_libconfig++_library STATIC IMPORTED)
 add_dependencies(_libconfig++_library libconfig)
 set_target_properties(_libconfig++_library PROPERTIES IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/lib/libconfig++${SHARED_LIB_EXT})
-
-add_library(_protobuf_library STATIC IMPORTED)
-add_dependencies(_protobuf_library protobuf)
-set_target_properties(_protobuf_library PROPERTIES IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/lib/libprotobuf${SHARED_LIB_EXT})
-
-add_library(_protobuf_lite_library STATIC IMPORTED)
-add_dependencies(_protobuf_lite_library protobuf)
-set_target_properties(_protobuf_lite_library PROPERTIES IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/lib/libprotobuf-lite${SHARED_LIB_EXT})
-
-add_library(_protoc_library STATIC IMPORTED)
-add_dependencies(_protoc_library protobuf)
-set_target_properties(_protoc_library PROPERTIES IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/lib/libprotoc${SHARED_LIB_EXT})
 
 # Memory size configuration bits for stinger_core
 set(STINGER_DEFAULT_VERTICES "(1L<<24)" CACHE STRING "Default number of vertices")
