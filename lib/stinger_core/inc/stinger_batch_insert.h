@@ -248,6 +248,9 @@ protected:
     3: Edge does not exist, needs a new block.
     */
 
+        // Track the next edge that should be inserted
+        next_update_tracker next_update(updates_begin, updates_end);
+
         /* 1: Check if the edge already exists. */
         for (stinger_eb *tmp = ebpool_priv + curs.eb; tmp != ebpool_priv; tmp = ebpool_priv + readff(&tmp->next)) {
             if(type == tmp->etype) {
@@ -258,7 +261,7 @@ protected:
                     // Mask off direction bits to get the raw neighbor of this edge
                     int64_t dest = (tmp->edges[k].neighbor & (~STINGER_EDGE_DIRECTION_MASK));
                     // Find updates for this destination
-                    iterator u = find_updates<use_dest>(updates_begin, updates_end, dest);
+                    iterator u = find_updates<use_dest>(next_update(), updates_end, dest);
                     // If we already have an in-edge for this destination, we will reuse the edge slot
                     // But the return code should reflect that we added an edge
                     int64_t result = (direction & tmp->edges[k].neighbor) ? EDGE_UPDATED : EDGE_ADDED;
@@ -267,9 +270,6 @@ protected:
                 }
             }
         }
-
-        // Track the next edge that should be inserted
-        next_update_tracker next_update(updates_begin, updates_end);
 
         while (next_update() != updates_end) {
             eb_index_t * block_ptr = curs.loc;
@@ -286,7 +286,7 @@ protected:
                         // Check for edges that were added by another thread since we last checked
                         if (k < endk) {
                             // Find updates for this destination
-                            iterator u = find_updates<use_dest>(updates_begin, updates_end, myNeighbor);
+                            iterator u = find_updates<use_dest>(next_update(), updates_end, myNeighbor);
                             // If we already have an in-edge for this destination, we will reuse the edge slot
                             // But the return code should reflect that we added an edge
                             int64_t result = (direction & tmp->edges[k].neighbor) ? EDGE_UPDATED : EDGE_ADDED;
@@ -300,7 +300,7 @@ protected:
                             int64_t thisEdge = (tmp->edges[k].neighbor & (~STINGER_EDGE_DIRECTION_MASK));
                             endk = tmp->high;
 
-                            iterator u = find_updates<use_dest>(updates_begin, updates_end, thisEdge);
+                            iterator u = find_updates<use_dest>(next_update(), updates_end, thisEdge);
                             if (thisEdge < 0 || k >= endk) {
                                 // Slot is empty, add the edge
                                 do_edge_updates<direction, use_dest>(EDGE_ADDED, true, next_update(), updates_end,
