@@ -2,6 +2,7 @@
 #include "json_rpc.h"
 #include "stinger_core/xmalloc.h"
 #include "rapidjson/document.h"
+#include <algorithm>
 
 #define LOG_AT_W  /* warning only */
 #include "stinger_core/stinger_error.h"

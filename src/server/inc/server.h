@@ -6,6 +6,7 @@ extern "C" {
 }
 #include "stinger_net/proto/stinger-batch.pb.h"
 #include "stinger_net/send_rcv.h"
+#include <algorithm>
 
 using namespace gt::stinger;
 
