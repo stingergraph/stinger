@@ -79,6 +79,8 @@ if (${PROTOBUF_FOUND})
   add_library(_protobuf_lite_library STATIC IMPORTED)
   add_dependencies(_protobuf_lite_library protobuf)
   set_target_properties(_protobuf_lite_library PROPERTIES IMPORTED_LOCATION ${PROTOBUF_LITE_LIBRARY})
+
+  include_directories("${PROTOBUF_INCLUDE_DIR}")
 # Download and build it ourselves
 else ()
   ExternalProject_Add(protobuf
