@@ -124,7 +124,7 @@ struct EdgeInsertionAdapter
     static int64_t get_weight(const update &u) { return u.weight(); }
     static int64_t get_time(const update &u) { return u.time(); }
     static int64_t get_result(const update& u) { return u.result(); }
-    static int64_t set_result(update &u, int64_t v) { u.set_result(v); }
+    static void set_result(update &u, int64_t v) { u.set_result(v); }
 };
 
 template <int64_t type>
