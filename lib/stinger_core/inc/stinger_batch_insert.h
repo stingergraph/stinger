@@ -27,6 +27,7 @@
 #include <vector>
 #include <algorithm>
 #include <utility>
+#include <cmath>
 
 // *** Public interface (definitions at end of file) ***
 template<typename adapter, typename iterator>
@@ -414,7 +415,7 @@ protected:
             size_t updates_per_range = std::floor((double)num_updates / num_ranges);
 
             std::vector<range> local_ranges; local_ranges.reserve(num_ranges);
-            if (updates_per_range < omp_get_max_threads())
+            if (updates_per_range < omp_get_num_threads())
             {
                 // If there aren't many updates, just give them all to one thread
                 local_ranges.push_back(make_pair(begin, end));
