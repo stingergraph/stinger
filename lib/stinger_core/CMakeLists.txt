@@ -39,5 +39,7 @@ include_directories("${CMAKE_BINARY_DIR}/include/stinger_utils")
 
 set_source_files_properties(${config} PROPERTIES GENERATED TRUE)
 add_library(stinger_core SHARED ${sources} ${headers} ${config})
-target_compile_definitions(stinger_core PUBLIC _GLIBCXX_PARALLEL)
+if(OPENMP_FOUND)
+  target_compile_definitions(stinger_core PUBLIC _GLIBCXX_PARALLEL)
+endif()
 target_link_libraries(stinger_core compat)
