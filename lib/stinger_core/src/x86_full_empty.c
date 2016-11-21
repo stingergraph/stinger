@@ -16,7 +16,7 @@
 #include  "x86_full_empty.h"
 
 uint64_t 
-readfe(uint64_t * v) {
+readfe(volatile uint64_t * v) {
   uint64_t val;
   while(1) {
     val = *v;
@@ -30,7 +30,7 @@ readfe(uint64_t * v) {
 }
 
 uint64_t
-writeef(uint64_t * v, uint64_t new_val) {
+writeef(volatile uint64_t * v, uint64_t new_val) {
   uint64_t val;
   while(1) {
     val = *v;
@@ -44,7 +44,7 @@ writeef(uint64_t * v, uint64_t new_val) {
 }
 
 uint64_t
-readff(uint64_t * v) {
+readff(volatile uint64_t * v) {
   uint64_t val = *v;
   while(val == MARKER) {
     val = *v;
@@ -53,7 +53,7 @@ readff(uint64_t * v) {
 }
 
 uint64_t
-writeff(uint64_t * v, uint64_t new_val) {
+writeff(volatile uint64_t * v, uint64_t new_val) {
   uint64_t val;
   while(1) {
     val = *v;
@@ -67,7 +67,7 @@ writeff(uint64_t * v, uint64_t new_val) {
 }
 
 uint64_t
-writexf(uint64_t * v, uint64_t new_val) {
+writexf(volatile uint64_t * v, uint64_t new_val) {
   *v = new_val;
   return new_val;
 }
