@@ -11,4 +11,4 @@ publish_headers(headers "${CMAKE_BINARY_DIR}/include/pugixml")
 
 include_directories("${CMAKE_BINARY_DIR}/include/pugixml")
 
-add_library(pugixml SHARED ${sources} ${headers})
+add_library(pugixml ${sources} ${headers})

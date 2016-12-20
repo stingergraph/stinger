@@ -64,5 +64,5 @@ include_directories("${CMAKE_BINARY_DIR}/include/stinger_net")
 
 set_source_files_properties(${_generated_files} PROPERTIES GENERATED TRUE)
 #message("Files: ${_generated_files}")
-add_library(stinger_net SHARED ${sources} ${headers} ${_generated_files})
+add_library(stinger_net ${sources} ${headers} ${_generated_files})
 target_link_libraries(stinger_net _protobuf_library _protobuf_lite_library stinger_core stinger_utils)
