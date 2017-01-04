@@ -32,14 +32,13 @@ typedef std::vector<update>::iterator update_iterator;
 class StingerBatchTest : public ::testing::Test {
 protected:
   virtual void SetUp() {
-    stinger_config = (struct stinger_config_t *)xcalloc(1,sizeof(struct stinger_config_t));
-    stinger_config->nv = 1<<13;
-    stinger_config->nebs = 1<<16;
-    stinger_config->netypes = 1;
-    stinger_config->nvtypes = 2;
-    stinger_config->memory_size = 1<<30;
-    S = stinger_new_full(stinger_config);
-    xfree(stinger_config);
+    stinger_config_t stinger_config;
+    stinger_config.nv = 1<<13;
+    stinger_config.nebs = 1<<16;
+    stinger_config.netypes = 3;
+    stinger_config.nvtypes = 2;
+    stinger_config.memory_size = 1<<30;
+    S = stinger_new_full(&stinger_config);
   }
 
   virtual void TearDown() {
@@ -88,8 +87,6 @@ TEST_F(StingerBatchTest, single_insertion) {
 
 
 TEST_F(StingerBatchTest, simple_batch_insertion) {
-    int64_t total_edges = 0;
-
     // Create batch to insert
     std::vector<update> updates;
     for (int i = 0; i < 2; ++i)
@@ -136,7 +133,6 @@ TEST_F(StingerBatchTest, simple_batch_insertion) {
 }
 
 TEST_F(StingerBatchTest, batch_insertion) {
-    int64_t total_edges = 0;
     int64_t consistency;
 
     // Create batch to insert
@@ -195,7 +191,6 @@ TEST_F(StingerBatchTest, batch_insertion) {
 }
 
 TEST_F(StingerBatchTest, duplicate_batch_insertion) {
-    int64_t total_edges = 0;
     int64_t consistency;
 
     // Create batch to insert
@@ -246,6 +241,69 @@ TEST_F(StingerBatchTest, duplicate_batch_insertion) {
         EXPECT_EQ(stinger_outdegree_get(S, i), 99 - i);
     }
 }
+
+TEST_F(StingerBatchTest, undirected_batch_insertion) {
+    // Create batch to insert
+    std::vector<update> updates;
+    for (int i=0; i < 100; i++) {
+        update u = {
+            0, // type
+            i, // source
+            i+100, // destination
+            1, // weight
+            0, // time
+            0, // result
+        };
+        updates.push_back(u);
+    }
+
+    // Do the updates
+    stinger_batch_incr_edge_pairs<update>(S, updates.begin(), updates.end());
+
+    int64_t consistency = stinger_consistency_check(S,S->max_nv);
+    EXPECT_EQ(consistency,0);
+
+    // Check to make sure we actually inserted edges in both directions
+    for (int i=0; i < 200; i++) {
+        EXPECT_EQ(stinger_outdegree_get(S, i), 1);
+    }
+}
+
+TEST_F(StingerBatchTest, typed_batch_insertion) {
+    // Create batch to insert
+    std::vector<update> updates;
+    for (int i=0; i < 100; i++) {
+        for (int type = 0; type < S->max_netypes; type++) {
+            update u = {
+                type, // type
+                i, // source
+                i+100, // destination
+                1, // weight
+                0, // time
+                0, // result
+            };
+            updates.push_back(u);
+        }
+    }
+
+    // Do the updates
+    stinger_batch_incr_edges<update>(S, updates.begin(), updates.end());
+
+    int64_t consistency = stinger_consistency_check(S,S->max_nv);
+    EXPECT_EQ(consistency,0);
+
+    // Check to make sure the edges were inserted with the correct types
+    for (int type = 0; type < S->max_netypes; type++) {
+        int num_edges = 0;
+        STINGER_FORALL_EDGES_BEGIN(S, type){
+            num_edges += 1;
+        } STINGER_FORALL_EDGES_END();
+
+        EXPECT_EQ(num_edges, 100);
+    }
+
+}
+
 
 int
 main (int argc, char *argv[])
