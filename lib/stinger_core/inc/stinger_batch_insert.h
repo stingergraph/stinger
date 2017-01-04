@@ -20,9 +20,9 @@
 #include "stinger_internal.h"
 #include "stinger_atomics.h"
 #include "x86_full_empty.h"
-#define LOG_AT_V
+#define LOG_AT_I
 #include "stinger_error.h"
-#undef LOG_AT_V
+#undef LOG_AT_I
 
 #include <vector>
 #include <algorithm>
