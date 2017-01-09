@@ -76,3 +76,21 @@ set(_betweenness_test_sources
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/betweenness_test)
 add_executable(stinger_betweenness_test ${_betweenness_test_sources})
 target_link_libraries(stinger_betweenness_test stinger_utils stinger_alg stinger_core gtest)
+
+
+#================================
+
+set(_streaming_connected_components_test_sources
+  streaming_connected_components_test/scc_test.cpp
+  streaming_connected_components_test/scc_test.h
+)
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/streaming_connected_components_test)
+add_executable(stinger_streaming_connected_components_test ${_streaming_connected_components_test_sources})
+target_link_libraries(stinger_streaming_connected_components_test stinger_utils stinger_alg stinger_core gtest)
+
+
+
+
+
+
