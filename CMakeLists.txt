@@ -170,6 +170,7 @@ add_subdirectory(src)
 enable_testing()
 add_test(NamesTest ${CMAKE_BINARY_DIR}/bin/stinger_names_test)
 add_test(StingerCoreTest ${CMAKE_BINARY_DIR}/bin/stinger_core_test)
+add_test(StingerBatchTest ${CMAKE_BINARY_DIR}/bin/stinger_batch_test)
 add_test(StingerPhysmapTest ${CMAKE_BINARY_DIR}/bin/stinger_physmap_test)
 add_test(StingerTraversalTest ${CMAKE_BINARY_DIR}/bin/stinger_traversal_test)
 add_test(StingerPagerankTest ${CMAKE_BINARY_DIR}/bin/stinger_pagerank_test)
@@ -192,6 +193,7 @@ add_custom_target(check
   DEPENDS
     stinger_names_test
     stinger_core_test
+    stinger_batch_test
     stinger_physmap_test
     stinger_traversal_test
     stinger_pagerank_test
