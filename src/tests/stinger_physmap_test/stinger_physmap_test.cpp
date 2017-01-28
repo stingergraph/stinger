@@ -1,6 +1,7 @@
 #include "stinger_physmap_test.h"
 extern "C" {
   #include "stinger_core/xmalloc.h"
+  #include "stinger_core/formatting.h"
   #include "stinger_core/stinger_traversal.h"
   #include "stinger_core/stinger_atomics.h"
 }

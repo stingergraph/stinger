@@ -1,4 +1,5 @@
 #include "stinger_core/stinger.h"
+#include "stinger_core/formatting.h"
 #include "stinger_core/stinger_shared.h"
 #include "stinger_utils/timer.h"
 #include "stinger_utils/stinger_utils.h"

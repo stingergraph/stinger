@@ -10,6 +10,7 @@
 #include <sys/mman.h>
 
 #include "stinger_core/stinger.h"
+#include "stinger_core/formatting.h"
 #include "stinger_core/stinger_atomics.h"
 #include "stinger_core/xmalloc.h"
 #include "stinger_core/x86_full_empty.h"

@@ -2,6 +2,7 @@
 
 #include "pagerank.h"
 #include "stinger_core/x86_full_empty.h"
+#include "stinger_core/formatting.h"
 
 inline double * set_tmp_pr(double * tmp_pr_in, int64_t NV) {
   double * tmp_pr = NULL;

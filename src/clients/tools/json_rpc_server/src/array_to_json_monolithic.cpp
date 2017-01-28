@@ -1,6 +1,7 @@
 #include "json_rpc_server.h"
 #include "json_rpc.h"
 #include "stinger_core/xmalloc.h"
+#include "stinger_core/formatting.h"
 #include "rapidjson/document.h"
 #include <algorithm>
 

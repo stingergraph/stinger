@@ -9,6 +9,7 @@
 #include "mongoose/mongoose.h"
 #include "stinger_utils/timer.h"
 #include "stinger_core/xmalloc.h"
+#include "stinger_core/formatting.h"
 #include "rapidjson/document.h"
 #include "rapidjson/rapidjson.h"
 #include "rapidjson/stringbuffer.h"

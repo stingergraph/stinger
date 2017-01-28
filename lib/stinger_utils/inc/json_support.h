@@ -7,6 +7,7 @@ extern "C" {
 #endif
 
 #include "stinger_core/stinger.h"
+#include "stinger_core/formatting.h"
 #include "string/astring.h"
 
 #define JSON_TAB "  "

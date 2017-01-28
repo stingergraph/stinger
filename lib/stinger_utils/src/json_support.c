@@ -1,6 +1,7 @@
 #include "json_support.h"
 
 #include "stinger_core/xmalloc.h"
+#include "stinger_core/formatting.h"
 #include "fmemopen/fmemopen.h"
 #include "int_hm_seq/int_hm_seq.h"
 

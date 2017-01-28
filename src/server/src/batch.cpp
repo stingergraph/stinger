@@ -7,6 +7,7 @@
 
 extern "C" {
 #include "stinger_core/stinger.h"
+#include "stinger_core/formatting.h"
 #include "stinger_core/stinger_error.h"
 #include "stinger_core/stinger_atomics.h"
 #include "stinger_core/xmalloc.h"

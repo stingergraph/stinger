@@ -14,6 +14,7 @@
 
 #include "compat.h"
 #include "stinger_core/xmalloc.h"
+#include "stinger_core/formatting.h"
 #include "sorts.h"
 #include "graph-el.h"
 #include "community.h"

@@ -4,6 +4,7 @@
 #include <strings.h>
 
 #include "stinger_core/stinger.h"
+#include "stinger_core/formatting.h"
 #include "stinger_core/xmalloc.h"
 #include "stinger_net/mon_handling.h"
 #include "stinger_net/stinger_mon.h"

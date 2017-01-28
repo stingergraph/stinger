@@ -19,6 +19,7 @@ using namespace gt::stinger;
 
 #define LOG_AT_I 1
 #include "stinger_core/stinger_error.h"
+#include "stinger_core/formatting.h"
 
 
 int

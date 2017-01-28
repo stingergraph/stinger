@@ -5,6 +5,7 @@
 
 #define LOG_AT_W
 #include "stinger_core/stinger_error.h"
+#include "stinger_core/formatting.h"
 
 using namespace gt::stinger;
 
