@@ -27,7 +27,7 @@ typedef int64_t adjacency_t;
   #define JSON_VWEIGHT(NAME,VAL) JSON_INT64(NAME,VAL)
   #define XML_ATTRIBUTE_VWEIGHT(NAME,VAL) XML_ATTRIBUTE_INT64(NAME,VAL)
   #define stinger_vweight_fetch_add_atomic(P,VAL) stinger_int64_fetch_add(P,VAL)
-  inline vweight_t
+  static inline vweight_t
   stinger_vweight_fetch_add(vweight_t * p, vweight_t val) {
     vweight_t out = *p;
     *p += val;

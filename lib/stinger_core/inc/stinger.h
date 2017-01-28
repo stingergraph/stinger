@@ -137,14 +137,26 @@ int stinger_edge_touch (struct stinger *, int64_t /* vtx 1 */ ,
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ * 
  * INTERNAL "Objects"
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+const stinger_vertices_t *
+const_stinger_vertices_get(const stinger_t * S);
+
 stinger_vertices_t *
 stinger_vertices_get(stinger_t * S);
+
+const stinger_physmap_t *
+const_stinger_physmap_get(const stinger_t * S);
 
 stinger_physmap_t *
 stinger_physmap_get(stinger_t * S);
 
+const stinger_names_t *
+const_stinger_vtype_names_get(const stinger_t * S);
+
 stinger_names_t *
 stinger_vtype_names_get(stinger_t * S);
+
+const stinger_names_t *
+const_stinger_etype_names_get(const stinger_t * S);
 
 stinger_names_t *
 stinger_etype_names_get(stinger_t * S);
