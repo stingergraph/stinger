@@ -6,7 +6,6 @@
 #include "stinger_core/stinger_atomics.h"
 #include "stinger_core/xmalloc.h"
 #include "stinger_core/stinger_error.h"
-#include "stinger_net/stinger_alg.h"
 #include "betweenness.h"
 
 #define PHASE_END -1
