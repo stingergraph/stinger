@@ -11,7 +11,7 @@ extern "C" {
 
 static inline void stinger_memory_barrier();
 static inline int stinger_int_fetch_add (int *, int);
-inline int64_t stinger_int64_fetch_add (int64_t *, int64_t);
+static inline int64_t stinger_int64_fetch_add (int64_t *, int64_t);
 static inline uint64_t stinger_uint64_fetch_add (uint64_t *, uint64_t);
 static inline size_t stinger_size_fetch_add (size_t *, size_t);
 
