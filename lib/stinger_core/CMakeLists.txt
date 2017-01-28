@@ -12,6 +12,7 @@ set(sources
 )
 set(headers
 	inc/core_util.h
+	inc/formatting.h
 	inc/stinger.h
 	inc/stinger_atomics.h
 	inc/stinger_deprecated.h
