@@ -34,7 +34,7 @@ int_ht_seq_free_internal(int_ht_seq_t * ht);
 int_ht_seq_t *
 int_ht_seq_free(int_ht_seq_t * ht);
 
-int_ht_seq_t * 
+void
 int_ht_seq_expand(int_ht_seq_t * ht, int64_t new_size);
 
 int_ht_seq_t *

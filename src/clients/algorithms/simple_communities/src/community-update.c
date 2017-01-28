@@ -13,6 +13,8 @@
 #include "stinger_net/stinger_alg.h"
 #include "stinger_utils/timer.h"
 
+#include "compat/luc.h"
+
 #include "compat.h"
 #include "sorts.h"
 #include "graph-el.h"
@@ -24,7 +26,7 @@
 static void update_el (struct el * el,
                        int64_t * cmap,
                        int64_t * csize,
-                       const struct stinger * S,
+                       struct stinger * S,
                        const int64_t nvlist, const int64_t * restrict vlist,
                        int64_t * mark,
                        int64_t ** ws, size_t *wslen);
@@ -138,7 +140,7 @@ cstate_check (struct community_state *cstate)
   const int64_t nv = cstate->cg.nv;
   const int64_t ne = cstate->cg.ne;
   int64_t * restrict csize = cstate->csize;
-  const int64_t * restrict cmap = cstate->cmap;
+  /*const int64_t * restrict cmap = cstate->cmap;*/
   const struct el el = cstate->cg;
   CDECL(el);
   OMP("omp parallel") {
@@ -235,7 +237,7 @@ cstate_dump_cmap (struct community_state * cstate, long which, long num)
 }
 
 double
-cstate_update (struct community_state * cstate, const struct stinger * S)
+cstate_update (struct community_state * cstate, struct stinger * S)
 {
   tic ();
 
@@ -423,7 +425,7 @@ two options:
 
 static void
 extract_edges (const int64_t nvlist, const int64_t * restrict vlist, const int64_t * restrict cmap,
-               const struct stinger * restrict S,
+               struct stinger * restrict S,
                const int64_t * restrict mark,
                struct el * restrict g,
                const int64_t new_nv)
@@ -568,7 +570,7 @@ void
 update_el (struct el * el,
            int64_t * cmap,
            int64_t * csize,
-           const struct stinger * S,
+           struct stinger * S,
            const int64_t nvlist, const int64_t * restrict vlist,
            int64_t * mark,
            int64_t ** ws, size_t *wslen)
@@ -667,7 +669,7 @@ append_to_vlist (int64_t * restrict nvlist,
 }
 
 void cstate_preproc (struct community_state * restrict cstate,
-                     const struct stinger * S,
+                     struct stinger * S,
                      const int64_t nincr, const int64_t * restrict incr,
                      const int64_t nrem, const int64_t * restrict rem)
 {
@@ -759,7 +761,7 @@ void cstate_preproc (struct community_state * restrict cstate,
 }
 
 void cstate_preproc_acts (struct community_state * restrict cstate,
-                          const struct stinger * S,
+                          struct stinger * S,
                           const int64_t nact, const int64_t * restrict act)
 {
   const int64_t * restrict cmap = cstate->cmap;
@@ -892,7 +894,7 @@ double
 cstate_preproc_alg (struct community_state * restrict cstate,
                    const stinger_registered_alg * alg)
 {
-  const struct stinger * S = alg->stinger;
+  struct stinger * S = alg->stinger;
   const int64_t nincr = alg->num_insertions;
   const stinger_edge_update * restrict incr = alg->insertions;
   const int64_t nrem = alg->num_deletions;

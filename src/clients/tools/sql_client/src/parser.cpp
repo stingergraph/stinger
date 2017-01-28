@@ -13,8 +13,8 @@ parse_query (char * input, query_plan_t * query)
 {
   state_t cur_state = SELECT;
   state_t next_state;
-  int where_and = 0;
-  int where_or = 0;
+  /*int where_and = 0;
+  int where_or = 0;*/
   char buf[30];
   char * token;
   char * saveptr;
@@ -121,7 +121,7 @@ parse_query (char * input, query_plan_t * query)
 		    {
 		      //printf(":: WHERE_VAL\n");
 
-		      while (token = strtok_r (NULL, " ,", &saveptr)) {
+		      while ((token = strtok_r (NULL, " ,", &saveptr))) {
 			if (token && strncasecmp(token, "ORDER", 5) == 0) {
 			  token = strtok_r (NULL, " ,", &saveptr);
 			  next_state = ORDERBY;
@@ -188,7 +188,7 @@ parse_query (char * input, query_plan_t * query)
 		      int64_t limit_number;
 		      //printf(":: LIMIT\n");
 		      query->activate_limit = 1;
-		      sscanf(token, "%ld", &limit_number);
+		      sscanf(token, "%" SCNd64, &limit_number);
 		      query->limit = limit_number;
 		      //printf("%ld\n", (long) limit_number);
 
@@ -209,7 +209,7 @@ parse_query (char * input, query_plan_t * query)
 		      int64_t offset_number;
 		      //printf(":: OFFSET\n");
 		      if (token) {
-			sscanf(token, "%ld", &offset_number);
+			sscanf(token, "%" SCNd64, &offset_number);
 			query->offset = offset_number;
 			//printf("%ld\n", (long) offset_number);
 			next_state = DONE;
@@ -301,7 +301,7 @@ parse_where_expr (char * expr, query_plan_t * query)
   char op_str[3];
   int64_t value;
   char * token;
-  char * saveptr;
+  /*char * saveptr;*/
   //printf("expr is: %s\n", expr);
 
   std::stack<int> mystack;
@@ -340,7 +340,7 @@ parse_where_expr (char * expr, query_plan_t * query)
 
     /* if the item is a "number", add it directly */
     else if (token[0] != '(' && token[0] != ')') {
-      sscanf(token, "%[^'()=<>'] %[^0123456789] %ld", buf, op_str, &value);
+      sscanf(token, "%[^'()=<>'] %[^0123456789] %" SCNd64, buf, op_str, &value);
       operator_t op = select_operator (op_str);
       //printf("field_name: %s, %s, %ld\n", buf, op_str, value);
 

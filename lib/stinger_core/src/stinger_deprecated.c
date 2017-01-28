@@ -101,8 +101,8 @@ stinger_remove_and_insert_edges (struct stinger *G,
   for (tmp = ebpool_priv + curs.eb; tmp != ebpool_priv; tmp = ebpool_priv + tmp->next) {
     if(tmp->etype == type) {
       size_t k, endk;
-      size_t found_k = STINGER_EDGEBLOCKSIZE;
-      size_t found_slot = STINGER_EDGEBLOCKSIZE;
+      /*size_t found_k = STINGER_EDGEBLOCKSIZE;*/
+      /*size_t found_slot = STINGER_EDGEBLOCKSIZE;*/
       prev_loc = &tmp->next;
       endk = tmp->high;
       ninsert_remaining = ninsert;
@@ -295,7 +295,7 @@ stinger_remove_and_insert_batch (struct stinger * G, int64_t type,
  *  @return Void
  */
 void
-stinger_gather_typed_successors_serial (const struct stinger *G, int64_t type,
+stinger_gather_typed_successors_serial (struct stinger *G, int64_t type,
                                         int64_t v, size_t * outlen,
                                         int64_t * out, size_t max_outlen)
 {

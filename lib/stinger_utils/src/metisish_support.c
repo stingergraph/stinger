@@ -90,7 +90,7 @@ load_metisish_graph (struct stinger * S, char * filename)
 {
   FILE * fp = fopen (filename, "r");
   char rowbuf[16385];
-  int64_t nv = 0, ne_ent = 0, ne = 0, fmt = 0, ncon = 0;
+  int64_t nv = 0, ne_ent = 0, fmt = 0, ncon = 0;
   int has_weight = 0;
 
   if (!fp)

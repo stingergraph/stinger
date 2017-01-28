@@ -17,7 +17,13 @@ extern "C" {
   stinger_names_t * etype_names = (stinger_names_t *)((X)->storage + (X)->etype_names_start); \
   stinger_names_t * vtype_names = (stinger_names_t *)((X)->storage + (X)->vtype_names_start); \
   uint8_t * _ETA = ((X)->storage + (X)->ETA_start); \
-  struct stinger_ebpool * ebpool = (struct stinger_ebpool *)((X)->storage + (X)->ebpool_start);
+  struct stinger_ebpool * ebpool = (struct stinger_ebpool *)((X)->storage + (X)->ebpool_start); \
+  (void) vertices; \
+  (void) physmap; \
+  (void) etype_names; \
+  (void) vtype_names; \
+  (void) _ETA; \
+  (void) ebpool;
 	  
 #define CONST_MAP_STING(X) \
   const stinger_vertices_t * vertices = (const stinger_vertices_t *)((X)->storage); \
@@ -25,7 +31,13 @@ extern "C" {
   const stinger_names_t * etype_names = (const stinger_names_t *)((X)->storage + (X)->etype_names_start); \
   const stinger_names_t * vtype_names = (const stinger_names_t *)((X)->storage + (X)->vtype_names_start); \
   const uint8_t * _ETA = ((X)->storage + (X)->ETA_start); \
-  const struct stinger_ebpool * ebpool = (const struct stinger_ebpool *)((X)->storage + (X)->ebpool_start);
+  const struct stinger_ebpool * ebpool = (const struct stinger_ebpool *)((X)->storage + (X)->ebpool_start); \
+  (void) vertices; \
+  (void) physmap; \
+  (void) etype_names; \
+  (void) vtype_names; \
+  (void) _ETA; \
+  (void) ebpool;
 
 #define ETA(X,Y) ((struct stinger_etype_array *)(_ETA + ((Y)*stinger_etype_array_size((X)->max_neblocks))))
 
@@ -176,12 +188,12 @@ struct curs
 };
 
 
-static inline const struct stinger_eb *
+/*static inline const struct stinger_eb *
 stinger_next_eb (const struct stinger *G,
-                 const struct stinger_eb *eb_);
+                 const struct stinger_eb *eb_);*/
 
 int stinger_eb_high (const struct stinger_eb * eb_);
-static inline int64_t stinger_eb_type (const struct stinger_eb * eb_);
+/*static inline int64_t stinger_eb_type (const struct stinger_eb * eb_);*/
 
 int stinger_eb_is_blank (const struct stinger_eb * eb_, int k_);
 int64_t stinger_eb_adjvtx (const struct stinger_eb *, int);
@@ -208,7 +220,7 @@ void push_ebs (struct stinger *G, size_t neb,
 void stinger_fragmentation (struct stinger *S, uint64_t NV, struct stinger_fragmentation_t *frag);
 
 void
-new_blk_ebs (eb_index_t *out, const struct stinger * G,
+new_blk_ebs (eb_index_t *out, struct stinger * G,
              const int64_t nvtx, const size_t * blkoff,
              const int64_t etype);
 

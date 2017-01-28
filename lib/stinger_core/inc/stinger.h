@@ -138,16 +138,16 @@ int stinger_edge_touch (struct stinger *, int64_t /* vtx 1 */ ,
  * INTERNAL "Objects"
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 stinger_vertices_t *
-stinger_vertices_get(const stinger_t * S);
+stinger_vertices_get(stinger_t * S);
 
 stinger_physmap_t *
-stinger_physmap_get(const stinger_t * S);
+stinger_physmap_get(stinger_t * S);
 
 stinger_names_t *
-stinger_vtype_names_get(const stinger_t * S);
+stinger_vtype_names_get(stinger_t * S);
 
 stinger_names_t *
-stinger_etype_names_get(const stinger_t * S);
+stinger_etype_names_get(stinger_t * S);
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ * 
  * VERTEX METADATA
@@ -159,13 +159,13 @@ vdegree_t
 stinger_degree_get(const stinger_t * S, vindex_t v);
 
 vdegree_t
-stinger_degree_set(const stinger_t * S, vindex_t v, vdegree_t d);
+stinger_degree_set(stinger_t * S, vindex_t v, vdegree_t d);
 
 vdegree_t
-stinger_degree_increment(const stinger_t * S, vindex_t v, vdegree_t d);
+stinger_degree_increment(stinger_t * S, vindex_t v, vdegree_t d);
 
 vdegree_t
-stinger_degree_increment_atomic(const stinger_t * S, vindex_t v, vdegree_t d);
+stinger_degree_increment_atomic(stinger_t * S, vindex_t v, vdegree_t d);
 
 /* IN DEGREE */
 
@@ -173,13 +173,13 @@ vdegree_t
 stinger_indegree_get(const stinger_t * S, vindex_t v);
 
 vdegree_t
-stinger_indegree_set(const stinger_t * S, vindex_t v, vdegree_t d);
+stinger_indegree_set(stinger_t * S, vindex_t v, vdegree_t d);
 
 vdegree_t
-stinger_indegree_increment(const stinger_t * S, vindex_t v, vdegree_t d);
+stinger_indegree_increment(stinger_t * S, vindex_t v, vdegree_t d);
 
 vdegree_t
-stinger_indegree_increment_atomic(const stinger_t * S, vindex_t v, vdegree_t d);
+stinger_indegree_increment_atomic(stinger_t * S, vindex_t v, vdegree_t d);
 
 /* OUT DEGREE */
 
@@ -187,13 +187,13 @@ vdegree_t
 stinger_outdegree_get(const stinger_t * S, vindex_t v);
 
 vdegree_t
-stinger_outdegree_set(const stinger_t * S, vindex_t v, vdegree_t d);
+stinger_outdegree_set(stinger_t * S, vindex_t v, vdegree_t d);
 
 vdegree_t
-stinger_outdegree_increment(const stinger_t * S, vindex_t v, vdegree_t d);
+stinger_outdegree_increment(stinger_t * S, vindex_t v, vdegree_t d);
 
 vdegree_t
-stinger_outdegree_increment_atomic(const stinger_t * S, vindex_t v, vdegree_t d);
+stinger_outdegree_increment_atomic(stinger_t * S, vindex_t v, vdegree_t d);
 
 /* TYPE */
 
@@ -201,20 +201,20 @@ vtype_t
 stinger_vtype_get(const stinger_t * S, vindex_t v);
 
 vtype_t
-stinger_vtype_set(const stinger_t * S, vindex_t v, vtype_t type);
+stinger_vtype_set(stinger_t * S, vindex_t v, vtype_t type);
 
 /* WEIGHT */
 vweight_t
 stinger_vweight_get(const stinger_t * S, vindex_t v);
 
 vweight_t
-stinger_vweight_set(const stinger_t * S, vindex_t v, vweight_t weight);
+stinger_vweight_set(stinger_t * S, vindex_t v, vweight_t weight);
 
 vweight_t
-stinger_vweight_increment(const stinger_t * S, vindex_t v, vweight_t weight);
+stinger_vweight_increment(stinger_t * S, vindex_t v, vweight_t weight);
 
 vweight_t
-stinger_vweight_increment_atomic(const stinger_t * S, vindex_t v, vweight_t weight);
+stinger_vweight_increment_atomic(stinger_t * S, vindex_t v, vweight_t weight);
 
 /* ADJACENCY */
 adjacency_t
@@ -225,7 +225,7 @@ stinger_adjacency_get(const stinger_t * S, vindex_t v);
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 int
-stinger_mapping_create(const stinger_t * S, const char * byte_string, uint64_t length, int64_t * vtx_out);
+stinger_mapping_create(stinger_t * S, const char * byte_string, uint64_t length, int64_t * vtx_out);
 
 vindex_t
 stinger_mapping_lookup(const stinger_t * S, const char * byte_string, uint64_t length);
@@ -244,7 +244,7 @@ stinger_mapping_nv(const stinger_t * S);
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 int
-stinger_vtype_names_create_type(const stinger_t * S, const char * name, int64_t * out);
+stinger_vtype_names_create_type(stinger_t * S, const char * name, int64_t * out);
 
 int64_t
 stinger_vtype_names_lookup_type(const stinger_t * S, const char * name);

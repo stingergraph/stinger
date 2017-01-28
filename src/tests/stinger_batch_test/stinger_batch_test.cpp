@@ -50,7 +50,7 @@ protected:
 };
 
 TEST_F(StingerBatchTest, single_insertion) {
-    int64_t total_edges = 0;
+    /*int64_t total_edges = 0;*/
 
     // Create batch to insert
     std::vector<update> updates;
@@ -273,7 +273,7 @@ TEST_F(StingerBatchTest, typed_batch_insertion) {
     // Create batch to insert
     std::vector<update> updates;
     for (int i=0; i < 100; i++) {
-        for (int type = 0; type < S->max_netypes; type++) {
+        for (size_t type = 0; type < S->max_netypes; type++) {
             update u = {
                 type, // type
                 i, // source
@@ -293,7 +293,7 @@ TEST_F(StingerBatchTest, typed_batch_insertion) {
     EXPECT_EQ(consistency,0);
 
     // Check to make sure the edges were inserted with the correct types
-    for (int type = 0; type < S->max_netypes; type++) {
+    for (size_t type = 0; type < S->max_netypes; type++) {
         int num_edges = 0;
         STINGER_FORALL_EDGES_BEGIN(S, type){
             num_edges += 1;

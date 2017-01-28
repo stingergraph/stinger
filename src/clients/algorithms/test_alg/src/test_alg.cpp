@@ -39,7 +39,7 @@ main(int argc, char *argv[])
 
   /* Print dependency storage information */
   for(int a = 0; a < argc - 4; a++) {
-    printf("Alg %s\nLoc %s\nDesc %s\nPtr %p\nData Per %ld\n",
+    printf("Alg %s\nLoc %s\nDesc %s\nPtr %p\nData Per %" PRId64 "\n",
       alg->dep_name[a], alg->dep_location[a], alg->dep_description[a], 
       alg->dep_data[a], alg->dep_data_per_vertex[a]);
   }
@@ -65,10 +65,10 @@ main(int argc, char *argv[])
       LOG_I_A("Preprocessing algorithm... consistency check: %ld",
 	(long) stinger_consistency_check(alg->stinger, alg->stinger->max_nv));
 
-      LOG_I_A("Preprocessing algorithm... num_insertions: %ld",
+      LOG_I_A("Preprocessing algorithm... num_insertions: %" PRId64,
 	alg->num_insertions);
       for(int64_t i = 0; i < alg->num_insertions; i++) {
-	LOG_I_A("\tINS: TYPE %s %ld FROM %s %ld TO %s %ld WEIGHT %ld TIME %ld", 
+	LOG_I_A("\tINS: TYPE %s %" PRId64 " FROM %s %" PRId64 " TO %s %" PRId64 " WEIGHT %" PRId64 " TIME %" PRId64, 
 	  alg->insertions[i].type_str,
 	  alg->insertions[i].type,
 	  alg->insertions[i].source_str,
@@ -79,10 +79,10 @@ main(int argc, char *argv[])
 	  alg->insertions[i].time);
       }
 
-      LOG_I_A("Preprocessing algorithm... num_deletions: %ld",
+      LOG_I_A("Preprocessing algorithm... num_deletions: %" PRId64,
 	alg->num_deletions);
       for(int64_t i = 0; i < alg->num_deletions; i++) {
-	LOG_I_A("\tDEL: TYPE %s %ld FROM %s %ld TO %s %ld",
+	LOG_I_A("\tDEL: TYPE %s %" PRId64 " FROM %s %" PRId64 " TO %s %" PRId64,
 	  alg->deletions[i].type_str,
 	  alg->deletions[i].type,
 	  alg->deletions[i].source_str,
@@ -100,10 +100,10 @@ main(int argc, char *argv[])
       LOG_I_A("Postprocessing algorithm... consistency check: %ld",
 	(long) stinger_consistency_check(alg->stinger, alg->stinger->max_nv));
 
-      LOG_I_A("Postprocessing algorithm... num_insertions: %ld",
+      LOG_I_A("Postprocessing algorithm... num_insertions: %" PRId64,
 	alg->num_insertions);
       for(int64_t i = 0; i < alg->num_insertions; i++) {
-	LOG_I_A("\tINS: TYPE %s %ld FROM %s %ld TO %s %ld WEIGHT %ld TIME %ld", 
+	LOG_I_A("\tINS: TYPE %s %" PRId64 " FROM %s %" PRId64 " TO %s %" PRId64 " WEIGHT %" PRId64 " TIME %" PRId64, 
 	  alg->insertions[i].type_str,
 	  alg->insertions[i].type,
 	  alg->insertions[i].source_str,
@@ -114,10 +114,10 @@ main(int argc, char *argv[])
 	  alg->insertions[i].time);
       }
 
-      LOG_I_A("Postprocessing algorithm... num_deletions: %ld",
+      LOG_I_A("Postprocessing algorithm... num_deletions: %" PRId64,
 	alg->num_deletions);
       for(int64_t i = 0; i < alg->num_deletions; i++) {
-	LOG_I_A("\tDEL: TYPE %s %ld FROM %s %ld TO %s %ld",
+	LOG_I_A("\tDEL: TYPE %s %" PRId64 " FROM %s %" PRId64 " TO %s %" PRId64,
 	  alg->deletions[i].type_str,
 	  alg->deletions[i].type,
 	  alg->deletions[i].source_str,

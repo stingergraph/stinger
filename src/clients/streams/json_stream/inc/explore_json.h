@@ -78,6 +78,7 @@ month(const char * month) {
 	      } break;
 
   }
+  return -1;
 }
 
 #define CHAR2INT(X) ((X) - '0')
@@ -171,11 +172,11 @@ struct EdgeCollection;
 struct ExploreJSONGeneric {
   ExploreJSONGeneric * child;
   ExploreJSONGeneric() : child(NULL) {}
-  ~ExploreJSONGeneric() { if (child) delete child; }
+  virtual ~ExploreJSONGeneric() { if (child) delete child; }
 
-  virtual bool operator()(EdgeCollection & edges, rapidjson::Value & document) { LOG_E("Error, this is a generic object"); }
+  virtual bool operator()(EdgeCollection & edges, rapidjson::Value & document) { LOG_E("Error, this is a generic object"); return false; }
   virtual void print() { LOG_E("Error, this is a generic object"); }
-  virtual ExploreJSONGeneric * copy(path_type_t path) { LOG_E("Error, this is a generic object"); }
+  virtual ExploreJSONGeneric * copy(path_type_t path) { LOG_E("Error, this is a generic object"); return NULL; }
 };
 
 struct EdgeCollection {
@@ -1057,7 +1058,7 @@ struct ExploreJSONArray : public ExploreJSONGeneric {
 
   virtual bool operator()(EdgeCollection & edges, rapidjson::Value & document) {
     if(document.IsArray()) {
-      if(index == -1) {
+      if(index == rapidjson::SizeType(-1)) {
 	for(rapidjson::SizeType i = 0; i < document.Size(); i++) {
 	  return (*child)(edges, document[i]);
 	}
@@ -1067,10 +1068,11 @@ struct ExploreJSONArray : public ExploreJSONGeneric {
     } else {
       return false;
     }
+    return false;
   }
 
   virtual void print() {
-    if(index == -1)
+    if(index == rapidjson::SizeType(-1))
       printf("@.");
     else
       printf("@.%ld.", (long) index);

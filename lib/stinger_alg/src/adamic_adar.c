@@ -14,7 +14,7 @@ compare (const void * a, const void * b)
  *  when performing the analysis.  This is to account for the fact that Adamic Adar is only defined for an undirected
  *  graph.
  */
-int64_t adamic_adar(const stinger_t * S, int64_t source, int64_t etype, int64_t ** candidates, double ** scores) {
+int64_t adamic_adar(stinger_t * S, int64_t source, int64_t etype, int64_t ** candidates, double ** scores) {
   if (*candidates != NULL || *scores != NULL) {
     LOG_E("Adamic Adar output arrays should not be allocated before call.  Possible memory leak.");
   }
@@ -106,7 +106,7 @@ int64_t adamic_adar(const stinger_t * S, int64_t source, int64_t etype, int64_t 
 
   /* Allocate output array */
   output_vertices = (int64_t *) xmalloc (two_hop_size * sizeof(int64_t));
-  output_scores = (int64_t *) xmalloc (two_hop_size * sizeof(double));
+  output_scores = (double *) xmalloc (two_hop_size * sizeof(double));
 
   /* calculate the Adamic-Adar score for each vertex in level 2 */
   for (int64_t k = 0; k < two_hop_size; k++) {

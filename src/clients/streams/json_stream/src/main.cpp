@@ -20,7 +20,7 @@ main(int argc, char *argv[])
   int port = 10102;
   int batch_size = 1000;
   double timeout = 0;
-  char * hostname = NULL;
+  char const * hostname = NULL;
   char * filename = NULL;
   int use_directed = 0;
 
@@ -111,7 +111,7 @@ main(int argc, char *argv[])
     timesince += toc();
     int64_t total_actions = batch.insertions_size() + batch.deletions_size();
     if(total_actions >= batch_size || (timeout > 0 && timesince >= timeout)) {
-      LOG_I_A("Sending a batch of %ld actions", total_actions);
+      LOG_I_A("Sending a batch of %" PRId64 " actions", total_actions);
       send_message(sock_handle, batch);
       timesince = 0;
       batch.Clear();
@@ -128,7 +128,7 @@ main(int argc, char *argv[])
 
   int64_t total_actions = batch.insertions_size() + batch.deletions_size();
   if(total_actions) {
-    LOG_I_A("Sending a batch of %ld actions", total_actions);
+    LOG_I_A("Sending a batch of %" PRId64 " actions", total_actions);
     send_message(sock_handle, batch);
   }
 

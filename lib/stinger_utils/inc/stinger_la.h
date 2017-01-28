@@ -23,7 +23,7 @@ stinger_and(eweight_t a, eweight_t b);
 eweight_t
 stinger_or(eweight_t a, eweight_t b);
 
-int
+void
 stinger_matvec(stinger_t * S, eweight_t * vec_in, int64_t nv, eweight_t * vec_out, 
   eweight_t (*multiply)(eweight_t, eweight_t), eweight_t (*reduce)(eweight_t, eweight_t), 
   eweight_t empty);

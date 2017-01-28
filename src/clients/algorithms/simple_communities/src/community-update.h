@@ -38,15 +38,15 @@ void init_empty_community_state (struct community_state * cstate, const int64_t 
 double init_and_compute_community_state (struct community_state * cstate, struct el * g);
 double init_and_read_community_state (struct community_state * cstate, int64_t graph_nv, const char *cg_name, const char *cmap_name);
 void cstate_dump_cmap (struct community_state * cstate, long which, long num);
-double cstate_update (struct community_state * cstate, const struct stinger * S);
+double cstate_update (struct community_state * cstate, struct stinger * S);
 
 void cstate_preproc (struct community_state * restrict,
-                     const struct stinger *,
+                     struct stinger *,
                      const int64_t, const int64_t * restrict,
                      const int64_t, const int64_t * restrict);
 
 void cstate_preproc_acts (struct community_state * restrict,
-                          const struct stinger *,
+                          struct stinger *,
                           const int64_t, const int64_t * restrict);
 
 #if !defined(INSQUEUE_SIZE)

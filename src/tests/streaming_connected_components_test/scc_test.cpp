@@ -61,7 +61,7 @@ TEST_F(SCCTest, UndirectedGraph) {
   parallel_shiloach_vishkin_components_of_type(S, expected_components,0);
 
   uint64_t expected_num_components = 0,actual_num_components=0;
-  for(uint64_t v = 0; v < nv; v++) {
+  for(int64_t v = 0; v < nv; v++) {
     if (v==expected_components[v])
       expected_num_components++;
     if (v==actual_components[v])
@@ -69,7 +69,7 @@ TEST_F(SCCTest, UndirectedGraph) {
   }  
   EXPECT_EQ(actual_num_components,expected_num_components);
 
-  for(uint64_t v = 0; v < nv; v++) {
+  for(int64_t v = 0; v < nv; v++) {
     EXPECT_EQ(actual_components[v],expected_components[v]);
   }
 
@@ -120,7 +120,7 @@ TEST_F(SCCTest, UndirectedGraphDumbbell) {
   int64_t* expected_components = (int64_t*)malloc(sizeof(int64_t)*nv);
   parallel_shiloach_vishkin_components_of_type(S, expected_components,0);
   uint64_t expected_num_components = 0,actual_num_components=0;
-  for(uint64_t v = 0; v < nv; v++) {
+  for(int64_t v = 0; v < nv; v++) {
     if (v==expected_components[v])
       expected_num_components++;
     if (v==actual_components[v])
@@ -128,7 +128,7 @@ TEST_F(SCCTest, UndirectedGraphDumbbell) {
   }  
   EXPECT_EQ(actual_num_components,expected_num_components);
 
-  for(uint64_t v = 0; v < nv; v++) {
+  for(int64_t v = 0; v < nv; v++) {
     EXPECT_EQ(actual_components[v],expected_components[v]);
   }
   free(expected_components);

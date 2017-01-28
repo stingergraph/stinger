@@ -24,15 +24,15 @@ void stinger_scc_reset_stats(stinger_connected_components_stats* stats){
 	stats->bfs_unsafe_deletes = 0;
 }
 void stinger_scc_print_insert_stats(stinger_connected_components_stats* stats){
-	printf("bfs_inserts_in_tree_as_parents %ld\n", stats->bfs_inserts_in_tree_as_parents);
-	printf("bfs_inserts_in_tree_as_neighbors %ld\n", stats->bfs_inserts_in_tree_as_neighbors);
-	printf("bfs_inserts_in_tree_as_replacement  %ld\n", stats->bfs_inserts_in_tree_as_replacement);
-	printf("bfs_inserts_bridged  %ld\n", stats->bfs_inserts_bridged);
+	printf("bfs_inserts_in_tree_as_parents %" PRIu64 "\n", stats->bfs_inserts_in_tree_as_parents);
+	printf("bfs_inserts_in_tree_as_neighbors %" PRIu64 "\n", stats->bfs_inserts_in_tree_as_neighbors);
+	printf("bfs_inserts_in_tree_as_replacement  %" PRIu64 "\n", stats->bfs_inserts_in_tree_as_replacement);
+	printf("bfs_inserts_bridged  %" PRIu64 "\n", stats->bfs_inserts_bridged);
 }
 
 void stinger_scc_print_delete_stats(stinger_connected_components_stats* stats){
-	printf("bfs_deletes_in_tree %ld\n", stats->bfs_deletes_in_tree);
-	printf("bfs_unsafe_deletes %ld\n", stats->bfs_unsafe_deletes);
+	printf("bfs_deletes_in_tree %" PRIu64 "\n", stats->bfs_deletes_in_tree);
+	printf("bfs_unsafe_deletes %" PRIu64 "\n", stats->bfs_unsafe_deletes);
 }
 
 const int64_t* stinger_scc_get_components(stinger_scc_internal scc_internal){
@@ -91,8 +91,8 @@ uint64_t bfs_build_component (struct stinger* S, uint64_t currRoot, uint64_t* qu
 			  /* if k hasn't been found */
 			  if(LEVEL_IS_INF(k)) {
 				/* add k to the frontier */
-				if(INFINITY_MY == stinger_int64_cas(level + k, INFINITY_MY, nextLevel)) {
-				  uint64_t which = stinger_int64_fetch_add(&qEnd, 1);
+				if(INFINITY_MY == stinger_int64_cas((int64_t *) level + k, INFINITY_MY, nextLevel)) {
+				  uint64_t which = stinger_int64_fetch_add((int64_t *) &qEnd, 1);
 				  queue[which] = k;
 				  component[k] = currRoot;
 				}
@@ -101,7 +101,7 @@ uint64_t bfs_build_component (struct stinger* S, uint64_t currRoot, uint64_t* qu
 			  /* if k has space */
 			  if(parentCounter[k] < parentsPerVertex) {
 				if(LEVEL_EQUALS(k,nextLevel)) {
-				  uint64_t which = stinger_int64_fetch_add(parentCounter + k, 1);
+				  uint64_t which = stinger_int64_fetch_add((int64_t *) parentCounter + k, 1);
 				  if(which < parentsPerVertex) {
 					/* add me to k's parents */
 					parentArray[k*parentsPerVertex+which] = currElement;
@@ -109,7 +109,7 @@ uint64_t bfs_build_component (struct stinger* S, uint64_t currRoot, uint64_t* qu
 					parentCounter[k] = parentsPerVertex;
 				  }
 				} else if(LEVEL_EQUALS(k, myLevel)) {
-				  uint64_t which = stinger_int64_fetch_add(parentCounter + k, 1);
+				  uint64_t which = stinger_int64_fetch_add((int64_t *) parentCounter + k, 1);
 				  if(which < parentsPerVertex) {
 					/* add me to k as a neighbor (bitwise negate for vtx 0) */
 					parentArray[k*parentsPerVertex+which] = ~currElement;
@@ -159,7 +159,7 @@ uint64_t bfs_build_new_component (struct stinger* S, uint64_t currRoot,
 			/* local level */
 			int64_t k_level = readfe(level + k);
 			if(component[k] != component_id) {
-			  uint64_t which = stinger_int64_fetch_add(&qEnd, 1);
+			  uint64_t which = stinger_int64_fetch_add((int64_t *) &qEnd, 1);
 			  queue[which] = k;
 			  component[k] = component_id;
 			  parentCounter[k] = 0;
@@ -171,7 +171,7 @@ uint64_t bfs_build_new_component (struct stinger* S, uint64_t currRoot,
 		  /* if k has space */
 		  if(parentCounter[k] < parentsPerVertex) {
 			if(readff(level + k) == nextLevel) {
-			  uint64_t which = stinger_int64_fetch_add(parentCounter + k, 1);
+			  uint64_t which = stinger_int64_fetch_add((int64_t *) parentCounter + k, 1);
 			  if(which < parentsPerVertex) {
 				/* add me to k's parents */
 				parentArray[k*parentsPerVertex+which] = currElement;
@@ -179,7 +179,7 @@ uint64_t bfs_build_new_component (struct stinger* S, uint64_t currRoot,
 				parentCounter[k] = parentsPerVertex;
 			  }
 			} else if(readff(level+k) == myLevel) {
-			  uint64_t which = stinger_int64_fetch_add(parentCounter + k, 1);
+			  uint64_t which = stinger_int64_fetch_add((int64_t *) parentCounter + k, 1);
 			  if(which < parentsPerVertex) {
 				/* add me to k as a neighbor (bitwise negate for vtx 0) */
 				parentArray[k*parentsPerVertex+which] = ~currElement;
@@ -247,19 +247,19 @@ uint64_t bfs_rebuild_component (struct stinger* S, uint64_t currRoot, uint64_t c
 				LDB("\n\tFOUND ROOT: %ld", k);
 				component[k] = component_id;
 				path_up_found = 1;
-				uint64_t which = stinger_int64_fetch_add(&slq_end, 1);
+				uint64_t which = stinger_int64_fetch_add((int64_t *) &slq_end, 1);
 				start_level_queue[which] = k;
 			  } else {
 				if((k_level < start_level) && (k_level > ~start_level)) {
 				  LDB("\n\tFOUND ROOT: %ld", k);
 				  component[k] = component_id;
 				  path_up_found = 1;
-				  uint64_t which = stinger_int64_fetch_add(&slq_end, 1);
+				  uint64_t which = stinger_int64_fetch_add((int64_t *) &slq_end, 1);
 				  start_level_queue[which] = k;
 				} else {
 				  LDB("\n\tFOUND OTHER: %ld", k);
 				  parentCounter[k] = 0;
-				  uint64_t which = stinger_int64_fetch_add(&qEnd, 1);
+				  uint64_t which = stinger_int64_fetch_add((int64_t *) &qEnd, 1);
 				  queue[which] = k;
 				  component[k] = component_id;
 				  k_level = nextLevel;
@@ -272,7 +272,7 @@ uint64_t bfs_rebuild_component (struct stinger* S, uint64_t currRoot, uint64_t c
 		  /* if k has space */
 		  if(parentCounter[k] < parentsPerVertex) {
 			if(readff(level + k) == nextLevel) {
-			  uint64_t which = stinger_int64_fetch_add(parentCounter + k, 1);
+			  uint64_t which = stinger_int64_fetch_add((int64_t *) parentCounter + k, 1);
 			  if(which < parentsPerVertex) {
 				/* add me to k's parents */
 				parentArray[k*parentsPerVertex+which] = currElement;
@@ -280,7 +280,7 @@ uint64_t bfs_rebuild_component (struct stinger* S, uint64_t currRoot, uint64_t c
 				parentCounter[k] = parentsPerVertex;
 			  }
 			} else if(readff(level+k) == myLevel) {
-			  uint64_t which = stinger_int64_fetch_add(parentCounter + k, 1);
+			  uint64_t which = stinger_int64_fetch_add((int64_t *) parentCounter + k, 1);
 			  if(which < parentsPerVertex) {
 				/* add me to k as a neighbor (bitwise negate for vtx 0) */
 				parentArray[k*parentsPerVertex+which] = ~currElement;
@@ -300,7 +300,7 @@ uint64_t bfs_rebuild_component (struct stinger* S, uint64_t currRoot, uint64_t c
 
 	OMP("omp parallel for")
 	  for(int64_t i = slq_start; i < slq_end; i++) {
-		int64_t currElement = component[start_level_queue[i]] = old_component;
+		/*int64_t currElement =*/ component[start_level_queue[i]] = old_component;
 	  }
 
 	while(slq_end != slq_start) {
@@ -328,7 +328,7 @@ uint64_t bfs_rebuild_component (struct stinger* S, uint64_t currRoot, uint64_t c
 			  int64_t k_level = readfe(level + k);
 			  if(component[k] != old_component) {
 				parentCounter[k] = 0;
-				uint64_t which = stinger_int64_fetch_add(&slq_end, 1);
+				uint64_t which = stinger_int64_fetch_add((int64_t *) &slq_end, 1);
 				start_level_queue[which] = k;
 				component[k] = old_component;
 				k_level = nextLevel;
@@ -339,7 +339,7 @@ uint64_t bfs_rebuild_component (struct stinger* S, uint64_t currRoot, uint64_t c
 			/* if k has space */
 			if(parentCounter[k] < parentsPerVertex) {
 			  if(readff(level + k) == nextLevel) {
-				uint64_t which = stinger_int64_fetch_add(parentCounter + k, 1);
+				uint64_t which = stinger_int64_fetch_add((int64_t *) parentCounter + k, 1);
 				if(which < parentsPerVertex) {
 				  /* add me to k's parents */
 				  parentArray[k*parentsPerVertex+which] = currElement;
@@ -347,7 +347,7 @@ uint64_t bfs_rebuild_component (struct stinger* S, uint64_t currRoot, uint64_t c
 				  parentCounter[k] = parentsPerVertex;
 				}
 			  } else if(readff(level+k) == myLevel) {
-				uint64_t which = stinger_int64_fetch_add(parentCounter + k, 1);
+				uint64_t which = stinger_int64_fetch_add((int64_t *) parentCounter + k, 1);
 				if(which < parentsPerVertex) {
 				  /* add me to k as a neighbor (bitwise negate for vtx 0) */
 				  parentArray[k*parentsPerVertex+which] = ~currElement;
@@ -361,6 +361,7 @@ uint64_t bfs_rebuild_component (struct stinger* S, uint64_t currRoot, uint64_t c
 	  slq_start = old_slq_end;
 	}
   }
+  return qEnd;
 }
 
 void update_tree_for_delete_directed (int64_t * parentArray, int64_t * parentCounter, 
@@ -375,7 +376,7 @@ void update_tree_for_delete_directed (int64_t * parentArray, int64_t * parentCou
 	  local_parent_counter--;
 	  parentArray[(i)*parentsPerVertex + p] = parentArray[(i)*parentsPerVertex + local_parent_counter];
 	  parentArray[(i)*parentsPerVertex + local_parent_counter] = EMPTY_NEIGHBOR;
-	  stinger_int64_fetch_add(&stats->bfs_deletes_in_tree, 1);
+	  stinger_int64_fetch_add((int64_t *) &stats->bfs_deletes_in_tree, 1);
 	}
 	/* also search to see if we still have parents */
 	if(parentArray[(i)*parentsPerVertex+p] >= 0) {
@@ -409,18 +410,18 @@ int64_t update_tree_for_insert_directed (int64_t * parentArray, int64_t * parent
 		if(level[i] < level[j]) {
 		  parentArray[j*parentsPerVertex + local_parent_counter] = i;
 		  local_parent_counter++;
-		  stinger_int64_fetch_add(&stats->bfs_inserts_in_tree_as_parents, 1);
+		  stinger_int64_fetch_add((int64_t *) &stats->bfs_inserts_in_tree_as_parents, 1);
 		} else if(level[i] == level[j]) {
 		  parentArray[j*parentsPerVertex + local_parent_counter] = ~i;
 		  local_parent_counter++;
-		  stinger_int64_fetch_add(&stats->bfs_inserts_in_tree_as_neighbors, 1);
+		  stinger_int64_fetch_add((int64_t *) &stats->bfs_inserts_in_tree_as_neighbors, 1);
 		}
 	  } else if(level[i] < level[j]) {
 		/* search backward - more likely to have neighbors at end */
 		for(int64_t p = parentsPerVertex - 1; p >= 0; p--) {
 		  if(parentArray[j*parentsPerVertex + p] < 0) {
 			parentArray[j*parentsPerVertex + p] = i;
-			stinger_int64_fetch_add(&stats->bfs_inserts_in_tree_as_replacement, 1);
+			stinger_int64_fetch_add((int64_t *) &stats->bfs_inserts_in_tree_as_replacement, 1);
 			break;
 		  }
 		}
@@ -463,7 +464,7 @@ int is_tree_wrong (int64_t nv, int64_t * parentArray, int64_t * parentCounter, i
   for(int p=0; p<parentCounter[i];p++) {
 	int64_t neighbor = parentArray[(i)*parentsPerVertex+p];
 	if(neighbor == EMPTY_NEIGHBOR || !(neighbor < nv && neighbor > ~nv)) {
-	  printf("\n\tParents %ld Invalid Action Delete %ld %s\n", i, j, msg);
+	  printf("\n\tParents %" PRId64 " Invalid Action Delete %" PRId64 " %s\n", i, j, msg);
 	  return 1;
 	}
   }
@@ -480,23 +481,23 @@ int is_full_tree_wrong (struct stinger * S,int64_t nv,int64_t * parentArray,
 	  if(parentArray[(v)*parentsPerVertex+p] >= 0) 
 		i_parents = 1;
 	  if(neighbor == EMPTY_NEIGHBOR || !(neighbor < nv && neighbor > ~nv)) {
-		printf("\n\t\t** T !RANGE %ld %ld", v, neighbor);
+		printf("\n\t\t** T !RANGE %" PRId64 " %" PRId64, v, neighbor);
 		error = 1;
 	  } else {
 		if(neighbor < 0)
 		  neighbor = ~neighbor;
 		if(!stinger_has_typed_successor(S, 0, v, neighbor)) {
-		  printf("\n\t\t** T !EXIST %ld %ld", v, neighbor);
+		  printf("\n\t\t** T !EXIST %" PRId64 " %" PRId64, v, neighbor);
 		  error = 1;
 		}
 	  }
 	}
 	if(i_parents && level[v] < 0) {
-	  printf("\n\t\t** T !PARENTS %ld ~%ld (%ld)", v, ~level[v], level[v]);
+	  printf("\n\t\t** T !PARENTS %" PRId64 " ~%" PRId64 " (%" PRId64 ")", v, ~level[v], level[v]);
 	  error = 1;
 	}
 	if((!i_parents) && level[v] > 0) {
-	  printf("\n\t\t** T !PARENTS %ld %ld", v, level[v]);
+	  printf("\n\t\t** T !PARENTS %" PRId64 " %" PRId64, v, level[v]);
 	  error = 1;
 	}
   }
@@ -530,31 +531,31 @@ int64_t bfs_component_stats (uint64_t nv, int64_t * sizes, int64_t previous_num)
 
   avg /= (double)num_components;
 
-  printf("bfs_component_stats_max %ld\n", max);
-  printf("bfs_component_stats_min %ld\n", min);
+  printf("bfs_component_stats_max %" PRId64 "\n", max);
+  printf("bfs_component_stats_min %" PRId64 "\n", min);
   printf("bfs_component_stats_avg %lf\n", avg);
-  printf("bfs_component_stats_num %ld\n", num_components);
+  printf("bfs_component_stats_num %" PRId64 "\n", num_components);
 
   if(previous_num < num_components) {
-	printf("bfs_component_created %ld\n", num_components - previous_num);
+	printf("bfs_component_created %" PRId64 "\n", num_components - previous_num);
   } else {
-	printf("bfs_component_joined %ld\n", previous_num - num_components);
+	printf("bfs_component_joined %" PRId64 "\n", previous_num - num_components);
   }
 
   return num_components;
 }
 
-int stinger_scc_insertion(struct stinger * S, int64_t nv,  stinger_scc_internal scc_internal, 
+void stinger_scc_insertion(struct stinger * S, int64_t nv,  stinger_scc_internal scc_internal, 
 	stinger_connected_components_stats* stats, stinger_edge_update* batch,int64_t batch_size){
 
 	// stinger_connected_components_stats* stats, int64_t *batch,int64_t batch_size){
   	/* Updates */
 	int64_t * action_stack = malloc(sizeof(int64_t) * batch_size * 2 * 2);
 	int64_t * action_stack_components = malloc(sizeof(int64_t) * batch_size * 2 * 2);
-	int64_t delete_stack_top;
+	/*int64_t delete_stack_top;*/
 	int64_t insert_stack_top;
 
-	delete_stack_top = 0;
+	/*delete_stack_top = 0;*/
 	insert_stack_top = batch_size * 2 * 2 - 2;
 
 	// int64_t* action = batch;
@@ -577,7 +578,7 @@ int stinger_scc_insertion(struct stinger * S, int64_t nv,  stinger_scc_internal 
 			  bfs_inserts_bridged++;
 			  /* if component ids are not the same       *
 			   * tree update not handled, push onto queue*/
-			  int64_t which = stinger_int64_fetch_add(&insert_stack_top, -2);
+			  int64_t which = stinger_int64_fetch_add((int64_t *) &insert_stack_top, -2);
 			  action_stack[which] = i;
 			  action_stack[which+1] = j;
 			}
@@ -585,7 +586,7 @@ int stinger_scc_insertion(struct stinger * S, int64_t nv,  stinger_scc_internal 
 			if(update_tree_for_insert_directed(scc_internal.parentArray, scc_internal.parentCounter, 
 				scc_internal.level, scc_internal.bfs_components, scc_internal.parentsPerVertex, j, i,stats)) {
 			  bfs_inserts_bridged++;
-			  int64_t which = stinger_int64_fetch_add(&insert_stack_top, -2);
+			  int64_t which = stinger_int64_fetch_add((int64_t *) &insert_stack_top, -2);
 			  action_stack[which] = j;
 			  action_stack[which+1] = i;
 			}
@@ -623,8 +624,8 @@ int stinger_scc_insertion(struct stinger * S, int64_t nv,  stinger_scc_internal 
 	  } else {
 		scc_internal.bfs_component_sizes[Cj] += bfs_build_new_component(S, i, Cj, 
 			(scc_internal.level[j] >= 0 ? scc_internal.level[j] : ~scc_internal.level[j])+1, 
-			scc_internal.queue, scc_internal.level, scc_internal.parentArray, scc_internal.parentsPerVertex, 
-			scc_internal.parentCounter, scc_internal.bfs_components);
+			(uint64_t *) scc_internal.queue, (uint64_t *) scc_internal.level, (uint64_t *) scc_internal.parentArray, scc_internal.parentsPerVertex, 
+			(uint64_t *) scc_internal.parentCounter, scc_internal.bfs_components);
 		scc_internal.bfs_component_sizes[Ci] = 0;
 	  }
 	}
@@ -633,7 +634,7 @@ int stinger_scc_insertion(struct stinger * S, int64_t nv,  stinger_scc_internal 
 	free(action_stack_components);
 }
 
-int stinger_scc_deletion(struct stinger * S, int64_t nv,  stinger_scc_internal scc_internal, 
+void stinger_scc_deletion(struct stinger * S, int64_t nv,  stinger_scc_internal scc_internal, 
 	stinger_connected_components_stats* stats, stinger_edge_update* batch,int64_t batch_size){
 
 	// stinger_connected_components_stats* stats, int64_t *batch,int64_t batch_size){
@@ -641,16 +642,16 @@ int stinger_scc_deletion(struct stinger * S, int64_t nv,  stinger_scc_internal s
 	int64_t * action_stack = malloc(sizeof(int64_t) * batch_size * 2 * 2);
 	int64_t * action_stack_components = malloc(sizeof(int64_t) * batch_size * 2 * 2);
 	int64_t delete_stack_top;
-	int64_t insert_stack_top;
+	/*int64_t insert_stack_top;*/
 
 	delete_stack_top = 0;
-	insert_stack_top = batch_size * 2 * 2 - 2;
+	/*insert_stack_top = batch_size * 2 * 2 - 2;*/
 
 	// int64_t* action = batch;
 	// int64_t *actionStream = &action[0];
 	int64_t numActions = batch_size;
 
-	int64_t bfs_inserts_bridged=0;
+	/*int64_t bfs_inserts_bridged=0;*/
 
 
 	/* Parallel forall deletions */
@@ -664,7 +665,7 @@ int stinger_scc_deletion(struct stinger * S, int64_t nv,  stinger_scc_internal s
 		  // i = ~i;
 		  // j = ~j;
 		  /* if a real edge in stinger, update parents, push onto queue to check safety later */
-			uint64_t which = stinger_int64_fetch_add(&delete_stack_top, 2);
+			uint64_t which = stinger_int64_fetch_add((int64_t *) &delete_stack_top, 2);
 			action_stack[which] = i;
 			action_stack[which+1] = j;
 			action_stack_components[which] = scc_internal.bfs_components[i];
@@ -673,7 +674,7 @@ int stinger_scc_deletion(struct stinger * S, int64_t nv,  stinger_scc_internal s
 				scc_internal.level, scc_internal.parentsPerVertex, i, j,stats);
 
 		  /* if a real edge in stinger, update parents, push onto queue to check safety later */
-			which = stinger_int64_fetch_add(&delete_stack_top, 2);
+			which = stinger_int64_fetch_add((int64_t *) &delete_stack_top, 2);
 			action_stack[which] = j;
 			action_stack[which+1] = i;
 			action_stack_components[which] = scc_internal.bfs_components[j];
@@ -688,7 +689,7 @@ int stinger_scc_deletion(struct stinger * S, int64_t nv,  stinger_scc_internal s
 	OMP("omp parallel for reduction(+:bfs_unsafe_deletes)")
 	  for(uint64_t k = 0; k < delete_stack_top; k += 2) {
 		int64_t i = action_stack[k];
-		int64_t j = action_stack[k+1];
+		/*int64_t j = action_stack[k+1];*/
 		if(!(is_delete_unsafe(scc_internal.parentArray, scc_internal.parentCounter, 
 			scc_internal.level, scc_internal.parentsPerVertex, i,stats))) {
 		  action_stack[k] = -1;
@@ -704,7 +705,7 @@ int stinger_scc_deletion(struct stinger * S, int64_t nv,  stinger_scc_internal s
 	  int64_t i = action_stack[k];
 	  int64_t j = action_stack[k+1];
 	  int64_t Ci_prev = action_stack_components[k];
-	  int64_t Cj_prev = action_stack_components[k+1];
+	  /*int64_t Cj_prev = action_stack_components[k+1];*/
 	  if(i != -1)  {
 		int64_t Ci = scc_internal.bfs_components[i];
 		int64_t Cj = scc_internal.bfs_components[j];
@@ -733,8 +734,8 @@ int stinger_scc_deletion(struct stinger * S, int64_t nv,  stinger_scc_internal s
 				scc_internal.parentCounter[i] = 0;
 				scc_internal.bfs_component_sizes[i] = bfs_rebuild_component(S, i, i, 
 					(scc_internal.level[i] >= 0 ? scc_internal.level[i] : ~scc_internal.level[i]), 
-					scc_internal.queue, scc_internal.level, scc_internal.parentArray, scc_internal.parentsPerVertex, 
-					scc_internal.parentCounter, scc_internal.bfs_components, scc_internal.same_level_queue);
+					(uint64_t *) scc_internal.queue, (uint64_t *) scc_internal.level, (uint64_t *) scc_internal.parentArray, scc_internal.parentsPerVertex, 
+					(uint64_t *) scc_internal.parentCounter, scc_internal.bfs_components, scc_internal.same_level_queue);
 				if(scc_internal.bfs_components[i] != i) {
 				  scc_internal.bfs_component_sizes[i] = 0;
 				} else {
@@ -747,8 +748,8 @@ int stinger_scc_deletion(struct stinger * S, int64_t nv,  stinger_scc_internal s
 				scc_internal.parentCounter[j] = 0;
 				scc_internal.bfs_component_sizes[j] = bfs_rebuild_component(S, j, j, 
 					(scc_internal.level[j] >= 0 ? scc_internal.level[j] : ~scc_internal.level[j]), 
-					scc_internal.queue, scc_internal.level, scc_internal.parentArray, scc_internal.parentsPerVertex, 
-					scc_internal.parentCounter, scc_internal.bfs_components, scc_internal.same_level_queue);
+					(uint64_t *) scc_internal.queue, (uint64_t *) scc_internal.level, (uint64_t *) scc_internal.parentArray, scc_internal.parentsPerVertex, 
+					(uint64_t *) scc_internal.parentCounter, scc_internal.bfs_components, scc_internal.same_level_queue);
 				if(scc_internal.bfs_components[j] != j) {
 				  scc_internal.bfs_component_sizes[j] = 0;
 				} else {
@@ -798,8 +799,8 @@ void stinger_scc_initialize_internals(struct stinger * S, int64_t nv, stinger_sc
 	scc_internal->initCCCount = 0;
 	for(uint64_t i = 0; i < nv; i++) {
 		if(scc_internal->level[i] == INFINITY_MY) {
-		 	scc_internal->bfs_component_sizes[i] =  bfs_build_component(S, i, scc_internal->queue, scc_internal->level, 
-		 		scc_internal->parentArray, scc_internal->parentsPerVertex, scc_internal->parentCounter, scc_internal->bfs_components);
+		 	scc_internal->bfs_component_sizes[i] =  bfs_build_component(S, i, (uint64_t *) scc_internal->queue, (uint64_t *) scc_internal->level,
+		 		(uint64_t *) scc_internal->parentArray, scc_internal->parentsPerVertex, (uint64_t *) scc_internal->parentCounter, scc_internal->bfs_components);
 		 	scc_internal->initCCCount++;
 		}
 	}

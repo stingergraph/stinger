@@ -27,7 +27,7 @@ typedef int64_t adjacency_t;
   #define JSON_VWEIGHT(NAME,VAL) JSON_INT64(NAME,VAL)
   #define XML_ATTRIBUTE_VWEIGHT(NAME,VAL) XML_ATTRIBUTE_INT64(NAME,VAL)
   #define stinger_vweight_fetch_add_atomic(P,VAL) stinger_int64_fetch_add(P,VAL)
-  static inline vweight_t
+  inline vweight_t
   stinger_vweight_fetch_add(vweight_t * p, vweight_t val) {
     vweight_t out = *p;
     *p += val;
@@ -92,67 +92,67 @@ vtype_t
 stinger_vertex_type_get(const stinger_vertices_t * vertices, vindex_t v);
 
 vtype_t
-stinger_vertex_type_set(const stinger_vertices_t * vertices, vindex_t v, vtype_t type);
+stinger_vertex_type_set(stinger_vertices_t * vertices, vindex_t v, vtype_t type);
 
 vweight_t
 stinger_vertex_weight_get(const stinger_vertices_t * vertices, vindex_t v);
 
 vweight_t
-stinger_vertex_weight_set(const stinger_vertices_t * vertices, vindex_t v, vweight_t weight);
+stinger_vertex_weight_set(stinger_vertices_t * vertices, vindex_t v, vweight_t weight);
 
 vweight_t
-stinger_vertex_weight_increment(const stinger_vertices_t * vertices, vindex_t v, vweight_t weight);
+stinger_vertex_weight_increment(stinger_vertices_t * vertices, vindex_t v, vweight_t weight);
 
 vweight_t
-stinger_vertex_weight_increment_atomic(const stinger_vertices_t * vertices, vindex_t v, vweight_t weight);
+stinger_vertex_weight_increment_atomic(stinger_vertices_t * vertices, vindex_t v, vweight_t weight);
 
 vdegree_t
 stinger_vertex_degree_get(const stinger_vertices_t * vertices, vindex_t v);
 
 vdegree_t
-stinger_vertex_degree_set(const stinger_vertices_t * vertices, vindex_t v, vdegree_t degree);
+stinger_vertex_degree_set(stinger_vertices_t * vertices, vindex_t v, vdegree_t degree);
 
 vdegree_t
-stinger_vertex_degree_increment(const stinger_vertices_t * vertices, vindex_t v, vdegree_t degree);
+stinger_vertex_degree_increment(stinger_vertices_t * vertices, vindex_t v, vdegree_t degree);
 
 vdegree_t
-stinger_vertex_degree_increment_atomic(const stinger_vertices_t * vertices, vindex_t v, vdegree_t degree);
+stinger_vertex_degree_increment_atomic(stinger_vertices_t * vertices, vindex_t v, vdegree_t degree);
 
 vdegree_t
 stinger_vertex_indegree_get(const stinger_vertices_t * vertices, vindex_t v);
 
 vdegree_t
-stinger_vertex_indegree_set(const stinger_vertices_t * vertices, vindex_t v, vdegree_t degree);
+stinger_vertex_indegree_set(stinger_vertices_t * vertices, vindex_t v, vdegree_t degree);
 
 vdegree_t
-stinger_vertex_indegree_increment(const stinger_vertices_t * vertices, vindex_t v, vdegree_t degree);
+stinger_vertex_indegree_increment(stinger_vertices_t * vertices, vindex_t v, vdegree_t degree);
 
 vdegree_t
-stinger_vertex_indegree_increment_atomic(const stinger_vertices_t * vertices, vindex_t v, vdegree_t degree);
+stinger_vertex_indegree_increment_atomic(stinger_vertices_t * vertices, vindex_t v, vdegree_t degree);
 
 vdegree_t
 stinger_vertex_outdegree_get(const stinger_vertices_t * vertices, vindex_t v);
 
 vdegree_t
-stinger_vertex_outdegree_set(const stinger_vertices_t * vertices, vindex_t v, vdegree_t degree);
+stinger_vertex_outdegree_set(stinger_vertices_t * vertices, vindex_t v, vdegree_t degree);
 
 vdegree_t
-stinger_vertex_outdegree_increment(const stinger_vertices_t * vertices, vindex_t v, vdegree_t degree);
+stinger_vertex_outdegree_increment(stinger_vertices_t * vertices, vindex_t v, vdegree_t degree);
 
 vdegree_t
-stinger_vertex_outdegree_increment_atomic(const stinger_vertices_t * vertices, vindex_t v, vdegree_t degree);
+stinger_vertex_outdegree_increment_atomic(stinger_vertices_t * vertices, vindex_t v, vdegree_t degree);
 
 adjacency_t
 stinger_vertex_edges_get(const stinger_vertices_t * vertices, vindex_t v);
 
 adjacency_t *
-stinger_vertex_edges_pointer_get(const stinger_vertices_t * vertices, vindex_t v);
+stinger_vertex_edges_pointer_get(stinger_vertices_t * vertices, vindex_t v);
 
 adjacency_t
-stinger_vertex_edges_get_and_lock(const stinger_vertices_t * vertices, vindex_t v);
+stinger_vertex_edges_get_and_lock(stinger_vertices_t * vertices, vindex_t v);
 
 adjacency_t
-stinger_vertex_edges_set(const stinger_vertices_t * vertices, vindex_t v, adjacency_t edges);
+stinger_vertex_edges_set(stinger_vertices_t * vertices, vindex_t v, adjacency_t edges);
 
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
@@ -172,7 +172,10 @@ void
 stinger_vertices_free(stinger_vertices_t ** vertices);
 
 stinger_vertex_t *
-stinger_vertices_vertex_get(const stinger_vertices_t * vertices, vindex_t v);
+stinger_vertices_vertex_get(stinger_vertices_t * vertices, vindex_t v);
+
+const stinger_vertex_t *
+const_stinger_vertices_vertex_get(const stinger_vertices_t * vertices, vindex_t v);
 
 int64_t 
 stinger_vertices_max_vertices_get(const stinger_vertices_t * vertices);

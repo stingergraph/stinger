@@ -22,11 +22,11 @@ start_alg_handling (void *);
 
 
 /* global variables */
-static bool dropped_vertices = false;
+/*static bool dropped_vertices = false;
 static int64_t n_components, n_nonsingleton_components, max_compsize;
 static int64_t min_batch_ts, max_batch_ts;
 static int64_t * comp_vlist;
-static int64_t * comp_mark;
+static int64_t * comp_mark;*/
 
 
 /* utility functions */
@@ -62,6 +62,7 @@ vertex_string (const T& in, std::string& out)
   std::transform(out.begin(), out.end(), out.begin(), ascii_tolower);
 }
 
+#if 0
 static void
 split_day_in_year (int diy, int * month, int * dom)
 {
@@ -110,5 +111,6 @@ ts_to_str (int64_t ts_in, char * out, size_t len)
 	    (pst? 'S' : 'D'),
 	    dom, month_name[month]);
 }
+#endif /* 0 */
 
 #endif  /* _SERVER_H */

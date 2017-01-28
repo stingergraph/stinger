@@ -33,7 +33,7 @@ uint64_t
 writeef(volatile uint64_t * v, uint64_t new_val);
 
 uint64_t
-readff(volatile uint64_t * v);
+readff(volatile const uint64_t * v);
 
 uint64_t
 writeff(volatile uint64_t * v, uint64_t new_val);

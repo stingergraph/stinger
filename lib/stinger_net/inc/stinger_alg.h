@@ -78,13 +78,13 @@ typedef struct {
 } stinger_registered_alg;
 
 typedef struct {
-  char * name;		       /* required argument */
+  char const * name;		       /* required argument */
   const char * host;
   int port;
   int is_remote;
   int map_private;
   int64_t data_per_vertex;
-  char * data_description;
+  char const * data_description;
   char ** dependencies;
   int64_t num_dependencies;
 } stinger_register_alg_params;

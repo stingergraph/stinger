@@ -75,6 +75,7 @@ int main (int argc, char *argv[])
       case MONGO_CONN_NO_SOCKET:  printf( "no socket\n" ); return 1;
       case MONGO_CONN_FAIL:       printf( "connection failed\n" ); return 1;
       case MONGO_CONN_NOT_MASTER: printf( "not master\n" ); return 1;
+      default:                    printf( "unhandled error\n" ); return 1;
     }
   }
   /* End MongoDB connect */
@@ -101,7 +102,7 @@ int main (int argc, char *argv[])
     mon.wait_for_sync();
 
     int64_t cur_time = get_current_timestamp();
-    LOG_D_A ("Processing timestamp %ld", cur_time);
+    LOG_D_A ("Processing timestamp %" PRId64, cur_time);
     tic();
 
     /* Get the STINGER pointer -- critical section */
@@ -147,7 +148,7 @@ int main (int argc, char *argv[])
   
     double time = toc();
     LOG_I_A ("elapsed: %20.15e sec", time);
-    LOG_I_A ("nv: %ld", nv);
+    LOG_I_A ("nv: %" PRId64, nv);
     LOG_I_A ("rate: %20.15e vtx/sec", (double) nv / time);
 
 

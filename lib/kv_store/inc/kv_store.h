@@ -184,7 +184,7 @@ kv_return_t
 kv_tracker_free_internal(kv_element_t * track);
 
 kv_return_t 
-kv_tracker_hash(kv_element_t * track, int64_t * hash);
+kv_tracker_hash(kv_element_t * track, uint64_t * hash);
 
 kv_return_t 
 kv_tracker_is(kv_element_t * a, kv_element_t * b);

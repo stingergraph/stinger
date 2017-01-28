@@ -26,7 +26,7 @@ void clear_vlist (int64_t * restrict nvlist,
 static inline void normalize_pr (const int64_t nv, double * restrict pr_val);
 static int64_t find_max_pr (const int64_t nv, const double * restrict pr_val);
 
-static int nonunit_weights = 1;
+/*static int nonunit_weights = 1;*/
 
 struct spvect {
   int64_t nv;
@@ -44,8 +44,8 @@ static inline struct spvect alloc_spvect (int64_t nvmax);
 int
 main(int argc, char *argv[])
 {
-  double init_time, gather_time, compute_b_time;
-  double cwise_err;
+  double compute_b_time = 0.0;
+  /*double cwise_err;*/
 
   int iter = 0;
   int64_t nv;
@@ -229,7 +229,7 @@ main(int argc, char *argv[])
             }
         }
       }
-      gather_time = toc ();
+      (void) toc ();
 
       OMP("omp parallel for" OMP_SIMD)
         for (int64_t k = 0; k < x.nv; ++k)
@@ -368,21 +368,21 @@ main(int argc, char *argv[])
     }
 
     fprintf (stderr, "%ld: %12s %g\n", (long)iter, "b_time", compute_b_time);
-    int64_t loc_baseline;
+    /*int64_t loc_baseline;*/
     for (int alg = 0; alg <= DPR_HELD; ++alg) {
       double err = 0.0, mxerr = 0.0;
-      int64_t where = -1, nerr = 0;
-      const int64_t loc = find_max_pr (nv, pr_val[alg]);
-      if (alg == 0) loc_baseline = loc;
+      int64_t /*where = -1, */nerr = 0;
+      (void) find_max_pr (nv, pr_val[alg]);
+      /*if (alg == 0) loc_baseline = loc;*/
       if (alg > 0)
         //OMP("omp parallel for reduction(+: err)")
         for (int64_t i = 0; i < nv; ++i) {
           const double ei = fabs (pr_val[alg][i] - pr_val[BASELINE][i]);
-          if (ei > mxerr) { where = i; mxerr = ei; }
+          if (ei > mxerr) { /*where = i; */mxerr = ei; }
           err += ei;
           if (ei > 0.0) ++nerr;
         }
-      fprintf (stderr, "%ld: %12s %d\t%d %10g %8ld %10e %8ld %8ld\n",
+      fprintf (stderr, "%ld: %12s %d\t%d %10g %8" PRId64 " %10e %8ld %8ld\n",
                (long)iter, pr_name[alg], alg,
                niter[alg], pr_time[alg], pr_vol[alg], err, (long)nerr, (long)pr_nupd[alg]);
     }

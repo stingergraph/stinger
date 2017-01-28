@@ -81,7 +81,7 @@ community_detection(stinger_t * S, int64_t NV, int64_t * partitions, int64_t max
     for (int64_t i = 0; i < NV; i++){
         partitions[i] = i;
     }
-    int64_t num_partitions = NV;
+    /*int64_t num_partitions = NV;*/
     partitions = louvain_method(S,partitions, NV, m, maxIter);
 
 }

@@ -10,7 +10,7 @@
 extern "C" {
 #endif
 
-int64_t community_on_demand(const stinger_t * S, int64_t ** vertices, int64_t ** partitions);
+int64_t community_on_demand(stinger_t * S, int64_t ** vertices, int64_t ** partitions);
 
 #ifdef __cplusplus
 }

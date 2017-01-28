@@ -33,22 +33,22 @@ int
 stinger_physmap_mapping_create(stinger_physmap_t * p, stinger_vertices_t * v, const char * byte_string, int64_t length, int64_t * vtx_out);
 
 vindex_t
-stinger_physmap_vtx_lookup(stinger_physmap_t * p, stinger_vertices_t * v, const char * byte_string, int64_t length);
+stinger_physmap_vtx_lookup(const stinger_physmap_t * p, const stinger_vertices_t * v, const char * byte_string, int64_t length);
 
 int64_t
-stinger_physmap_vtx_remove_id(stinger_physmap_t *p, stinger_vertices_t * v, vindex_t vertexID);
+stinger_physmap_vtx_remove_id(const stinger_physmap_t *p, const stinger_vertices_t * v, vindex_t vertexID);
 
 int64_t
 stinger_physmap_vtx_remove_name(stinger_physmap_t *p, stinger_vertices_t * v, const char * byte_string, int64_t length);
 
 int
-stinger_physmap_id_get(stinger_physmap_t * p, stinger_vertices_t * v, vindex_t vertexID, char ** outbuffer, int64_t * outbufferlength);
+stinger_physmap_id_get(const stinger_physmap_t * p, const stinger_vertices_t * v, vindex_t vertexID, char ** outbuffer, uint64_t * outbufferlength);
 
 int
-stinger_physmap_id_direct(stinger_physmap_t * p, stinger_vertices_t * v, vindex_t vertexID, char ** out_ptr, int64_t * out_len);
+stinger_physmap_id_direct(const stinger_physmap_t * p, const stinger_vertices_t * v, vindex_t vertexID, char ** out_ptr, uint64_t * out_len);
 
 int64_t
-stinger_physmap_nv(stinger_physmap_t * p);
+stinger_physmap_nv(const stinger_physmap_t * p);
 
 void
 stinger_physmap_save(stinger_physmap_t * p, FILE * fp);

@@ -104,7 +104,7 @@ int main(int argc, char *argv[]) {
     }
 
     int64_t offset = 0;
-    while(token = strtok_r(ptr, " ", &rest)) {
+    while((token = strtok_r(ptr, " ", &rest))) {
       if(0 == strcmp(argv[2], token) || (offset_mode && offset == atol(argv[2]))) {
 	break;
       } else {

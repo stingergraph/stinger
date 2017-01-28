@@ -61,22 +61,22 @@ int
 stinger_names_create_type(stinger_names_t * sn, const char * name, int64_t * out);
 
 int64_t
-stinger_names_lookup_type(stinger_names_t * sn, const char * name);
+stinger_names_lookup_type(const stinger_names_t * sn, const char * name);
 
 char *
-stinger_names_lookup_name(stinger_names_t * sn, int64_t type);
+stinger_names_lookup_name(const stinger_names_t * sn, int64_t type);
 
 int64_t
-stinger_names_count(stinger_names_t * sn);
+stinger_names_count(const stinger_names_t * sn);
 
 int64_t
-stinger_names_remove_type(stinger_names_t * sn, int64_t type);
+stinger_names_remove_type(const stinger_names_t * sn, int64_t type);
 
 int64_t
 stinger_names_remove_name(stinger_names_t * sn, const char * name);
 
 void
-stinger_names_save(stinger_names_t * sn, FILE * fp);
+stinger_names_save(const stinger_names_t * sn, FILE * fp);
 
 void
 stinger_names_load(stinger_names_t * sn, FILE * fp);

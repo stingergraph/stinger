@@ -29,8 +29,8 @@ main (int argc, char *argv[])
   }
 
   bzero(alg->alg_data, sizeof(int64_t) * 2 * alg->stinger->max_nv);
-  int64_t * components = (int64_t *)alg->alg_data;
-  int64_t * component_size  = components + alg->stinger->max_nv;
+  /*int64_t * components = (int64_t *)alg->alg_data;*/
+  /*int64_t * component_size  = components + alg->stinger->max_nv;*/
 
 
 	stinger_scc_internal scc_internal;

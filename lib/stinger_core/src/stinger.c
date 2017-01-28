@@ -17,26 +17,50 @@
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
  * ACCESS INTERNAL "CLASSES"
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+inline const stinger_vertices_t *
+const_stinger_vertices_get(const stinger_t * S) {
+  CONST_MAP_STING(S);
+  return vertices;
+}
+
+inline const stinger_physmap_t *
+const_stinger_physmap_get(const stinger_t * S) {
+  CONST_MAP_STING(S);
+  return physmap;
+}
+
+inline const stinger_names_t *
+const_stinger_vtype_names_get(const stinger_t * S) {
+  CONST_MAP_STING(S);
+  return vtype_names;
+}
+
+inline const stinger_names_t *
+const_stinger_etype_names_get(const stinger_t * S) {
+  CONST_MAP_STING(S);
+  return etype_names;
+}
+
 inline stinger_vertices_t *
-stinger_vertices_get(const stinger_t * S) {
+stinger_vertices_get(stinger_t * S) {
   MAP_STING(S);
   return vertices;
 }
 
 inline stinger_physmap_t *
-stinger_physmap_get(const stinger_t * S) {
+stinger_physmap_get(stinger_t * S) {
   MAP_STING(S);
   return physmap;
 }
 
 inline stinger_names_t *
-stinger_vtype_names_get(const stinger_t * S) {
+stinger_vtype_names_get(stinger_t * S) {
   MAP_STING(S);
   return vtype_names;
 }
 
 inline stinger_names_t *
-stinger_etype_names_get(const stinger_t * S) {
+stinger_etype_names_get(stinger_t * S) {
   MAP_STING(S);
   return etype_names;
 }
@@ -48,21 +72,21 @@ stinger_etype_names_get(const stinger_t * S) {
 
 inline vdegree_t
 stinger_degree_get(const stinger_t * S, vindex_t v) {
-  return stinger_vertex_degree_get(stinger_vertices_get(S), v);
+  return stinger_vertex_degree_get(const_stinger_vertices_get(S), v);
 }
 
 inline vdegree_t
-stinger_degree_set(const stinger_t * S, vindex_t v, vdegree_t d) {
+stinger_degree_set(stinger_t * S, vindex_t v, vdegree_t d) {
   return stinger_vertex_degree_set(stinger_vertices_get(S), v, d);
 }
 
 inline vdegree_t
-stinger_degree_increment(const stinger_t * S, vindex_t v, vdegree_t d) {
+stinger_degree_increment(stinger_t * S, vindex_t v, vdegree_t d) {
   return stinger_vertex_degree_increment(stinger_vertices_get(S), v, d);
 }
 
 inline vdegree_t
-stinger_degree_increment_atomic(const stinger_t * S, vindex_t v, vdegree_t d) {
+stinger_degree_increment_atomic(stinger_t * S, vindex_t v, vdegree_t d) {
   return stinger_vertex_degree_increment_atomic(stinger_vertices_get(S), v, d);
 }
 
@@ -70,21 +94,21 @@ stinger_degree_increment_atomic(const stinger_t * S, vindex_t v, vdegree_t d) {
 
 inline vdegree_t
 stinger_indegree_get(const stinger_t * S, vindex_t v) {
-  return stinger_vertex_indegree_get(stinger_vertices_get(S), v);
+  return stinger_vertex_indegree_get(const_stinger_vertices_get(S), v);
 }
 
 inline vdegree_t
-stinger_indegree_set(const stinger_t * S, vindex_t v, vdegree_t d) {
+stinger_indegree_set(stinger_t * S, vindex_t v, vdegree_t d) {
   return stinger_vertex_indegree_set(stinger_vertices_get(S), v, d);
 }
 
 inline vdegree_t
-stinger_indegree_increment(const stinger_t * S, vindex_t v, vdegree_t d) {
+stinger_indegree_increment(stinger_t * S, vindex_t v, vdegree_t d) {
   return stinger_vertex_indegree_increment(stinger_vertices_get(S), v, d);
 }
 
 inline vdegree_t
-stinger_indegree_increment_atomic(const stinger_t * S, vindex_t v, vdegree_t d) {
+stinger_indegree_increment_atomic(stinger_t * S, vindex_t v, vdegree_t d) {
   return stinger_vertex_indegree_increment_atomic(stinger_vertices_get(S), v, d);
 }
 
@@ -92,21 +116,22 @@ stinger_indegree_increment_atomic(const stinger_t * S, vindex_t v, vdegree_t d) 
 
 inline vdegree_t
 stinger_outdegree_get(const stinger_t * S, vindex_t v) {
-     return ((const stinger_vertices_t*)(S->storage))->vertices[v].outDegree;
+     CONST_MAP_STING(S);
+     return vertices->vertices[v].outDegree;
 }
 
 inline vdegree_t
-stinger_outdegree_set(const stinger_t * S, vindex_t v, vdegree_t d) {
+stinger_outdegree_set(stinger_t * S, vindex_t v, vdegree_t d) {
   return stinger_vertex_outdegree_set(stinger_vertices_get(S), v, d);
 }
 
 inline vdegree_t
-stinger_outdegree_increment(const stinger_t * S, vindex_t v, vdegree_t d) {
+stinger_outdegree_increment(stinger_t * S, vindex_t v, vdegree_t d) {
   return stinger_vertex_outdegree_increment(stinger_vertices_get(S), v, d);
 }
 
 inline vdegree_t
-stinger_outdegree_increment_atomic(const stinger_t * S, vindex_t v, vdegree_t d) {
+stinger_outdegree_increment_atomic(stinger_t * S, vindex_t v, vdegree_t d) {
   return stinger_vertex_outdegree_increment_atomic(stinger_vertices_get(S), v, d);
 }
 
@@ -114,12 +139,12 @@ stinger_outdegree_increment_atomic(const stinger_t * S, vindex_t v, vdegree_t d)
 
 vtype_t
 stinger_vtype_get(const stinger_t * S, vindex_t v) {
-  MAP_STING(S);
+  CONST_MAP_STING(S);
   return stinger_vertex_type_get(vertices, v);
 }
 
 vtype_t
-stinger_vtype_set(const stinger_t * S, vindex_t v, vtype_t type) {
+stinger_vtype_set(stinger_t * S, vindex_t v, vtype_t type) {
   MAP_STING(S);
   return stinger_vertex_type_set(vertices, v, type);
 }
@@ -128,24 +153,24 @@ stinger_vtype_set(const stinger_t * S, vindex_t v, vtype_t type) {
 
 vweight_t
 stinger_vweight_get(const stinger_t * S, vindex_t v) {
-  MAP_STING(S);
+  CONST_MAP_STING(S);
   return stinger_vertex_weight_get(vertices, v);
 }
 
 vweight_t
-stinger_vweight_set(const stinger_t * S, vindex_t v, vweight_t weight) {
+stinger_vweight_set(stinger_t * S, vindex_t v, vweight_t weight) {
   MAP_STING(S);
   return stinger_vertex_weight_set(vertices, v, weight);
 }
 
 vweight_t
-stinger_vweight_increment(const stinger_t * S, vindex_t v, vweight_t weight) {
+stinger_vweight_increment(stinger_t * S, vindex_t v, vweight_t weight) {
   MAP_STING(S);
   return stinger_vertex_weight_increment(vertices, v, weight);
 }
 
 vweight_t
-stinger_vweight_increment_atomic(const stinger_t * S, vindex_t v, vweight_t weight) {
+stinger_vweight_increment_atomic(stinger_t * S, vindex_t v, vweight_t weight) {
   MAP_STING(S);
   return stinger_vertex_weight_increment_atomic(vertices, v, weight);
 }
@@ -153,7 +178,7 @@ stinger_vweight_increment_atomic(const stinger_t * S, vindex_t v, vweight_t weig
 /* ADJACENCY */
 adjacency_t
 stinger_adjacency_get(const stinger_t * S, vindex_t v) {
-  MAP_STING(S);
+  CONST_MAP_STING(S);
   return stinger_vertex_edges_get(vertices, v);
 }
 
@@ -162,28 +187,28 @@ stinger_adjacency_get(const stinger_t * S, vindex_t v) {
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 int
-stinger_mapping_create(const stinger_t * S, const char * byte_string, uint64_t length, int64_t * vtx_out) {
+stinger_mapping_create(stinger_t * S, const char * byte_string, uint64_t length, int64_t * vtx_out) {
   return stinger_physmap_mapping_create(stinger_physmap_get(S), stinger_vertices_get(S), byte_string, length, vtx_out);
 }
 
 vindex_t
 stinger_mapping_lookup(const stinger_t * S, const char * byte_string, uint64_t length) {
-  return stinger_physmap_vtx_lookup(stinger_physmap_get(S), stinger_vertices_get(S), byte_string, length);
+  return stinger_physmap_vtx_lookup(const_stinger_physmap_get(S), const_stinger_vertices_get(S), byte_string, length);
 }
 
 int
 stinger_mapping_physid_get(const stinger_t * S, vindex_t vertexID, char ** outbuffer, uint64_t * outbufferlength) {
-  return stinger_physmap_id_get(stinger_physmap_get(S), stinger_vertices_get(S), vertexID, outbuffer, outbufferlength);
+  return stinger_physmap_id_get(const_stinger_physmap_get(S), const_stinger_vertices_get(S), vertexID, outbuffer, outbufferlength);
 }
 
 int
 stinger_mapping_physid_direct(const stinger_t * S, vindex_t vertexID, char ** out_ptr, uint64_t * out_len) {
-  return stinger_physmap_id_direct(stinger_physmap_get(S), stinger_vertices_get(S), vertexID, out_ptr, out_len);
+  return stinger_physmap_id_direct(const_stinger_physmap_get(S), const_stinger_vertices_get(S), vertexID, out_ptr, out_len);
 }
 
 vindex_t
 stinger_mapping_nv(const stinger_t * S) {
-  return stinger_physmap_nv(stinger_physmap_get(S));
+  return stinger_physmap_nv(const_stinger_physmap_get(S));
 }
 
 
@@ -192,23 +217,23 @@ stinger_mapping_nv(const stinger_t * S) {
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 int
-stinger_vtype_names_create_type(const stinger_t * S, const char * name, int64_t * out) {
+stinger_vtype_names_create_type(stinger_t * S, const char * name, int64_t * out) {
   return stinger_names_create_type(stinger_vtype_names_get(S), name, out);
 }
 
 int64_t
 stinger_vtype_names_lookup_type(const stinger_t * S, const char * name) {
-  return stinger_names_lookup_type(stinger_vtype_names_get(S), name);
+  return stinger_names_lookup_type(const_stinger_vtype_names_get(S), name);
 }
 
 char *
 stinger_vtype_names_lookup_name(const stinger_t * S, int64_t type) {
-  return stinger_names_lookup_name(stinger_vtype_names_get(S), type);
+  return stinger_names_lookup_name(const_stinger_vtype_names_get(S), type);
 }
 
 int64_t
 stinger_vtype_names_count(const stinger_t * S) {
-  return stinger_names_count(stinger_vtype_names_get(S));
+  return stinger_names_count(const_stinger_vtype_names_get(S));
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
@@ -222,17 +247,17 @@ stinger_etype_names_create_type(stinger_t * S, const char * name, int64_t * out)
 
 int64_t
 stinger_etype_names_lookup_type(const stinger_t * S, const char * name) {
-  return stinger_names_lookup_type(stinger_etype_names_get(S), name);
+  return stinger_names_lookup_type(const_stinger_etype_names_get(S), name);
 }
 
 char *
 stinger_etype_names_lookup_name(const stinger_t * S, int64_t type) {
-  return stinger_names_lookup_name(stinger_etype_names_get(S), type);
+  return stinger_names_lookup_name(const_stinger_etype_names_get(S), type);
 }
 
 int64_t
 stinger_etype_names_count(const stinger_t * S) {
-  return stinger_names_count(stinger_etype_names_get(S));
+  return stinger_names_count(const_stinger_etype_names_get(S));
 }
 
 
@@ -243,12 +268,12 @@ stinger_etype_names_count(const stinger_t * S) {
 
  
 static void
-get_from_ebpool (const struct stinger * S, eb_index_t *out, size_t k)
+get_from_ebpool (struct stinger * S, eb_index_t *out, size_t k)
 {
   MAP_STING(S);
   eb_index_t ebt0;
   {
-    ebt0 = stinger_int64_fetch_add (&(ebpool->ebpool_tail), k);
+    ebt0 = stinger_int64_fetch_add ((int64_t *) &(ebpool->ebpool_tail), k);
     if (ebt0 + k >= (S->max_neblocks)) {
       LOG_F("STINGER has run out of internal storage space.  Storing this graph will require a larger\n"
 	    "       initial STINGER allocation. Try reducing the number of vertices and/or edges per block in\n"
@@ -441,7 +466,7 @@ stinger_total_edges (const struct stinger * S)
 int64_t
 stinger_max_total_edges (const struct stinger * S)
 {
-  MAP_STING(S);
+  CONST_MAP_STING(S);
   return ebpool->ebpool_tail * STINGER_EDGEBLOCKSIZE;
 }
 
@@ -456,11 +481,11 @@ stinger_max_total_edges (const struct stinger * S)
 size_t
 stinger_graph_size (const struct stinger *S)
 {
-  MAP_STING(S);
+  CONST_MAP_STING(S);
   int64_t num_edgeblocks = ebpool->ebpool_tail;;
   int64_t size_edgeblock = sizeof(struct stinger_eb);
 
-  int64_t vertices_size = stinger_vertices_size_bytes(stinger_vertices_get(S));
+  int64_t vertices_size = stinger_vertices_size_bytes(const_stinger_vertices_get(S));
 
   int64_t result = (num_edgeblocks * size_edgeblock) + vertices_size;
 
@@ -508,18 +533,18 @@ struct stinger_size_t calculate_stinger_size(int64_t nv, int64_t nebs, int64_t n
 void
 stinger_print_eb(struct stinger_eb * eb) {
   printf(
-    "EB VTX:  %ld\n"
-    "  NEXT:    %ld\n"
-    "  TYPE:    %ld\n"
-    "  NUMEDGS: %ld\n"
-    "  HIGH:    %ld\n"
-    "  SMTS:    %ld\n"
-    "  LGTS:    %ld\n"
+    "EB VTX:  %" PRId64 "\n"
+    "  NEXT:    %" PRId64 "\n"
+    "  TYPE:    %" PRId64 "\n"
+    "  NUMEDGS: %" PRId64 "\n"
+    "  HIGH:    %" PRId64 "\n"
+    "  SMTS:    %" PRId64 "\n"
+    "  LGTS:    %" PRId64 "\n"
     "  EDGES:\n",
     eb->vertexID, eb->next, eb->etype, eb->numEdges, eb->high, eb->smallStamp, eb->largeStamp);
   uint64_t j = 0;
   for (; j < eb->high && j < STINGER_EDGEBLOCKSIZE; j++) {
-    printf("    TO: %s%ld WGT: %ld TSF: %ld TSR: %ld\n", 
+    printf("    TO: %s%" PRId64 " WGT: %" PRId64 " TSF: %" PRId64 " TSR: %" PRId64 "\n", 
       stinger_eb_adjvtx(eb,j) < 0 ? "x " : "  ", stinger_eb_adjvtx(eb,j) < 0 ? -1 : stinger_eb_adjvtx(eb,j), 
       stinger_eb_weight(eb,j), stinger_eb_first_ts(eb,j), stinger_eb_ts(eb,j));
   }
@@ -534,7 +559,7 @@ stinger_print_eb(struct stinger_eb * eb) {
       } else {
         direction = 'o';
       }
-      printf("   DIRECTION: %c TO: %ld WGT: %ld TSF: %ld TSR: %ld\n", 
+      printf("   DIRECTION: %c TO: %" PRId64 " WGT: %" PRId64 " TSF: %" PRId64 " TSR: %" PRId64 "\n", 
         direction, stinger_eb_adjvtx(eb,j), stinger_eb_weight(eb,j), stinger_eb_first_ts(eb,j), stinger_eb_ts(eb,j));
     }
   }
@@ -592,14 +617,14 @@ stinger_consistency_check (struct stinger *S, uint64_t NV)
       for (; j < curBlock->high && j < STINGER_EDGEBLOCKSIZE; j++) {
         if (!stinger_eb_is_blank (curBlock, j)) {
           if (stinger_eb_direction_in (curBlock, j)) {
-            stinger_int64_fetch_add (&outDegree[stinger_eb_adjvtx (curBlock, j)], 1);
+            stinger_int64_fetch_add ((int64_t *) &outDegree[stinger_eb_adjvtx (curBlock, j)], 1);
             curInDegree++;
           }
           if (stinger_eb_direction_out (curBlock, j)) {
-            stinger_int64_fetch_add (&inDegree[stinger_eb_adjvtx (curBlock, j)], 1);
+            stinger_int64_fetch_add ((int64_t *) &inDegree[stinger_eb_adjvtx (curBlock, j)], 1);
             curOutDegree++;
           }
-          stinger_int64_fetch_add (&degree[stinger_eb_adjvtx (curBlock, j)], 1);
+          stinger_int64_fetch_add ((int64_t *) &degree[stinger_eb_adjvtx (curBlock, j)], 1);
           curDegree++;
           numEdges++;
           if (stinger_eb_direction_out (curBlock, j)) {
@@ -632,15 +657,15 @@ stinger_consistency_check (struct stinger *S, uint64_t NV)
     }
 
     if (curOutDegree != stinger_outdegree_get(S, i)) {
-      LOG_E_A("%ld -- curOutDegree: %ld != stinger_outdegree: %ld",i,curOutDegree,stinger_outdegree_get(S,i));
+      LOG_E_A("%" PRIu64 " -- curOutDegree: %" PRIu64 " != stinger_outdegree: %" PRId64,i,curOutDegree,stinger_outdegree_get(S,i));
       returnCode |= 0x00000080;
     }
     if (curInDegree != stinger_indegree_get(S, i)) {
-      LOG_E_A("%ld -- curInDegree: %ld != stinger_indegree: %ld",i,curInDegree,stinger_indegree_get(S,i));
+      LOG_E_A("%" PRIu64 " -- curInDegree: %" PRIu64 " != stinger_indegree: %" PRId64,i,curInDegree,stinger_indegree_get(S,i));
       returnCode |= 0x00000100;
     }
     if (curDegree != stinger_degree_get(S, i)) {
-      LOG_E_A("%ld -- curDegree: %ld != stinger_degree: %ld",i,curDegree,stinger_degree_get(S,i));
+      LOG_E_A("%" PRIu64 " -- curDegree: %" PRIu64 " != stinger_degree: %" PRId64,i,curDegree,stinger_degree_get(S,i));
       returnCode |= 0x00000200;
     }
   }
@@ -649,7 +674,7 @@ stinger_consistency_check (struct stinger *S, uint64_t NV)
   
   for (uint64_t i = 0; i < NV; i++) {
     if (inDegree[i] != stinger_indegree_get(S,i)) {
-      LOG_E_A("%ld -- curInDegree: %ld != stinger_indegree: %ld",i,inDegree[i],stinger_indegree_get(S,i));
+      LOG_E_A("%" PRIu64 " -- curInDegree: %" PRIu64 " != stinger_indegree: %" PRId64,i,inDegree[i],stinger_indegree_get(S,i));
       returnCode |= 0x00001000;
     }
   }
@@ -658,7 +683,7 @@ stinger_consistency_check (struct stinger *S, uint64_t NV)
   
   for (uint64_t i = 0; i < NV; i++) {
     if (outDegree[i] != stinger_outdegree_get(S,i)){
-      LOG_E_A("%ld -- curOutDegree: %ld != stinger_outdegree: %ld",i,outDegree[i],stinger_outdegree_get(S,i));
+      LOG_E_A("%" PRIu64 " -- curOutDegree: %" PRIu64 " != stinger_outdegree: %" PRId64,i,outDegree[i],stinger_outdegree_get(S,i));
       returnCode |= 0x00000800;
     }
   }
@@ -667,7 +692,7 @@ stinger_consistency_check (struct stinger *S, uint64_t NV)
   
   for (uint64_t i = 0; i < NV; i++) {
     if (degree[i] != stinger_degree_get(S,i)){
-      LOG_E_A("%ld -- curDegree: %ld != stinger_degree: %ld",i,degree[i],stinger_degree_get(S,i));
+      LOG_E_A("%" PRIu64 " -- curDegree: %" PRIu64 " != stinger_degree: %" PRId64,i,degree[i],stinger_degree_get(S,i));
       returnCode |= 0x00002000;
     }
   }
@@ -793,7 +818,7 @@ struct stinger *stinger_new_full (struct stinger_config_t * config)
         exit(-1);
       }
       if(!resized) {
-        LOG_W_A("Resizing stinger to fit into memory (detected as %ld)", memory_size);
+        LOG_W_A("Resizing stinger to fit into memory (detected as %zu)", memory_size);
       }
       resized = 1;
 
@@ -877,7 +902,7 @@ struct stinger *stinger_new (void)
 struct stinger *
 stinger_free (struct stinger *S)
 {
-  size_t i;
+  /*size_t i;*/
   if (!S)
     return S;
 
@@ -907,7 +932,7 @@ stinger_free_all (struct stinger *S)
 eb_index_t new_eb (struct stinger * S, int64_t etype, int64_t from)
 {
   MAP_STING(S);
-  size_t k;
+  /*size_t k;*/
   eb_index_t out = 0;
   get_from_ebpool (S, &out, 1);
   struct stinger_eb * block = ebpool->ebpool + out;
@@ -944,7 +969,7 @@ new_ebs (struct stinger * S, eb_index_t *out, size_t neb, int64_t etype,
 
 
 void
-new_blk_ebs (eb_index_t *out, const struct stinger *restrict G,
+new_blk_ebs (eb_index_t *out, struct stinger *restrict G,
              const int64_t nvtx, const size_t * restrict blkoff,
              const int64_t etype)
 {
@@ -1016,7 +1041,7 @@ etype_begin (stinger_t * S, int64_t v, int etype)
   struct curs out;
   assert (vertices);
   out.eb = stinger_vertex_edges_get(vertices,v);
-  out.loc = stinger_vertex_edges_pointer_get(vertices,v);
+  out.loc = (eb_index_t *) stinger_vertex_edges_pointer_get(vertices,v);
   while (out.eb && ebpool->ebpool[out.eb].etype != etype) {
     out.loc = &(ebpool->ebpool[out.eb].next);
     out.eb = readff((uint64_t *)&(ebpool->ebpool[out.eb].next));
@@ -1034,7 +1059,7 @@ update_edge_data_and_direction (struct stinger * S, struct stinger_eb *eb,
 
   /* insertion */
   if (neighbor >= 0) {
-    int64_t weight = readfe (&(e->weight));
+    int64_t weight = readfe ((uint64_t *)&(e->weight));
     
     if (direction & STINGER_EDGE_DIRECTION_OUT) {
       if (operation & EDGE_WEIGHT_SET) {
@@ -1059,7 +1084,7 @@ update_edge_data_and_direction (struct stinger * S, struct stinger_eb *eb,
       if (index >= eb->high)
         eb->high = index + 1;
 
-      writexf(&e->timeFirst, ts);
+      writexf((uint64_t *)&e->timeFirst, ts);
     }
     else {
       if (direction & STINGER_EDGE_DIRECTION_OUT) {
@@ -1067,7 +1092,7 @@ update_edge_data_and_direction (struct stinger * S, struct stinger_eb *eb,
           int64_t n = e->neighbor;
           int64_t prev = stinger_int64_cas (&(e->neighbor), n, n | STINGER_EDGE_DIRECTION_OUT);
           if (prev == n && !(prev & STINGER_EDGE_DIRECTION_OUT)) {
-            writexf(&e->timeFirst, ts);
+            writexf((uint64_t *)&e->timeFirst, ts);
             stinger_outdegree_increment_atomic(S, eb->vertexID, 1);
           }
         }
@@ -1084,13 +1109,13 @@ update_edge_data_and_direction (struct stinger * S, struct stinger_eb *eb,
     
     if (direction & STINGER_EDGE_DIRECTION_OUT) { 
       /* check metadata and update - lock metadata for safety */
-      if (ts < readff(&eb->smallStamp) || ts > eb->largeStamp) {
-        int64_t smallStamp = readfe(&eb->smallStamp);
+      if (ts < readff((uint64_t *)&eb->smallStamp) || ts > eb->largeStamp) {
+        int64_t smallStamp = readfe((uint64_t *)&eb->smallStamp);
         if (ts < smallStamp)
           smallStamp = ts;
         if (ts > eb->largeStamp)
           eb->largeStamp = ts;
-        writeef(&eb->smallStamp, smallStamp);
+        writeef((uint64_t *)&eb->smallStamp, smallStamp);
       }
 
       e->timeRecent = ts;
@@ -1191,7 +1216,7 @@ stinger_update_directed_edge(struct stinger *G,
           }
 
           if (myNeighbor < 0 || k >= endk) {
-            int64_t timefirst = readfe ( &(tmp->edges[k].timeFirst) );
+            int64_t timefirst = readfe ( (uint64_t *)&(tmp->edges[k].timeFirst) );
             int64_t thisEdge = (tmp->edges[k].neighbor & (~STINGER_EDGE_DIRECTION_MASK));
             endk = tmp->high;
 
@@ -1199,17 +1224,17 @@ stinger_update_directed_edge(struct stinger *G,
               update_edge_data_and_direction (G, tmp, k, dest, weight, timestamp, direction, EDGE_WEIGHT_SET);;
               return 1;
             } else if (dest == thisEdge) {
-              int ret = 0;
+              /*int ret = 0;*/
               if (direction & tmp->edges[k].neighbor) {
-                ret = 0;
+                /*ret = 0;*/
               } else {
-                ret = 1;
+                /*ret = 1;*/
               }
               update_edge_data_and_direction (G, tmp, k, dest, weight, timestamp, direction, operation);
-              writexf ( &(tmp->edges[k].timeFirst), timefirst);
+              writexf ( (uint64_t *)&(tmp->edges[k].timeFirst), timefirst);
               return 0;
             } else {
-              writexf ( &(tmp->edges[k].timeFirst), timefirst);
+              writexf ( (uint64_t *)&(tmp->edges[k].timeFirst), timefirst);
             }
           }
         }
@@ -1432,9 +1457,9 @@ stinger_remove_edge (struct stinger *G,
   MAP_STING(G);
 
   struct curs curs;
-  struct stinger_eb *tmp_first, *tmp_second;
-  size_t k_first, k_second;
-  int64_t weight_first, weight_second;
+  struct stinger_eb *tmp_first = NULL, *tmp_second = NULL;
+  size_t k_first = 0, k_second = 0;
+  int64_t weight_first = 0, weight_second = 0;
   struct stinger_eb *ebpool_priv = ebpool->ebpool;
 
   int64_t lock_backedge_first = 0;
@@ -1455,7 +1480,7 @@ stinger_remove_edge (struct stinger *G,
 
       for (k_first = 0; k_first < endk; ++k_first) {
         if (to == stinger_eb_adjvtx(tmp_first,k_first) && stinger_eb_direction_out(tmp_first,k_first)) {
-          weight_first = readfe (&(tmp_first->edges[k_first].weight));
+          weight_first = readfe ((uint64_t *)&(tmp_first->edges[k_first].weight));
           if(to == stinger_eb_adjvtx(tmp_first,k_first) && stinger_eb_direction_out(tmp_first,k_first)) {
             if (lock_backedge_first) {
               goto removeEdges;
@@ -1492,7 +1517,7 @@ stinger_remove_edge (struct stinger *G,
 
       for (k_second = 0; k_second < endk; ++k_second) {
         if (from == stinger_eb_adjvtx(tmp_second,k_second) && stinger_eb_direction_in(tmp_second,k_second)) {
-          weight_second = readfe (&(tmp_second->edges[k_second].weight));
+          weight_second = readfe ((uint64_t *)&(tmp_second->edges[k_second].weight));
           if(from == stinger_eb_adjvtx(tmp_second,k_second) && stinger_eb_direction_in(tmp_second,k_second)) {
             if (lock_backedge_first) {
               goto removeForwardEdge;
@@ -2156,7 +2181,7 @@ stinger_set_edgeweight (struct stinger *G,
   STINGER_PARALLEL_FORALL_OUT_EDGES_OF_TYPE_OF_VTX_BEGIN(G,type,from) {
     if (STINGER_EDGE_DEST == to) {
 
-      int64_t cur_weight = readfe (&(current_edge__->weight));
+      (void) readfe ((uint64_t *)&(current_edge__->weight));
       writeef((uint64_t *)&(current_edge__->weight), (uint64_t)weight);
 
       rtn = 1;
@@ -2253,7 +2278,7 @@ stinger_edge_touch (struct stinger *G,
 
   STINGER_PARALLEL_FORALL_OUT_EDGES_OF_TYPE_OF_VTX_BEGIN(G,type,from) {
     if (STINGER_EDGE_DEST == to) {
-      int64_t cur_weight = readfe (&(current_edge__->weight));
+      int64_t cur_weight = readfe ((uint64_t *)&(current_edge__->weight));
       
       STINGER_EDGE_TIME_RECENT = timestamp;
       if (current_eb__->largeStamp < timestamp) {
@@ -2464,7 +2489,7 @@ stinger_remove_vertex (struct stinger *G, int64_t vtx_id)
   } STINGER_PARALLEL_FORALL_IN_EDGES_OF_VTX_END();
 
   // Remove from physmap
-  return stinger_physmap_vtx_remove_id(stinger_physmap_get(G),stinger_vertices_get(G),vtx_id);
+  return stinger_physmap_vtx_remove_id(const_stinger_physmap_get(G),const_stinger_vertices_get(G),vtx_id);
 }
 
 const int64_t endian_check = 0x1234ABCD;
@@ -2496,7 +2521,7 @@ stinger_save_to_file (struct stinger * S, uint64_t maxVtx, const char * stingerf
   /* TODO TODO TODO fix this function and the load function to work wihtout static sizes */
 
   MAP_STING(S);
-  uint64_t * restrict offsets = xcalloc((maxVtx+2) * (S->max_netypes), sizeof(uint64_t));
+  int64_t * restrict offsets = xcalloc((maxVtx+2) * (S->max_netypes), sizeof(int64_t));
 
   for(int64_t type = 0; type < (S->max_netypes); type++) {
     struct stinger_eb * local_ebpool = ebpool->ebpool;
@@ -2593,9 +2618,9 @@ stinger_save_to_file (struct stinger * S, uint64_t maxVtx, const char * stingerf
     written += fwrite(vdata, sizeof(int64_t), 2, fp);
   }
 
-  stinger_names_save(stinger_physmap_get(S), fp);
-  stinger_names_save(stinger_vtype_names_get(S), fp);
-  stinger_names_save(stinger_etype_names_get(S), fp);
+  stinger_names_save(const_stinger_physmap_get(S), fp);
+  stinger_names_save(const_stinger_vtype_names_get(S), fp);
+  stinger_names_save(const_stinger_etype_names_get(S), fp);
 
   fclose(fp);
 
@@ -2654,8 +2679,8 @@ stinger_open_from_file (const char * stingerfile, struct stinger * S, uint64_t *
     return -1;
   }
 
-  uint64_t * restrict offsets = xcalloc((*maxVtx+2) * etypes, sizeof(uint64_t));
-  uint64_t * restrict type_offsets = xmalloc((etypes+1) * sizeof(uint64_t));
+  int64_t * restrict offsets = xcalloc((*maxVtx+2) * etypes, sizeof(int64_t));
+  int64_t * restrict type_offsets = xmalloc((etypes+1) * sizeof(int64_t));
 
   result = fread(type_offsets, sizeof(int64_t), etypes+1, fp);
   result += fread(offsets, sizeof(int64_t), (*maxVtx+2) * etypes, fp);
@@ -2686,7 +2711,7 @@ stinger_open_from_file (const char * stingerfile, struct stinger * S, uint64_t *
     bs64_n(5 * type_offsets[etypes], ind);
   }
 
-  fprintf(stderr,"Loading %ld vertices and %ld etypes from file.\n",*maxVtx,etypes);
+  fprintf(stderr,"Loading %" PRIu64 " vertices and %" PRId64 " etypes from file.\n",*maxVtx,etypes);
 
   for(int64_t type = 0; type < etypes; type++) {
     stinger_set_initial_edges(S, *maxVtx, type, 
@@ -2699,10 +2724,9 @@ stinger_open_from_file (const char * stingerfile, struct stinger * S, uint64_t *
                               0);
   }
 
-  int ignore = 0;
   for(uint64_t v = 0; v < *maxVtx; v++) {
     int64_t vdata[2];
-    ignore = fread(vdata, sizeof(int64_t), 2, fp);
+    (void) fread(vdata, sizeof(int64_t), 2, fp);
     stinger_vtype_set(S, v, vdata[0]);
     stinger_vweight_set(S, v, vdata[1]);
   }

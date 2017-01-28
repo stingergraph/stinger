@@ -19,8 +19,7 @@ JSON_RPCServerState::get_server_state() {
 }
 
 JSON_RPCServerState::JSON_RPCServerState() :
-  next_session_id(1), session_lock(0),
-  max_sessions(20), StingerMon() {
+  session_lock(0), max_sessions(20), next_session_id(1) {
     time(&start_time);
 }
 
@@ -144,6 +143,8 @@ JSON_RPCFunction::contains_params(rpc_params_t * p, rapidjson::Value * params) {
             ptr->arr = NULL;
           }
           break;
+          default:
+          break;
         }
       } else {
         return false;
@@ -154,7 +155,7 @@ JSON_RPCFunction::contains_params(rpc_params_t * p, rapidjson::Value * params) {
         case TYPE_VERTEX: {
           if((*params)[p->name].IsInt64()) {
             int64_t tmp = (*params)[p->name].GetInt64();
-            if (tmp < 0 || tmp >= S->max_nv)
+            if (tmp < 0 || tmp >= ((int64_t) S->max_nv))
               return false;
             *((int64_t *)p->output) = tmp;
           } else if((*params)[p->name].IsString()) {
@@ -170,7 +171,7 @@ JSON_RPCFunction::contains_params(rpc_params_t * p, rapidjson::Value * params) {
         case TYPE_EDGE_TYPE: {
           if((*params)[p->name].IsInt64()) {
             int64_t tmp = (*params)[p->name].GetInt64();
-            if (tmp < 0 || tmp >= S->max_netypes)
+            if (tmp < 0 || tmp >= ((int64_t) S->max_netypes))
               return false;
             *((int64_t *)p->output) = tmp;
           } else if((*params)[p->name].IsString()) {
@@ -186,7 +187,7 @@ JSON_RPCFunction::contains_params(rpc_params_t * p, rapidjson::Value * params) {
         case TYPE_VERTEX_TYPE: {
           if((*params)[p->name].IsInt64()) {
             int64_t tmp = (*params)[p->name].GetInt64();
-            if (tmp < 0 || tmp >= S->max_nvtypes)
+            if (tmp < 0 || tmp >= ((int64_t) S->max_nvtypes))
               return false;
             *((int64_t *)p->output) = tmp;
           } else if((*params)[p->name].IsString()) {
@@ -239,7 +240,7 @@ JSON_RPCFunction::contains_params(rpc_params_t * p, rapidjson::Value * params) {
 	  for (int64_t i = 0; i < ptr->len; i++) {
 	    if ((*params)[p->name][i].IsInt64()) {
 	      int64_t tmp = (*params)[p->name][i].GetInt64();
-	      if ( !(tmp < 0 || tmp >= S->max_nv) ) {
+	      if ( !(tmp < 0 || tmp >= ((int64_t) S->max_nv)) ) {
 		ptr->arr[count_valid++] = tmp;
 	      }
 	    }
@@ -252,6 +253,8 @@ JSON_RPCFunction::contains_params(rpc_params_t * p, rapidjson::Value * params) {
 	  }
 	  ptr->len = count_valid;
         }
+        break;
+        default:
         break;
       }
     }

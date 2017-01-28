@@ -22,7 +22,7 @@ description_string_to_json (const char * description_string,
 
   /* the description string is space-delimited */
   char * placeholder;
-  char * ptr = strtok_r (tmp, " ", &placeholder);
+  (void) strtok_r (tmp, " ", &placeholder);
 
   /* skip the formatting */
   char * pch = strtok_r (NULL, " ", &placeholder);

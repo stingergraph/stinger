@@ -56,7 +56,7 @@ static inline struct spvect alloc_spvect (int64_t nvmax);
 int
 main(int argc, char *argv[])
 {
-  double init_time, mult_time, gather_time, spmult_time;
+  double init_time, mult_time, gather_time = 0.0, spmult_time;
   double cwise_err, mult_cwise_err;
 
   int64_t nv;

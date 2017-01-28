@@ -305,9 +305,9 @@ edge_list_to_stinger (int64_t nv, int64_t ne,
 
   OMP("omp parallel for")
   for (int64_t i = 0; i < ne; i++) {
-    stinger_insert_edge (S, 0, sv[i], ev[i], w[i], (timeFirst)?timeFirst:timestamp);
+    stinger_insert_edge (S, 0, sv[i], ev[i], w[i], (timeFirst)?(*timeFirst):timestamp);
     if (timeRecent && timeRecent != timeFirst) {
-      stinger_edge_touch (S, sv[i], ev[i], 0, timeRecent);
+      stinger_edge_touch (S, sv[i], ev[i], 0, *timeRecent);
     }
   }
 
@@ -331,7 +331,7 @@ edge_list_to_stinger (int64_t nv, int64_t ne,
 * @param type Edge type of the adjacency list to sort
 */
 void
-stinger_sort_edge_list (const struct stinger *S, const int64_t srcvtx,
+stinger_sort_edge_list (struct stinger *S, const int64_t srcvtx,
                         const int64_t type)
 {
   MAP_STING(S);
@@ -717,7 +717,7 @@ int64_t
 find_in_sorted (const int64_t tofind,
                 const int64_t N, const int64_t * restrict ary)
 {
-  int64_t out = -1;
+  /*int64_t out = -1;*/
   if (N <= 0)
     return -1;
 

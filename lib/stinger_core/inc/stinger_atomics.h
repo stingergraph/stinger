@@ -11,14 +11,14 @@ extern "C" {
 
 static inline void stinger_memory_barrier();
 static inline int stinger_int_fetch_add (int *, int);
-static inline int64_t stinger_int64_fetch_add (int64_t *, int64_t);
+inline int64_t stinger_int64_fetch_add (int64_t *, int64_t);
 static inline uint64_t stinger_uint64_fetch_add (uint64_t *, uint64_t);
 static inline size_t stinger_size_fetch_add (size_t *, size_t);
 
 static inline void stinger_int64_swap (int64_t *, int64_t *);
 static inline void stinger_uint64_swap (uint64_t *, uint64_t *);
 
-static inline int64_t stinger_int64_cas (int64_t *, int64_t, int64_t);
+static inline int64_t stinger_int64_cas (volatile int64_t *, int64_t, int64_t);
 /* XXX: This declaration may break aliasing, depending on how you
    interpret "void".  A pointer to nothing cannot alias anything...
    however, the absolutely correct unsigned char* is a pain to use,
@@ -39,7 +39,7 @@ stinger_int_fetch_add (int *x, int i)
   return __sync_fetch_and_add (x, i);
 }
 
-int64_t
+inline int64_t
 stinger_int64_fetch_add (int64_t * x, int64_t i)
 {
   return __sync_fetch_and_add (x, i);
@@ -86,7 +86,7 @@ stinger_ptr_cas (void **x, void *origx, void *newx)
 }
 
 int64_t
-stinger_int64_cas (int64_t * x, int64_t origx, int64_t newx)
+stinger_int64_cas (volatile int64_t * x, int64_t origx, int64_t newx)
 {
   return __sync_val_compare_and_swap (x, origx, newx);
 }
@@ -106,7 +106,7 @@ stinger_int_fetch_add (int *x, int i)
   return __fetch_and_add (x, i);
 }
 
-int64_t
+inline int64_t
 stinger_int64_fetch_add (int64_t * x, int64_t i)
 {
   return __fetch_and_addlp ((volatile unsigned long*)x, (unsigned long)i);
@@ -155,7 +155,7 @@ stinger_ptr_cas (void **x, void *origx, void *newx)
 }
 
 int64_t
-stinger_int64_cas (int64_t * x, int64_t origx, int64_t newx)
+stinger_int64_cas (volatile int64_t * x, int64_t origx, int64_t newx)
 {
   int64_t t = *x;
   __compare_and_swaplp (x, &origx, newx);
@@ -179,7 +179,7 @@ stinger_int_fetch_add (int *v, int x)
   return out;
 }
 
-int64_t
+inline int64_t
 stinger_int64_fetch_add (int64_t * v, int64_t x)
 {
   int64_t out = *v;
@@ -220,7 +220,7 @@ stinger_uint64_swap (uint64_t * a, uint64_t * b)
 }
 
 int64_t
-stinger_int64_cas (int64_t * p, int64_t v, int64_t newv)
+stinger_int64_cas (volatile int64_t * p, int64_t v, int64_t newv)
 {
   int64_t oldv = *p;
   if (v == oldv)

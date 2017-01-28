@@ -28,7 +28,7 @@ protected:
     for (int i=0; i < 10; i++) {
       for (int j=i+1; j < 10; j++) {
         int64_t type = (j % 2 == 1)?1:0;
-        int64_t ret = stinger_insert_edge_pair(S, type, i, j, 1, timestamp);
+        (void) stinger_insert_edge_pair(S, type, i, j, 1, timestamp);
         expected_out_edges[std::make_pair(type,i)].insert(j);
         expected_out_edges[std::make_pair(type,j)].insert(i);
 

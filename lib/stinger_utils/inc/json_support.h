@@ -16,7 +16,7 @@ extern "C" {
 #define JSON_OBJECT_START(X)	      JSON_PRINT_INDENT();  fprintf(json_out, "\"%s\" : {", #X); json_indent++;
 #define JSON_OBJECT_START_UNLABELED() JSON_PRINT_INDENT();  fprintf(json_out, "{"); json_indent++;
 #define JSON_DOUBLE(NAME,VAL)	      JSON_PRINT_INDENT();  fprintf(json_out, "%s\"%s\" : %lf", not_first++ ? ",\n" : "\n", #NAME, VAL);
-#define JSON_INT64(NAME,VAL)	      JSON_PRINT_INDENT();  fprintf(json_out, "%s\"%s\" : %ld", not_first++ ? ",\n" : "\n", #NAME, VAL);
+#define JSON_INT64(NAME,VAL)	      JSON_PRINT_INDENT();  fprintf(json_out, "%s\"%s\" : %" PRId64, not_first++ ? ",\n" : "\n", #NAME, VAL);
 #define JSON_STRING(NAME,VAL)	      JSON_PRINT_INDENT();  fprintf(json_out, "%s\"%s\" : \"%s\"", not_first++ ? ",\n" : "\n", #NAME, VAL);
 #define JSON_STRING_LEN(NAME,VAL,LEN) JSON_PRINT_INDENT();  fprintf(json_out, "%s\"%s\" : \"%.*s\"", not_first++ ? ",\n" : "\n", #NAME, LEN, VAL);
 #define JSON_SUBOBJECT(NAME)	      JSON_PRINT_INDENT();  fprintf(json_out, "%s\"%s\" : ", not_first++ ? ",\n" : "\n", #NAME);

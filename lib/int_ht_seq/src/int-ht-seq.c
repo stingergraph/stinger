@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <inttypes.h>
 
 static int64_t
 mix(int64_t n) {
@@ -69,7 +70,7 @@ int_ht_seq_free(int_ht_seq_t * ht) {
   return NULL;
 }
 
-int_ht_seq_t * 
+void
 int_ht_seq_expand(int_ht_seq_t * ht, int64_t new_size) {
   int_ht_seq_t tmp;
 
@@ -125,7 +126,7 @@ int_ht_seq_print_contents(int_ht_seq_t * ht) {
   int first = 1;
   for(uint64_t i = 0; i < ht->size; i++) {
     if(ht->keys[i] != INT_HT_SEQ_EMPTY) {
-      printf("%s%ld", first ? "" : ", ", ht->keys[i]);
+      printf("%s%" PRId64, first ? "" : ", ", ht->keys[i]);
       first = 0;
     }
   }

@@ -45,7 +45,7 @@ JSON_RPC_pagerank_subgraph::operator()(rapidjson::Value * params, rapidjson::Val
 
   double * pr = (double *)xcalloc(S->max_nv,sizeof(double));
   OMP("omp parallel for")
-  for(uint64_t i = 0; i < vertices.len; i++) {
+  for(int64_t i = 0; i < vertices.len; i++) {
     pr[vertices.arr[i]] = 1 / ((double)vertices.len);
   }
 
@@ -69,7 +69,7 @@ JSON_RPC_pagerank_subgraph::operator()(rapidjson::Value * params, rapidjson::Val
   rapidjson::Value vtx_str (rapidjson::kArrayType);
   rapidjson::Value vtx_phys;
 
-  for (uint64_t i = 0; i < vertices.len; i++) {
+  for (int64_t i = 0; i < vertices.len; i++) {
     uint64_t vtx = vertices.arr[i];
     vertex_id_json.PushBack(vtx,allocator);
     value_json.PushBack(pr[vtx],allocator);

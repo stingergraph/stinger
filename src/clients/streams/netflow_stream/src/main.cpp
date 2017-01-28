@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
 {
 	/* global options */
 	int port = 10102;
-	char * hostname = NULL;
+	char const * hostname = NULL;
 
 	int opt = 0;
 	uint64_t batch_time = 0;
@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
 	if(batch_size == 0){
 		batch_size = NETFLOW_BATCH_SIZE;
 	}
-	LOG_D_A ("Sending batches every %d seconds", batch_time);
+	LOG_D_A ("Sending batches every %" PRIu64 " seconds", batch_time);
 
 	/* start the connection */
 	int sock_handle = connect_to_server (hostname, port);
@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
 	/* actually generate and send the batches */
 	int64_t batch_num = 0;
 
-	int line_count;
+	/*int line_count;*/
 	char *result;
 	char input_line[MAX_LINE];
 	std::string line;
@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
 	std::vector<EdgeInsertion> batch_buffer;
 
 	int64_t insertIdx =0;
-	int64_t edgeIdx =0;
+	/*int64_t edgeIdx =0;*/
 
 	double global_start = dpc_tic();
 	double start = dpc_tic();
@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
 			if (batch_num == 0 || batch_num % batch_size == 0) {
 				int batch_size = batch.insertions_size() + batch.deletions_size();
 				LOG_D ("Sending message");
-				LOG_D_A ("%ld: %d actions. EX: %s:<%s, %s> (w: %d) at time %ld", batch_num, batch_size, p.protocol.c_str(), p.src.c_str(), p.dest.c_str(), p.bytes, p.time);
+				LOG_D_A ("%" PRId64 ": %d actions. EX: %s:<%s, %s> (w: %d) at time %" PRId64, batch_num, batch_size, p.protocol.c_str(), p.src.c_str(), p.dest.c_str(), p.bytes, p.time);
 				send_message(sock_handle, batch);
 				batch.clear_insertions();
 				batch_num++;
@@ -150,7 +150,7 @@ int main(int argc, char *argv[])
 			if(timeInSeconds > batch_time){
 				int batch_size = batch.insertions_size() + batch.deletions_size();
 				// LOG_D_A ("%f Seconds, %ld Batches", timeInSeconds, batch_num);
-				LOG_D_A ("%ld: %d actions. EX: %s:<%s, %s> (w: %d) at time %ld after %f seconds", batch_num, batch_size, p.protocol.c_str(), p.src.c_str(), p.dest.c_str(), p.bytes, p.time, dpc_toc(start));
+				LOG_D_A ("%" PRId64 ": %d actions. EX: %s:<%s, %s> (w: %d) at time %" PRId64 " after %f seconds", batch_num, batch_size, p.protocol.c_str(), p.src.c_str(), p.dest.c_str(), p.bytes, p.time, dpc_toc(start));
 				send_message(sock_handle, batch);
 				batch.clear_insertions();
 				batch_buffer.clear();
@@ -163,7 +163,7 @@ int main(int argc, char *argv[])
 		insertIdx++;
 	}
 
-	LOG_D_A("Sent %ld batches in %f seconds. Constructing last batch from buffer ", batch_num, dpc_toc(global_start));
+	LOG_D_A("Sent %" PRId64 " batches in %f seconds. Constructing last batch from buffer ", batch_num, dpc_toc(global_start));
 
 	batch.clear_insertions();
 	for (std::vector<EdgeInsertion>::iterator it = batch_buffer.begin() ; it != batch_buffer.end(); ++it) {
@@ -177,7 +177,7 @@ int main(int argc, char *argv[])
 	}
 
 	send_message(sock_handle, batch);
-	LOG_D_A("Sent %ld messages from buffer. Total time: %f",batch_buffer.size(), dpc_toc(global_start));
+	LOG_D_A("Sent %zu messages from buffer. Total time: %f",batch_buffer.size(), dpc_toc(global_start));
 
 	return 0;
 }

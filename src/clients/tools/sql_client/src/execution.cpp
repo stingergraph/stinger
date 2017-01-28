@@ -25,7 +25,7 @@ execute_query (query_plan_t * query, stinger_t * S)
   printf("\n");
 
   int64_t limit = query->limit;
-  int64_t offset = query->offset;
+  /*int64_t offset = query->offset;*/
   int64_t rows = 0;
   int64_t valid = 0;  /* track number of valid rows, for limit/offset clauses */
   int64_t nv = S->max_nv;
@@ -68,7 +68,7 @@ execute_query (query_plan_t * query, stinger_t * S)
 	}
       }
 
-      if (flag = resolve_predicates (query))
+      if ((flag = resolve_predicates (query)))
 	valid++;
     }
     else {
@@ -147,6 +147,7 @@ evaluate_where_operator (int64_t a, operator_t op, int64_t b)
     case LTE:	  return a <= b;
     case LESS:	  return a < b;
     case NOT_EQUAL: return a != b;
+    default: break;
   }
 
   return 0;

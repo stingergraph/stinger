@@ -21,7 +21,7 @@ main(int argc, char *argv[]) {
     int64_t dist = 0; //this is a placeholder that stores the length of the diameter in the graph, do not change this value
     bool ignore_weights = false;
 
-    char * alg_name = "pseudo_diameter";
+    char const * alg_name = "pseudo_diameter";
     stinger_register_alg_params params;
     params.name= "pseudo_diameter";
     params.data_per_vertex=sizeof(int64_t);
@@ -36,7 +36,7 @@ main(int argc, char *argv[]) {
                     .data_description="l vertexPool",
                     .host="localhost",
             );*/
-    int weighting;
+    double weighting = 0.0;
     int opt = 0;
     while(-1 != (opt = getopt(argc, argv, "w:s:n:?h"))) {
         switch(opt) {
@@ -50,7 +50,7 @@ main(int argc, char *argv[]) {
             } break;
             case 's': {
                 source_vertex = atol(optarg);
-                if(source_vertex < 0 || source_vertex > alg->stinger->max_nv ) {
+                if(source_vertex < 0 || ((uint64_t) source_vertex) > alg->stinger->max_nv ) {
                     //we need to check to make sure that the source vertex is set to a real vertex
                     source_vertex = 0;
                 }
@@ -74,9 +74,9 @@ main(int argc, char *argv[]) {
                                 "and ends when the graph distance no longer increases. \n"
                                 "\n"
                                 "  -s <num>  Set source vertex (%d by default)\n"
-                                "  -n <str>  Set the algorithm name (%s by default)\n"
                                 "  -w <num>  Set the weighting (0.0 - 1.0) (%lf by default)\n"
-                                "\n", 0, weighting, alg_name, 0
+                                "  -n <str>  Set the algorithm name (%s by default)\n"
+                                "\n", 0, weighting, alg_name
                 );
                 return(opt);
             }

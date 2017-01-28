@@ -18,6 +18,8 @@
 #include <fcntl.h>
 #include <getopt.h>
 
+#include "compat/luc.h"
+
 #include "compat.h"
 #include "stinger_core/xmalloc.h"
 #include "graph-el.h"
@@ -197,7 +199,7 @@ el_snarf_graph (const char * fname,
                 struct el * g)
 {
   const uint64_t endian_check = 0x1234ABCDul;
-  size_t sz;
+  off_t sz;
   ssize_t ssz;
   int needs_bs = 0;
   int64_t nv, ne;
@@ -219,7 +221,7 @@ el_snarf_graph (const char * fname,
     }
     ssz = xread (fd, &hdr, sizeof (hdr));
     if (sizeof (hdr) != ssz) {
-      fprintf (stderr, "XXX: %zu %zd %zd\n", sizeof (hdr), ssz, SSIZE_MAX);
+      fprintf (stderr, "XXX: %zu %zd %ld\n", sizeof (hdr), ssz, SSIZE_MAX);
       perror ("Error reading initial graph header");
       abort ();
     }

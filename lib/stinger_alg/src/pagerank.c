@@ -18,7 +18,7 @@ inline void unset_tmp_pr(double * tmp_pr, double * tmp_pr_in) {
     free(tmp_pr);
 }
 
-int64_t 
+void 
 page_rank_subset(stinger_t * S, int64_t NV, uint8_t * vertex_set, int64_t vertex_set_size, double * pr, double * tmp_pr_in, double epsilon, double dampingfactor, int64_t maxiter) {
   double * tmp_pr = set_tmp_pr(tmp_pr_in, NV);
 
@@ -27,7 +27,7 @@ page_rank_subset(stinger_t * S, int64_t NV, uint8_t * vertex_set, int64_t vertex
   OMP("omp parallel for")
   for (uint64_t v = 0; v < NV; v++) {
     if (vertex_set[v]) {
-      LOG_D_A("%ld - %lf\n",v,pr[v]);
+      LOG_D_A("%" PRIu64 " - %lf\n",v,pr[v]);
       STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S,v) {
         if (vertex_set[STINGER_EDGE_DEST]) {
           vtx_outdegree[v]++;
@@ -58,10 +58,10 @@ page_rank_subset(stinger_t * S, int64_t NV, uint8_t * vertex_set, int64_t vertex
     STINGER_PARALLEL_FORALL_EDGES_OF_ALL_TYPES_BEGIN(S) {
       if (vertex_set[STINGER_EDGE_DEST] && vertex_set[STINGER_EDGE_SOURCE]) {
         int64_t outdegree = vtx_outdegree[STINGER_EDGE_SOURCE];
-        int64_t count = readfe(&pr_lock[STINGER_EDGE_DEST]);
+        int64_t count = readfe((uint64_t *) &pr_lock[STINGER_EDGE_DEST]);
         tmp_pr[STINGER_EDGE_DEST] += (((double)pr[STINGER_EDGE_SOURCE]) /
           ((double) outdegree));
-        writeef(&pr_lock[STINGER_EDGE_DEST],count+1);
+        writeef((uint64_t *) &pr_lock[STINGER_EDGE_DEST],count+1);
       }
     } STINGER_PARALLEL_FORALL_EDGES_OF_ALL_TYPES_END();
 
@@ -99,13 +99,13 @@ page_rank_subset(stinger_t * S, int64_t NV, uint8_t * vertex_set, int64_t vertex
   xfree(vtx_outdegree);
 }
 
-int64_t
+void
 page_rank_directed(stinger_t * S, int64_t NV, double * pr, double * tmp_pr_in, double epsilon, double dampingfactor, int64_t maxiter) {
-  return page_rank(S, NV, pr, tmp_pr_in, epsilon, dampingfactor, maxiter);
+  page_rank(S, NV, pr, tmp_pr_in, epsilon, dampingfactor, maxiter);
 }
 
 // NOTE: This only works on Undirected Graphs!
-int64_t
+void
 page_rank (stinger_t * S, int64_t NV, double * pr, double * tmp_pr_in, double epsilon, double dampingfactor, int64_t maxiter)
 {
   double * tmp_pr = set_tmp_pr(tmp_pr_in, NV);
@@ -157,18 +157,18 @@ page_rank (stinger_t * S, int64_t NV, double * pr, double * tmp_pr_in, double ep
     iter--;
   }
 
-  LOG_I_A("PageRank iteration count : %ld", iter_count);
+  LOG_I_A("PageRank iteration count : %" PRId64, iter_count);
 
   unset_tmp_pr(tmp_pr,tmp_pr_in);
 }
 
-int64_t
+void
 page_rank_type_directed(stinger_t * S, int64_t NV, double * pr, double * tmp_pr_in, double epsilon, double dampingfactor, int64_t maxiter, int64_t type)
 {
-  return page_rank_type(S, NV, pr, tmp_pr_in, epsilon, dampingfactor, maxiter, type);
+  page_rank_type(S, NV, pr, tmp_pr_in, epsilon, dampingfactor, maxiter, type);
 }
 
-int64_t
+void
 page_rank_type(stinger_t * S, int64_t NV, double * pr, double * tmp_pr_in, double epsilon, double dampingfactor, int64_t maxiter, int64_t type)
 {
   double * tmp_pr = set_tmp_pr(tmp_pr_in, NV);

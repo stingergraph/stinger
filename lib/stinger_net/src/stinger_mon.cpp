@@ -27,8 +27,8 @@ StingerMon::get_mon() {
   return *state;
 }
 
-StingerMon::StingerMon() : stinger(NULL), 
-  stinger_loc(""), stinger_sz(0), algs(NULL), alg_map(NULL),
+StingerMon::StingerMon() : algs(NULL), alg_map(NULL), stinger(NULL), 
+  stinger_loc(""), stinger_sz(0),
   waiting(0), wait_lock(0), max_time(-922337203685477580)
 {
   pthread_rwlock_init(&alg_lock, NULL);

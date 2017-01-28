@@ -22,7 +22,7 @@ main(int argc, char *argv[])
 {
   /* global options */
   int port = 10102;
-  char * hostname = NULL;
+  char const * hostname = NULL;
 
   int opt = 0;
   while(-1 != (opt = getopt(argc, argv, "p:a:"))) {
@@ -81,7 +81,7 @@ main(int argc, char *argv[])
     insertion->set_weight(1);
     insertion->set_time(time);
 
-    LOG_I_A ("%ld: <%s, %s> at time %ld", batch_num, src.c_str(), dest.c_str(), time);
+    LOG_I_A ("%" PRId64 ": <%s, %s> at time %" PRId64, batch_num, src.c_str(), dest.c_str(), time);
     LOG_D ("Sending message");
     send_message(sock_handle, batch);
 

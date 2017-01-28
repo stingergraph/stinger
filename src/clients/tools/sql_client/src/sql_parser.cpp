@@ -28,7 +28,7 @@ int main (int argc, char *argv[])
 
   StingerMon & mon = StingerMon::get_mon();
 
-  int64_t num_algs = mon.get_num_algs();
+  (void) mon.get_num_algs();
   //printf("num_algs = %ld\n", (long) num_algs);
   
   /* Parse the query and form a plan */

@@ -6,6 +6,8 @@
 
 #define VTX(v) stinger_vertices_vertex_get(vertices, v)
 
+#define CONST_VTX(v) const_stinger_vertices_vertex_get(vertices, v)
+
 void
 stinger_physmap_id_to_json(const stinger_physmap_t * p, vindex_t v, FILE * out, int64_t indent_level) {
   JSON_INIT(out, indent_level);
@@ -18,7 +20,7 @@ stinger_physmap_id_to_json(const stinger_physmap_t * p, vindex_t v, FILE * out, 
 
 inline void
 stinger_vertex_to_json(const stinger_vertices_t * vertices, stinger_physmap_t * phys, vindex_t v, FILE * out, int64_t indent_level) {
-  const stinger_vertex_t * vout = VTX(v);
+  const stinger_vertex_t * vout = CONST_VTX(v);
 
   JSON_INIT(out, indent_level);
   JSON_OBJECT_START_UNLABELED();
@@ -38,7 +40,7 @@ stinger_vertex_to_json(const stinger_vertices_t * vertices, stinger_physmap_t * 
 
 inline void
 stinger_vertex_to_json_with_type_strings(const stinger_vertices_t * vertices, const stinger_names_t * tn, stinger_physmap_t * phys, vindex_t v, FILE * out, int64_t indent_level) {
-  const stinger_vertex_t * vout = VTX(v);
+  const stinger_vertex_t * vout = CONST_VTX(v);
 
   JSON_INIT(out, indent_level);
   JSON_OBJECT_START_UNLABELED();
@@ -64,8 +66,8 @@ stinger_vertex_to_json_with_type_strings(const stinger_vertices_t * vertices, co
 /* produces the egoent of the stinger vertex ID given in JSON form */
 string_t *
 egonet_to_json(stinger_t * S, int64_t vtx) {
-  string_t vertices, edges;
-  string_init_from_cstr(&vertices, "\"vertices\" : [ \n");
+  string_t vertices_string, edges;
+  string_init_from_cstr(&vertices_string, "\"vertices\" : [ \n");
   string_init_from_cstr(&edges, "\"edges\" : [ \n");
 
   char vtx_str[1UL<<20UL];
@@ -75,7 +77,7 @@ egonet_to_json(stinger_t * S, int64_t vtx) {
 
   stinger_vertex_to_json_with_type_strings(stinger_vertices_get(S), stinger_vtype_names_get(S), stinger_physmap_get(S), vtx, vtx_file, 2);
   fflush(vtx_file);
-  string_append_cstr(&vertices, vtx_str);
+  string_append_cstr(&vertices_string, vtx_str);
   fseek(vtx_file, 0, SEEK_SET);
 
   int_hm_seq_t * neighbors = int_hm_seq_new(stinger_outdegree_get(S, vtx) + stinger_indegree_get(S, vtx));
@@ -91,29 +93,29 @@ egonet_to_json(stinger_t * S, int64_t vtx) {
       stinger_vertex_to_json_with_type_strings(stinger_vertices_get(S), stinger_vtype_names_get(S), stinger_physmap_get(S), STINGER_EDGE_DEST, vtx_file, 2);
       fputc('\0',vtx_file);
       fflush(vtx_file);
-      string_append_cstr(&vertices, vtx_str);
+      string_append_cstr(&vertices_string, vtx_str);
       fseek(vtx_file, 0, SEEK_SET);
     }
 
     char * etype = stinger_etype_names_lookup_name(S, STINGER_EDGE_TYPE);
-    const char prepend_str [] = ",\n";
+    /*const char prepend_str [] = ",\n";*/
     if (STINGER_IS_OUT_EDGE) {
       if(!edge_added) {
         edge_added = 1;
         if(etype) {
-          sprintf(edge_str, "{ \"type\" : \"%s\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
-              etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, (long int) 0, source);
+          sprintf(edge_str, "{ \"type\" : \"%s\", \"src\" : %" PRId64 ", \"dest\" : %" PRId64 ", \"weight\" : %" PRId64 ", \"time1\" : %" PRId64 ", \"time2\" : %" PRId64 ", \"source\" : %" PRId64 ", \"target\": %" PRId64 " }", 
+              etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, (int64_t) 0, source);
         } else {
-          sprintf(edge_str, "{ \"type\" : \"%ld\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
-              STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, (long int) 0, source);
+          sprintf(edge_str, "{ \"type\" : \"%" PRId64 "\", \"src\" : %" PRId64 ", \"dest\" : %" PRId64 ", \"weight\" : %" PRId64 ", \"time1\" : %" PRId64 ", \"time2\" : %" PRId64 ", \"source\" : %" PRId64 ", \"target\": %" PRId64 " }", 
+              STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, (int64_t) 0, source);
         }
       } else {
         if(etype) {
-          sprintf(edge_str, ",\n{ \"type\" : \"%s\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
-              etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, (long int) 0, source);
+          sprintf(edge_str, ",\n{ \"type\" : \"%s\", \"src\" : %" PRId64 ", \"dest\" : %" PRId64 ", \"weight\" : %" PRId64 ", \"time1\" : %" PRId64 ", \"time2\" : %" PRId64 ", \"source\" : %" PRId64 ", \"target\": %" PRId64 " }", 
+              etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, (int64_t) 0, source);
         } else {
-          sprintf(edge_str, ",\n{ \"type\" : \"%ld\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
-              STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, (long int) 0, source);
+          sprintf(edge_str, ",\n{ \"type\" : \"%" PRId64 "\", \"src\" : %" PRId64 ", \"dest\" : %" PRId64 ", \"weight\" : %" PRId64 ", \"time1\" : %" PRId64 ", \"time2\" : %" PRId64 ", \"source\" : %" PRId64 ", \"target\": %" PRId64 " }", 
+              STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, (int64_t) 0, source);
         }
       }
       string_append_cstr(&edges, edge_str);
@@ -126,10 +128,10 @@ egonet_to_json(stinger_t * S, int64_t vtx) {
       if(INT_HT_SEQ_EMPTY != target) {
         char * etype = stinger_etype_names_lookup_name(S, STINGER_EDGE_TYPE);
         if(etype) {
-          sprintf(edge_str, ",\n{ \"type\" : \"%s\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+          sprintf(edge_str, ",\n{ \"type\" : \"%s\", \"src\" : %" PRId64 ", \"dest\" : %" PRId64 ", \"weight\" : %" PRId64 ", \"time1\" : %" PRId64 ", \"time2\" : %" PRId64 ", \"source\" : %" PRId64 ", \"target\": %" PRId64 " }", 
               etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, source, target);
         } else {
-          sprintf(edge_str, ",\n{ \"type\" : \"%ld\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+          sprintf(edge_str, ",\n{ \"type\" : \"%" PRId64 "\", \"src\" : %" PRId64 ", \"dest\" : %" PRId64 ", \"weight\" : %" PRId64 ", \"time1\" : %" PRId64 ", \"time2\" : %" PRId64 ", \"source\" : %" PRId64 ", \"target\": %" PRId64 " }", 
               STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, source, target);
         }
         string_append_cstr(&edges, edge_str);
@@ -139,16 +141,16 @@ egonet_to_json(stinger_t * S, int64_t vtx) {
 
   } STINGER_FORALL_EDGES_OF_VTX_END();
 
-  string_append_cstr(&vertices, "\n], ");
+  string_append_cstr(&vertices_string, "\n], ");
   string_append_cstr(&edges, "\n]\n} ");
 
   string_t * egonet = string_new_from_cstr("{\n\t");
-  string_append_string(egonet, &vertices);
+  string_append_string(egonet, &vertices_string);
   string_append_string(egonet, &edges);
 
   int_hm_seq_free(neighbors);
   fclose(vtx_file);
-  string_free_internal(&vertices);
+  string_free_internal(&vertices_string);
   string_free_internal(&edges);
   return egonet;
 }
@@ -157,8 +159,8 @@ egonet_to_json(stinger_t * S, int64_t vtx) {
    the group array in JSON form */
 string_t *
 group_to_json(stinger_t * S, int64_t * group, int64_t groupsize) {
-  string_t vertices, edges;
-  string_init_from_cstr(&vertices, "\"vertices\" : [ \n");
+  string_t vertices_string, edges;
+  string_init_from_cstr(&vertices_string, "\"vertices\" : [ \n");
   string_init_from_cstr(&edges, "\"edges\" : [ \n");
 
   char vtx_str[1UL<<20UL];
@@ -183,7 +185,7 @@ group_to_json(stinger_t * S, int64_t * group, int64_t groupsize) {
       stinger_vertex_to_json_with_type_strings(stinger_vertices_get(S), stinger_vtype_names_get(S), stinger_physmap_get(S), group[v], vtx_file, 2);
       fputc('\0',vtx_file);
       fflush(vtx_file);
-      string_append_cstr(&vertices, vtx_str);
+      string_append_cstr(&vertices_string, vtx_str);
       fseek(vtx_file, 0, SEEK_SET);
     }
 
@@ -196,7 +198,7 @@ group_to_json(stinger_t * S, int64_t * group, int64_t groupsize) {
         stinger_vertex_to_json_with_type_strings(stinger_vertices_get(S), stinger_vtype_names_get(S), stinger_physmap_get(S), STINGER_EDGE_DEST, vtx_file, 2);
         fputc('\0',vtx_file);
         fflush(vtx_file);
-        string_append_cstr(&vertices, vtx_str);
+        string_append_cstr(&vertices_string, vtx_str);
         fseek(vtx_file, 0, SEEK_SET);
       }
     } STINGER_FORALL_EDGES_OF_VTX_END();
@@ -213,18 +215,18 @@ group_to_json(stinger_t * S, int64_t * group, int64_t groupsize) {
             if(!edge_added) {
               edge_added = 1;
               if(etype) {
-                sprintf(edge_str, "{ \"type\" : \"%s\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+                sprintf(edge_str, "{ \"type\" : \"%s\", \"src\" : %" PRId64 ", \"dest\" : %" PRId64 ", \"weight\" : %" PRId64 ", \"time1\" : %" PRId64 ", \"time2\" : %" PRId64 ", \"source\" : %" PRId64 ", \"target\": %" PRId64 " }", 
               etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, cur_val, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
               } else {
-                sprintf(edge_str, "{ \"type\" : \"%ld\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+                sprintf(edge_str, "{ \"type\" : \"%" PRId64 "\", \"src\" : %" PRId64 ", \"dest\" : %" PRId64 ", \"weight\" : %" PRId64 ", \"time1\" : %" PRId64 ", \"time2\" : %" PRId64 ", \"source\" : %" PRId64 ", \"target\": %" PRId64 " }", 
               STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, cur_val, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
               }
             } else {
               if(etype) {
-                sprintf(edge_str, ",\n{ \"type\" : \"%s\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+                sprintf(edge_str, ",\n{ \"type\" : \"%s\", \"src\" : %" PRId64 ", \"dest\" : %" PRId64 ", \"weight\" : %" PRId64 ", \"time1\" : %" PRId64 ", \"time2\" : %" PRId64 ", \"source\" : %" PRId64 ", \"target\": %" PRId64 " }", 
               etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, cur_val, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
               } else {
-                sprintf(edge_str, ",\n{ \"type\" : \"%ld\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+                sprintf(edge_str, ",\n{ \"type\" : \"%" PRId64 "\", \"src\" : %" PRId64 ", \"dest\" : %" PRId64 ", \"weight\" : %" PRId64 ", \"time1\" : %" PRId64 ", \"time2\" : %" PRId64 ", \"source\" : %" PRId64 ", \"target\": %" PRId64 " }", 
               STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, cur_val, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
               }
             }
@@ -235,22 +237,22 @@ group_to_json(stinger_t * S, int64_t * group, int64_t groupsize) {
     }
   }
 
-  string_append_cstr(&vertices, "\n], ");
+  string_append_cstr(&vertices_string, "\n], ");
   string_append_cstr(&edges, "\n]\n} ");
 
   string_t * group_str = string_new_from_cstr("{\n\t");
-  string_append_string(group_str, &vertices);
+  string_append_string(group_str, &vertices_string);
   string_append_string(group_str, &edges);
 
   printf("GROUP OF VERTICES (");
   for(int64_t v = 0; v < groupsize; v++) {
-    printf("%ld,", group[v]);
+    printf("%" PRId64 ",", group[v]);
   }
   printf("):\n%s", group_str->str);
 
   int_hm_seq_free(neighbors);
   fclose(vtx_file);
-  string_free_internal(&vertices);
+  string_free_internal(&vertices_string);
   string_free_internal(&edges);
   return group_str;
 }
@@ -308,18 +310,18 @@ labeled_subgraph_to_json(stinger_t * S, int64_t src, int64_t * labels, const int
           if(!edge_added) {
             edge_added = 1;
             if(etype) {
-              sprintf(edge_str, "{ \"type\" : \"%s\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+              sprintf(edge_str, "{ \"type\" : \"%s\", \"src\" : %" PRId64 ", \"dest\" : %" PRId64 ", \"weight\" : %" PRId64 ", \"time1\" : %" PRId64 ", \"time2\" : %" PRId64 ", \"source\" : %" PRId64 ", \"target\": %" PRId64 " }", 
                 etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, group_vtx, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
             } else {
-              sprintf(edge_str, "{ \"type\" : \"%ld\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+              sprintf(edge_str, "{ \"type\" : \"%" PRId64 "\", \"src\" : %" PRId64 ", \"dest\" : %" PRId64 ", \"weight\" : %" PRId64 ", \"time1\" : %" PRId64 ", \"time2\" : %" PRId64 ", \"source\" : %" PRId64 ", \"target\": %" PRId64 " }", 
                 STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, group_vtx, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
             }
           } else {
             if(etype) {
-              sprintf(edge_str, ",\n{ \"type\" : \"%s\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+              sprintf(edge_str, ",\n{ \"type\" : \"%s\", \"src\" : %" PRId64 ", \"dest\" : %" PRId64 ", \"weight\" : %" PRId64 ", \"time1\" : %" PRId64 ", \"time2\" : %" PRId64 ", \"source\" : %" PRId64 ", \"target\": %" PRId64 " }", 
                 etype, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, group_vtx, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
             } else {
-              sprintf(edge_str, ",\n{ \"type\" : \"%ld\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+              sprintf(edge_str, ",\n{ \"type\" : \"%" PRId64 "\", \"src\" : %" PRId64 ", \"dest\" : %" PRId64 ", \"weight\" : %" PRId64 ", \"time1\" : %" PRId64 ", \"time2\" : %" PRId64 ", \"source\" : %" PRId64 ", \"target\": %" PRId64 " }", 
                 STINGER_EDGE_TYPE, STINGER_EDGE_SOURCE, STINGER_EDGE_DEST, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, group_vtx, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
             }
           }
@@ -329,18 +331,18 @@ labeled_subgraph_to_json(stinger_t * S, int64_t src, int64_t * labels, const int
           if(!edge_added) {
             edge_added = 1;
             if(etype) {
-              sprintf(edge_str, "{ \"type\" : \"%s\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+              sprintf(edge_str, "{ \"type\" : \"%s\", \"src\" : %" PRId64 ", \"dest\" : %" PRId64 ", \"weight\" : %" PRId64 ", \"time1\" : %" PRId64 ", \"time2\" : %" PRId64 ", \"source\" : %" PRId64 ", \"target\": %" PRId64 " }", 
                 etype, STINGER_EDGE_DEST, STINGER_EDGE_SOURCE, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, group_vtx, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
             } else {
-              sprintf(edge_str, "{ \"type\" : \"%ld\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+              sprintf(edge_str, "{ \"type\" : \"%" PRId64 "\", \"src\" : %" PRId64 ", \"dest\" : %" PRId64 ", \"weight\" : %" PRId64 ", \"time1\" : %" PRId64 ", \"time2\" : %" PRId64 ", \"source\" : %" PRId64 ", \"target\": %" PRId64 " }", 
                 STINGER_EDGE_TYPE, STINGER_EDGE_DEST, STINGER_EDGE_SOURCE, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, group_vtx, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
             }
           } else {
             if(etype) {
-              sprintf(edge_str, ",\n{ \"type\" : \"%s\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+              sprintf(edge_str, ",\n{ \"type\" : \"%s\", \"src\" : %" PRId64 ", \"dest\" : %" PRId64 ", \"weight\" : %" PRId64 ", \"time1\" : %" PRId64 ", \"time2\" : %" PRId64 ", \"source\" : %" PRId64 ", \"target\": %" PRId64 " }", 
                 etype, STINGER_EDGE_DEST, STINGER_EDGE_SOURCE, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, group_vtx, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
             } else {
-              sprintf(edge_str, ",\n{ \"type\" : \"%ld\", \"src\" : %ld, \"dest\" : %ld, \"weight\" : %ld, \"time1\" : %ld, \"time2\" : %ld, \"source\" : %ld, \"target\": %ld }", 
+              sprintf(edge_str, ",\n{ \"type\" : \"%" PRId64 "\", \"src\" : %" PRId64 ", \"dest\" : %" PRId64 ", \"weight\" : %" PRId64 ", \"time1\" : %" PRId64 ", \"time2\" : %" PRId64 ", \"source\" : %" PRId64 ", \"target\": %" PRId64 " }", 
                 STINGER_EDGE_TYPE, STINGER_EDGE_DEST, STINGER_EDGE_SOURCE, STINGER_EDGE_WEIGHT, STINGER_EDGE_TIME_FIRST, STINGER_EDGE_TIME_RECENT, group_vtx, int_hm_seq_get(neighbors, STINGER_EDGE_DEST));
             }
           }

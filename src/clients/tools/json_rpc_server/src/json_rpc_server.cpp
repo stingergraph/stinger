@@ -71,7 +71,7 @@ create_error(rapidjson::Document& response)
 static int
 begin_request_handler(struct mg_connection *conn)
 {
-  init_timer;
+  init_timer();
   double time = timer();
 
   const struct mg_request_info *request_info = mg_get_request_info(conn);
@@ -88,8 +88,8 @@ begin_request_handler(struct mg_connection *conn)
     uint8_t * storage = (uint8_t *) xcalloc (1, MAX_REQUEST_SIZE);
 
     int64_t read = mg_read(conn, storage, MAX_REQUEST_SIZE);
-    if (read > MAX_REQUEST_SIZE-2) {
-      LOG_E_A("Request was too large: %ld", read);
+    if (read > ((int64_t) (MAX_REQUEST_SIZE-2))) {
+      LOG_E_A("Request was too large: %" PRId64, read);
       
       /* send an error back */
       create_error(output);
@@ -181,7 +181,7 @@ main (int argc, char ** argv)
   mon_connect(10103, "localhost", "json_rpc");
 
   /* Mongoose setup and start */
-  struct mg_context *ctx;
+  /*struct mg_context *ctx;*/
   struct mg_callbacks callbacks;
 
   // List of options. Last element must be NULL.
@@ -192,7 +192,7 @@ main (int argc, char ** argv)
   callbacks.begin_request = begin_request_handler;
 
   // Start the web server.
-  ctx = mg_start(&callbacks, NULL, opts);
+  (void) mg_start(&callbacks, NULL, opts);
   
   /* infinite loop */
   if(unleash_daemon) {

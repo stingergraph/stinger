@@ -92,7 +92,7 @@ graph_partition(struct stinger * S, uint64_t NV, uint64_t num_partitions, double
     }
     //TODO fix returns, what would be a good output?
     for (int64_t i = 0; i<NV; i++){
-        printf("Verticies Added %ld => %ld\n", i, partitions[i]);
+        printf("Verticies Added %" PRId64 " => %" PRId64 "\n", i, partitions[i]);
     }
 }
 

@@ -1398,6 +1398,36 @@ GTEST_DISABLE_MSC_WARNINGS_POP_()
                             actual);
 }
 
+template <>
+inline AssertionResult CmpHelperEQ(const char* expected_expression,
+                            const char* actual_expression,
+                            const unsigned int& expected,
+                            const int& actual) {
+GTEST_DISABLE_MSC_WARNINGS_PUSH_(4389 /* signed/unsigned mismatch */)
+  if (((int) expected) == actual) {
+    return AssertionSuccess();
+  }
+GTEST_DISABLE_MSC_WARNINGS_POP_()
+
+  return CmpHelperEQFailure(expected_expression, actual_expression, expected,
+                            actual);
+}
+
+template <>
+inline AssertionResult CmpHelperEQ(const char* expected_expression,
+                            const char* actual_expression,
+                            const long long unsigned int& expected,
+                            const int& actual) {
+GTEST_DISABLE_MSC_WARNINGS_PUSH_(4389 /* signed/unsigned mismatch */)
+  if (expected == ((long long unsigned int) actual)) {
+    return AssertionSuccess();
+  }
+GTEST_DISABLE_MSC_WARNINGS_POP_()
+
+  return CmpHelperEQFailure(expected_expression, actual_expression, expected,
+                            actual);
+}
+
 // With this overloaded version, we allow anonymous enums to be used
 // in {ASSERT|EXPECT}_EQ when compiled with gcc 4, as anonymous enums
 // can be implicitly cast to BiggestInt.

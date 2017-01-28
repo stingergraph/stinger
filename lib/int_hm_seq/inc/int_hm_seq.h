@@ -27,16 +27,16 @@ int_hm_seq_new(int64_t size);
 int_hm_seq_t *
 int_hm_seq_free(int_hm_seq_t * ht);
 
-int_hm_seq_t * 
+void
 int_hm_seq_expand(int_hm_seq_t * ht, int64_t new_size);
 
-int_hm_seq_t * 
+void
 int_hm_seq_expand_versioned(int_hm_seq_t * ht, int64_t new_size, int64_t v);
 
 int_hm_seq_t *
 int_hm_seq_insert_versioned(int_hm_seq_t * ht, int64_t k, int64_t v);
 
-int_hm_seq_t *
+void
 int_hm_seq_insert(int_hm_seq_t * ht, int64_t k, int64_t v);
 
 int64_t *

@@ -109,8 +109,8 @@ JSON_RPC_egonet::operator()(rapidjson::Value * params, rapidjson::Value & result
       vtypes.PushBack(vtype, allocator);
 
       if (strings) {
-        char * name = NULL;
-        uint64_t len = 0;
+        /*char * name = NULL;
+        uint64_t len = 0;*/
         char * vtype_name = stinger_vtype_names_lookup_name(S, source_type);
         vtype_str.SetString(vtype_name, strlen(vtype_name), allocator);
         vtypes_str.PushBack(vtype_str, allocator);
@@ -181,8 +181,8 @@ JSON_RPC_egonet::operator()(rapidjson::Value * params, rapidjson::Value & result
       vtypes.PushBack(vtype, allocator);
 
       if (strings) {
-        char * name = NULL;
-        uint64_t len = 0;
+        /*char * name = NULL;
+        uint64_t len = 0;*/
         char * vtype_name = stinger_vtype_names_lookup_name(S, source_type);
         vtype_str.SetString(vtype_name, strlen(vtype_name), allocator);
         vtypes_str.PushBack(vtype_str, allocator);

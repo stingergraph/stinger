@@ -101,7 +101,7 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
   /* Bounds checking */
   if (method == SET) {
     if (set_len < 1) {
-      LOG_E_A("Invalid set length: %ld.", set_len);
+      LOG_E_A("Invalid set length: %" PRId64 ".", set_len);
     }
     if (!set) {
       LOG_E("Vertex set is null.");
@@ -109,11 +109,11 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
   }
   if (method == SORTED || method == RANGE) {
     if (start >= nv) {
-      LOG_E_A("Invalid range: %ld to %ld. Expecting [0, %ld).", start, end, nv);
+      LOG_E_A("Invalid range: %" PRId64 " to %" PRId64 ". Expecting [0, %" PRId64 ").", start, end, nv);
       return json_rpc_error(-32602, rtn, allocator);
     }
     if (end > nv) {
-      LOG_W_A("Invalid end of range: %ld. Expecting less than %ld.", end, nv);
+      LOG_W_A("Invalid end of range: %" PRId64 ". Expecting less than %" PRId64 ".", end, nv);
       end = nv;
     }
   }
@@ -122,11 +122,11 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
     return json_rpc_error(-32603, rtn, allocator);
   }
   if (stride <= 0) {
-    LOG_W_A("Stride of %ld is not allowed. Fixing.", stride);
+    LOG_W_A("Stride of %" PRId64 " is not allowed. Fixing.", stride);
     stride = 1;
   }
   if (stride >= nv) {
-    LOG_W_A("Stride of %ld only returns one value. This probably isn't what you want.", stride);
+    LOG_W_A("Stride of %" PRId64 " only returns one value. This probably isn't what you want.", stride);
   }
   if (vtypes != NULL && num_vtypes <= 0) {
     LOG_W("Number of vertex types specified as <= 0. Assuming all vertex types");
@@ -135,7 +135,7 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
 
   MAP_STING(S);
   
-  bool asc;
+  bool asc = false;
   if (method == SORTED) {
     if (strncmp(order_str, "ASC", 3)==0) {
       asc = true;
@@ -167,7 +167,7 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
 
   /* the description string is space-delimited */
   char * placeholder;
-  char * ptr = strtok_r (tmp, " ", &placeholder);
+  (void) strtok_r (tmp, " ", &placeholder);
 
   /* skip the formatting */
   char * pch = strtok_r (NULL, " ", &placeholder);
@@ -184,7 +184,7 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
     LOG_D_A ("%s: begin while :: %s", search_string, pch);
     if (strcmp(pch, search_string) == 0) {
       LOG_D_A ("%s: matches", search_string);
-      int64_t * idx;
+      int64_t * idx = NULL;
       if (method == SORTED) {
         switch (description_string[off]) {
           case 'f':
@@ -234,9 +234,9 @@ array_to_json_monolithic   (json_rpc_array_meth_t method, stinger_t * S,
           } 
         }
 
-        int64_t vtx;
-        if (method == SORTED)
-          vtx = idx[(int64_t)i];
+	int64_t vtx = -1;
+	if (method == SORTED)
+		vtx = idx[(int64_t)i];
         if (method == RANGE)
           vtx = i;
         if (method == SET)
