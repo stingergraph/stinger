@@ -1,6 +1,5 @@
 #include <cstdlib>
 #include <cstring>
-#include <cinttypes>
 #include <sys/types.h>
 #include <time.h>
 #include <netdb.h>

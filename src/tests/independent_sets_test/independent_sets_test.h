@@ -9,6 +9,7 @@ extern "C" {
 #include "stinger_alg/independent_sets.h"
 #include "stinger_core/stinger.h"
 #include "stinger_core/xmalloc.h"
+#include "stinger_core/formatting.h"
 }
 
 #include "gtest/gtest.h"
