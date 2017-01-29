@@ -5,6 +5,7 @@
 #include <stack>
 
 #include "stinger_core/stinger_error.h"
+#include "stinger_core/formatting.h"
 #include "sql_parser.h"
 
 

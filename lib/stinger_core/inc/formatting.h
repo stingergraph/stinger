@@ -7,9 +7,13 @@
 #if 64 == __WORDSIZE
 #define PRId64 "ld"
 #define PRIu64 "lu"
+#define SCNd64 "ld"
+#define SCNu64 "lu"
 #else
 #define PRId64 "lld"
 #define PRIu64 "llu"
+#define SCNd64 "lld"
+#define SCNu64 "llu"
 #endif
 #endif
 
