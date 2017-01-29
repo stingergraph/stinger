@@ -39,7 +39,7 @@ stinger_int_fetch_add (int *x, int i)
   return __sync_fetch_and_add (x, i);
 }
 
-inline int64_t
+int64_t
 stinger_int64_fetch_add (int64_t * x, int64_t i)
 {
   return __sync_fetch_and_add (x, i);
@@ -106,7 +106,7 @@ stinger_int_fetch_add (int *x, int i)
   return __fetch_and_add (x, i);
 }
 
-inline int64_t
+int64_t
 stinger_int64_fetch_add (int64_t * x, int64_t i)
 {
   return __fetch_and_addlp ((volatile unsigned long*)x, (unsigned long)i);
@@ -179,7 +179,7 @@ stinger_int_fetch_add (int *v, int x)
   return out;
 }
 
-inline int64_t
+int64_t
 stinger_int64_fetch_add (int64_t * v, int64_t x)
 {
   int64_t out = *v;
