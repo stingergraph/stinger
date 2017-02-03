@@ -36,7 +36,7 @@ main(int argc, char *argv[])
   double * local_cc = (double *)alg->alg_data;
   int64_t * ntri = (int64_t *)(((double *)alg->alg_data) + alg->stinger->max_nv);
 
-  int64_t * affected = xcalloc (alg->stinger->max_nv, sizeof (int64_t *));
+  int64_t * affected = xcalloc (alg->stinger->max_nv, sizeof (int64_t));
 
   init_timer();
   double time;
