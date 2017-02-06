@@ -94,7 +94,7 @@ main(int argc, char *argv[])
     }
   }
 
-  if (nv > 1L<<31) {
+  if (nv > 1UL<<31) {
     fprintf (stderr, "generator does not support nv > 2**31  (requested %ld)\n", (long)nv);
     return EXIT_FAILURE;
   }
