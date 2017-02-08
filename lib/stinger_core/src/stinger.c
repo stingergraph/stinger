@@ -1169,7 +1169,6 @@ stinger_update_directed_edge(struct stinger *G,
   }
 
   while (1) {
-    eb_index_t * block_ptr = curs.loc;
     curs.eb = readff((uint64_t *)curs.loc);
     /* 2: The edge isn't already there.  Check for an empty slot. */
     for (tmp = ebpool_priv + curs.eb; tmp != ebpool_priv; tmp = ebpool_priv + readff((uint64_t *)&tmp->next)) {
@@ -1214,25 +1213,25 @@ stinger_update_directed_edge(struct stinger *G,
           }
         }
       }
-      block_ptr = &(tmp->next);
+      curs.loc = &(tmp->next);
     }
 
     /* 3: Needs a new block to be inserted at end of list. */
-    eb_index_t old_eb = readfe ((uint64_t *)block_ptr );
+    eb_index_t old_eb = readfe (curs.loc);
     if (!old_eb) {
       eb_index_t newBlock = new_eb (G, type, src);
       if (newBlock == 0) {
-        writeef ((uint64_t *)block_ptr, (uint64_t)old_eb);
+        writeef (curs.loc, (uint64_t)old_eb);
         return -1;
       } else {
         update_edge_data_and_direction (G, ebpool_priv + newBlock, 0, dest, weight, timestamp, direction, EDGE_WEIGHT_SET);
         ebpool_priv[newBlock].next = 0;
         push_ebs (G, 1, &newBlock);
       }
-      writeef ((uint64_t *)block_ptr, (uint64_t)newBlock);
+      writeef (curs.loc, (uint64_t)newBlock);
       return 1;
     }
-    writeef ((uint64_t *)block_ptr, (uint64_t)old_eb);
+    writeef (curs.loc, (uint64_t)old_eb);
   }
 
 
