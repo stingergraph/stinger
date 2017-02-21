@@ -9,7 +9,6 @@ extern "C" {
 
 #include "stinger.h"
 
-static inline void stinger_memory_barrier();
 static inline int stinger_int_fetch_add (int *, int);
 static inline int64_t stinger_int64_fetch_add (int64_t *, int64_t);
 static inline uint64_t stinger_uint64_fetch_add (uint64_t *, uint64_t);
@@ -27,12 +26,6 @@ static inline void *stinger_ptr_cas (void **, void *, void *);
 
 #if defined(__GNUC__)||defined(__INTEL_COMPILER)
 /* {{{ GCC / ICC defs */
-void
-stinger_memory_barrier()
-{
-  __sync_synchronize();
-}
-
 int
 stinger_int_fetch_add (int *x, int i)
 {
@@ -94,12 +87,6 @@ stinger_int64_cas (int64_t * x, int64_t origx, int64_t newx)
 /* }}} */
 #elif defined(__xlc__)
 /* {{{ XLC defs */
-void
-stinger_memory_barrier()
-{
-  __sync_synchronize();
-}
-
 int
 stinger_int_fetch_add (int *x, int i)
 {
@@ -166,11 +153,6 @@ stinger_int64_cas (int64_t * x, int64_t origx, int64_t newx)
 #elif !defined(_OPENMP)
 #warning "Assuming no parallel / concurrent operations necessary."
 /* {{{ Not concurrent */
-void
-stinger_memory_barrier()
-{
-}
-
 int
 stinger_int_fetch_add (int *v, int x)
 {

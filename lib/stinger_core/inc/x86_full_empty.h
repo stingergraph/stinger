@@ -27,19 +27,19 @@ extern "C" {
 #define MARKER UINT64_MAX
 
 uint64_t 
-readfe(volatile uint64_t * v);
+readfe(uint64_t * v);
 
 uint64_t
-writeef(volatile uint64_t * v, uint64_t new_val);
+writeef(uint64_t * v, uint64_t new_val);
 
 uint64_t
-readff(volatile uint64_t * v);
+readff(uint64_t * v);
 
 uint64_t
-writeff(volatile uint64_t * v, uint64_t new_val);
+writeff(uint64_t * v, uint64_t new_val);
 
 uint64_t
-writexf(volatile uint64_t * v, uint64_t new_val);
+writexf(uint64_t * v, uint64_t new_val);
 
 #ifdef __cplusplus
 }
