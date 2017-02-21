@@ -4,6 +4,29 @@ Release Notes
 Version
 -------
 
+These notes are for STINGER version 17.02
+
+Notes
+-----
+
+- CMake fixes for TravisCI
+- Added edge direction to STINGER
+- Traversal macros refactored for reduced code
+- Broken symlinks fixed
+- Security and bug fixes
+- Removed Cray MTA/XMT support
+- New algorithm client for Streaming Connected Components
+- New HTTP API endpoint for adding edge weight
+- Fixed stingerctl script
+- New algorithms for HITS, graph diameter, independent set, shortest path, and graph partitioning
+- Changes to full/empty libraries for POWER8 support
+- New parallel algorithm for inserting a batch of edges
+- Use system Protocol Buffers library if installed
+- Upgraded distributed of Protocol Buffers to 3.1.0
+
+Version
+-------
+
 These notes are for STINGER version 15.10
 
 Notes

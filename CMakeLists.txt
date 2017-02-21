@@ -4,8 +4,8 @@ project (STINGER)
 include (ExternalProject)
 include (CTest)
 
-set(STINGER_VERSION_MAJOR 2015)
-set(STINGER_VERSION_MINOR 10)
+set(STINGER_VERSION_MAJOR 2017)
+set(STINGER_VERSION_MINOR 02)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
@@ -47,7 +47,8 @@ ENDIF()
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu9x")
 
 # Doxygen
-if(BUILD_DOCUMENTATION)
+option(BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentation" OFF)
+if (BUILD_DOCUMENTATION)
   find_package(Doxygen)
   if (DOXYGEN_FOUND)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doxygen/Doxyfile.in
