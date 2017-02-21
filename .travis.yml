@@ -7,6 +7,8 @@ before_install:
   - wget --no-check-certificate http://www.cmake.org/files/v3.3/cmake-3.3.0-rc3-Linux-x86_64.sh
   - mkdir -p $HOME/cmake
   - sh cmake-3.3.0-rc3-Linux-x86_64.sh --skip-license --prefix=$HOME/cmake
+install:
+  - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
 before_script:
   - mkdir build
   - cd build
@@ -14,3 +16,11 @@ before_script:
 script: 
   - make
   - make check
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+      - george-edison55-precise-backports
+    packages:
+      - gcc-4.8
+      - g++-4.8
