@@ -1,10 +1,13 @@
-/* Emulation of Full Empty Bits Using atomic check-and-swap.
+/* x86 Emulation of Full Empty Bits Using atomic check-and-swap.
  *
  * NOTES:
- * - Using these functions means that the MARKER value defined
- *   below must be reserved in your application and CANNOT be
+ * - Using these functions means that the MARKER value defined 
+ *   below must be reserved in your application and CANNOT be 
  *   considered a normal value.  Feel free to change the value to
  *   suit your application.
+ * - Do not compile this file with optimization.  There are loops
+ *   that do not make sense in a serial context.  The compiler will
+ *   optimize them out.
  * - Improper use of these functions can and will result in deadlock.
  *
  * author: rmccoll3@gatech.edu
@@ -12,9 +15,8 @@
 
 #include  "x86_full_empty.h"
 
-uint64_t
-readfe(volatile uint64_t * v) {
-  stinger_memory_barrier();
+uint64_t 
+readfe(uint64_t * v) {
   uint64_t val;
   while(1) {
     val = *v;
@@ -28,8 +30,7 @@ readfe(volatile uint64_t * v) {
 }
 
 uint64_t
-writeef(volatile uint64_t * v, uint64_t new_val) {
-  stinger_memory_barrier();
+writeef(uint64_t * v, uint64_t new_val) {
   uint64_t val;
   while(1) {
     val = *v;
@@ -43,8 +44,7 @@ writeef(volatile uint64_t * v, uint64_t new_val) {
 }
 
 uint64_t
-readff(volatile uint64_t * v) {
-  stinger_memory_barrier();
+readff(uint64_t * v) {
   uint64_t val = *v;
   while(val == MARKER) {
     val = *v;
@@ -53,8 +53,7 @@ readff(volatile uint64_t * v) {
 }
 
 uint64_t
-writeff(volatile uint64_t * v, uint64_t new_val) {
-  stinger_memory_barrier();
+writeff(uint64_t * v, uint64_t new_val) {
   uint64_t val;
   while(1) {
     val = *v;
@@ -68,9 +67,7 @@ writeff(volatile uint64_t * v, uint64_t new_val) {
 }
 
 uint64_t
-writexf(volatile uint64_t * v, uint64_t new_val) {
-  stinger_memory_barrier();
+writexf(uint64_t * v, uint64_t new_val) {
   *v = new_val;
-  stinger_memory_barrier();
   return new_val;
 }
