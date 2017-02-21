@@ -67,8 +67,6 @@ is_simple_name(const char * name, int64_t length);
 
 void counting_sort (int64_t * array, size_t num, size_t size);
 
-int64_t find_in_sorted (const int64_t tofind, const int64_t N, const int64_t * ary);
-
 void print_initial_graph_stats (int64_t nv, int64_t ne, int64_t batch_size,
 				int64_t nbatch, int64_t naction);
 
@@ -91,14 +89,8 @@ int64_t bs64 (int64_t xin);
 
 void bs64_n (size_t n, int64_t * d);
 
-int i64_cmp (const void *a, const void *b);
-
-int i2cmp (const void *va, const void *vb);
-
 int64_t find_in_sorted (const int64_t tofind,
                 const int64_t N, const int64_t * ary);
-
-int64_t prefix_sum (const int64_t n, int64_t *ary);
 
 void
 stinger_extract_bfs (/*const*/ struct stinger *S,

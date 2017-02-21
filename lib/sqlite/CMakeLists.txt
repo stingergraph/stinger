@@ -9,4 +9,4 @@ publish_headers(headers "${CMAKE_BINARY_DIR}/include/sqlite")
 
 include_directories("${CMAKE_BINARY_DIR}/include/sqlite")
 
-add_library(sqlite SHARED ${sources} ${headers})
+add_library(sqlite ${sources} ${headers})
