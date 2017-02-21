@@ -15,8 +15,6 @@
 
 #include  "x86_full_empty.h"
 
-#if !defined(__MTA__) /* x86 only */
-
 uint64_t 
 readfe(uint64_t * v) {
   uint64_t val;
@@ -73,6 +71,3 @@ writexf(uint64_t * v, uint64_t new_val) {
   *v = new_val;
   return new_val;
 }
-
-#endif  /* x86 only */
-

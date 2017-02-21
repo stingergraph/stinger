@@ -63,6 +63,7 @@ struct stinger_vertex
   vweight_t   weight;     /**< Vertex weight */
   vdegree_t   inDegree;   /**< In-degree of the vertex */
   vdegree_t   outDegree;  /**< Out-degree of the vertex */
+  vdegree_t   degree; /**< Degree when counting both in an out edges */
   adjacency_t edges;	  /**< Reference to the adjacency structure for this vertex */
 #if defined(STINGER_VERTEX_KEY_VALUE_STORE)
   key_value_store_t attributes;
@@ -104,6 +105,18 @@ stinger_vertex_weight_increment(const stinger_vertices_t * vertices, vindex_t v,
 
 vweight_t
 stinger_vertex_weight_increment_atomic(const stinger_vertices_t * vertices, vindex_t v, vweight_t weight);
+
+vdegree_t
+stinger_vertex_degree_get(const stinger_vertices_t * vertices, vindex_t v);
+
+vdegree_t
+stinger_vertex_degree_set(const stinger_vertices_t * vertices, vindex_t v, vdegree_t degree);
+
+vdegree_t
+stinger_vertex_degree_increment(const stinger_vertices_t * vertices, vindex_t v, vdegree_t degree);
+
+vdegree_t
+stinger_vertex_degree_increment_atomic(const stinger_vertices_t * vertices, vindex_t v, vdegree_t degree);
 
 vdegree_t
 stinger_vertex_indegree_get(const stinger_vertices_t * vertices, vindex_t v);

@@ -23,11 +23,6 @@
 #define SCHED_GUIDED " schedule(guided)"
 #endif
 
-#undef MTA_STREAMS
-#if !defined(MTA_STREAMS)
-#define MTA_STREAMS MTA("mta use 100 streams")
-#endif
-
 #if defined(_OPENMP)
 #define OMP_LOCKSPACE_DECL , omp_lock_t * restrict lockspace
 #define OMP_LOCKSPACE_PARAM , lockspace
@@ -61,11 +56,11 @@ calc_weight (const struct el g)
   const int64_t ne = g.ne;
   CDECL(g);
   OMP("omp parallel") {
-    OMP("omp for reduction(+: weight_sum) schedule(static)") MTA_STREAMS
+    OMP("omp for reduction(+: weight_sum) schedule(static)")
       for (int64_t k = 0; k < nv; ++k)
         weight_sum += D(g, k);
     OMP("omp barrier");
-    OMP("omp for reduction(+: weight_sum) schedule(static)") MTA_STREAMS
+    OMP("omp for reduction(+: weight_sum) schedule(static)")
       for (int64_t k = 0; k < ne; ++k)
         weight_sum += W(g, k);
   }
@@ -121,9 +116,9 @@ convert_el_match_to_relabel (const struct el g,
   CDECL(g);
 
 #if !defined(NDEBUG)
-  int64_t * count = calloc (g.ne, sizeof (*count));
+  int64_t * count = xcalloc (g.ne, sizeof (*count));
   OMP("omp parallel") {
-    OMP("omp for schedule(static)") MTA("mta assert parallel") MTA_STREAMS
+    OMP("omp for schedule(static)")
       for (intvtx_t ki = 0; ki < NV; ++ki) {
         if (m[ki] >= 0) {
           const int64_t km = m[ki];
@@ -141,7 +136,7 @@ convert_el_match_to_relabel (const struct el g,
         }
       }
     OMP("omp barrier");
-    OMP("omp for schedule(static)") MTA("mta assert parallel") MTA_STREAMS
+    OMP("omp for schedule(static)")
       for (int64_t k = 0; k < g.ne; ++k) {
         if (count[k] < 0) fprintf (stderr, "%ld WTF?!?\n", k);
         assert (count[k] >= 0);
@@ -162,10 +157,10 @@ convert_el_match_to_relabel (const struct el g,
 #endif
 
   OMP("omp parallel") {
-    OMP("omp for schedule(static)") MTA_STREAMS
+    OMP("omp for schedule(static)")
       for (intvtx_t i = 0; i < NV; ++i)
         ws[i] = -1;
-    OMP("omp for schedule(static)") MTA_NODEP MTA_STREAMS
+    OMP("omp for schedule(static)")
       for (intvtx_t i = 0; i < NV; ++i) {
         if (m[i] >= 0) {
           const intvtx_t j = (i == I(g, m[i])? J(g, m[i]) : I(g, m[i]));
@@ -182,14 +177,14 @@ convert_el_match_to_relabel (const struct el g,
           ws[i] = intvtx_fetch_add (&new_NV, 1);
       }
     OMP("omp barrier");
-    OMP("omp for schedule(static)") MTA_STREAMS
+    OMP("omp for schedule(static)")
       for (intvtx_t i = 0; i < NV; ++i)
         m[i] = ws[i];
 #if !defined(NDEBUG)
-    OMP("omp for schedule(static)") MTA_STREAMS
+    OMP("omp for schedule(static)")
       for (intvtx_t i = 0; i < new_NV; ++i)
         ws[i] = 0;
-    OMP("omp for schedule(static)") MTA("mta assert parallel") MTA_STREAMS
+    OMP("omp for schedule(static)")
       for (intvtx_t i = 0; i < NV; ++i) {
         OMP("omp atomic") ++ws[m[i]];
         if (m[i] > new_NV)
@@ -197,7 +192,7 @@ convert_el_match_to_relabel (const struct el g,
         assert (m[i] < new_NV);
         assert (m[i] >= 0);
       }
-    OMP("omp for schedule(static)") MTA("mta assert parallel") MTA_STREAMS
+    OMP("omp for schedule(static)")
       for (intvtx_t i = 0; i < new_NV; ++i) {
         assert (ws[i] > 0);
         assert (ws[i] <= 2);
@@ -334,7 +329,7 @@ prefix_sum (const int64_t n, int64_t *ary)
   return t1;
 }
 #else
-MTA("mta inline")
+
 static int64_t
 prefix_sum (const int64_t n, int64_t *ary)
 {
@@ -355,14 +350,14 @@ rough_bucket_sort_el (const intvtx_t nv, const int64_t ne,
                       intvtx_t * restrict tailend)
 {
   OMP("omp barrier");
-  OMP("omp for schedule(static)") MTA_STREAMS
+  OMP("omp for schedule(static)")
     for (intvtx_t k = 0; k <= nv; ++k)
       off[k] = 0;
-  OMP("omp for schedule(static)") MTA_STREAMS
+  OMP("omp for schedule(static)")
     for (int64_t k = 0; k < ne; ++k)
       int64_fetch_add (&off[1+Iel(el,k)], 1);
   prefix_sum (nv, &off[1]);
-  OMP("omp for schedule(static)") MTA_NODEP MTA_STREAMS
+  OMP("omp for schedule(static)")
     for (int64_t k = 0; k < ne; ++k) {
       intvtx_t i = Iel(el, k);
       int64_t loc = int64_fetch_add (&off[1+i], 1);
@@ -371,7 +366,7 @@ rough_bucket_sort_el (const intvtx_t nv, const int64_t ne,
     }
   assert (off[nv] == ne);
 #if !defined(NDEBUG)
-  OMP("omp for schedule(static)") MTA("mta assert parallel") MTA_STREAMS
+  OMP("omp for schedule(static)")
     for (intvtx_t k = 0; k < nv; ++k) {
       if (off[k] > off[k+1]) {
         fprintf (stderr, "ugh %ld  [%ld, %ld)\n", (long)k, off[k], off[k+1]);
@@ -394,7 +389,7 @@ rough_bucket_copy_back (const intvtx_t nv,
   OMP("omp master")
     *n_new_edges = 0;
   OMP("omp barrier");
-  OMP("omp for schedule(guided)") MTA("mta assert parallel") MTA_STREAMS
+  OMP("omp for schedule(guided)")
     for (intvtx_t new_i = 0; new_i < nv; ++new_i) {
       const int64_t start_src = off[new_i];
       const int64_t n_to_copy = offend[new_i] - off[new_i];
@@ -437,10 +432,10 @@ contract_el (int64_t NE, intvtx_t * restrict el /* 3 x oldNE */,
   OMP("omp parallel") 
   {
 #if !defined(NDEBUG)
-    OMP("omp for reduction(+:w_in) schedule(static)") MTA_STREAMS
+    OMP("omp for reduction(+:w_in) schedule(static)")
       for (intvtx_t i = 0; i < old_nv; ++i)
         w_in += d[i];
-    OMP("omp for reduction(+:w_in) schedule(static)") MTA_STREAMS
+    OMP("omp for reduction(+:w_in) schedule(static)")
       for (int64_t k = 0; k < NE; ++k)
         w_in += Wel(el, k);
     OMP("omp barrier");
@@ -451,7 +446,7 @@ contract_el (int64_t NE, intvtx_t * restrict el /* 3 x oldNE */,
     }
     OMP("omp master") assert (global_gwgt < 0 || w_in == global_gwgt);
     assert (w_out == w_in);
-    OMP("omp for reduction(+:cutw_in) schedule(static)") MTA_STREAMS
+    OMP("omp for reduction(+:cutw_in) schedule(static)")
       for (int64_t k = 0; k < NE; ++k) {
         const intvtx_t i = Iel(el, k);
         const intvtx_t j = Jel(el, k);
@@ -462,17 +457,17 @@ contract_el (int64_t NE, intvtx_t * restrict el /* 3 x oldNE */,
 #endif
 
     /* Collapse existing diagonal. */
-    OMP("omp for schedule(static)") MTA_STREAMS
+    OMP("omp for schedule(static)")
       for (intvtx_t i = 0; i <= new_nv; ++i)
         count[i] = 0;
-    OMP("omp for schedule(static)") MTA_STREAMS
+    OMP("omp for schedule(static)")
       for (intvtx_t old_i = 0; old_i < old_nv; ++old_i) {
         const intvtx_t new_i = m[old_i];
         assert (m[old_i] < new_nv);
         if (new_i >= 0)
-          OMP("omp atomic") MTA("mta update") count[new_i] += d[old_i];
+          OMP("omp atomic")  count[new_i] += d[old_i];
       }
-    OMP("omp for") MTA_STREAMS
+    OMP("omp for")
       for (intvtx_t i = 0; i < new_nv; ++i) {
         d[i] = count[i];
         assert (count[i] <= INTVTX_MAX);
@@ -494,7 +489,7 @@ contract_el (int64_t NE, intvtx_t * restrict el /* 3 x oldNE */,
     OMP("omp single") w_out = 0;
 #endif
 
-    OMP("omp for schedule(static)") MTA_NODEP MTA_STREAMS
+    OMP("omp for schedule(static)")
       for (int64_t k = 0; k < NE; ++k) {
 #if !defined(NDEBUG)
         intvtx_t old_i = Iel(el, k);
@@ -522,10 +517,10 @@ contract_el (int64_t NE, intvtx_t * restrict el /* 3 x oldNE */,
       cutw_out = 0;
     }
     OMP("omp barrier");
-    OMP("omp for reduction(+:w_out) schedule(static)")  MTA_STREAMS
+    OMP("omp for reduction(+:w_out) schedule(static)")
       for (intvtx_t i = 0; i < new_nv; ++i)
         w_out += d[i];
-    OMP("omp for reduction(+:w_out, cutw_out) schedule(static)") MTA_STREAMS
+    OMP("omp for reduction(+:w_out, cutw_out) schedule(static)")
       for (intvtx_t i = 0; i < new_nv; ++i) {
         for (int64_t k = count[i]; k < count[1+i]; ++k) {
           w_out += tmpcopy[1+2*k];
@@ -559,7 +554,7 @@ contract_el (int64_t NE, intvtx_t * restrict el /* 3 x oldNE */,
 
     /* int64_t dumped_row = 0; */
     /* Sort then collapse within each row. */
-    OMP("omp for schedule(guided)") MTA("mta assert parallel") MTA_STREAMS
+    OMP("omp for schedule(guided)")
       for (intvtx_t new_i = 0; new_i < new_nv; ++new_i) {
         const int64_t new_i_end = count[new_i+1];
         int64_t k, kcur = count[new_i];
@@ -656,12 +651,12 @@ contract_el (int64_t NE, intvtx_t * restrict el /* 3 x oldNE */,
 #if !defined(NDEBUG)
     OMP("omp master") w_out = 0;
     OMP("omp barrier");
-    OMP("omp for reduction(+:w_out) schedule(static)") MTA_STREAMS
+    OMP("omp for reduction(+:w_out) schedule(static)")
       for (intvtx_t i = 0; i < new_nv; ++i) {
         w_out += d[i];
       }
     OMP("omp barrier");
-    OMP("omp for reduction(+:w_out) schedule(static)") MTA_STREAMS
+    OMP("omp for reduction(+:w_out) schedule(static)")
       for (intvtx_t i = 0; i < new_nv; ++i) {
         for (int64_t k = count[i]; k < rowend[i]; ++k)
           w_out += tmpcopy[1+2*k];
@@ -681,12 +676,12 @@ contract_el (int64_t NE, intvtx_t * restrict el /* 3 x oldNE */,
     //w_out = all_calc_weight_base_flat (new_nv, n_new_edges, el, d);
     OMP("omp master") w_out = 0;
     OMP("omp barrier");
-    OMP("omp for reduction(+:w_out) schedule(static)") MTA_STREAMS
+    OMP("omp for reduction(+:w_out) schedule(static)")
       for (intvtx_t i = 0; i < new_nv; ++i) {
         w_out += d[i];
       }
     OMP("omp barrier");
-    OMP("omp for reduction(+:w_out) schedule(static)") MTA_STREAMS
+    OMP("omp for reduction(+:w_out) schedule(static)")
       for (int64_t k = 0; k < n_new_edges; ++k) {
         assert (Iel(el, k) != Jel(el, k));
         w_out += Wel(el, k);
@@ -710,7 +705,7 @@ contract_el (int64_t NE, intvtx_t * restrict el /* 3 x oldNE */,
     }
     OMP("omp barrier");
     assert (w_in == w_out);
-    OMP("omp for reduction(+:cutw_out) schedule(static)") MTA_STREAMS
+    OMP("omp for reduction(+:cutw_out) schedule(static)")
       for (int64_t k = 0; k < n_new_edges; ++k)
         /* Only cut edges remain. */
         cutw_out += Wel(el, k);
@@ -739,7 +734,7 @@ contract (struct el * restrict g,
 #endif
 
 #if !defined(NDEBUG)
-  OMP("omp parallel for") MTA("mta assert parallel") MTA_STREAMS
+  OMP("omp parallel for")
     for (int64_t i = 0; i < nv; ++i)
       assert (m[i] < new_nv);
 #endif
@@ -779,7 +774,7 @@ sliced_non_maximal_pass (const struct el g,
 
   OMP("omp parallel") {
     /* Assume that m[i] < 0 when unmatched, == k when edge k is the best match. */
-    OMP("omp for schedule(guided)") MTA_NODEP MTA_STREAMS
+    OMP("omp for schedule(guided)")
       for (intvtx_t ki = 0; ki < nunmatched; ++ki) {
         const intvtx_t i = unmatched[ki];
         const int64_t kend = rowend[i];
@@ -804,7 +799,7 @@ sliced_non_maximal_pass (const struct el g,
       }
 
 #if !defined(NDEBUG)
-    OMP("omp for schedule(static)") MTA("mta assert parallel") MTA_STREAMS
+    OMP("omp for schedule(static)")
       for (intvtx_t ki = 0; ki < nunmatched; ++ki) {
         const intvtx_t i = unmatched[ki];
         const int64_t best_match = bestm[ki];
@@ -817,7 +812,7 @@ sliced_non_maximal_pass (const struct el g,
       }
 #endif
 
-    OMP("omp for schedule(guided)") MTA_NODEP MTA_STREAMS
+    OMP("omp for schedule(guided)")
       for (intvtx_t ki = 0; ki < nunmatched; ++ki) {
         intvtx_t i = unmatched[ki];
         const int64_t ke = bestm[ki];
@@ -831,52 +826,7 @@ sliced_non_maximal_pass (const struct el g,
             j = i;
             i = t;
           }
-#if defined(__MTA__)
-          do {
-            int win_i = 0, win_j = 0;
-            int64_t mi = m[i]; //readfe (&m[i]);
-            if (mi < 0 || score > s[mi]) {
-              win_i = 1;
-            } else if (0 && score == s[mi]) {
-              intvtx_t other_i = I(g, mi);
-              intvtx_t other_j = J(g, mi);
-              if (other_i < other_j) {
-                intvtx_t t = other_j;
-                other_j = other_i;
-                other_i = t;
-              }
-              if (i < other_i || (i == other_i && j < other_j))
-                win_i = 1;
-            }
-            if (win_i) {
-              int64_t mj = readfe (&m[j]);
-              if (mj < 0 || score > s[mj]) {
-                win_j = 1;
-              } else if (0 && score == s[mj]) {
-                intvtx_t other_i = I(g, mj);
-                intvtx_t other_j = J(g, mj);
-                if (other_i < other_j) {
-                  intvtx_t t = other_j;
-                  other_j = other_i;
-                  other_i = t;
-                }
-                if (i < other_i || (i == other_i && j < other_j))
-                  win_j = 1;
-              }
-              if (win_j) {
-                int64_t mi_new = readfe (&m[i]);
-                if (mi == mi_new) {
-                  mi_new = mj = ke;
-                  done = 1;
-                }
-                writeef (&m[i], mi_new);
-              } else
-                done = 1;
-              writeef (&m[j], mj);
-            } else
-              done = 1;
-          } while (!done);
-#else
+
           do {
             int win_i = 0, win_j = 0;
             int64_t mi, mj;
@@ -928,11 +878,10 @@ sliced_non_maximal_pass (const struct el g,
             } else
               done = 1;
           } while (!done);
-#endif
         }
       }
 
-    OMP("omp for schedule(static)") MTA_NODEP MTA_STREAMS
+    OMP("omp for schedule(static)")
       for (intvtx_t ki = 0; ki < nunmatched; ++ki) {
         //const int64_t i = unmatched[ki];
         const int64_t ke = bestm[ki];
@@ -947,7 +896,7 @@ sliced_non_maximal_pass (const struct el g,
         }
       }
 
-    OMP("omp for schedule(static)") MTA_NODEP MTA_STREAMS
+    OMP("omp for schedule(static)")
       for (intvtx_t ki = 0; ki < nunmatched; ++ki) {
         const intvtx_t i = unmatched[ki];
         if (bestm[ki] >= 0 && m[i] < 0) {
@@ -958,15 +907,15 @@ sliced_non_maximal_pass (const struct el g,
         }
       }
 
-    OMP("omp for schedule(static)") MTA_STREAMS
+    OMP("omp for schedule(static)")
       for (intvtx_t ki = 0; ki < new_nunmatched; ++ki)
         unmatched[ki] = tmp[ki];
 
 #if !defined(NDEBUG)
-    OMP("omp for schedule(static)") MTA_NODEP MTA_STREAMS
+    OMP("omp for schedule(static)")
       for (intvtx_t ki = 0; ki < new_nunmatched; ++ki)
         assert (m[unmatched[ki]] < 0);
-    OMP("omp for schedule(static)") MTA_NODEP MTA_STREAMS
+    OMP("omp for schedule(static)")
       for (intvtx_t i = 0; i < g.nv; ++i) {
         if (m[i] >= 0) {
           if (m[i] != m[J(g, m[i])] || m[i] != m[I(g, m[i])]) {
@@ -1000,7 +949,7 @@ any_adj_unmatched (const struct el g,
 {
   CDECL(g);
   int out = 0;
-  OMP("omp parallel for") MTA("mta assert nodep") MTA_STREAMS
+  OMP("omp parallel for")
     for (intvtx_t ki = 0; ki < nunmatched; ++ki) {
       const intvtx_t i = unmatched[ki];
       assert (m[i] < 0);
@@ -1008,7 +957,7 @@ any_adj_unmatched (const struct el g,
         for (int64_t k = rowstart[i]; k < rowend[i]; ++k) {
           if (m[J(g,k)] < 0) {
             out = 1;
-            nonMTA_break;
+            break;
           }
         }
     }
@@ -1023,7 +972,7 @@ is_maximal_p (const struct el g,
   CDECL(g);
   const int64_t NE = g.ne;
   int out = 1;
-  MTA_STREAMS
+
     for (int64_t k = 0; k < NE; ++k) {
       if (s[k] > 0) {
         const intvtx_t i = I(g, k);
@@ -1056,7 +1005,7 @@ maximal_match_iter (const struct el g,
   intvtx_t * restrict tmp = &unmatched[NV];
   CDECL(g);
 
-  OMP("omp parallel for") MTA_STREAMS
+  OMP("omp parallel for")
     for (intvtx_t i = 0; i < NV; ++i) {
       m[i] = -3;
       unmatched[i] = i;
@@ -1075,7 +1024,7 @@ maximal_match_iter (const struct el g,
   } while (nunmatched);
 
 #if !defined(NDEBUG)
-  OMP("omp parallel for") MTA("mta assert parallel") MTA_STREAMS
+  OMP("omp parallel for")
     for (intvtx_t i = 0; i < NV; ++i) {
       if (m[i] >= 0) {
         const int64_t km = m[i];
@@ -1107,7 +1056,7 @@ decimate_matching (const struct el g,
   CDECL(g);
 
   OMP("omp parallel") {
-    OMP("omp for schedule(guided)") MTA_NODEP MTA_STREAMS
+    OMP("omp for schedule(guided)")
       for (intvtx_t i = 0; i < nv; ++i) {
         int64_t mi = m[i];
         double smi = (mi >= 0? s[mi] : 0.0);
@@ -1119,7 +1068,7 @@ decimate_matching (const struct el g,
               double smj = s[mj];
               if (smi < smj) {
                 m[i] = -1;
-                nonMTA_break;
+                break;
               } else if (smj == smi) {
                 const intvtx_t mi_i = (i < j? i : j);
                 const intvtx_t mi_j = (i < j? j : i);
@@ -1127,17 +1076,17 @@ decimate_matching (const struct el g,
                 const intvtx_t mj_j = (I(g, mj) < J(g, mj)? J(g, mj) : I(g, mj));
                 if (mi_i > mj_i || (mi_i == mj_i && mi_j > mj_j)) {
                   m[i] = -1;
-                  nonMTA_break;
+                  break;
                 }
               } else {
                 m[j] = -1;
-                nonMTA_break;
+                break;
               }
             }
           }
         }
       }
-    OMP("omp for schedule(static)") MTA_NODEP MTA_STREAMS
+    OMP("omp for schedule(static)")
       for (intvtx_t i = 0; i < nv; ++i) {
         const int64_t mi = m[i];
         if (mi >= 0) {
@@ -1148,8 +1097,8 @@ decimate_matching (const struct el g,
   }
 }
 
-MTA("mta inline")
-MTA("mta expect parallel")
+
+
 static inline void
 store_best_tree_edge (const struct el g,
                       const intvtx_t i_tgt,
@@ -1294,8 +1243,8 @@ score_heaviest_edge (double * restrict escore,
   CDECL(g);
 
   OMP("omp parallel for")
-    MTA_NODEP
-    MTA_STREAMS
+    
+  
     for (int64_t k = 0; k < g.ne; ++k) {
       escore[k] = W(g, k);
       assert (!isnan (escore[k]));
@@ -1315,27 +1264,27 @@ score_conductance (double * restrict escore,
   double * restrict old_conductance = (double*)&alldeg[nv];
 
   OMP("omp parallel") {
-    OMP("omp for schedule(static)") MTA_STREAMS
+    OMP("omp for schedule(static)")
       for (intvtx_t i = 0; i < nv; ++i)
         extdeg[i] = 0;
-    OMP("omp for schedule(static)") MTA_NODEP
-      MTA_STREAMS
+    OMP("omp for schedule(static)") 
+    
       for (int64_t k = 0; k < ne; ++k) {
         int64_fetch_add (&extdeg[I(g, k)], W(g, k));
         int64_fetch_add (&extdeg[J(g, k)], W(g, k));
       }
-    OMP("omp for schedule(static)") MTA_STREAMS
+    OMP("omp for schedule(static)")
       for (intvtx_t i = 0; i < nv; ++i)
         alldeg[i] = extdeg[i] + D(g, i);
-    OMP("omp for schedule(static)") MTA_STREAMS
+    OMP("omp for schedule(static)")
       for (intvtx_t i = 0; i < nv; ++i) {
         int64_t v = alldeg[i];
         if (v > 2*ne - v) v = 2*ne - v;
         old_conductance[i] = extdeg[i] / (double)v;
       }
 
-    OMP("omp for schedule(static)") MTA_NODEP
-      MTA_STREAMS
+    OMP("omp for schedule(static)") 
+    
       for (int64_t k = 0; k < ne; ++k) {
         const intvtx_t i = I(g, k);
         const intvtx_t j = J(g, k);
@@ -1361,28 +1310,28 @@ score_cnm (double * restrict escore,
 
   OMP("omp parallel") {
     OMP("omp for schedule(static)")
-      MTA_NODEP
-      MTA_STREAMS
+      
+    
       for (intvtx_t i = 0; i < nv; ++i)
         alldeg[i] = 0;
 
     OMP("omp for schedule(static)")
-      MTA_NODEP
-      MTA_STREAMS
+      
+    
       for (int64_t k = 0; k < ne; ++k) {
         int64_fetch_add (&alldeg[I(g, k)], W(g, k));
         int64_fetch_add (&alldeg[J(g, k)], W(g, k));
       }
 
     OMP("omp for schedule(static)")
-      MTA_NODEP
-      MTA_STREAMS
+      
+    
       for (intvtx_t i = 0; i < nv; ++i)
         alldeg[i] += D(g, i);
 
     OMP("omp for schedule(static)")
-      MTA_NODEP
-      MTA_STREAMS
+      
+    
       for (int64_t k = 0; k < ne; ++k) {
         const intvtx_t i = I(g, k);
         const intvtx_t j = J(g, k);
@@ -1409,7 +1358,7 @@ score_mb (double * restrict escore,
   /* Treat all edges as the current potential merges, find mean and filter. */
   sum = 0.0;
   OMP("omp parallel") {
-    MTA_STREAMS
+  
       OMP("omp for reduction(+:sum) reduction(+:final_ne) schedule(static)")
       for (int64_t k = 0; k < ne; ++k)
         if (escore[k] > 0) {
@@ -1422,7 +1371,7 @@ score_mb (double * restrict escore,
       sum = 0.0;
     }
     OMP("omp barrier");
-    MTA_STREAMS OMP("omp for reduction(+:sum) schedule(static)")
+   OMP("omp for reduction(+:sum) schedule(static)")
       for (int64_t k = 0; k < ne; ++k)
         if (escore[k] > 0) {
           double tmp = escore[k]-mean;
@@ -1436,7 +1385,7 @@ score_mb (double * restrict escore,
     }
     OMP("omp barrier");
 
-    MTA_STREAMS OMP("omp for schedule(static)")
+   OMP("omp for schedule(static)")
       for (int64_t k = 0; k < ne; ++k)
         if (escore[k] < thresh)
           escore[k] = -0.0;
@@ -1454,11 +1403,11 @@ score_drop (double * restrict escore,
   CDECL(g);
 
   OMP("omp parallel") {
-    OMP("omp for schedule(static)") MTA_STREAMS
+    OMP("omp for schedule(static)")
       for (intvtx_t i = 0; i < nv; ++i)
         ws[i] = 0;
 
-    OMP("omp for schedule(static)") MTA_STREAMS
+    OMP("omp for schedule(static)")
       for (int64_t k = 0; k < ne; ++k) {
         const intvtx_t i = I(g, k);
         const intvtx_t j = J(g, k);
@@ -1466,7 +1415,7 @@ score_drop (double * restrict escore,
         OMP("omp atomic") ++ws[j];
       }
 
-    OMP("omp for schedule(static)") MTA_STREAMS
+    OMP("omp for schedule(static)")
       for (int64_t k = 0; k < ne; ++k) {
         const intvtx_t i = I(g, k);
         const intvtx_t j = J(g, k);
@@ -1490,7 +1439,7 @@ score_drop_size (double * restrict escore,
   CDECL(g);
 
   OMP("omp parallel") {
-    OMP("omp for schedule(static)") MTA_STREAMS
+    OMP("omp for schedule(static)")
       for (int64_t k = 0; k < ne; ++k) {
         const intvtx_t ci = cmap[I(g, k)];
         const intvtx_t cj = cmap[J(g, k)];
@@ -1528,18 +1477,18 @@ eval_cov (const struct el g, const int64_t * restrict c,
 #endif
 
   OMP("omp parallel") {
-    OMP("omp for schedule(static)") MTA_STREAMS
+    OMP("omp for schedule(static)")
       for (intvtx_t i = 0; i < nv; ++i) {
         vtxcount[i] = 0;
         border[i] = 0;
       }
-    OMP("omp for nowait schedule(static)") MTA_STREAMS
+    OMP("omp for nowait schedule(static)")
       for (intvtx_t i = 0; i < orig_nv; ++i) {
         const intvtx_t clbl = c[i];
         assert (clbl >= 0 && clbl < nv);
         OMP("omp atomic") ++vtxcount[clbl];
       }
-    OMP("omp for nowait schedule(static)") MTA_STREAMS
+    OMP("omp for nowait schedule(static)")
       for (int64_t k = 0; k < ne; ++k) {
         const intvtx_t i = I(g, k);
         const intvtx_t j = J(g, k);
@@ -1547,11 +1496,11 @@ eval_cov (const struct el g, const int64_t * restrict c,
         OMP("omp atomic") border[i] += w;
         OMP("omp atomic") border[j] += w;
       }
-    OMP("omp for nowait reduction(+:cov) schedule(static)") MTA_STREAMS
+    OMP("omp for nowait reduction(+:cov) schedule(static)")
       for (intvtx_t i = 0; i < nv; ++i)
         cov += D(g, i) / (long double)tot_weight;
 #if defined(USE_MIRRORCOV)||defined(COMPUTE_MIRRORCOV)
-    OMP("omp for nowait reduction(+:mirrorcov) schedule(static)") MTA_STREAMS
+    OMP("omp for nowait reduction(+:mirrorcov) schedule(static)")
       for (intvtx_t i = 0; i < nv; ++i) {
         const long double cnt = vtxcount[i];
         if (cnt)
@@ -1681,7 +1630,7 @@ community (int64_t * c, struct el * restrict g /* destructive */,
   if (double_self) {
     struct el gv = *g;
     DECL(gv);
-    OMP("omp parallel for") MTA_STREAMS
+    OMP("omp parallel for")
       for (intvtx_t i = 0; i < nv_orig; ++i)
         D(gv, i) = 2*D(gv, i);
   }
@@ -1698,7 +1647,7 @@ community (int64_t * c, struct el * restrict g /* destructive */,
     int64_t local_max_weight = 0;
     struct el gv = *g;
     DECL(gv);
-    OMP("omp for reduction(+:nonself_in_weight) schedule(static)") MTA_STREAMS
+    OMP("omp for reduction(+:nonself_in_weight) schedule(static)")
       for (int64_t k = 0; k < ne_orig; ++k) {
         assert (I(gv, k) != J(gv, k));
         canonical_order_edge (&I(gv, k), &J(gv, k));
@@ -1716,12 +1665,12 @@ community (int64_t * c, struct el * restrict g /* destructive */,
     assert (nsteps == g->ne);
 
     /* Initialize with all vertices separate */
-    OMP("omp for nowait schedule(static)") MTA_STREAMS
+    OMP("omp for nowait schedule(static)")
       for (intvtx_t i = 0; i < nv_orig; ++i) {
         c[i] = i;
 	csize[i] = 1;
       }
-    OMP("omp for schedule(static)") MTA_STREAMS
+    OMP("omp for schedule(static)")
       for (int64_t k = 0; k < gv.ne; ++k)
         score[k] = -2962.5;
   }
@@ -1770,7 +1719,7 @@ community (int64_t * c, struct el * restrict g /* destructive */,
     double max_score = -HUGE_VAL;
     OMP("omp parallel") {
       double tmax_score = -HUGE_VAL;
-      OMP("omp for nowait schedule(static)") MTA_STREAMS
+      OMP("omp for nowait schedule(static)")
         for (int64_t k = 0; k < g->ne; ++k)
           if (score[k] > tmax_score) tmax_score = score[k];
       OMP("omp critical")
@@ -1825,7 +1774,7 @@ community (int64_t * c, struct el * restrict g /* destructive */,
     old_nv = g->nv;
     switch (match_alg) {
     case ALG_GREEDY_PASS:
-      OMP("omp parallel for schedule(static)") MTA_STREAMS
+      OMP("omp parallel for schedule(static)")
         for (intvtx_t i = 0; i < old_nv; ++i) {
           m[i] = -1;
           ws_inner[i] = i;
@@ -1857,7 +1806,7 @@ community (int64_t * c, struct el * restrict g /* destructive */,
         double match_score = 0;
         intvtx_t nmatch = 0;
         OMP("omp parallel for reduction(+:match_score) reduction(+:nmatch)")
-          MTA_STREAMS
+        
           for (intvtx_t i = 0; i < old_nv; ++i) {
             if (m[i] >= 0) {
               if (i == I(cg, m[i])) {
@@ -1877,7 +1826,7 @@ community (int64_t * c, struct el * restrict g /* destructive */,
         double edge_sum_score = 0;
         intvtx_t nedge = 0;
         OMP("omp parallel for reduction(+:edge_sum_score) reduction(+:nedge)")
-          MTA_STREAMS
+        
           for (intvtx_t ki = 0; ki < old_nv; ++ki) {
             if (m[ki] >= 0) {
               intvtx_t i, j;
@@ -1903,7 +1852,7 @@ community (int64_t * c, struct el * restrict g /* destructive */,
       OMP("omp for")
 	for (intvtx_t i = 0; i < new_nv; ++i)
 	  ws_inner[i] = 0;
-      OMP("omp for") MTA_NODEP MTA_STREAMS
+      OMP("omp for")
 	for (intvtx_t i = 0; i < nv_orig; ++i)
 	  if (c[i] >= 0) c[i] = m[c[i]];
       OMP("omp for")
@@ -1925,7 +1874,7 @@ community (int64_t * c, struct el * restrict g /* destructive */,
 #endif
 
 #if !defined(NDEBUG)
-    OMP("omp parallel for") MTA("mta assert parallel") MTA_STREAMS
+    OMP("omp parallel for")
       for (int64_t k = 0; k < g->ne; ++k) {
         assert (Iold(*g, k) != Jold(*g, k));
       }
@@ -2067,7 +2016,7 @@ update_community (int64_t * restrict cmap_global, const int64_t nv_global,
     int64_t local_max_weight = 0;
     struct el gv = *g;
     DECL(gv);
-    OMP("omp for reduction(+:nonself_in_weight) schedule(static)") MTA_STREAMS
+    OMP("omp for reduction(+:nonself_in_weight) schedule(static)")
       for (int64_t k = 0; k < ne_orig; ++k) {
         assert (I(gv, k) != J(gv, k));
         canonical_order_edge (&I(gv, k), &J(gv, k));
@@ -2085,10 +2034,10 @@ update_community (int64_t * restrict cmap_global, const int64_t nv_global,
     assert (nsteps == g->ne);
 
     /* Initialize with all vertices separate */
-    OMP("omp for nowait schedule(static)") MTA_STREAMS
+    OMP("omp for nowait schedule(static)")
       for (intvtx_t i = 0; i < nv_orig; ++i)
         c[i] = i;
-    OMP("omp for schedule(static)") MTA_STREAMS
+    OMP("omp for schedule(static)")
       for (int64_t k = 0; k < gv.ne; ++k)
         score[k] = -2962.5;
   }
@@ -2138,7 +2087,7 @@ update_community (int64_t * restrict cmap_global, const int64_t nv_global,
     double max_score = -HUGE_VAL;
     OMP("omp parallel") {
       double tmax_score = -HUGE_VAL;
-      OMP("omp for nowait schedule(static)") MTA_STREAMS
+      OMP("omp for nowait schedule(static)")
         for (int64_t k = 0; k < g->ne; ++k)
           if (score[k] > tmax_score) tmax_score = score[k];
       OMP("omp critical")
@@ -2193,7 +2142,7 @@ update_community (int64_t * restrict cmap_global, const int64_t nv_global,
     old_nv = g->nv;
     switch (match_alg) {
     case ALG_GREEDY_PASS:
-      OMP("omp parallel for schedule(static)") MTA_STREAMS
+      OMP("omp parallel for schedule(static)")
         for (intvtx_t i = 0; i < old_nv; ++i) {
           m[i] = -1;
           ws_inner[i] = i;
@@ -2225,7 +2174,7 @@ update_community (int64_t * restrict cmap_global, const int64_t nv_global,
         double match_score = 0;
         intvtx_t nmatch = 0;
         OMP("omp parallel for reduction(+:match_score) reduction(+:nmatch)")
-          MTA_STREAMS
+        
           for (intvtx_t i = 0; i < old_nv; ++i) {
             if (m[i] >= 0) {
               if (i == I(cg, m[i])) {
@@ -2245,7 +2194,7 @@ update_community (int64_t * restrict cmap_global, const int64_t nv_global,
         double edge_sum_score = 0;
         intvtx_t nedge = 0;
         OMP("omp parallel for reduction(+:edge_sum_score) reduction(+:nedge)")
-          MTA_STREAMS
+        
           for (intvtx_t ki = 0; ki < old_nv; ++ki) {
             if (m[ki] >= 0) {
               intvtx_t i, j;
@@ -2267,7 +2216,7 @@ update_community (int64_t * restrict cmap_global, const int64_t nv_global,
     if (verbose) fprintf (stderr, "\tcontract ...");
     /* tic (); */
     contract (g, new_nv, m, rowstart, rowend, ws_inner);
-    OMP("omp parallel for") MTA_NODEP MTA_STREAMS
+    OMP("omp parallel for")
       for (intvtx_t i = 0; i < nv_orig; ++i)
         if (c[i] >= 0) c[i] = m[c[i]];
     /* contract_time += toc (); */
@@ -2292,7 +2241,7 @@ update_community (int64_t * restrict cmap_global, const int64_t nv_global,
 #endif
 
 #if !defined(NDEBUG)
-    OMP("omp parallel for") MTA("mta assert parallel") MTA_STREAMS
+    OMP("omp parallel for")
       for (int64_t k = 0; k < g->ne; ++k) {
         assert (Iold(*g, k) != Jold(*g, k));
       }
@@ -2320,29 +2269,29 @@ update_community (int64_t * restrict cmap_global, const int64_t nv_global,
     int64_t totsz = 0;
 #endif
     OMP("omp parallel") {
-      OMP("omp for") MTA_STREAMS
+      OMP("omp for")
         for (intvtx_t i = 0; i < new_nv; ++i)
           ws_inner[i] = 0;
-      OMP("omp for") MTA_STREAMS
+      OMP("omp for")
         for (int64_t k = 0; k < old_nc; ++k) {
           intvtx_t newc = m[k];
           assert (newc < new_nv);
           assert (newc >= 0);
           OMP("omp atomic") ws_inner[newc] += csize[k];
         }
-      OMP("omp for") MTA_STREAMS
+      OMP("omp for")
         for (int64_t k = 0; k < nv_global; ++k) {
           intvtx_t oldc = cmap_global[k];
           intvtx_t newc = m[oldc];
           cmap_global[k] = newc;
         }
-      OMP("omp for") MTA_STREAMS
+      OMP("omp for")
         for (intvtx_t i = 0; i < new_nv; ++i) {
           const intvtx_t z = ws_inner[i];
           csize[i] = z;
         }
 #if 0&&!defined(NDEBUG)
-      OMP("omp for reduction(+: totsz)") MTA_STREAMS
+      OMP("omp for reduction(+: totsz)")
         for (intvtx_t i = 0; i < new_nv; ++i) {
           const intvtx_t z = csize[i];
           totsz += z;
@@ -2395,8 +2344,8 @@ eval_conductance_cgraph (const struct el g, int64_t * ws)
 
   OMP("omp parallel") {
     OMP("omp for reduction(+: totv) schedule(static)")
-      MTA_NODEP
-      MTA_STREAMS
+      
+    
       for (int64_t i = 0; i < nv; ++i) {
         vol[i] = D(g, i);
         totv += vol[i];
@@ -2404,8 +2353,8 @@ eval_conductance_cgraph (const struct el g, int64_t * ws)
       }
 
     OMP("omp for reduction(+: totv) schedule(static)")
-      MTA_NODEP
-      MTA_STREAMS
+      
+    
       for (int64_t k = 0; k < ne; ++k) {
         const int64_t i = I(g, k);
         const int64_t j = J(g, k);
@@ -2419,8 +2368,8 @@ eval_conductance_cgraph (const struct el g, int64_t * ws)
       }
 
     OMP("omp for reduction(+:cond) schedule(static)")
-      MTA_NODEP
-      MTA_STREAMS
+      
+    
       for (int64_t i = 0; i < nv; ++i) {
         const double denom = 2*vol[i] > totv? totv - vol[i] : vol[i];
         const double numer = ncut[i];
@@ -2448,16 +2397,16 @@ eval_modularity_cgraph (const struct el g, int64_t * ws)
 
   OMP("omp parallel") {
     OMP("omp for reduction(+: totw) schedule(static)")
-      MTA_NODEP
-      MTA_STREAMS
+      
+    
       for (int64_t i = 0; i < nv; ++i) {
         Lsplus[i] = 4*D(g, i);
         totw += 2*D(g, i);
       }
 
     OMP("omp for reduction(+: totw) schedule(static)")
-      MTA_NODEP
-      MTA_STREAMS
+      
+    
       for (int64_t k = 0; k < ne; ++k) {
         const int64_t i = I(g, k);
         const int64_t j = J(g, k);
@@ -2469,7 +2418,7 @@ eval_modularity_cgraph (const struct el g, int64_t * ws)
       }
 
     OMP("omp for reduction(+: out) schedule(static)")
-      MTA_STREAMS
+    
       for (int64_t i = 0; i < nv; ++i) {
         /* if (i < 20) */
         /*     fprintf (stderr, "%ld: %g %g %g\n", (long)i, */
@@ -2532,7 +2481,7 @@ contract_self_el (int64_t NE, intvtx_t * restrict el /* 3 x oldNE */,
     OMP("omp single") w_out = 0;
 #endif
 
-    OMP("omp for schedule(static)") MTA_NODEP
+    OMP("omp for schedule(static)") 
       for (int64_t k = 0; k < NE; ++k)
         canonical_order_edge (&Iel(el, k), &Jel(el, k));
 
@@ -2570,7 +2519,7 @@ contract_self_el (int64_t NE, intvtx_t * restrict el /* 3 x oldNE */,
 
     /* int64_t dumped_row = 0; */
     /* Sort then collapse within each row. */
-    OMP("omp for schedule(guided)") MTA("mta assert parallel")
+    OMP("omp for schedule(guided)") 
       for (intvtx_t new_i = 0; new_i < nv; ++new_i) {
         const int64_t new_i_end = count[new_i+1];
         int64_t k, kcur = count[new_i];

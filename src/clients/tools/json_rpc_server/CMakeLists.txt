@@ -14,6 +14,7 @@ set(sources
 	src/array_to_json_reduction.cpp
 	src/bfs_edges.cpp
 	src/breadth_first_search.cpp
+        src/community_on_demand.cpp
 	src/egonet.cpp
 	src/get_algorithms.cpp
 	src/get_connected_component.cpp
@@ -35,7 +36,7 @@ set(sources
 	src/rpc_state.cpp
 	src/session_handling.cpp
 	src/stinger_rpc_functions.cpp
-)
+		src/exact_diameter.cpp src/single_source_shortest_path.cpp)
 
 add_executable(stinger_json_rpc_server ${headers} ${sources})
 target_link_libraries(stinger_json_rpc_server stinger_net stinger_alg mongoose)

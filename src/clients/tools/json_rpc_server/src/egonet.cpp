@@ -74,7 +74,7 @@ JSON_RPC_egonet::operator()(rapidjson::Value * params, rapidjson::Value & result
 
 
   /* vertex has no edges -- this is easy */
-  if (stinger_outdegree (S, source) == 0) {
+  if (stinger_outdegree (S, source) == 0 && stinger_indegree (S, source) == 0) {
     result.AddMember("egonet", edges, allocator);
     return 0;
   }
@@ -96,8 +96,8 @@ JSON_RPC_egonet::operator()(rapidjson::Value * params, rapidjson::Value & result
       char * physID;
       uint64_t len;
       if (-1 == stinger_mapping_physid_direct(S, source, &physID, &len)) {
-	physID = (char *) "";
-	len = 0;
+        physID = (char *) "";
+        len = 0;
       }
       center_str.SetString(physID, len, allocator);
       vtx_str.PushBack(center_str, allocator);
@@ -109,11 +109,11 @@ JSON_RPC_egonet::operator()(rapidjson::Value * params, rapidjson::Value & result
       vtypes.PushBack(vtype, allocator);
 
       if (strings) {
-	char * name = NULL;
-	uint64_t len = 0;
-	char * vtype_name = stinger_vtype_names_lookup_name(S, source_type);
-	vtype_str.SetString(vtype_name, strlen(vtype_name), allocator);
-	vtypes_str.PushBack(vtype_str, allocator);
+        char * name = NULL;
+        uint64_t len = 0;
+        char * vtype_name = stinger_vtype_names_lookup_name(S, source_type);
+        vtype_str.SetString(vtype_name, strlen(vtype_name), allocator);
+        vtypes_str.PushBack(vtype_str, allocator);
       }
     }
   }
@@ -129,49 +129,49 @@ JSON_RPC_egonet::operator()(rapidjson::Value * params, rapidjson::Value & result
       char * physID;
       uint64_t len;
       if (-1 == stinger_mapping_physid_direct(S, u, &physID, &len)) {
-	physID = (char *) "";
-	len = 0;
+        physID = (char *) "";
+        len = 0;
       }
       src_str.SetString(physID, len, allocator);
       vtx_str.PushBack(src_str, allocator);
     }
 
-    if (incident_edges) {
+    if (incident_edges && STINGER_IS_OUT_EDGE) {
       src.SetInt64(source);
       dst.SetInt64(u);
       val.SetArray();
       val.PushBack(src, allocator);
       val.PushBack(dst, allocator);
       if (get_etypes) {
-	etype.SetInt64(STINGER_EDGE_TYPE);
-	val.PushBack(etype, allocator);
+        etype.SetInt64(STINGER_EDGE_TYPE);
+        val.PushBack(etype, allocator);
       }
       edges.PushBack(val, allocator);
 
       if (strings) {
-	char * physID;
-	uint64_t len;
-	if (-1 == stinger_mapping_physid_direct(S, source, &physID, &len)) {
-	  physID = (char *) "";
-	  len = 0;
-	}
-	src_str.SetString(physID, len, allocator);
-	
-	if (-1 == stinger_mapping_physid_direct(S, u, &physID, &len)) {
-	  physID = (char *) "";
-	  len = 0;
-	}
-	dst_str.SetString(physID, len, allocator);
+        char * physID;
+        uint64_t len;
+        if (-1 == stinger_mapping_physid_direct(S, source, &physID, &len)) {
+          physID = (char *) "";
+          len = 0;
+        }
+        src_str.SetString(physID, len, allocator);
 
-	val.SetArray();
-	val.PushBack(src_str, allocator);
-	val.PushBack(dst_str, allocator);
-	if (get_etypes) {
-	  char * etype_str_ptr = stinger_etype_names_lookup_name(S, STINGER_EDGE_TYPE);
-	  etype_str.SetString(etype_str_ptr, strlen(etype_str_ptr), allocator);
-	  val.PushBack(etype_str, allocator);
-	}
-	edges_str.PushBack(val, allocator);
+        if (-1 == stinger_mapping_physid_direct(S, u, &physID, &len)) {
+          physID = (char *) "";
+          len = 0;
+        }
+        dst_str.SetString(physID, len, allocator);
+
+        val.SetArray();
+        val.PushBack(src_str, allocator);
+        val.PushBack(dst_str, allocator);
+        if (get_etypes) {
+          char * etype_str_ptr = stinger_etype_names_lookup_name(S, STINGER_EDGE_TYPE);
+          etype_str.SetString(etype_str_ptr, strlen(etype_str_ptr), allocator);
+          val.PushBack(etype_str, allocator);
+        }
+        edges_str.PushBack(val, allocator);
       }
     }
     
@@ -181,11 +181,11 @@ JSON_RPC_egonet::operator()(rapidjson::Value * params, rapidjson::Value & result
       vtypes.PushBack(vtype, allocator);
 
       if (strings) {
-	char * name = NULL;
-	uint64_t len = 0;
-	char * vtype_name = stinger_vtype_names_lookup_name(S, source_type);
-	vtype_str.SetString(vtype_name, strlen(vtype_name), allocator);
-	vtypes_str.PushBack(vtype_str, allocator);
+        char * name = NULL;
+        uint64_t len = 0;
+        char * vtype_name = stinger_vtype_names_lookup_name(S, source_type);
+        vtype_str.SetString(vtype_name, strlen(vtype_name), allocator);
+        vtypes_str.PushBack(vtype_str, allocator);
       }
     }
 
@@ -195,48 +195,48 @@ JSON_RPC_egonet::operator()(rapidjson::Value * params, rapidjson::Value & result
   STINGER_FORALL_EDGES_OF_VTX_BEGIN (S, source) {
     int64_t u = STINGER_EDGE_DEST;
 
-    STINGER_FORALL_EDGES_OF_VTX_BEGIN (S, u) {
+    STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN (S, u) {
       int64_t v = STINGER_EDGE_DEST;
 
       if (marks[v]) {
-	src.SetInt64(u);
-	dst.SetInt64(v);
-	val.SetArray();
-	val.PushBack(src, allocator);
-	val.PushBack(dst, allocator);
-	if (get_etypes) {
-	  etype.SetInt64(STINGER_EDGE_TYPE);
-	  val.PushBack(etype, allocator);
-	}
-	edges.PushBack(val, allocator);
-	
-	if (strings) {
-	  char * physID;
-	  uint64_t len;
-	  if (-1 == stinger_mapping_physid_direct(S, u, &physID, &len)) {
-	    physID = (char *) "";
-	    len = 0;
-	  }
-	  src_str.SetString(physID, len, allocator);
+        src.SetInt64(u);
+        dst.SetInt64(v);
+        val.SetArray();
+        val.PushBack(src, allocator);
+        val.PushBack(dst, allocator);
+        if (get_etypes) {
+          etype.SetInt64(STINGER_EDGE_TYPE);
+          val.PushBack(etype, allocator);
+        }
+        edges.PushBack(val, allocator);
 
-	  if (-1 == stinger_mapping_physid_direct(S, v, &physID, &len)) {
-	    physID = (char *) "";
-	    len = 0;
-	  }
-	  dst_str.SetString(physID, len, allocator);
-	  val.SetArray();
-	  val.PushBack(src_str, allocator);
-	  val.PushBack(dst_str, allocator);
-	  if (get_etypes) {
-	    char * etype_str_ptr = stinger_etype_names_lookup_name(S, STINGER_EDGE_TYPE);
-	    etype_str.SetString(etype_str_ptr, strlen(etype_str_ptr), allocator);
-	    val.PushBack(etype_str, allocator);
-	  }
-	  edges_str.PushBack(val, allocator);
-	}
+        if (strings) {
+          char * physID;
+          uint64_t len;
+          if (-1 == stinger_mapping_physid_direct(S, u, &physID, &len)) {
+            physID = (char *) "";
+            len = 0;
+          }
+          src_str.SetString(physID, len, allocator);
+
+          if (-1 == stinger_mapping_physid_direct(S, v, &physID, &len)) {
+            physID = (char *) "";
+            len = 0;
+          }
+          dst_str.SetString(physID, len, allocator);
+          val.SetArray();
+          val.PushBack(src_str, allocator);
+          val.PushBack(dst_str, allocator);
+          if (get_etypes) {
+            char * etype_str_ptr = stinger_etype_names_lookup_name(S, STINGER_EDGE_TYPE);
+            etype_str.SetString(etype_str_ptr, strlen(etype_str_ptr), allocator);
+            val.PushBack(etype_str, allocator);
+          }
+          edges_str.PushBack(val, allocator);
+        }
       }
 
-    } STINGER_FORALL_EDGES_OF_VTX_END();
+    } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
   } STINGER_FORALL_EDGES_OF_VTX_END();
 
 

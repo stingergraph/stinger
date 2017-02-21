@@ -372,19 +372,23 @@ TEST_F(StingerCoreTest, stinger_delete_edges) {
 
   stinger_insert_edge_pair(S, 0, 300, 301, 1, 1);
 
-  int64_t outDegree, inDegree;
+  int64_t outDegree, inDegree, degree;
 
   outDegree = stinger_outdegree_get(S,300);
   inDegree = stinger_indegree_get(S,300);
+  degree = stinger_degree_get(S,300);
 
   EXPECT_EQ(outDegree,1);
   EXPECT_EQ(inDegree,1);
+  EXPECT_EQ(degree,1);
 
   outDegree = stinger_outdegree_get(S,301);
   inDegree = stinger_indegree_get(S,301);
+  degree = stinger_degree_get(S,301);
 
   EXPECT_EQ(outDegree,1);
   EXPECT_EQ(inDegree,1);
+  EXPECT_EQ(degree,1);
 
   ret = stinger_remove_edge_pair(S, 0, 300, 301);
 
@@ -392,15 +396,19 @@ TEST_F(StingerCoreTest, stinger_delete_edges) {
 
   outDegree = stinger_outdegree_get(S,300);
   inDegree = stinger_indegree_get(S,300);
+  degree = stinger_degree_get(S,300);
 
   EXPECT_EQ(outDegree,0);
   EXPECT_EQ(inDegree,0);
+  EXPECT_EQ(degree,0);
 
   outDegree = stinger_outdegree_get(S,301);
   inDegree = stinger_indegree_get(S,301);
+  degree = stinger_degree_get(S,301);
 
   EXPECT_EQ(outDegree,0);
   EXPECT_EQ(inDegree,0);
+  EXPECT_EQ(degree,0);
 
   int64_t total_edges = 0;
 
@@ -432,15 +440,19 @@ TEST_F(StingerCoreTest, stinger_delete_edges) {
 
   outDegree = stinger_outdegree_get(S,400);
   inDegree = stinger_indegree_get(S,400);
+  degree = stinger_degree_get(S,400);
 
   EXPECT_EQ(outDegree,0);
   EXPECT_EQ(inDegree,1);
+  EXPECT_EQ(degree,1);
 
   outDegree = stinger_outdegree_get(S,401);
   inDegree = stinger_indegree_get(S,401);
+  degree = stinger_degree_get(S,400);
 
   EXPECT_EQ(outDegree,1);
   EXPECT_EQ(inDegree,0);
+  EXPECT_EQ(degree,1);
 
   STINGER_FORALL_EDGES_OF_ALL_TYPES_BEGIN(S) {
     total_edges++;
@@ -486,12 +498,18 @@ TEST_F(StingerCoreTest, stinger_delete_edges) {
   for (int i=0; i < 100; i++) {
     outDegree = stinger_outdegree_get(S,i);
     inDegree = stinger_indegree_get(S,i);
+    degree = stinger_degree_get(S,i);
     EXPECT_EQ(outDegree,99-i);
     EXPECT_EQ(inDegree,i);
+    EXPECT_EQ(degree,99);
     outDegree = stinger_typed_outdegree(S,i,0);
+    degree = stinger_typed_degree(S,i,0);
     EXPECT_EQ(outDegree,0);
+    EXPECT_EQ(degree,0);
     outDegree = stinger_typed_outdegree(S,i,1);
+    degree = stinger_typed_degree(S,i,1);
     EXPECT_EQ(outDegree,99-i);
+    EXPECT_EQ(degree,99);
   }
 
   for (int i=0; i < 100; i++) {
@@ -507,9 +525,42 @@ TEST_F(StingerCoreTest, stinger_delete_edges) {
   for (int i=0; i < 100; i++) {
     outDegree = stinger_outdegree_get(S,i);
     inDegree = stinger_indegree_get(S,i);
+    degree = stinger_degree_get(S,i);
     EXPECT_EQ(outDegree,0);
     EXPECT_EQ(inDegree,0);
+    EXPECT_EQ(degree,0);
   }
+}
+
+TEST_F(StingerCoreTest, racing_deletions) {
+  int64_t ret;
+  // Insert undirected edges
+  OMP("omp parallel for")
+  for (int i=0; i < 100; i++) {
+    int64_t timestamp = i+1;
+    int64_t ret;
+    for (int j=i+1; j < 100; j++) {
+      ret = stinger_insert_edge_pair(S, 0, i, j, 1, timestamp);
+    }
+  }
+
+  for (int i=0; i < 100; i++) {
+    for (int j=i+1; j < 100; j++) {
+      OMP("omp parallel") {
+        OMP ("omp sections") {
+          OMP("omp section") {
+            ret = stinger_remove_edge(S, 0, i, j);
+          }
+          OMP("omp section") {
+            ret = stinger_remove_edge(S, 0, j, i);
+          }
+        }
+      }
+    }
+  }
+
+  int64_t consistency = stinger_consistency_check(S,S->max_nv);
+  EXPECT_EQ(consistency,0);
 }
 
 TEST_F(StingerCoreTest, stinger_remove_vertex) {
@@ -538,26 +589,36 @@ TEST_F(StingerCoreTest, stinger_remove_vertex) {
   }
 
   // PART 1: remove a vertex with all undirected edges
-  int64_t outDegree, inDegree;
+  int64_t outDegree, inDegree, degree;
   outDegree = stinger_outdegree_get(S,3);
   inDegree = stinger_indegree_get(S,3);
+  degree = stinger_degree_get(S,3);
   EXPECT_GT(outDegree,0);
   EXPECT_GT(inDegree,0);
+  EXPECT_GT(degree,0);
   stinger_remove_vertex (S, 3);
   outDegree = stinger_outdegree_get(S,3);
   inDegree = stinger_indegree_get(S,3);
+  degree = stinger_degree_get(S,3);
   EXPECT_EQ(outDegree,0);
   EXPECT_EQ(inDegree,0);
+  EXPECT_EQ(degree,0);
+
+  bool has_edge_list = false;
+  bool in_edge_list = false;
 
   STINGER_FORALL_EDGES_OF_VTX_BEGIN(S,3) {
-    EXPECT_FALSE(true) << "Vertex should have no incident edges";
+    fprintf(stderr,"%ld %ld %ld\n",STINGER_EDGE_SOURCE,STINGER_EDGE_DEST,STINGER_EDGE_DIRECTION);
+    has_edge_list = true;
   } STINGER_FORALL_EDGES_OF_VTX_END();
+  EXPECT_FALSE(has_edge_list) << "Vertex should have no incident edges";
 
   STINGER_FORALL_EDGES_OF_ALL_TYPES_BEGIN(S) {
     if (STINGER_EDGE_SOURCE == 3 || STINGER_EDGE_DEST == 3) {
-      EXPECT_FALSE(true) << "Vertex should have no incident edges";
+      in_edge_list = true;
     }
   } STINGER_FORALL_EDGES_OF_ALL_TYPES_END();
+  EXPECT_FALSE(in_edge_list) << "Vertex should have no incident edges";
 
   consistency = stinger_consistency_check(S,S->max_nv);
   EXPECT_EQ(consistency,0);
@@ -565,23 +626,31 @@ TEST_F(StingerCoreTest, stinger_remove_vertex) {
   // PART 2: remove a vertex with some directed out edges
   outDegree = stinger_outdegree_get(S,1);
   inDegree = stinger_indegree_get(S,1);
+  degree = stinger_degree_get(S,1);
   EXPECT_GT(outDegree,0);
   EXPECT_GT(inDegree,0);
+  EXPECT_GT(degree,0);
   stinger_remove_vertex (S, 1);
   outDegree = stinger_outdegree_get(S,1);
   inDegree = stinger_indegree_get(S,1);
+  degree = stinger_degree_get(S,1);
   EXPECT_EQ(outDegree,0);
   EXPECT_EQ(inDegree,0);
+  EXPECT_EQ(degree,0);
 
+  has_edge_list = false;
+  in_edge_list = false;
   STINGER_FORALL_EDGES_OF_VTX_BEGIN(S,1) {
-    EXPECT_FALSE(true) << "Vertex should have no incident edges";
+    has_edge_list = true;
   } STINGER_FORALL_EDGES_OF_VTX_END();
+  EXPECT_FALSE(has_edge_list) << "Vertex should have no incident edges";
 
   STINGER_FORALL_EDGES_OF_ALL_TYPES_BEGIN(S) {
     if (STINGER_EDGE_SOURCE == 1 || STINGER_EDGE_DEST == 1) {
-      EXPECT_FALSE(true) << "Vertex should have no incident edges";
+      in_edge_list = true;
     }
   } STINGER_FORALL_EDGES_OF_ALL_TYPES_END();
+  EXPECT_FALSE(in_edge_list) << "Vertex should have no incident edges";
 
   consistency = stinger_consistency_check(S,S->max_nv);
   EXPECT_EQ(consistency,0); 
@@ -589,23 +658,31 @@ TEST_F(StingerCoreTest, stinger_remove_vertex) {
   // PART 2: remove a vertex with some directed in edges
   outDegree = stinger_outdegree_get(S,2);
   inDegree = stinger_indegree_get(S,2);
+  degree = stinger_degree_get(S,2);
   EXPECT_GT(outDegree,0);
   EXPECT_GT(inDegree,0);
+  EXPECT_GT(degree,0);
   stinger_remove_vertex (S, 2);
   outDegree = stinger_outdegree_get(S,2);
   inDegree = stinger_indegree_get(S,2);
+  degree = stinger_degree_get(S,2);
   EXPECT_EQ(outDegree,0);
   EXPECT_EQ(inDegree,0);
+  EXPECT_EQ(degree,0);
 
+  has_edge_list = false;
+  in_edge_list = false;
   STINGER_FORALL_EDGES_OF_VTX_BEGIN(S,2) {
-    EXPECT_FALSE(true) << "Vertex should have no incident edges";
-  } STINGER_FORALL_EDGES_OF_VTX_END();
+    has_edge_list = true;
+  } STINGER_FORALL_EDGES_OF_VTX_END(); 
+  EXPECT_FALSE(has_edge_list) << "Vertex should have no incident edges";
 
   STINGER_FORALL_EDGES_OF_ALL_TYPES_BEGIN(S) {
     if (STINGER_EDGE_SOURCE == 2 || STINGER_EDGE_DEST == 2) {
-      EXPECT_FALSE(true) << "Vertex should have no incident edges";
+      in_edge_list = true;
     }
   } STINGER_FORALL_EDGES_OF_ALL_TYPES_END();
+  EXPECT_FALSE(in_edge_list) << "Vertex should have no incident edges";
 
   consistency = stinger_consistency_check(S,S->max_nv);
   EXPECT_EQ(consistency,0);  
@@ -631,7 +708,7 @@ TEST_F(StingerCoreTest, stinger_save_load_file) {
 
   int64_t ret;
 
-  ret = stinger_save_to_file(S, stinger_max_active_vertex(S), "./undirected.stinger");
+  ret = stinger_save_to_file(S, stinger_max_active_vertex(S)+1, "./undirected.stinger");
 
   EXPECT_EQ(ret,0);
 
@@ -651,9 +728,9 @@ TEST_F(StingerCoreTest, stinger_save_load_file) {
   ret = stinger_open_from_file("./undirected.stinger",S,&max_nv);
 
   EXPECT_EQ(ret,0);
-  EXPECT_EQ(max_nv,99);
+  EXPECT_EQ(max_nv,100);
 
-  int64_t total_edges = (99*99);
+  int64_t total_edges = (100*99);
 
   STINGER_FORALL_EDGES_OF_ALL_TYPES_BEGIN(S) {
     int64_t expected_timestamp = std::min(STINGER_EDGE_SOURCE,STINGER_EDGE_DEST) + 1;
@@ -945,13 +1022,6 @@ TEST_F(StingerCoreTest, gather_successors) {
 }
 
 TEST_F(StingerCoreTest, gather_predecessors) {
-  void stinger_gather_typed_predecessors (const struct stinger *,
-    int64_t /* type */,
-    int64_t /* v */,
-    size_t * /* outlen */,
-    int64_t * /* out */,
-    size_t /* max_outlen */ );  
-
   OMP("omp parallel for")
   for (int i=0; i < 100; i++) {
     int64_t timestamp = i+1;
@@ -1001,8 +1071,59 @@ TEST_F(StingerCoreTest, gather_predecessors) {
   EXPECT_EQ(out_vtx, (void*)NULL);
 }
 
+TEST_F(StingerCoreTest, gather_neighbors) {
+  OMP("omp parallel for")
+  for (int i=0; i < 100; i++) {
+    int64_t timestamp = i+1;
+    for (int j=i+1; j < 100; j++) {
+      stinger_insert_edge_pair(S, (j%2)?1:0 , i, j, 1, timestamp);
+    }
+  }
+
+  OMP("omp parallel for")
+  for (int i=0; i < 100; i++) {
+    int64_t timestamp = i+2;
+    for (int j=i+101; j < 200; j++) {
+      stinger_insert_edge(S, 0, j, i, 1, timestamp);
+    }
+  }
+
+  // PART 1: Try a buffer that is big enough to hold all neighbors
+  int64_t * out_vtx = (int64_t *)xcalloc(200,sizeof(int64_t));
+  size_t outlen;
+
+  stinger_gather_typed_neighbors(S, 0, 0, &outlen, out_vtx, 200);
+  EXPECT_EQ(outlen, 148);
+
+  for (int64_t i=0; i < outlen; i++) {
+    EXPECT_TRUE(out_vtx[i] % 2 == 0 || out_vtx[i] >= 101);
+  }
+
+  xfree(out_vtx);
+
+  // PART 2: Try a small buffer
+  out_vtx = (int64_t *)xcalloc(99,sizeof(int64_t));
+
+  stinger_gather_typed_neighbors(S, 0, 0, &outlen, out_vtx, 99);
+  EXPECT_EQ(outlen, 99);
+
+  for (int64_t i=0; i < outlen; i++) {
+    EXPECT_TRUE(out_vtx[i] % 2 == 0 || out_vtx[i] >= 101);
+  }
+
+  xfree(out_vtx);
+
+  // PART 3: Try an empty buffer
+  out_vtx = NULL;
+
+  stinger_gather_typed_neighbors(S, 0, 0, &outlen, out_vtx, 0);
+  EXPECT_EQ(outlen, 0);
+  EXPECT_EQ(out_vtx, (void*)NULL);
+}
+
 TEST_F(StingerCoreTest, edge_counts) {
   int64_t edge_counts[2][200];
+  int64_t extra_in_edges = 0;
 
   for (int i=0; i < 200; i++) {
     edge_counts[0][i] = edge_counts[1][i] = 0;
@@ -1013,6 +1134,7 @@ TEST_F(StingerCoreTest, edge_counts) {
     int64_t timestamp = i+1;
     for (int j=i+1; j < 100; j++) {
       stinger_insert_edge_pair(S, (j%2)?1:0 , i, j, 1, timestamp);
+      // A pair should add one edge on each size
       stinger_int64_fetch_add(&edge_counts[(j%2)?1:0][i],1);
       stinger_int64_fetch_add(&edge_counts[(j%2)?1:0][j],1);
     }
@@ -1022,8 +1144,11 @@ TEST_F(StingerCoreTest, edge_counts) {
   for (int i=0; i < 100; i++) {
     int64_t timestamp = i+2;
     for (int j=i+101; j < 200; j++) {
+      // a single edge should add an In edge and an out edge
       stinger_insert_edge(S, 0, j, i, 1, timestamp);
       stinger_int64_fetch_add(&edge_counts[0][j],1);
+      stinger_int64_fetch_add(&edge_counts[0][i],1);
+      stinger_int64_fetch_add(&extra_in_edges,1);
     }
   }
 
@@ -1045,12 +1170,14 @@ TEST_F(StingerCoreTest, edge_counts) {
       expected_edges_up_to += edge_counts[0][i] + edge_counts[1][i];
     }
   }
+  expected_edges_up_to -= extra_in_edges;
+  expected_total_edges -= extra_in_edges;
 
-  ASSERT_EQ(max_edges, (expected_max_ebs+1) * STINGER_EDGEBLOCKSIZE);
+  EXPECT_EQ(max_edges, (expected_max_ebs+1) * STINGER_EDGEBLOCKSIZE);
 
-  ASSERT_EQ(edges_up_to, expected_edges_up_to);
+  EXPECT_EQ(edges_up_to, expected_edges_up_to);
 
-  ASSERT_EQ(total_edges, expected_total_edges);
+  EXPECT_EQ(total_edges, expected_total_edges);
 }
 
 int

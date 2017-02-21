@@ -142,16 +142,8 @@ void xelemcpy(int64_t *dest, int64_t *src, int64_t num)
  * @param x Pointer to memory location
  * @param sz Memory size in bytes
  */
-MTA ("mta inline")
+
 void xzero(void *x, const size_t sz)
 {
-#if !defined(__MTA__)
   memset (x, 0, sz);
-#else
-  /* No, really.  They couldn't be bothered to implement memset intelligently. */
-  unsigned char *restrict t = (unsigned char *) x;
-  MTA ("mta block schedule") MTASTREAMS ()
-    for (size_t k = 0; k < sz; ++k)
-      t[k] = 0;
-#endif
 }

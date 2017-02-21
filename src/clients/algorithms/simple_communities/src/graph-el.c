@@ -20,7 +20,6 @@
 
 #include "compat.h"
 #include "stinger_core/xmalloc.h"
-#include "xmt-luc.h"
 #include "graph-el.h"
 
 #include "bsutil.h"
@@ -32,12 +31,6 @@ static int io_ready = 0;
 static void
 io_init (void)
 {
-#if defined(__MTA__)
-  if (!io_ready) {
-    extern void xmt_luc_io_init (void);
-    xmt_luc_io_init ();
-  }
-#endif
   io_ready = 1;
 }
 
@@ -210,14 +203,13 @@ el_snarf_graph (const char * fname,
   int64_t nv, ne;
 
   io_init ();
-  xmt_luc_stat (fname, &sz);
+  luc_stat (fname, &sz);
 
   if (sz % sizeof (int64_t)) {
     fprintf (stderr, "graph file size is not a multiple of sizeof (int64_t)\n");
     abort ();
   }
 
-#if !defined(__MTA__)
   {
     int64_t hdr[3];
     int fd;
@@ -300,30 +292,6 @@ el_snarf_graph (const char * fname,
 
     close (fd);
   }
-#else /* __MTA__ */
-  {
-    int64_t *mem;
-    extern void xmt_luc_snapin (const char*, void*, size_t);
-    mem = xmalloc (sz);
-    xmt_luc_snapin (fname, mem, sz);
-    if (endian_check != *mem) {
-      needs_bs = 1;
-      comm_bs64_n (sz / sizeof (*mem), mem);
-    }
-    nv = mem[1];
-    ne = mem[2];
-    *g = alloc_graph (nv, ne);
-    g->ne = ne;
-#if defined(USE32BIT)
-#error "Stupid idea."
-#endif
-    for (int64_t k = 0; k < nv; ++k)
-      g->d[k] = mem[3+k];
-    for (int64_t k = 0; k < 3*ne; ++k)
-      g->el[k] = mem[3+nv+k];
-  }
-#endif /* __MTA__ */
-
   return needs_bs;
 }
 
@@ -349,8 +317,6 @@ dump_el (const char * fname,
   int64_t ne = g.ne;
   CDECL(g);
 
-#if !defined(__MTA__)
-  /* The sane option. */
   int fd;
   if ( (fd = open (fname, O_WRONLY|O_CREAT|O_TRUNC,
                    S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) < 0) {
@@ -389,24 +355,6 @@ dump_el (const char * fname,
 
   if (3 * ne * sizeof (I(g, 0)) != xwrite (fd, &I(g, 0), 3 * ne * sizeof (I(g, 0))))
     goto err;
-#endif
-
-#else /* __MTA__ inanity */
-  extern void xmt_luc_snapout (const char*, void*, size_t);
-  assert (niwork >= 3*(ne + 1));
-  iwork[0] = endian_check;
-  iwork[1] = nv;
-  iwork[2] = ne;
-  MTA("mta assert nodep")
-    for (size_t k = 0; k < nv; ++k)
-      iwork[3 + k] = D(g, k);
-  MTA("mta assert nodep")
-    for (size_t k = 0; k < ne; ++k) {
-      iwork[3 + nv + 3*k] = I(g, k);
-      iwork[3 + nv + 3*k+1] = J(g, k);
-      iwork[3 + nv + 3*k+2] = W(g, k);
-    }
-  xmt_luc_snapout (fname, iwork, (3 + nv + 3*ne) * sizeof (*iwork));
 #endif
 
   return;
@@ -489,7 +437,7 @@ prefix_sum (const intvtx_t n, intvtx_t *ary)
   return t1;
 }
 #else
-MTA("mta inline")
+
 static intvtx_t
 prefix_sum (const intvtx_t n, intvtx_t *ary)
 {

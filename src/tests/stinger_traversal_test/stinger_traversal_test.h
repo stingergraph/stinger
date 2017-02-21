@@ -29,15 +29,20 @@ protected:
       for (int j=i+1; j < 10; j++) {
         int64_t type = (j % 2 == 1)?1:0;
         int64_t ret = stinger_insert_edge_pair(S, type, i, j, 1, timestamp);
-        expected_edges[std::make_pair(type,i)].insert(j);
-        expected_edges[std::make_pair(type,j)].insert(i);
+        expected_out_edges[std::make_pair(type,i)].insert(j);
+        expected_out_edges[std::make_pair(type,j)].insert(i);
+
+        expected_in_edges[std::make_pair(type,j)].insert(i);
+        expected_in_edges[std::make_pair(type,i)].insert(j);
       }
     }
     
     for (int i=0; i < 100; i++) {
       for (int j=i+101; j < 200; j++) {
         stinger_insert_edge(S, 0, j, i, 1, timestamp);
-        expected_edges[std::make_pair(0,j)].insert(i);
+        expected_out_edges[std::make_pair(0,j)].insert(i);
+        
+        expected_in_edges[std::make_pair(0,i)].insert(j);
       }
     }
   }
@@ -48,7 +53,8 @@ protected:
 
   struct stinger_config_t * stinger_config;
   struct stinger * S;
-  std::map< std::pair<int64_t, int64_t>, std::set<int64_t> > expected_edges;
+  std::map< std::pair<int64_t, int64_t>, std::set<int64_t> > expected_out_edges;
+  std::map< std::pair<int64_t, int64_t>, std::set<int64_t> > expected_in_edges;
 };
 
 

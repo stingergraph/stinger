@@ -10,7 +10,6 @@
 #include "stinger_core/xmalloc.h"
 #include "stinger_core/stinger_error.h"
 #include "stinger_utils/timer.h"
-#include "stinger_utils/stinger_sockets.h"
 #include "stinger_net/proto/stinger-batch.pb.h"
 #include "stinger_net/send_rcv.h"
 
@@ -30,7 +29,7 @@ main(int argc, char *argv[])
   int mongo_port = 13001;
   int batch_size = 100000;
   int num_batches = -1;
-  struct hostent * server = NULL;
+  char * stinger_hostname = NULL;
   char mongo_server[256];
   mongo_server[0] = '\0';
 
@@ -50,11 +49,7 @@ main(int argc, char *argv[])
       } break;
 
       case 'a': {
-	server = gethostbyname(optarg);
-	if(NULL == server) {
-	  LOG_E_A ("Server %s could not be resolved", optarg);
-	  exit(-1);
-	}
+	stinger_hostname = optarg;
       } break;
 
       case 'm': {
@@ -104,15 +99,11 @@ main(int argc, char *argv[])
 
 #if STINGER
   /* Begin STINGER Server Connect */
-  if(NULL == server) {
-    server = gethostbyname("localhost");
-    if(NULL == server) {
-      LOG_E_A("Server %s could not be resolved", "localhost");
-      exit(-1);
-    }
+  if(NULL == stinger_hostname) {
+    stinger_hostname = "localhost";
   }
 
-  int sock_handle = connect_to_batch_server (server, stinger_port);
+  int sock_handle = connect_to_server (stinger_hostname, stinger_port);
   if (sock_handle == -1) exit(-1);
   /* End STINGER */
 

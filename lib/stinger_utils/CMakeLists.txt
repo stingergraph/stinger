@@ -8,7 +8,6 @@ set(sources
 	src/metisish_support.c
 	src/stinger_extract.c
 	src/stinger_la.c
-	src/stinger_sockets.c
 	src/stinger_test.c
 	src/stinger_utils.c
 	src/timer.c
@@ -22,18 +21,19 @@ set(headers
 	inc/json_support.h
 	inc/metisish_support.h
 	inc/stinger_la.h
-	inc/stinger_sockets.h
 	inc/stinger_test.h
 	inc/stinger_utils.h
 	inc/timer.h
 	inc/xml_support.h
 )
 
-file(COPY ${headers} DESTINATION "${CMAKE_BINARY_DIR}/include/stinger_utils")
+publish_headers(headers "${CMAKE_BINARY_DIR}/include/stinger_utils")
 
 include_directories("${CMAKE_BINARY_DIR}/include/stinger_utils")
 include_directories("${CMAKE_BINARY_DIR}/include/stinger_core")
 
-add_library(stinger_utils SHARED ${sources} ${headers})
-
-target_link_libraries(stinger_utils stinger_core fmemopen int_hm_seq string)
+# Need to declare an explicit dependency on rapidjson headers, since there's no associated target
+set_source_files_properties("${CMAKE_BINARY_DIR}/include/rapidjson/document.h" GENERATED)
+add_library(stinger_utils SHARED ${sources} ${headers} "${CMAKE_BINARY_DIR}/include/rapidjson/document.h")
+add_dependencies(stinger_utils rapidjson)
+target_link_libraries(stinger_utils stinger_core fmemopen int_hm_seq string compat)

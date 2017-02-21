@@ -13,8 +13,8 @@ extern "C" {
 #include "stinger_physmap.h"
 #include "stinger_defs.h"
 
-#define EDGE_WEIGHT_SET 0
-#define EDGE_WEIGHT_INCR 1
+#define EDGE_WEIGHT_SET 0x1
+#define EDGE_WEIGHT_INCR 0x2
 
 /* User-accessible data structures */
 struct stinger_edge;
@@ -44,6 +44,7 @@ void stinger_set_initial_edges (struct stinger * /* G */ ,
 				const int64_t    /* EType */ ,
 				const int64_t *  /* off */ ,
 				const int64_t *  /* phys_to */ ,
+				const int64_t *  /* direction */ ,
 				const int64_t *  /* weights */ ,
 				const int64_t *  /* times */ ,
 				const int64_t *  /* first_times */ ,
@@ -53,9 +54,9 @@ struct stinger *stinger_free (struct stinger *);
 
 struct stinger *stinger_free_all (struct stinger *);
 
-vindex_t stinger_max_nv(stinger_t * S);
+vindex_t stinger_max_nv(const stinger_t * S);
 
-int64_t stinger_max_num_etypes(stinger_t * S);
+int64_t stinger_max_num_etypes(const stinger_t * S);
 
 struct stinger_size_t calculate_stinger_size(int64_t nv, int64_t nebs, int64_t netypes, int64_t nvtypes);
 
@@ -72,6 +73,12 @@ int stinger_open_from_file (const char * /* directory */,
 			    uint64_t * /* reference for output max vtx */);
 
 /* Edge insertion and deletion */
+int
+stinger_update_directed_edge(struct stinger *G,
+                     int64_t type, int64_t from, int64_t to,
+                     int64_t weight, int64_t timestamp, int64_t direction,
+                     int64_t operation);
+
 int stinger_insert_edge (struct stinger *, int64_t /* type */ ,
 			 int64_t /* from */ , int64_t /* to */ ,
 			 int64_t /* int weight */ ,
@@ -146,6 +153,20 @@ stinger_etype_names_get(const stinger_t * S);
  * VERTEX METADATA
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+/* DEGREE */
+
+vdegree_t
+stinger_degree_get(const stinger_t * S, vindex_t v);
+
+vdegree_t
+stinger_degree_set(const stinger_t * S, vindex_t v, vdegree_t d);
+
+vdegree_t
+stinger_degree_increment(const stinger_t * S, vindex_t v, vdegree_t d);
+
+vdegree_t
+stinger_degree_increment_atomic(const stinger_t * S, vindex_t v, vdegree_t d);
+
 /* IN DEGREE */
 
 vdegree_t
@@ -162,10 +183,8 @@ stinger_indegree_increment_atomic(const stinger_t * S, vindex_t v, vdegree_t d);
 
 /* OUT DEGREE */
 
-static inline vdegree_t
-stinger_outdegree_get(const stinger_t * S, vindex_t v) {
-     return ((const stinger_vertices_t*)(S->storage))->vertices[v].outDegree;
-}
+vdegree_t
+stinger_outdegree_get(const stinger_t * S, vindex_t v);
 
 vdegree_t
 stinger_outdegree_set(const stinger_t * S, vindex_t v, vdegree_t d);
@@ -258,6 +277,8 @@ uint64_t stinger_num_active_vertices(const struct stinger * S);
 
 int64_t stinger_typed_outdegree(const struct stinger *, int64_t /* vtx */, int64_t /* type */);
 
+int64_t stinger_typed_degree(const struct stinger *, int64_t /* vtx */, int64_t /* type */);
+
 /* Neighbor list access */
 void stinger_gather_successors (const struct stinger *,
                                           int64_t /* vtx */,
@@ -280,12 +301,49 @@ int stinger_has_typed_successor (const struct stinger *,
 				 int64_t /* type */ , int64_t /* from */ ,
 				 int64_t /* to */ );
 
+/* Neighbor list access */
+void stinger_gather_predecessors (const struct stinger *,
+                                          int64_t /* vtx */,
+                                          size_t * /* outlen */,
+                                          int64_t * /* out_vtx */,
+					  int64_t * /* out_weight_optional */,
+					  int64_t * /* out_timefirst_optional */,
+                                          int64_t * /* out_timerecent_optional */,
+					  int64_t * /* out_type_optional */,
+                                          size_t max_outlen);
+
 void stinger_gather_typed_predecessors (const struct stinger *,
 					int64_t /* type */,
 				        int64_t /* v */,
 				        size_t * /* outlen */,
 				        int64_t * /* out */,
 				        size_t /* max_outlen */ );
+
+int stinger_has_typed_predecessor (const struct stinger *,
+				 int64_t /* type */ , int64_t /* from */ ,
+				 int64_t /* to */ );
+
+/* Neighbor list access */
+void stinger_gather_neighbors (const struct stinger *,
+                                          int64_t /* vtx */,
+                                          size_t * /* outlen */,
+                                          int64_t * /* out_vtx */,
+					  int64_t * /* out_weight_optional */,
+					  int64_t * /* out_timefirst_optional */,
+                                          int64_t * /* out_timerecent_optional */,
+					  int64_t * /* out_type_optional */,
+                                          size_t max_outlen);
+
+void stinger_gather_typed_neighbors (const struct stinger *,
+				      int64_t /* type */ ,
+				      int64_t /* vtx */ ,
+				      size_t * /* outlen */ ,
+				      int64_t * /* out */ ,
+				      size_t /* max_outlen */ );
+
+int stinger_has_typed_neighbor (const struct stinger *,
+				 int64_t /* type */ , int64_t /* from */ ,
+				 int64_t /* to */ );
 
 int64_t stinger_sort_actions (int64_t nactions,
 			      int64_t * /* actions */,
@@ -321,14 +379,38 @@ stinger_etype_array_size(int64_t nebs);
  * it will affect the graph structure.  Source and edge type are local copies
  * that will not be stored.
  */
+#define STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(STINGER_,VTX_) do {
+#define STINGER_FORALL_OUT_EDGES_OF_VTX_END() } while (0)
+
+#define STINGER_FORALL_IN_EDGES_OF_VTX_BEGIN(STINGER_,VTX_) do {
+#define STINGER_FORALL_IN_EDGES_OF_VTX_END() } while (0)
+
 #define STINGER_FORALL_EDGES_OF_VTX_BEGIN(STINGER_,VTX_) do {
 #define STINGER_FORALL_EDGES_OF_VTX_END() } while (0)
+
+#define STINGER_FORALL_OUT_EDGES_OF_TYPE_OF_VTX_BEGIN(STINGER_,TYPE_,VTX_) do {
+#define STINGER_FORALL_OUT_EDGES_OF_TYPE_OF_VTX_END() } while (0)
+
+#define STINGER_FORALL_IN_EDGES_OF_TYPE_OF_VTX_BEGIN(STINGER_,TYPE_,VTX_) do {
+#define STINGER_FORALL_IN_EDGES_OF_TYPE_OF_VTX_END() } while (0)
 
 #define STINGER_FORALL_EDGES_OF_TYPE_OF_VTX_BEGIN(STINGER_,TYPE_,VTX_) do {
 #define STINGER_FORALL_EDGES_OF_TYPE_OF_VTX_END() } while (0)
 
+#define STINGER_PARALLEL_FORALL_OUT_EDGES_OF_VTX_BEGIN(STINGER_,VTX_) do {
+#define STINGER_PARALLEL_FORALL_OUT_EDGES_OF_VTX_END() } while (0)
+
+#define STINGER_PARALLEL_FORALL_IN_EDGES_OF_VTX_BEGIN(STINGER_,VTX_) do {
+#define STINGER_PARALLEL_FORALL_IN_EDGES_OF_VTX_END() } while (0)
+
 #define STINGER_PARALLEL_FORALL_EDGES_OF_VTX_BEGIN(STINGER_,VTX_) do {
 #define STINGER_PARALLEL_FORALL_EDGES_OF_VTX_END() } while (0)
+
+#define STINGER_PARALLEL_FORALL_OUT_EDGES_OF_TYPE_OF_VTX_BEGIN(STINGER_,TYPE_,VTX_) do {
+#define STINGER_PARALLEL_FORALL_OUT_EDGES_OF_TYPE_OF_VTX_END() } while (0)
+
+#define STINGER_PARALLEL_FORALL_IN_EDGES_OF_TYPE_OF_VTX_BEGIN(STINGER_,TYPE_,VTX_) do {
+#define STINGER_PARALLEL_FORALL_IN_EDGES_OF_TYPE_OF_VTX_END() } while (0)
 
 #define STINGER_PARALLEL_FORALL_EDGES_OF_TYPE_OF_VTX_BEGIN(STINGER_,TYPE_,VTX_) do {
 #define STINGER_PARALLEL_FORALL_EDGES_OF_TYPE_OF_VTX_END() } while (0)
@@ -349,14 +431,38 @@ stinger_etype_array_size(int64_t nebs);
  * These should be safe even when the graph is being modified elsewhere. All 
  * variables are local and will not be stored back in the graph.
  */
+#define STINGER_READ_ONLY_FORALL_OUT_EDGES_OF_VTX_BEGIN(STINGER_,VTX_) do {
+#define STINGER_READ_ONLY_FORALL_OUT_EDGES_OF_VTX_END() } while (0)
+
+#define STINGER_READ_ONLY_FORALL_IN_EDGES_OF_VTX_BEGIN(STINGER_,VTX_) do {
+#define STINGER_READ_ONLY_FORALL_IN_EDGES_OF_VTX_END() } while (0)
+
 #define STINGER_READ_ONLY_FORALL_EDGES_OF_VTX_BEGIN(STINGER_,VTX_) do {
 #define STINGER_READ_ONLY_FORALL_EDGES_OF_VTX_END() } while (0)
+
+#define STINGER_READ_ONLY_FORALL_OUT_EDGES_OF_TYPE_OF_VTX_BEGIN(STINGER_,TYPE_,VTX_) do {
+#define STINGER_READ_ONLY_FORALL_OUT_EDGES_OF_TYPE_OF_VTX_END() } while (0)
+
+#define STINGER_READ_ONLY_FORALL_IN_EDGES_OF_TYPE_OF_VTX_BEGIN(STINGER_,TYPE_,VTX_) do {
+#define STINGER_READ_ONLY_FORALL_IN_EDGES_OF_TYPE_OF_VTX_END() } while (0)
 
 #define STINGER_READ_ONLY_FORALL_EDGES_OF_TYPE_OF_VTX_BEGIN(STINGER_,TYPE_,VTX_) do {
 #define STINGER_READ_ONLY_FORALL_EDGES_OF_TYPE_OF_VTX_END() } while (0)
 
+#define STINGER_READ_ONLY_PARALLEL_FORALL_OUT_EDGES_OF_VTX_BEGIN(STINGER_,VTX_) do {
+#define STINGER_READ_ONLY_PARALLEL_FORALL_OUT_EDGES_OF_VTX_END() } while (0)
+
+#define STINGER_READ_ONLY_PARALLEL_FORALL_IN_EDGES_OF_VTX_BEGIN(STINGER_,VTX_) do {
+#define STINGER_READ_ONLY_PARALLEL_FORALL_IN_EDGES_OF_VTX_END() } while (0)
+
 #define STINGER_READ_ONLY_PARALLEL_FORALL_EDGES_OF_VTX_BEGIN(STINGER_,VTX_) do {
 #define STINGER_READ_ONLY_PARALLEL_FORALL_EDGES_OF_VTX_END() } while (0)
+
+#define STINGER_READ_ONLY_PARALLEL_FORALL_OUT_EDGES_OF_TYPE_OF_VTX_BEGIN(STINGER_,TYPE_,VTX_) do {
+#define STINGER_READ_ONLY_PARALLEL_FORALL_OUT_EDGES_OF_TYPE_OF_VTX_END() } while (0)
+
+#define STINGER_READ_ONLY_PARALLEL_FORALL_IN_EDGES_OF_TYPE_OF_VTX_BEGIN(STINGER_,TYPE_,VTX_) do {
+#define STINGER_READ_ONLY_PARALLEL_FORALL_IN_EDGES_OF_TYPE_OF_VTX_END() } while (0)
 
 #define STINGER_READ_ONLY_PARALLEL_FORALL_EDGES_OF_TYPE_OF_VTX_BEGIN(STINGER_,TYPE_,VTX_) do {
 #define STINGER_READ_ONLY_PARALLEL_FORALL_EDGES_OF_TYPE_OF_VTX_END() } while (0)
@@ -371,30 +477,22 @@ stinger_etype_array_size(int64_t nebs);
 #define STINGER_EDGE_SOURCE /* always read-only */
 #define STINGER_EDGE_TYPE /* always read-only */
 #define STINGER_EDGE_DEST /* do not set < 0 */
+#define STINGER_EDGE_DIRECTION
 #define STINGER_EDGE_WEIGHT
 #define STINGER_EDGE_TIME_FIRST
 #define STINGER_EDGE_TIME_RECENT
+#define STINGER_IS_OUT_EDGE
+#define STINGER_IS_IN_EDGE
 
-/* Filtering traversal macros *
- * This macro will traverse all edges according to the specified filter.
- * For example, this code will add the weights of any edges 
- * from 4, 5, and 6 that are of type 1 or 2. 
- * uint64_t vertices[] = {4, 5, 6};
- * uint64_t etypes[] = {1, 2};
- * uint64_t weight;
- * STINGER_TRAVERSE_EDGES(S, OF_VERTICES(vertices, 3) OF_TYPE(etypes, 2),
- *    weight += STINGER_EDGE_WEIGHT;
- * )
- */
-#define STINGER_TRAVERSE_EDGES(STINGER_, FILTER_, CODE_)
-#define OF_VERTICES(ARRAY_, COUNT_)
-#define OF_VERTEX_TYPE(ARRAY_, COUNT_)
-#define OF_EDGE_TYPE(ARRAY_, COUNT_)
-#define MODIFIED_BEFORE(TIME_)
-#define MODIFIED_AFTER(TIME_)
-#define CREATED_BEFORE(TIME_)
-#define CREATED_AFTER(TIME_)
-/* coming soon - parallel */
+#define STINGER_RO_EDGE_SOURCE
+#define STINGER_RO_EDGE_TYPE
+#define STINGER_RO_EDGE_DEST
+#define STINGER_RO_EDGE_DIRECTION
+#define STINGER_RO_EDGE_WEIGHT
+#define STINGER_RO_EDGE_TIME_FIRST
+#define STINGER_RO_EDGE_TIME_RECENT
+#define STINGER_RO_IS_OUT_EDGE
+#define STINGER_RO_IS_IN_EDGE
 
 /* Basic test for structural problems - should return 0*/
 uint32_t stinger_consistency_check (struct stinger *S, uint64_t NV);

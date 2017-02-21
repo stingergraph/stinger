@@ -4,7 +4,6 @@
 #include <time.h>
 #include <netdb.h>
 
-#include "stinger_utils/stinger_sockets.h"
 #include "stinger_utils/timer.h"
 #include "stinger_net/send_rcv.h"
 #include "explore_json.h"
@@ -21,7 +20,7 @@ main(int argc, char *argv[])
   int port = 10102;
   int batch_size = 1000;
   double timeout = 0;
-  struct hostent * server = NULL;
+  char * hostname = NULL;
   char * filename = NULL;
   int use_directed = 0;
 
@@ -38,11 +37,7 @@ main(int argc, char *argv[])
 		} break;
 
       case 'a': {
-		  server = gethostbyname(optarg);
-		  if(NULL == server) {
-		    LOG_E_A("ERROR: server %s could not be resolved.", optarg);
-		    exit(-1);
-		  }
+		  hostname = optarg;
 		} break;
       case 'd': {
 		  use_directed = 1;
@@ -70,16 +65,12 @@ main(int argc, char *argv[])
   LOG_V_A("Running with: port: %d\n", port);
 
   /* connect to localhost if server is unspecified */
-  if(NULL == server) {
-    server = gethostbyname("localhost");
-    if(NULL == server) {
-      LOG_E_A("ERROR: server %s could not be resolved.", "localhost");
-      exit(-1);
-    }
+  if(NULL == hostname) {
+    hostname = "localhost";
   }
 
   /* start the connection */
-  int sock_handle = connect_to_batch_server (server, port);
+  int sock_handle = connect_to_server (hostname, port);
   if (sock_handle == -1) exit(-1);
 
 

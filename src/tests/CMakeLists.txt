@@ -76,3 +76,58 @@ set(_betweenness_test_sources
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/betweenness_test)
 add_executable(stinger_betweenness_test ${_betweenness_test_sources})
 target_link_libraries(stinger_betweenness_test stinger_utils stinger_alg stinger_core gtest)
+
+#================================
+
+set(_streaming_connected_components_test_sources
+  streaming_connected_components_test/scc_test.cpp
+  streaming_connected_components_test/scc_test.h
+)
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/streaming_connected_components_test)
+add_executable(stinger_streaming_connected_components_test ${_streaming_connected_components_test_sources})
+target_link_libraries(stinger_streaming_connected_components_test stinger_utils stinger_alg stinger_core gtest)
+
+#================================
+
+set(_shortest_paths_sources
+        shortest_paths/shortest_paths_test.cpp
+        shortest_paths/shortest_paths_test.h
+        )
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/shortest_paths)
+add_executable(stinger_shortest_paths ${_shortest_paths_sources})
+target_link_libraries(stinger_shortest_paths stinger_utils stinger_alg stinger_core gtest)
+
+#================================
+
+set(_diameter_test_sources
+        diameter_test/diameter_test.cpp
+        diameter_test/diameter_test.h
+        )
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/diameter_test)
+add_executable(stinger_diameter_test ${_diameter_test_sources})
+target_link_libraries(stinger_diameter_test stinger_utils stinger_alg stinger_core gtest)
+
+#================================
+
+set(_independent_sets_test_sources
+        independent_sets_test/independent_sets_test.cpp
+        independent_sets_test/independent_sets_test.h
+        )
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/independent_sets_test)
+add_executable(stinger_independent_sets_test ${_independent_sets_test_sources})
+target_link_libraries(stinger_independent_sets_test stinger_utils stinger_alg stinger_core gtest)
+
+#================================
+
+set(_hits_test_sources
+       hits_test/hits_test.cpp
+        hits_test/hits_test.h
+        )
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/hits_test)
+add_executable(stinger_hits_test ${_hits_test_sources})
+target_link_libraries(stinger_hits_test stinger_utils stinger_alg stinger_core gtest)

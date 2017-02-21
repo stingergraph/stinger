@@ -106,7 +106,7 @@ main(int argc, char *argv[])
    * Setup and register algorithm with the server
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
   char namebuf[1024];
-  sprintf(namebuf, "spmspv_test_%s", alg_arg);
+  snprintf(namebuf, 1024, "spmspv_test_%s", alg_arg);
   stinger_registered_alg * alg =
     stinger_register_alg(
       .name=namebuf,
@@ -355,11 +355,12 @@ main(int argc, char *argv[])
   }
 
   LOG_I("Algorithm complete... shutting down");
+  xfree(alg);
 }
 
 /* Utility functions */
 
-MTA("mta inline") MTA("mta expect parallel context")
+ 
 int
 append_to_vlist (int64_t * restrict nvlist,
                  int64_t * restrict vlist,

@@ -28,10 +28,10 @@ main(int argc, char *argv[])
   while(-1 != (opt = getopt(argc, argv, "t:e:f:i:d?h"))) {
     switch(opt) {
       case 't': {
-        sprintf(name, "pagerank_%s", optarg);
+        snprintf(name, 1024, "pagerank_%s", optarg);
         strcpy(type_str,optarg);
         type_specified = 1;
-      } break;   
+      } break;
       case 'd': {
         directed = 1;
       } break;
@@ -44,20 +44,20 @@ main(int argc, char *argv[])
       case 'i': {
         maxiter = atol(optarg);
       } break;
-      default: 
+      default:
         printf("Unknown option '%c'\n", opt);
       case '?':
       case 'h': {
         printf(
-          "PageRank\n"
-          "==================================\n"
-          "\n"
-          "  -t <str>  Specify an edge type to run page rank over\n"
-          "  -d        Use a PageRank that is safe on directed graphs\n"
-          "  -e        Set PageRank Epsilon (default: %0.1e)\n"
-          "  -f        Set PageRank Damping Factor (default: %lf)\n"
-          "  -i        Set PageRank Max Iterations (default: %ld)\n"
-          "\n",EPSILON_DEFAULT,DAMPINGFACTOR_DEFAULT,MAXITER_DEFAULT);
+                "PageRank\n"
+                        "==================================\n"
+                        "\n"
+                        "  -t <str>  Specify an edge type to run page rank over\n"
+                        "  -d        Use a PageRank that is safe on directed graphs\n"
+                        "  -e        Set PageRank Epsilon (default: %0.1e)\n"
+                        "  -f        Set PageRank Damping Factor (default: %lf)\n"
+                        "  -i        Set PageRank Max Iterations (default: %ld)\n"
+                        "\n",EPSILON_DEFAULT,DAMPINGFACTOR_DEFAULT,MAXITER_DEFAULT);
         return(opt);
       }
     }
@@ -96,17 +96,9 @@ main(int argc, char *argv[])
       type = stinger_etype_names_lookup_type(alg->stinger, type_str);
     }
     if(type_specified && type > -1) {
-      if (directed) {
-        page_rank_type_directed(alg->stinger, stinger_mapping_nv(alg->stinger), pr, tmp_pr, epsilon, dampingfactor, maxiter, type);
-      } else {
-        page_rank_type(alg->stinger, stinger_mapping_nv(alg->stinger), pr, tmp_pr, epsilon, dampingfactor, maxiter, type);
-      }
+      page_rank_type(alg->stinger, stinger_mapping_nv(alg->stinger), pr, tmp_pr, epsilon, dampingfactor, maxiter, type);
     } else if (!type_specified) {
-      if (directed) {
-        page_rank_directed(alg->stinger, stinger_mapping_nv(alg->stinger), pr, tmp_pr, epsilon, dampingfactor, maxiter);
-      } else {
-        page_rank(alg->stinger, stinger_mapping_nv(alg->stinger), pr, tmp_pr, epsilon, dampingfactor, maxiter);
-      }
+      page_rank(alg->stinger, stinger_mapping_nv(alg->stinger), pr, tmp_pr, epsilon, dampingfactor, maxiter);
     }
   } stinger_alg_end_init(alg);
 
@@ -130,11 +122,7 @@ main(int argc, char *argv[])
       if(type_specified) {
       	type = stinger_etype_names_lookup_type(alg->stinger, type_str);
       	if(type > -1) {
-          if (directed) {
-            page_rank_type_directed(alg->stinger, stinger_mapping_nv(alg->stinger), pr, tmp_pr, epsilon, dampingfactor, maxiter, type);
-          } else {
-            page_rank_type(alg->stinger, stinger_mapping_nv(alg->stinger), pr, tmp_pr, epsilon, dampingfactor, maxiter, type);
-          }
+          page_rank_type(alg->stinger, stinger_mapping_nv(alg->stinger), pr, tmp_pr, epsilon, dampingfactor, maxiter, type);
       	} else {
       	  LOG_W_A("TYPE DOES NOT EXIST %s", type_str);
       	  LOG_W("Existing types:");
@@ -144,11 +132,7 @@ main(int argc, char *argv[])
       	  }
       	}
       } else {
-        if (directed) {
-          page_rank_directed(alg->stinger, stinger_mapping_nv(alg->stinger), pr, tmp_pr, epsilon, dampingfactor, maxiter);
-        } else {
-          page_rank(alg->stinger, stinger_mapping_nv(alg->stinger), pr, tmp_pr, epsilon, dampingfactor, maxiter);
-        }
+        page_rank(alg->stinger, stinger_mapping_nv(alg->stinger), pr, tmp_pr, epsilon, dampingfactor, maxiter);
       }
       stinger_alg_end_post(alg);
     }
@@ -159,4 +143,5 @@ main(int argc, char *argv[])
   LOG_I("Algorithm complete... shutting down");
 
   free(tmp_pr);
+  xfree(alg);
 }

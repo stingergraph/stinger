@@ -27,11 +27,12 @@ page_rank_subset(stinger_t * S, int64_t NV, uint8_t * vertex_set, int64_t vertex
   OMP("omp parallel for")
   for (uint64_t v = 0; v < NV; v++) {
     if (vertex_set[v]) {
-      STINGER_FORALL_EDGES_OF_VTX_BEGIN(S,v) {
+      LOG_D_A("%ld - %lf\n",v,pr[v]);
+      STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S,v) {
         if (vertex_set[STINGER_EDGE_DEST]) {
           vtx_outdegree[v]++;
         }
-      } STINGER_FORALL_EDGES_OF_VTX_END();
+      } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
     }
   }
 
@@ -100,60 +101,7 @@ page_rank_subset(stinger_t * S, int64_t NV, uint8_t * vertex_set, int64_t vertex
 
 int64_t
 page_rank_directed(stinger_t * S, int64_t NV, double * pr, double * tmp_pr_in, double epsilon, double dampingfactor, int64_t maxiter) {
-  double * tmp_pr = set_tmp_pr(tmp_pr_in, NV);
-
-  int64_t * pr_lock = (int64_t *)xcalloc(NV,sizeof(double));
-
-  int64_t iter = maxiter;
-  double delta = 1;
-  int64_t iter_count = 0;
-
-  while (delta > epsilon && iter > 0) {
-    iter_count++;
-
-    double pr_constant = 0.0;
-
-    OMP("omp parallel for reduction(+:pr_constant)")
-    for (uint64_t v = 0; v < NV; v++) {
-      tmp_pr[v] = 0;
-      if (stinger_outdegree(S,v) == 0) {
-        pr_constant += pr[v];
-      }
-    }
-
-    STINGER_PARALLEL_FORALL_EDGES_OF_ALL_TYPES_BEGIN(S) {
-      int64_t outdegree = stinger_outdegree(S, STINGER_EDGE_SOURCE);
-      int64_t count = readfe(&pr_lock[STINGER_EDGE_DEST]);
-      tmp_pr[STINGER_EDGE_DEST] += (((double)pr[STINGER_EDGE_SOURCE]) /
-        ((double) (outdegree ? outdegree : NV -1)));
-      writeef(&pr_lock[STINGER_EDGE_DEST],count+1);
-    } STINGER_PARALLEL_FORALL_EDGES_OF_ALL_TYPES_END();
-
-    OMP("omp parallel for")
-    for (uint64_t v = 0; v < NV; v++) {
-      tmp_pr[v] = (tmp_pr[v] + pr_constant / (double)NV) * dampingfactor + (((double)(1-dampingfactor)) / ((double)NV));
-    }
-
-    delta = 0;
-    OMP("omp parallel for reduction(+:delta)")
-    for (uint64_t v = 0; v < NV; v++) {
-      double mydelta = tmp_pr[v] - pr[v];
-      if (mydelta < 0)
-        mydelta = -mydelta;
-      delta += mydelta;
-    }
-    //LOG_I_A("delta : %20.15e", delta);
-
-    OMP("omp parallel for")
-    for (uint64_t v = 0; v < NV; v++) {
-      pr[v] = tmp_pr[v];
-    }
-
-    iter--;
-  }
-
-  unset_tmp_pr(tmp_pr,tmp_pr_in);
-  xfree(pr_lock);
+  return page_rank(S, NV, pr, tmp_pr_in, epsilon, dampingfactor, maxiter);
 }
 
 // NOTE: This only works on Undirected Graphs!
@@ -178,11 +126,11 @@ page_rank (stinger_t * S, int64_t NV, double * pr, double * tmp_pr_in, double ep
       if (stinger_outdegree(S, v) == 0) {
         pr_constant += pr[v];
       } else {
-        STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, v) {
+        STINGER_FORALL_IN_EDGES_OF_VTX_BEGIN(S, v) {
           int64_t outdegree = stinger_outdegree (S, STINGER_EDGE_DEST);
           tmp_pr[v] += (((double) pr[STINGER_EDGE_DEST]) / 
             ((double) (outdegree ? outdegree : NV-1)));
-        } STINGER_FORALL_EDGES_OF_VTX_END();
+        } STINGER_FORALL_IN_EDGES_OF_VTX_END();
       }
     }
 
@@ -217,59 +165,7 @@ page_rank (stinger_t * S, int64_t NV, double * pr, double * tmp_pr_in, double ep
 int64_t
 page_rank_type_directed(stinger_t * S, int64_t NV, double * pr, double * tmp_pr_in, double epsilon, double dampingfactor, int64_t maxiter, int64_t type)
 {
-  double * tmp_pr = set_tmp_pr(tmp_pr_in, NV);
-  int64_t * pr_lock = (int64_t *)xcalloc(NV,sizeof(double));
-
-  int64_t iter = maxiter;
-  double delta = 1;
-  int64_t iter_count = 0;
-
-  while (delta > epsilon && iter > 0) {
-    iter_count++;
-
-    double pr_constant = 0.0;
-
-    OMP("omp parallel for reduction(+:pr_constant)")
-    for (uint64_t v = 0; v < NV; v++) {
-      tmp_pr[v] = 0;
-      if (stinger_typed_outdegree(S,v,type) == 0) {
-        pr_constant += pr[v];
-      }
-    }
-
-    STINGER_PARALLEL_FORALL_EDGES_BEGIN(S,type) {
-      int64_t outdegree = stinger_typed_outdegree(S, STINGER_EDGE_SOURCE,type);
-      int64_t count = readfe(&pr_lock[STINGER_EDGE_DEST]);
-      tmp_pr[STINGER_EDGE_DEST] += (((double)pr[STINGER_EDGE_SOURCE]) /
-        ((double) (outdegree ? outdegree : NV -1)));
-      writeef(&pr_lock[STINGER_EDGE_DEST],count+1);
-    } STINGER_PARALLEL_FORALL_EDGES_END();
-
-    OMP("omp parallel for")
-    for (uint64_t v = 0; v < NV; v++) {
-      tmp_pr[v] = (tmp_pr[v] + pr_constant / (double)NV) * dampingfactor + (((double)(1-dampingfactor)) / ((double)NV));
-    }
-
-    delta = 0;
-    OMP("omp parallel for reduction(+:delta)")
-    for (uint64_t v = 0; v < NV; v++) {
-      double mydelta = tmp_pr[v] - pr[v];
-      if (mydelta < 0)
-        mydelta = -mydelta;
-      delta += mydelta;
-    }
-    //LOG_I_A("delta : %20.15e", delta);
-
-    OMP("omp parallel for")
-    for (uint64_t v = 0; v < NV; v++) {
-      pr[v] = tmp_pr[v];
-    }
-
-    iter--;
-  }
-
-  unset_tmp_pr(tmp_pr,tmp_pr_in);
-  xfree(pr_lock);
+  return page_rank_type(S, NV, pr, tmp_pr_in, epsilon, dampingfactor, maxiter, type);
 }
 
 int64_t
@@ -290,12 +186,12 @@ page_rank_type(stinger_t * S, int64_t NV, double * pr, double * tmp_pr_in, doubl
       if (stinger_typed_outdegree(S, v, type) == 0) {
         pr_constant += pr[v];
       } else {
-        STINGER_FORALL_EDGES_OF_TYPE_OF_VTX_BEGIN(S, type, v) {
+        STINGER_FORALL_IN_EDGES_OF_TYPE_OF_VTX_BEGIN(S, type, v) {
           /* TODO: this should be typed outdegree */
           int64_t outdegree = stinger_typed_outdegree (S, STINGER_EDGE_DEST, type);
           	tmp_pr[v] += (((double) pr[STINGER_EDGE_DEST]) / 
       	  ((double) (outdegree ? outdegree : NV-1)));
-        } STINGER_FORALL_EDGES_OF_TYPE_OF_VTX_END();
+        } STINGER_FORALL_IN_EDGES_OF_TYPE_OF_VTX_END();
       }
     }
 
