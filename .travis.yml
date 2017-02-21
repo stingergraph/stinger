@@ -10,7 +10,7 @@ before_install:
 before_script:
   - mkdir build
   - cd build
-  - $HOME/cmake/bin/cmake ..
+  - $HOME/cmake/bin/cmake -DCMAKE_BUILD_TYPE=Release ..
 script: 
   - make
   - make check
