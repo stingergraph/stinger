@@ -22,6 +22,6 @@ publish_headers(headers "${CMAKE_BINARY_DIR}/include/mongo_c_driver")
 
 include_directories("${CMAKE_BINARY_DIR}/include/mongo_c_driver")
 
-add_library(mongo_c_driver SHARED ${sources} ${headers})
+add_library(mongo_c_driver ${sources} ${headers})
 
 target_link_libraries(mongo_c_driver)

@@ -273,7 +273,6 @@ protected:
         }
 
         while (next_update() != updates_end) {
-            eb_index_t * block_ptr = curs.loc;
             curs.eb = readff(curs.loc);
             /* 2: The edge isn't already there.  Check for an empty slot. */
             for (stinger_eb *tmp = ebpool_priv + curs.eb; tmp != ebpool_priv; tmp = ebpool_priv + readff(&tmp->next)) {
@@ -320,19 +319,19 @@ protected:
                         if (next_update() == updates_end) { return; }
                     }
                 }
-
-                block_ptr = &(tmp->next);
+                // Move the cursor to the next edge block
+                curs.loc = &(tmp->next);
             }
 
             /* 3: Needs a new block to be inserted at end of list. */
             // Try to lock the tail pointer of the last block
-            eb_index_t old_eb = readfe (block_ptr);
+            eb_index_t old_eb = readfe (curs.loc);
             if (!old_eb) {
                 // Create a new edge block
                 eb_index_t newBlock = new_eb (G, type, src);
                 if (newBlock == 0) {
                     // Ran out of edge blocks!
-                    writeef (block_ptr, (uint64_t)old_eb);
+                    writeef (curs.loc, (uint64_t)old_eb);
                     while(next_update() != updates_end)
                     {
                         adapter::set_result(*next_update(), EDGE_NOT_ADDED);
@@ -346,11 +345,11 @@ protected:
                     ebpool_priv[newBlock].next = 0;
                     push_ebs (G, 1, &newBlock);
                     // Unlock the tail pointer
-                    writeef (block_ptr, (uint64_t)newBlock);
+                    writeef (curs.loc, (uint64_t)newBlock);
                 }
             } else {
-                // Another thread already added a block, unlock and try again
-                writeef (block_ptr, (uint64_t)old_eb);
+                // Another thread already added a block, unlock and keep searching
+                writeef (curs.loc, (uint64_t)old_eb);
             }
         }
     }

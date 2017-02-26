@@ -9,9 +9,7 @@
 
 #include "stinger_core/stinger_atomics.h"
 #include "stinger_core/x86_full_empty.h"
-#include "stinger_utils/stinger_utils.h"
 #include "stinger_core/stinger.h"
-#include "stinger_utils/timer.h"
 #include "stinger_core/xmalloc.h"
 #include "stinger_net/stinger_alg.h"
 
