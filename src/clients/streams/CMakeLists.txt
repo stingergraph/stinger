@@ -11,6 +11,17 @@ target_include_directories(stinger_csv_stream PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
 
 ##############################################################################
 
+set(_dns_stream_sources
+	dns_stream/inc/dns_stream.h
+	dns_stream/src/main.cpp
+)
+
+add_executable(stinger_dns_stream ${_dns_stream_sources})
+target_include_directories(stinger_dns_stream PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/dns_stream/inc)
+target_link_libraries(stinger_dns_stream stinger_net) 
+
+##############################################################################
+
 set(_human_edge_generator_sources
   human_edge_generator/inc/human_edge_generator.h
   human_edge_generator/src/time_functions.cpp
