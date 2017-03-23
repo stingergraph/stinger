@@ -20,6 +20,7 @@ set(sources
   src/graph_partition.c
   src/hits_centrality.c
   src/modularity.c
+  src/spmv_spmspv.c
 )
 set(headers
   inc/adamic_adar.h
@@ -41,6 +42,7 @@ set(headers
   inc/graph_partition.h
   inc/hits_centrality.h
   inc/modularity.h
+  inc/spmv_spmspv.h
 )
 
 publish_headers(headers "${CMAKE_BINARY_DIR}/include/stinger_alg")
