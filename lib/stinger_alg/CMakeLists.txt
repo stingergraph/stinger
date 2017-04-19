@@ -21,6 +21,7 @@ set(sources
   src/hits_centrality.c
   src/modularity.c
   src/spmv_spmspv.c
+  src/pagerank_updating.c
 )
 set(headers
   inc/adamic_adar.h
@@ -43,6 +44,7 @@ set(headers
   inc/hits_centrality.h
   inc/modularity.h
   inc/spmv_spmspv.h
+  inc/pagerank_updating.h
 )
 
 publish_headers(headers "${CMAKE_BINARY_DIR}/include/stinger_alg")

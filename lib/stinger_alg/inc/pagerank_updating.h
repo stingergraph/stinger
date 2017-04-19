@@ -1,5 +1,5 @@
-#if !defined(PAGERANK_HEADER_)
-#define PAGERANK_HEADER_
+#if !defined(PAGERANK_UPDATING_HEADER_)
+#define PAGERANK_UPDATING_HEADER_
 
 int pagerank (const int64_t nv, struct stinger * S, double * x_in, const double * restrict v,
               const double alpha, const int maxiter,
@@ -36,4 +36,4 @@ int pagerank_dpr_held (const int64_t nv, struct stinger * S,
                        int64_t * total_vol_out, 
                        const double holdscale);
 
-#endif /* PAGERANK_HEADER_ */
+#endif /* PAGERANK_UPDATING_HEADER_ */

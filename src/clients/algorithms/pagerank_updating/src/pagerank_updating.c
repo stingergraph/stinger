@@ -11,9 +11,8 @@
 #include "stinger_utils/timer.h"
 
 #include "compat.h"
-#include "pagerank.h"
-#include "spmspv.h"
-#include "spmspv_ompcas_batch.h"
+#include "stinger_alg/spmv_spmspv.h"
+#include "stinger_alg/pagerank_updating.h"
 
 // HACK enable alternate OMP macro
 #include "stinger_core/alternative_omp_macros.h"
@@ -636,13 +635,13 @@ dpr_pre (const int64_t nv, struct stinger * S, struct spvect * restrict b, struc
         assert(!isnan(pr_val[x.idx[k]]));
         x.val[k] = pr_val[x.idx[k]];
       }
-    stinger_unit_dspmTspv_degscaled_ompcas_batch (nv,
-                                                  1.0, S,
-                                                  x.nv, x.idx, x.val,
-                                                  0.0,
-                                                  &b_nv, b->idx, b->val,
-                                                  mark, dzero_workspace,
-                                                  pr_vol);
+    stinger_unit_dspmTspv_degscaled (nv,
+                                     1.0, S,
+                                     x.nv, x.idx, x.val,
+                                     0.0,
+                                     &b_nv, b->idx, b->val,
+                                     mark, dzero_workspace,
+                                     pr_vol);
     OMP(omp for OMP_SIMD)
       for (int64_t k = 0; k < b_nv; ++k) mark[b->idx[k]] = -1;
   }
@@ -662,13 +661,13 @@ dpr_held_pre (const int64_t nv, struct stinger * S, struct spvect * restrict b, 
         x_held->idx[k] = x.idx[k];
         x_held->val[k] = pr_val[x.idx[k]];
       }
-    stinger_unit_dspmTspv_degscaled_ompcas_batch (nv,
-                                                  1.0, S,
-                                                  x_held_nv, x_held->idx, x_held->val,
-                                                  0.0,
-                                                  &b_nv, b->idx, b->val,
-                                                  mark, dzero_workspace,
-                                                  pr_vol);
+    stinger_unit_dspmTspv_degscaled (nv,
+                                     1.0, S,
+                                     x_held_nv, x_held->idx, x_held->val,
+                                     0.0,
+                                     &b_nv, b->idx, b->val,
+                                     mark, dzero_workspace,
+                                     pr_vol);
     OMP(omp for OMP_SIMD)
       for (int64_t k = 0; k < b_nv; ++k) mark[b->idx[k]] = -1;
   }
@@ -762,7 +761,7 @@ calc_residual (const int64_t nv, const int64_t NE, struct stinger * S, const dou
         resid[k] = scalefact * v[k] - pr_val[k];
   }
 
-  stinger_unit_dspmTv_degscaled_ompcas_batch (nv, alpha, S, pr_val, 1.0, resid);
+  stinger_unit_dspmTv_degscaled (nv, alpha, S, pr_val, 1.0, resid);
 
   OMP(omp parallel for OMP_SIMD reduction(+: norm1_r) reduction(max: norminf_r))
     for (int64_t k = 0; k < nv; ++k) {

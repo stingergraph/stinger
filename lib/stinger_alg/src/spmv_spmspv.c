@@ -47,6 +47,9 @@
 #define ATOMIC_FP_OPTIMISTIC
 #endif
 
+// HACK enable alternate OMP macro
+#include "stinger_core/alternative_omp_macros.h"
+
 static inline void
 atomic_daccum (double *p, const double val)
 {

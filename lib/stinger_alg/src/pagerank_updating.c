@@ -10,12 +10,9 @@
 #include "stinger_core/stinger_error.h"
 #include "stinger_net/stinger_alg.h"
 #include "stinger_utils/timer.h"
+#include "stinger_alg/spmv_spmspv.h"
 
-#include "compat.h"
-#include "spmspv.h"
-#include "spmspv_ompsimple.h"
-#include "spmspv_ompcas.h"
-#include "spmspv_ompcas_batch.h"
+//#include "compat.h"
 
 // HACK enable alternate OMP macro
 #include "stinger_core/alternative_omp_macros.h"
@@ -138,7 +135,7 @@ pagerank_core (const int64_t nv,
         norm1_xnew_diff = 0.0;
       /* implied barrier */
 
-      stinger_unit_dspmTv_degscaled_ompcas_batch (nv, alpha, S, x, 1.0, xnew);
+      stinger_unit_dspmTv_degscaled (nv, alpha, S, x, 1.0, xnew);
 
 #if defined(USE_INFNORM)
       OMP(omp for OMP_SIMD reduction(NORM_REDUCE : norm1_xnew_diff))
@@ -241,10 +238,10 @@ update_residual (const int64_t nv, struct stinger * S,
     }
   dres_deg = dpr_deg;
 
-  stinger_unit_dspmTspv_degscaled_ompcas_batch (nv, alpha, S, dpr_deg, dpr_idx, dpr_val,
-                                                1.0,
-                                                &dres_deg, dres_idx, dres_val,
-                                                mark, dzero_workspace, total_vol_out);
+  stinger_unit_dspmTspv_degscaled (nv, alpha, S, dpr_deg, dpr_idx, dpr_val,
+                                   1.0,
+                                   &dres_deg, dres_idx, dres_val,
+                                   mark, dzero_workspace, total_vol_out);
 
   OMP(omp parallel for)
     for (int64_t k = 0; k < dres_deg; ++k) {
@@ -291,9 +288,9 @@ pagerank_dpr (const int64_t nv, struct stinger * S,
 
   OMP(omp parallel) {
     /* Update b = b1 - b0 */
-    stinger_unit_dspmTspv_degscaled_ompcas_batch (nv, alpha, S, *x_deg, x_idx, x_val,
-                                                  -alpha, b_deg, b_idx, b_val,
-                                                  mark, dzero_workspace, &total_vol);
+    stinger_unit_dspmTspv_degscaled (nv, alpha, S, *x_deg, x_idx, x_val,
+                                     -alpha, b_deg, b_idx, b_val,
+                                     mark, dzero_workspace, &total_vol);
 
     const int64_t bdeg = *b_deg;
     OMP(omp master) new_dpr_deg = dpr_deg = bdeg; /* Relies on barriers below */
@@ -317,10 +314,10 @@ pagerank_dpr (const int64_t nv, struct stinger * S,
 
       OMP(omp master) { new_rho = 0.0; last_frontier = 0.0; } /* uses barriers in spmspv */
 
-      stinger_unit_dspmTspv_degscaled_ompcas_batch (nv, alpha, S, dpr_deg, dpr_idx, dpr_val,
-                                                    1.0,
-                                                    &new_dpr_deg, new_dpr_idx, new_dpr_val,
-                                                    mark, dzero_workspace, &total_vol);
+      stinger_unit_dspmTspv_degscaled (nv, alpha, S, dpr_deg, dpr_idx, dpr_val,
+                                       1.0,
+                                       &new_dpr_deg, new_dpr_idx, new_dpr_val,
+                                       mark, dzero_workspace, &total_vol);
       OMP(omp for OMP_SIMD reduction(NORM_REDUCE : new_rho) reduction(+: last_frontier))
         for (int64_t k = 0; k < new_dpr_deg; ++k) {
           /* XXX: Again, assuming pattern is being super-setted and kept in order. */
@@ -422,9 +419,9 @@ pagerank_dpr_held (const int64_t nv, struct stinger * S,
 
   OMP(omp parallel) {
     /* Update b = b1 - b0 */
-    stinger_unit_dspmTspv_degscaled_ompcas_batch (nv, alpha, S, *x_deg, x_idx, x_val,
-                                                  -alpha, b_deg, b_idx, b_val,
-                                                  mark, dzero_workspace, &total_vol);
+    stinger_unit_dspmTspv_degscaled (nv, alpha, S, *x_deg, x_idx, x_val,
+                                     -alpha, b_deg, b_idx, b_val,
+                                     mark, dzero_workspace, &total_vol);
 
     const int64_t bdeg = *b_deg;
     OMP(omp master) new_dpr_deg = dpr_deg = bdeg; /* Relies on barriers below */
@@ -462,11 +459,11 @@ pagerank_dpr_held (const int64_t nv, struct stinger * S,
       /* somehow save the held vertices separately.  need dpr_deg? workspace... */
       /*   if nnz per row is sufficiently large (kinda small), separate filtering works for performance if mapped to the right processors */
 
-      stinger_unit_dspmTspv_degscaled_held_ompcas_batch (holdthresh,
-                                                         nv, alpha, S, dpr_deg, dpr_idx, dpr_val,
-                                                         1.0,
-                                                         &new_dpr_deg, new_dpr_idx, new_dpr_val,
-                                                         mark, dzero_workspace, &total_vol);
+      stinger_unit_dspmTspv_degscaled_held (holdthresh,
+                                            nv, alpha, S, dpr_deg, dpr_idx, dpr_val,
+                                            1.0,
+                                            &new_dpr_deg, new_dpr_idx, new_dpr_val,
+                                            mark, dzero_workspace, &total_vol);
       OMP(omp for OMP_SIMD reduction(NORM_REDUCE : new_rho))
         for (int64_t k = 0; k < new_dpr_deg; ++k) {
           /* XXX: Again, assuming pattern is being super-setted and kept in order. */
