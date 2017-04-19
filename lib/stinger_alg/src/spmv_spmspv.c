@@ -121,7 +121,7 @@ dspmTv_unit_accum (const struct stinger * S, const int64_t i, const double alpha
   } STINGER_READ_ONLY_FORALL_EDGES_OF_VTX_END();
 }
 
-void stinger_dspmTv_ompcas_batch (const int64_t nv, const double alpha, const struct stinger *S, const double * x, const double beta, double * y)
+void stinger_dspmTv (const int64_t nv, const double alpha, const struct stinger *S, const double * x, const double beta, double * y)
 {
   OMP(omp parallel) {
     setup_y (nv, beta, y);
@@ -135,7 +135,7 @@ void stinger_dspmTv_ompcas_batch (const int64_t nv, const double alpha, const st
   }
 }
 
-void stinger_unit_dspmTv_ompcas_batch (const int64_t nv, const double alpha, const struct stinger *S, const double * x, const double beta, double * y)
+void stinger_unit_dspmTv (const int64_t nv, const double alpha, const struct stinger *S, const double * x, const double beta, double * y)
 {
   OMP(omp parallel) {
     setup_y (nv, beta, y);
@@ -149,7 +149,7 @@ void stinger_unit_dspmTv_ompcas_batch (const int64_t nv, const double alpha, con
   }
 }
 
-void stinger_dspmTv_degscaled_ompcas_batch (const int64_t nv, const double alpha, const struct stinger *S, const double * x, const double beta, double * y)
+void stinger_dspmTv_degscaled (const int64_t nv, const double alpha, const struct stinger *S, const double * x, const double beta, double * y)
 {
   OMP(omp parallel) {
     setup_y (nv, beta, y);
@@ -166,7 +166,7 @@ void stinger_dspmTv_degscaled_ompcas_batch (const int64_t nv, const double alpha
   }
 }
 
-void stinger_unit_dspmTv_degscaled_ompcas_batch (const int64_t nv, const double alpha, const struct stinger *S, const double * x, const double beta, double * y)
+void stinger_unit_dspmTv_degscaled (const int64_t nv, const double alpha, const struct stinger *S, const double * x, const double beta, double * y)
 {
   //OMP(omp parallel)
   {
@@ -335,7 +335,7 @@ pack_vals (const int64_t y_deg, const int64_t * restrict y_idx,
     }
 }
 
-void stinger_dspmTspv_ompcas_batch (const int64_t nv, const double alpha, const struct stinger *S, const int64_t x_deg, const int64_t * x_idx, const double * x_val, const double beta, int64_t * y_deg_ptr, int64_t * y_idx, double * y_val, int64_t * loc_ws_in, double * val_ws_in)
+void stinger_dspmTspv (const int64_t nv, const double alpha, const struct stinger *S, const int64_t x_deg, const int64_t * x_idx, const double * x_val, const double beta, int64_t * y_deg_ptr, int64_t * y_idx, double * y_val, int64_t * loc_ws_in, double * val_ws_in)
 {
   int64_t * loc_ws = loc_ws_in;
   double * val_ws = val_ws_in;
@@ -367,7 +367,7 @@ void stinger_dspmTspv_ompcas_batch (const int64_t nv, const double alpha, const 
   }
 }
 
-void stinger_unit_dspmTspv_ompcas_batch (const int64_t nv, const double alpha, const struct stinger *S, const int64_t x_deg, const int64_t * x_idx, const double * x_val, const double beta, int64_t * y_deg_ptr, int64_t * y_idx, double * y_val, int64_t * loc_ws_in, double * val_ws_in)
+void stinger_unit_dspmTspv (const int64_t nv, const double alpha, const struct stinger *S, const int64_t x_deg, const int64_t * x_idx, const double * x_val, const double beta, int64_t * y_deg_ptr, int64_t * y_idx, double * y_val, int64_t * loc_ws_in, double * val_ws_in)
 {
   int64_t * loc_ws = loc_ws_in;
   double * val_ws = val_ws_in;
@@ -397,7 +397,7 @@ void stinger_unit_dspmTspv_ompcas_batch (const int64_t nv, const double alpha, c
   }
 }
 
-void stinger_dspmTspv_degscaled_ompcas_batch (const int64_t nv, const double alpha, const struct stinger *S, const int64_t x_deg, const int64_t * x_idx, const double * x_val, const double beta, int64_t * y_deg_ptr, int64_t * y_idx, double * y_val, int64_t * loc_ws_in, double * val_ws_in)
+void stinger_dspmTspv_degscaled (const int64_t nv, const double alpha, const struct stinger *S, const int64_t x_deg, const int64_t * x_idx, const double * x_val, const double beta, int64_t * y_deg_ptr, int64_t * y_idx, double * y_val, int64_t * loc_ws_in, double * val_ws_in)
 {
   int64_t * loc_ws = loc_ws_in;
   double * val_ws = val_ws_in;
@@ -430,7 +430,7 @@ void stinger_dspmTspv_degscaled_ompcas_batch (const int64_t nv, const double alp
   }
 }
 
-void stinger_unit_dspmTspv_degscaled_ompcas_batch (const int64_t nv, const double alpha, const struct stinger *S, const int64_t x_deg, const int64_t * x_idx, const double * x_val, const double beta, int64_t * y_deg_ptr, int64_t * y_idx, double * y_val, int64_t * loc_ws_in, double * val_ws_in, int64_t * total_vol)
+void stinger_unit_dspmTspv_degscaled (const int64_t nv, const double alpha, const struct stinger *S, const int64_t x_deg, const int64_t * x_idx, const double * x_val, const double beta, int64_t * y_deg_ptr, int64_t * y_idx, double * y_val, int64_t * loc_ws_in, double * val_ws_in, int64_t * total_vol)
 {
   static int64_t vol;
   int64_t * restrict loc_ws = loc_ws_in;
@@ -474,7 +474,7 @@ void stinger_unit_dspmTspv_degscaled_ompcas_batch (const int64_t nv, const doubl
 }
 
 
-void stinger_unit_dspmTspv_degscaled_held_ompcas_batch (const double holdthresh, const int64_t nv, const double alpha, const struct stinger *S, const int64_t x_deg, const int64_t * x_idx, const double * x_val, const double beta, int64_t * y_deg_ptr, int64_t * y_idx, double * y_val, int64_t * loc_ws_in, double * val_ws_in, int64_t * total_vol)
+void stinger_unit_dspmTspv_degscaled_held (const double holdthresh, const int64_t nv, const double alpha, const struct stinger *S, const int64_t x_deg, const int64_t * x_idx, const double * x_val, const double beta, int64_t * y_deg_ptr, int64_t * y_idx, double * y_val, int64_t * loc_ws_in, double * val_ws_in, int64_t * total_vol)
 {
   static int64_t vol;
   int64_t * restrict loc_ws = loc_ws_in;
