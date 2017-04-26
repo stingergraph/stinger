@@ -8,6 +8,11 @@ extern "C" {
 
 #define NAME_STR_MAX @STINGER_NAME_STR_MAX@
 
+// STINGER names storage must be 8-byte aligned
+#if (NAME_STR_MAX+1) % 8 != 0
+#error STINGER_NAME_STR_MAX must be a multiple of 8 (minus one for null terminator)
+#endif
+
 #ifdef NAME_USE_SQLITE
 	#include "sqlite/sqlite3.h"
 

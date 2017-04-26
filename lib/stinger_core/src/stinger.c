@@ -468,6 +468,31 @@ stinger_graph_size (const struct stinger *S)
 }
 
 /**
+ * Checks the size of a stinger sub-structure, to make sure we aren't
+ * violating any alignment rules. malloc() will return a pointer that
+ * is properly aligned for any struct or array of structs. But when we
+ * pack multiple structures into the same allocation, we run the risk of
+ * a struct being misaligned. As long as each sub-structure ends on an
+ * 8-byte boundary, the next one will start on an 8-byte boundary.
+ * @param sz Size of sub-structure, in bytes
+ * @param substructure_name Name of sub-structure, used when printing an error
+ */
+static void
+check_alignment(int64_t sz, const char* substructure_name)
+{
+  if (sz % sizeof(int64_t) != 0) {
+    LOG_F_A(
+      "The sub-structure %s is %lli bytes long.\n"
+      "The following struct will not be aligned to an 8-byte boundary.\n"
+      "This can cause deadlocks when x86 64-bit atomics cross a cache line. \n"
+      "See section 8.1.1 of the Intel® 64 and IA-32 Architectures Developer's Manual: Vol. 3A. \n"
+      ,substructure_name, (long long int)sz
+    );
+    abort();
+  }
+}
+
+/**
 * @brief Calculates the required memory to allocate a STINGER given a set of parameters
 *
 * @param nv Number of vertices
@@ -484,21 +509,27 @@ struct stinger_size_t calculate_stinger_size(int64_t nv, int64_t nebs, int64_t n
 
   ret.vertices_start = 0;
   sz += stinger_vertices_size(nv);
+  check_alignment(sz - ret.vertices_start, "stinger_vertices");
 
   ret.physmap_start = sz;
   sz += stinger_physmap_size(nv);
+  check_alignment(sz - ret.physmap_start, "stinger_physmap");
 
   ret.ebpool_start = sz;
   sz += netypes * stinger_ebpool_size(nebs);
+  check_alignment(sz - ret.ebpool_start, "stinger_ebpool");
 
   ret.etype_names_start = sz;
   sz += stinger_names_size(netypes);
+  check_alignment(sz - ret.etype_names_start, "stinger_etype_names");
 
   ret.vtype_names_start = sz;
   sz += stinger_names_size(nvtypes);
+  check_alignment(sz - ret.vtype_names_start, "stinger_vtype_names");
 
   ret.ETA_start = sz;
   sz += netypes * stinger_etype_array_size(nebs);
+  check_alignment(sz - ret.ETA_start, "stinger_etype_array");
 
   ret.size = sz;
 
