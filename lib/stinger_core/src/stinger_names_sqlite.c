@@ -277,7 +277,7 @@ stinger_names_lookup_name(stinger_names_t * sn, int64_t type) {
 
   if (rc == SQLITE_ROW) {
     const char * s_name = sqlite3_column_text(lookup_name_stmt,0);
-    char * name = (char *)calloc(strlen(s_name) + 1,sizeof(char*));
+    char * name = (char *)xcalloc(strlen(s_name) + 1,sizeof(char*));
     strcpy(name,s_name);
     sqlite3_finalize(lookup_name_stmt);
     return name;

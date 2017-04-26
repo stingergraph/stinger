@@ -96,20 +96,20 @@ static inline void setup_y (const int64_t nv, const double beta, double * y)
 static inline void
 dspmTv_accum (const struct stinger * S, const int64_t i, const double alphaxi, double * y)
 {
-  STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, i) {
+  STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, i) {
     const int64_t j = STINGER_EDGE_DEST;
     const double aij = STINGER_EDGE_WEIGHT;
     atomic_daccum (&y[j], aij * alphaxi);
-  } STINGER_FORALL_EDGES_OF_VTX_END();
+  } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
 }
 
 static inline void
 dspmTv_unit_accum (const struct stinger * S, const int64_t i, const double alphaxi, double * y)
 {
-  STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, i) {
+  STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, i) {
     const int64_t j = STINGER_EDGE_DEST;
     atomic_daccum (&y[j], alphaxi);
-  } STINGER_FORALL_EDGES_OF_VTX_END();
+  } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
 }
 
 void stinger_dspmTv_ompcas (const int64_t nv, const double alpha, const struct stinger *S, const double * x, const double beta, double * y)
@@ -261,12 +261,12 @@ dspmTspv_accum (const struct stinger * S, const int64_t i, const double alphaxi,
                 int64_t * y_deg, int64_t * y_idx, double * y,
                 int64_t * loc_ws)
 {
-  STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, i) {
+  STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, i) {
     const int64_t j = STINGER_EDGE_DEST;
     const double aij = STINGER_EDGE_WEIGHT;
     atomic_daccum (&y[j], aij * alphaxi);
     dspmTspv_y_idx_accum (S, y_deg, y_idx, j, loc_ws);
-  } STINGER_FORALL_EDGES_OF_VTX_END();
+  } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
 }
 
 static inline void
@@ -274,11 +274,11 @@ dspmTspv_unit_accum (const struct stinger * S, const int64_t i, const double alp
                      int64_t * y_deg, int64_t * y_idx, double * y,
                      int64_t * loc_ws)
 {
-  STINGER_FORALL_EDGES_OF_VTX_BEGIN(S, i) {
+  STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, i) {
     const int64_t j = STINGER_EDGE_DEST;
     atomic_daccum (&y[j], alphaxi);
     dspmTspv_y_idx_accum (S, y_deg, y_idx, j, loc_ws);
-  } STINGER_FORALL_EDGES_OF_VTX_END();
+  } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
 }
 
 static inline void

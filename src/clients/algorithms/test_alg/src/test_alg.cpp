@@ -1,6 +1,7 @@
 extern "C" {
   #include "stinger_core/stinger.h"
   #include "stinger_core/stinger_error.h"
+  #include "stinger_core/xmalloc.h"
   #include "stinger_net/stinger_alg.h"
 }
 
@@ -130,4 +131,5 @@ main(int argc, char *argv[])
   }
 
   LOG_I("Algorithm complete... shutting down");
+  xfree(alg);
 }

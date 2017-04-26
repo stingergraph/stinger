@@ -23,27 +23,23 @@ extern "C" {
 
 #include    "stinger_atomics.h"
 
-#if !defined(__MTA__) /* x86 only */
-
 #include  <stdint.h>
 #define MARKER UINT64_MAX
 
 uint64_t 
-readfe(uint64_t * v);
+readfe(volatile uint64_t * v);
 
 uint64_t
-writeef(uint64_t * v, uint64_t new_val);
+writeef(volatile uint64_t * v, uint64_t new_val);
 
 uint64_t
-readff(uint64_t * v);
+readff(volatile uint64_t * v);
 
 uint64_t
-writeff(uint64_t * v, uint64_t new_val);
+writeff(volatile uint64_t * v, uint64_t new_val);
 
 uint64_t
-writexf(uint64_t * v, uint64_t new_val);
-
-#endif  /* x86 only */
+writexf(volatile uint64_t * v, uint64_t new_val);
 
 #ifdef __cplusplus
 }

@@ -85,38 +85,38 @@ extern "C" {
 #define LOG_E(X)
 
 
-#define LOG_F_A(X, ...) do { openlog(PROCESS_NAME, LOG_PID|LOG_CONS|LOG_PERROR, LOG_USER); syslog(LOG_CRIT, "%s %d: " X "\n", __func__, __LINE__, __VA_ARGS__); closelog(); } while(0);
-#define LOG_F(X) LOG_F_A(X, NULL)
+#define LOG_F_A(X, ...) do { openlog(PROCESS_NAME, LOG_PID|LOG_CONS|LOG_PERROR, LOG_USER); syslog(LOG_CRIT, "%s %d: " X "\n", __func__, __LINE__, ##__VA_ARGS__); closelog(); } while(0);
+#define LOG_F(X) LOG_F_A(X)
 #ifndef LOG_AT_F
 
 #undef LOG_E_A
 #undef LOG_E
-#define LOG_E_A(X, ...) do { openlog(PROCESS_NAME, LOG_PID|LOG_CONS|LOG_PERROR, LOG_USER); syslog(LOG_ERR, "%s %d: " X "\n", __func__, __LINE__, __VA_ARGS__); closelog(); } while(0);
-#define LOG_E(X) LOG_E_A(X, NULL)
+#define LOG_E_A(X, ...) do { openlog(PROCESS_NAME, LOG_PID|LOG_CONS|LOG_PERROR, LOG_USER); syslog(LOG_ERR, "%s %d: " X "\n", __func__, __LINE__, ##__VA_ARGS__); closelog(); } while(0);
+#define LOG_E(X) LOG_E_A(X)
 #ifndef LOG_AT_E
 
 #undef LOG_W_A
 #undef LOG_W
-#define LOG_W_A(X, ...) do { openlog(PROCESS_NAME, LOG_PID|LOG_CONS|LOG_PERROR, LOG_USER); syslog(LOG_WARNING, "%s %d: " X "\n", __func__, __LINE__, __VA_ARGS__); closelog(); } while(0);
-#define LOG_W(X) LOG_W_A(X, NULL)
+#define LOG_W_A(X, ...) do { openlog(PROCESS_NAME, LOG_PID|LOG_CONS|LOG_PERROR, LOG_USER); syslog(LOG_WARNING, "%s %d: " X "\n", __func__, __LINE__, ##__VA_ARGS__); closelog(); } while(0);
+#define LOG_W(X) LOG_W_A(X)
 #ifndef LOG_AT_W
 
 #undef LOG_I_A
 #undef LOG_I
-#define LOG_I_A(X, ...) do { openlog(PROCESS_NAME, LOG_PID|LOG_CONS|LOG_PERROR, LOG_USER); syslog(LOG_INFO, "%s %d: " X "\n", __func__, __LINE__, __VA_ARGS__); closelog(); } while(0);
-#define LOG_I(X) LOG_I_A(X, NULL)
+#define LOG_I_A(X, ...) do { openlog(PROCESS_NAME, LOG_PID|LOG_CONS|LOG_PERROR, LOG_USER); syslog(LOG_INFO, "%s %d: " X "\n", __func__, __LINE__, ##__VA_ARGS__); closelog(); } while(0);
+#define LOG_I(X) LOG_I_A(X)
 #ifndef LOG_AT_I
 
 #undef LOG_V_A
 #undef LOG_V
-#define LOG_V_A(X, ...) do { openlog(PROCESS_NAME, LOG_PID|LOG_CONS|LOG_PERROR, LOG_USER); syslog(LOG_NOTICE, "%s %d: " X "\n", __func__, __LINE__, __VA_ARGS__); closelog(); } while(0);
-#define LOG_V(X) LOG_V_A(X, NULL)
+#define LOG_V_A(X, ...) do { openlog(PROCESS_NAME, LOG_PID|LOG_CONS|LOG_PERROR, LOG_USER); syslog(LOG_NOTICE, "%s %d: " X "\n", __func__, __LINE__, ##__VA_ARGS__); closelog(); } while(0);
+#define LOG_V(X) LOG_V_A(X)
 #ifndef LOG_AT_V
 
 #undef LOG_D_A
 #undef LOG_D
-#define LOG_D_A(X, ...) do { openlog(PROCESS_NAME, LOG_PID|LOG_CONS|LOG_PERROR, LOG_USER); syslog(LOG_DEBUG, "%s %d: " X "\n", __func__, __LINE__, __VA_ARGS__); closelog(); } while(0);
-#define LOG_D(X) LOG_D_A(X, NULL)
+#define LOG_D_A(X, ...) do { openlog(PROCESS_NAME, LOG_PID|LOG_CONS|LOG_PERROR, LOG_USER); syslog(LOG_DEBUG, "%s %d: " X "\n", __func__, __LINE__, ##__VA_ARGS__); closelog(); } while(0);
+#define LOG_D(X) LOG_D_A(X)
 
 #endif
 #endif

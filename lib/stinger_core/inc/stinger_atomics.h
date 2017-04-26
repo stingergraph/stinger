@@ -9,6 +9,7 @@ extern "C" {
 
 #include "stinger.h"
 
+static inline void stinger_memory_barrier();
 static inline int stinger_int_fetch_add (int *, int);
 static inline int64_t stinger_int64_fetch_add (int64_t *, int64_t);
 static inline uint64_t stinger_uint64_fetch_add (uint64_t *, uint64_t);
@@ -24,89 +25,14 @@ static inline int64_t stinger_int64_cas (int64_t *, int64_t, int64_t);
    and people huddle and cry when they see caddr_t. */
 static inline void *stinger_ptr_cas (void **, void *, void *);
 
-#if defined(__MTA__)
-/* {{{ MTA defs */
-#pragma mta inline
-int
-stinger_int_fetch_add (int *x, int i)
-{
-  return int_fetch_add (x, i);
-}
-
-#pragma mta inline
-int64_t
-stinger_int64_fetch_add (int64_t * x, int64_t i)
-{
-  return int_fetch_add (x, i);
-}
-
-#pragma mta inline
-uint64_t
-stinger_uint64_fetch_add (uint64_t * x, uint64_t i)
-{
-  return int_fetch_add (x, i);
-}
-
-#pragma mta inline
-size_t
-stinger_size_fetch_add (size_t * x, size_t i)
-{
-  return int_fetch_add (x, i);
-}
-
-#pragma mta inline
-void
-stinger_int64_swap (int64_t * x, int64_t * y)
-{
-  int64_t vx, vy, t;
-  vx = readfe (x);
-  vy = readfe (y);
-  writeef (x, vy);
-  writeef (y, vx);
-}
-
-#pragma mta inline
-void
-stinger_uint64_swap (uint64_t * x, uint64_t * y)
-{
-  uint64_t vx, vy, t;
-  vx = readfe (x);
-  vy = readfe (y);
-  writeef (x, vy);
-  writeef (y, vx);
-}
-
-#pragma mta inline
-void *
-stinger_ptr_cas (void **x, void *origx, void *newx)
-{
-  void *curx, *updx;
-  curx = readfe (x);
-  if (curx == origx)
-    updx = newx;
-  else
-    updx = curx;
-  writeef (x, updx);
-  return curx;
-}
-
-#pragma mta inline
-int64_t
-stinger_int64_cas (int64_t * x, int64_t origx, int64_t newx)
-{
-  int64_t curx, updx;
-  curx = readfe (x);
-  if (curx == origx)
-    updx = newx;
-  else
-    updx = curx;
-  writeef (x, updx);
-  return curx;
-}
-
-/* }}} */
-#elif defined(__GNUC__)||defined(__INTEL_COMPILER)
+#if defined(__GNUC__)||defined(__INTEL_COMPILER)
 /* {{{ GCC / ICC defs */
+void
+stinger_memory_barrier()
+{
+  __sync_synchronize();
+}
+
 int
 stinger_int_fetch_add (int *x, int i)
 {
@@ -168,6 +94,12 @@ stinger_int64_cas (int64_t * x, int64_t origx, int64_t newx)
 /* }}} */
 #elif defined(__xlc__)
 /* {{{ XLC defs */
+void
+stinger_memory_barrier()
+{
+  __sync_synchronize();
+}
+
 int
 stinger_int_fetch_add (int *x, int i)
 {
@@ -234,6 +166,11 @@ stinger_int64_cas (int64_t * x, int64_t origx, int64_t newx)
 #elif !defined(_OPENMP)
 #warning "Assuming no parallel / concurrent operations necessary."
 /* {{{ Not concurrent */
+void
+stinger_memory_barrier()
+{
+}
+
 int
 stinger_int_fetch_add (int *v, int x)
 {

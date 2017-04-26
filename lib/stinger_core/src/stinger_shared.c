@@ -43,18 +43,13 @@ sigbus_handler(int sig, siginfo_t *si, void * vuctx)
 void *
 shmmap (const char * name, int oflags, mode_t mode, int prot, size_t size, int map) 
 {
-#if !defined(__MTA__)
   int fd = shm_open(name, oflags, mode);
-#else
-  int fd = open(name, oflags);
-#endif
 
   if(fd == -1) {
     fprintf(stderr, "\nSHMMAP shm_open ERROR %s\n", strerror(errno)); fflush(stdout);
     return NULL;
   } 
 
-#if !defined(__MTA__)
   /* set up SIGBUS handler */
   struct sigaction sa;
   memset(&sa, 0, sizeof(sa));
@@ -82,9 +77,6 @@ shmmap (const char * name, int oflags, mode_t mode, int prot, size_t size, int m
 #endif
   
   void * rtn = mmap(NULL, size, prot, MAP_SHARED, fd, 0);
-#else
-  void * rtn = mmap(NULL, size, prot, MAP_ANON|map, fd, 0);
-#endif
 
   close(fd);
 
@@ -122,16 +114,10 @@ shmunmap (const char * name, void * ptr, size_t size)
 int
 shmunlink (const char * name) {
   LOG_D_A("Called shmunlink with %s", name);
-#if !defined(__MTA__)
   if(shm_unlink(name)) {
     LOG_E_A("Unlinking %s", name);
     return -1;
   }
-#else
-  if(unlink(name))
-    return -1;
-#endif
-
   return 0;
 }
 
@@ -164,13 +150,7 @@ stinger_shared_new_full (char ** out, struct stinger_config_t * config)
   if (*out == NULL)
   {
     *out = xmalloc(sizeof(char) * MAX_NAME_LEN);
-#if !defined(__MTA__)
     sprintf(*out, "/%lx", (uint64_t)rand());
-#else
-    char *pwd = xmalloc (sizeof(char) * (MAX_NAME_LEN-16));
-    getcwd(pwd,  MAX_NAME_LEN-16);
-    sprintf(*out, "%s/%lx", pwd, (uint64_t)rand());
-#endif
   }                              
 
   int64_t nv      = config->nv      ? config->nv      : STINGER_DEFAULT_VERTICES;
@@ -257,8 +237,6 @@ stinger_shared_new_full (char ** out, struct stinger_config_t * config)
   ebpool->is_shared = 0;
 
   OMP ("omp parallel for")
-  MTA ("mta assert parallel")
-  MTASTREAMS ()
   for (i = 0; i < netypes; ++i) {
     ETA(G,i)->length = nebs;
     ETA(G,i)->high = 0;

@@ -17,7 +17,7 @@ main(int argc, char *argv[])
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
   char name[1024];
   if(argc > 1) {
-    sprintf(name, "clustering_coeff_%s", argv[1]);
+    snprintf(name, 1024, "clustering_coeff_%s", argv[1]);
   }
 
   stinger_registered_alg * alg =
@@ -36,7 +36,7 @@ main(int argc, char *argv[])
   double * local_cc = (double *)alg->alg_data;
   int64_t * ntri = (int64_t *)(((double *)alg->alg_data) + alg->stinger->max_nv);
 
-  int64_t * affected = xcalloc (alg->stinger->max_nv, sizeof (int64_t *));
+  int64_t * affected = xcalloc (alg->stinger->max_nv, sizeof (int64_t));
 
   init_timer();
   double time;
@@ -82,13 +82,13 @@ main(int argc, char *argv[])
         stinger_int64_fetch_add (&affected[dst], 1);
 
         /* and all neighbors */
-        STINGER_FORALL_EDGES_OF_VTX_BEGIN(alg->stinger, src) {
+        STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(alg->stinger, src) {
           stinger_int64_fetch_add (&affected[STINGER_EDGE_DEST], 1);
-        } STINGER_FORALL_EDGES_OF_VTX_END();
+        } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
 
-        STINGER_FORALL_EDGES_OF_VTX_BEGIN(alg->stinger, dst) {
+        STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(alg->stinger, dst) {
           stinger_int64_fetch_add (&affected[STINGER_EDGE_DEST], 1);
-        } STINGER_FORALL_EDGES_OF_VTX_END();
+        } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
       }
 
       /* each vertex incident on a deletion is affected */
@@ -100,13 +100,13 @@ main(int argc, char *argv[])
         stinger_int64_fetch_add (&affected[dst], 1);
 
         /* and all neighbors */
-        STINGER_FORALL_EDGES_OF_VTX_BEGIN(alg->stinger, src) {
+        STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(alg->stinger, src) {
           stinger_int64_fetch_add (&affected[STINGER_EDGE_DEST], 1);
-        } STINGER_FORALL_EDGES_OF_VTX_END();
+        } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
 
-        STINGER_FORALL_EDGES_OF_VTX_BEGIN(alg->stinger, dst) {
+        STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(alg->stinger, dst) {
           stinger_int64_fetch_add (&affected[STINGER_EDGE_DEST], 1);
-        } STINGER_FORALL_EDGES_OF_VTX_END();
+        } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
       }
 
       time = toc();
@@ -140,5 +140,6 @@ main(int argc, char *argv[])
   }
 
   LOG_I("Algorithm complete... shutting down");
-
+  xfree(affected);
+  xfree(alg);
 }

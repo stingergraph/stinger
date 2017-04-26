@@ -5,8 +5,8 @@ set(headers
 	inc/fmemopen.h
 )
 
-file(COPY ${headers} DESTINATION "${CMAKE_BINARY_DIR}/include/fmemopen")
+publish_headers(headers "${CMAKE_BINARY_DIR}/include/fmemopen")
 
 include_directories("${CMAKE_BINARY_DIR}/include/fmemopen")
 
-add_library(fmemopen SHARED ${sources} ${headers})
+add_library(fmemopen ${sources} ${headers})

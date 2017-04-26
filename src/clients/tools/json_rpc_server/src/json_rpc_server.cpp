@@ -159,6 +159,7 @@ main (int argc, char ** argv)
   server_state.add_rpc_function("label_mod_expand", new JSON_RPC_label_mod_expand(&server_state));
   server_state.add_rpc_function("breadth_first_search", new JSON_RPC_breadth_first_search(&server_state));
   server_state.add_rpc_function("adamic_adar_index", new JSON_RPC_adamic_adar(&server_state));
+  server_state.add_rpc_function("community_on_demand", new JSON_RPC_community_on_demand(&server_state));
   server_state.add_rpc_function("register", new JSON_RPC_register(&server_state));
   server_state.add_rpc_function("request", new JSON_RPC_request(&server_state));
   server_state.add_rpc_function("get_data_array_reduction", new JSON_RPC_get_data_array_reduction(&server_state));
@@ -168,6 +169,8 @@ main (int argc, char ** argv)
   server_state.add_rpc_function("get_connected_component", new JSON_RPC_get_connected_component(&server_state));
   server_state.add_rpc_function("bfs_edges", new JSON_RPC_bfs_edges(&server_state));
   server_state.add_rpc_function("pagerank_subgraph", new JSON_RPC_pagerank_subgraph(&server_state));
+  server_state.add_rpc_function("exact diameter", new JSON_RPC_exact_diameter(&server_state));
+  server_state.add_rpc_function("single source shortest path", new JSON_RPC_single_source_shortest_path(&server_state));
 
   server_state.add_rpc_session("subgraph", new JSON_RPC_community_subgraph(0, &server_state));
   server_state.add_rpc_session("vertex_event_notifier", new JSON_RPC_vertex_event_notifier(0, &server_state));
@@ -195,8 +198,8 @@ main (int argc, char ** argv)
   if(unleash_daemon) {
     while(1) { sleep(10); }
   } else {
-    printf("Press <q> to shut down the server...\n");
-    while (getchar() != 'q');
+    printf("Press Ctrl-C to shut down the server...\n");
+    while(1) { sleep(10); }
   }
 
   return 0;

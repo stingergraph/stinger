@@ -64,35 +64,8 @@ void parse_args (const int argc, char *argv[],
 int
 is_simple_name(const char * name, int64_t length);
 
-/* Freeing mem_handle frees all associated memory. */
-void snarf_graph (const char *initial_graph_name,
-		  int64_t * nv_out, int64_t * ne_out,
-		  int64_t ** off_out, int64_t ** ind_out,
-		  int64_t ** weight_out, int64_t ** mem_handle);
-
-void snarf_actions (const char *action_stream_name,
-		    int64_t * naction_out, int64_t ** action_out,
-		    int64_t ** mem_handle);
-
-void load_graph_and_action_stream (const char *initial_graph_name,
-				   int64_t * nv, int64_t * ne,
-				   int64_t ** off, int64_t ** ind,
-				   int64_t ** weight, int64_t ** graphmem,
-				   const char *action_stream_name,
-				   int64_t * naction, int64_t ** action,
-				   int64_t ** actionmem);
-
-void stinger_to_sorted_csr (const struct stinger *G, const int64_t nv,
-                         int64_t ** off_out, int64_t ** ind_out, int64_t ** weight_out, 
-			 int64_t ** timefirst_out, int64_t ** timerecent_out, int64_t ** type_out);
-
-void stinger_to_unsorted_csr (const struct stinger *G, const int64_t nv,
-                         int64_t ** off_out, int64_t ** ind_out, int64_t ** weight_out, 
-			 int64_t ** timefirst_out, int64_t ** timerecent_out, int64_t ** type_out);
 
 void counting_sort (int64_t * array, size_t num, size_t size);
-
-int64_t find_in_sorted (const int64_t tofind, const int64_t N, const int64_t * ary);
 
 void print_initial_graph_stats (int64_t nv, int64_t ne, int64_t batch_size,
 				int64_t nbatch, int64_t naction);
@@ -116,14 +89,8 @@ int64_t bs64 (int64_t xin);
 
 void bs64_n (size_t n, int64_t * d);
 
-int i64_cmp (const void *a, const void *b);
-
-int i2cmp (const void *va, const void *vb);
-
 int64_t find_in_sorted (const int64_t tofind,
                 const int64_t N, const int64_t * ary);
-
-int64_t prefix_sum (const int64_t n, int64_t *ary);
 
 void
 stinger_extract_bfs (/*const*/ struct stinger *S,

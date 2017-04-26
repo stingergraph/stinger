@@ -11,11 +11,9 @@ set(sources
 	src/simple_communities.c
 	src/sorts.c
 	src/sorts.h
-	src/xmt-luc.cc
-	src/xmt-luc.h
 )
 
 include_directories(${CMAKE_CURRENT_SRC_DIR})
 
 add_executable(stinger_simple_communities ${sources})
-target_link_libraries(stinger_simple_communities stinger_net)
+target_link_libraries(stinger_simple_communities stinger_net compat)

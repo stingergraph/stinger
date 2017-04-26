@@ -1,6 +1,5 @@
 #include "stinger_vertex.h"
 #include "stinger_atomics.h"
-#include "xml_support.h"
 #include "x86_full_empty.h"
 
 #include <stdlib.h>
@@ -13,7 +12,7 @@
 inline stinger_vertices_t *
 stinger_vertices_new(int64_t max_vertices)
 {
-  stinger_vertices_t * rtn = calloc(1, sizeof(stinger_vertices_t) + max_vertices * sizeof(stinger_vertex_t));
+  stinger_vertices_t * rtn = xcalloc(1, sizeof(stinger_vertices_t) + max_vertices * sizeof(stinger_vertex_t));
   rtn->max_vertices = max_vertices;
   return rtn;
 }
@@ -21,7 +20,6 @@ stinger_vertices_new(int64_t max_vertices)
 inline void
 stinger_vertices_init(stinger_vertices_t * S, int64_t max_vertices)
 {
-  //stinger_vertices_t * rtn = calloc(1, sizeof(stinger_vertices_t) + max_vertices * sizeof(stinger_vertex_t));
   S->max_vertices = max_vertices;
   return;
 }
@@ -125,6 +123,44 @@ stinger_vertex_weight_increment_atomic(const stinger_vertices_t * vertices, vind
     return -1;
   }
   return stinger_vweight_fetch_add_atomic(&(VTX(v)->weight), weight);
+}
+
+/* DEGREE */
+
+inline vdegree_t
+stinger_vertex_degree_get(const stinger_vertices_t * vertices, vindex_t v)
+{
+  if (v >= vertices->max_vertices || v < 0) {
+    return -1;
+  }
+  return VTX(v)->degree;
+}
+
+inline vdegree_t
+stinger_vertex_degree_set(const stinger_vertices_t * vertices, vindex_t v, vdegree_t degree)
+{
+  if (v >= vertices->max_vertices || v < 0) {
+    return -1;
+  }
+  return (VTX(v)->degree = degree);
+}
+
+inline vdegree_t
+stinger_vertex_degree_increment(const stinger_vertices_t * vertices, vindex_t v, vdegree_t degree)
+{
+  if (v >= vertices->max_vertices || v < 0) {
+    return -1;
+  }
+  return (VTX(v)->degree += degree);
+}
+
+inline vdegree_t
+stinger_vertex_degree_increment_atomic(const stinger_vertices_t * vertices, vindex_t v, vdegree_t degree)
+{
+  if (v >= vertices->max_vertices || v < 0) {
+    return -1;
+  }
+  return stinger_vdegree_fetch_add_atomic(&(VTX(v)->degree), degree);
 }
 
 /* INDEGREE */

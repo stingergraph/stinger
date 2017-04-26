@@ -6,6 +6,11 @@
 extern "C" {
 #endif
 
+#define STINGER_EDGE_DIRECTION_MASK (0x6000000000000000L)
+#define STINGER_EDGE_DIRECTION_OUT (0x4000000000000000L)
+#define STINGER_EDGE_DIRECTION_IN (0x2000000000000000L)
+#define STINGER_EDGE_DIRECTION_BOTH (0x6000000000000000L)
+
 #define MAP_STING(X) \
   stinger_vertices_t * vertices = (stinger_vertices_t *)((X)->storage); \
   stinger_physmap_t * physmap = (stinger_physmap_t *)((X)->storage + (X)->physmap_start); \
@@ -72,7 +77,7 @@ typedef uint64_t eb_index_t;
 */
 struct stinger_edge
 {
-  int64_t neighbor;	/**< The adjacent vertex ID */
+  int64_t neighbor;	/**< The adjacent vertex ID.  The 2 Most significant bits below the sign bit store the direction of the edge */
   int64_t weight;	/**< The integer edge weight */
   int64_t timeFirst;	/**< First time stamp for this edge */
   int64_t timeRecent;	/**< Recent time stamp for this edge */
@@ -180,19 +185,21 @@ static inline int64_t stinger_eb_type (const struct stinger_eb * eb_);
 
 int stinger_eb_is_blank (const struct stinger_eb * eb_, int k_);
 int64_t stinger_eb_adjvtx (const struct stinger_eb *, int);
+int64_t stinger_eb_direction (const struct stinger_eb * eb_, int k_);
+int64_t stinger_eb_direction_in (const struct stinger_eb * eb_, int k_);
+int64_t stinger_eb_direction_out (const struct stinger_eb * eb_, int k_);
 int64_t stinger_eb_weight (const struct stinger_eb *, int);
 int64_t stinger_eb_ts (const struct stinger_eb *, int);
 int64_t stinger_eb_first_ts (const struct stinger_eb *, int);
 
-int64_t stinger_count_outdeg (struct stinger *G, int64_t v);
-
 struct curs etype_begin (stinger_t * S, int64_t v, int etype);
 
-void update_edge_data (struct stinger * S, struct stinger_eb *eb,
-                  uint64_t index, int64_t neighbor, int64_t weight, int64_t ts, int64_t operation);
+void update_edge_data_and_direction (struct stinger * S, struct stinger_eb *eb,
+                  uint64_t index, int64_t neighbor, int64_t weight, int64_t ts, int64_t direction, int64_t operation);
 
 void remove_edge (struct stinger * S, struct stinger_eb *eb, uint64_t index);
 
+eb_index_t new_eb (struct stinger * S, int64_t etype, int64_t from);
 void new_ebs (struct stinger * S, eb_index_t *out, size_t neb, int64_t etype, int64_t from);
 
 void push_ebs (struct stinger *G, size_t neb,

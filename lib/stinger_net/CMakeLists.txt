@@ -1,5 +1,6 @@
 set(sources
 	src/mon_handling.cpp
+	src/send_rcv.cpp
 	src/stinger_alg.cpp
 	src/stinger_alg_state.cpp
 	src/stinger_alg_state_c.cpp
@@ -47,15 +48,15 @@ foreach(file ${proto})
 	
 	add_custom_command(
 		OUTPUT "${CMAKE_BINARY_DIR}/stinger_net/proto/${_file_name}.pb.cc" "${CMAKE_BINARY_DIR}/stinger_net/proto/${_file_name}.pb.h"
-		COMMAND ./protoc ${_protobuf_include_path} ${_protobuf_proto_path} ${_protobuf_output_path} ${_abs_file_name}
-		DEPENDS protobuf
+		COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} ${_protobuf_include_path} ${_protobuf_proto_path} ${_protobuf_output_path} ${_abs_file_name}
+		DEPENDS protobuf ${_abs_file_name}
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/bin
 	)
 
 	set(_generated_files ${_generated_files} "${CMAKE_BINARY_DIR}/stinger_net/proto/${_file_name}.pb.cc" "${CMAKE_BINARY_DIR}/stinger_net/proto/${_file_name}.pb.h")
 endforeach()
 
-file(COPY ${headers} DESTINATION "${CMAKE_BINARY_DIR}/include/stinger_net")
+publish_headers(headers "${CMAKE_BINARY_DIR}/include/stinger_net")
 
 include_directories("${CMAKE_BINARY_DIR}/")
 include_directories("${CMAKE_BINARY_DIR}/stinger_net")
@@ -63,5 +64,5 @@ include_directories("${CMAKE_BINARY_DIR}/include/stinger_net")
 
 set_source_files_properties(${_generated_files} PROPERTIES GENERATED TRUE)
 #message("Files: ${_generated_files}")
-add_library(stinger_net SHARED ${sources} ${headers} ${_generated_files})
-target_link_libraries(stinger_net _protobuf_library _protobuf_lite_library _protobuf_library stinger_core stinger_utils)
+add_library(stinger_net ${sources} ${headers} ${_generated_files})
+target_link_libraries(stinger_net _protobuf_library _protobuf_lite_library stinger_core stinger_utils)

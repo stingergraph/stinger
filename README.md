@@ -1,7 +1,7 @@
 STINGER
 =======
 [![Build Status (master)](https://travis-ci.org/stingergraph/stinger.png?branch=master)](https://travis-ci.org/stingergraph/stinger)
-[![Build Status (dev)](https://travis-ci.org/stingergraph/stinger.png?branch=dev)](https://travis-ci.org/stginergraph/stinger)
+[![Build Status (dev)](https://travis-ci.org/stingergraph/stinger.png?branch=dev)](https://travis-ci.org/stingergraph/stinger)
 
 Learn more at [stingergraph.com](http://stingergraph.com).
 
@@ -13,8 +13,6 @@ STINGER is a package designed to support streaming graph analytics by using in-m
     doc/ - Documentation
     doxygen/ - Doxygen generated documentation
     external/ - External dependencies packaged with STINGER
-    flask/ - Python Flask Relay Server for interacting with the JSON RPC server and STINGER server
-    html/ - Basic web pages that communicate with the JSON RPC server
     lib/ - The STINGER library and dependencies
         stinger_alg/ - Algorithm kernels that work on the STINGER data structure
         stinger_core/ - The Core STINGER data structure
@@ -27,10 +25,13 @@ STINGER is a package designed to support streaming graph analytics by using in-m
             streams/ - Binaries for streaming in new data
             tools/ - Auxiliary tools
         py/stinger - Python bindings to STINGER
-        standalone/ - Standalone binaries that use the STINGER core data structure
         templates/json - Common templates for stream ingest
         tests/ - Tests for the STINGER data structure and algorithms
-    SOURCEME.sh - File to be executed from out-of-source build directory to link the html/ web pages with the STINGER server
+    util/ -
+        flask/ - Python Flask Relay Server for interacting with the JSON RPC server and STINGER server
+        graph_explorer/ - Sample web pages for interacting with JSON RPC server
+        management/ - Web app for monitoring STINGER server
+        stingerctl - Control script for starting and stopping STINGER server, algorithms, and clients
 
 Building
 ========
@@ -38,7 +39,6 @@ Building
 STINGER is built using [CMake](http://www.cmake.org).  From the root of STINGER, first create a build directory:
 
     mkdir build && cd build
-    . ../SOURCEME.sh
 
 Then call CMake from that build directory to automatically configure the build and to create a Makefile:
 
@@ -52,14 +52,10 @@ Note: the -j flag is a multi-threaded build.  Typically you should match the arg
 
 All binary targets will be built and placed in build/bin.  They are named according to the folder from which they were 
 built (so src/bin/server produces build/bin/stinger\_server, src/bin/clients/tools/json\_rpc\_server produces 
-build/bin/stinger\_json\_rpc\_server, etc.).  If you ran SOURCEME.sh from the build directory as instructed above, the build/bin
-directory is appended to your path.
+build/bin/stinger\_json\_rpc\_server, etc.).
 
 Executable Targets
 ==================
-
-As indicated by the directory structure, there are three primary types of executable targets: clients, server, and standalone, 
-and subtypes in the case of clients.
 
 The STINGER server maintains a STINGER graph in memory and can maintain multiple connections with client streams, algorithms, and monitors.
 
@@ -74,13 +70,9 @@ The server guarantees that all of an algorithm's dependencies will finish proces
 Clients algorithms are required to provide a description string that indicates what data is stored and the type of the data.  
 
 Client tools are intended to be read-only, but are notified of all running algorithms and shared data.  An example
-of this kind of client is the JSON-RPC server (src/bin/clients/tools/json\_rpc\_server).  This server provides access
+of this kind of client is the JSON-RPC server (src/clients/tools/json\_rpc\_server).  This server provides access
 to shared algorithm data via JSON-RPC calls over HTTP.  Additionally, some primitive operations are provided to support
 selecting the top vertices as scored by a particular algorithm or obtaining the shortest paths between two vertices, for example.
-
-Standalone executables are generally self-contained and use the STINGER
-libraries for the graph structure and supporting functions.  Most of the existing standalone executables demonstrate
-a single streaming or static algorithm on a synthetic R-MAT graph and edge stream.
 
 Running
 =======
@@ -96,8 +88,8 @@ To run an example using the server and five terminals:
     term5:build$ ./bin/stinger_rmat_edge_generator -n 100000 -x 10000
 
 This will start a stream of R-MAT edges over 100,000 vertices in batches of 10,000 edges.  A connected component labeling
-and PageRank scoring will be maintained.  The JSON-RPC server will host interactive web pages at 
-http://localhost:8088/full.html are powered by the live streaming analysis.  The total memory usage of the dynamic graph is limited to 1 GiB.
+and PageRank scoring will be maintained.  The JSON-RPC server will host an endpoint at http://localhost:8088/json-rpc
+The total memory usage of the dynamic graph is limited to 1 GiB.
 
 Server Configuration
 --------------------
@@ -228,13 +220,6 @@ This file would create edges between email addresses using the length field as t
     cat emails.csv | ./bin/stinger_csv_stream template.csv
 
 Please be aware that the CSV parser and the underlying code to parse CSV files does not currently trim whitespace, and does not treat quoted strings of any kind as quoted.
-
-Using a Standalone Client
--------------------------
-To create a toy R-MAT graph (256K vertices and 2M undirected edges) and run the insert-remove benchmark:
-
-    term1:build$ stinger_rmat_graph_generator -s 18 -e 8 -n 100000
-    term1:build$ stinger_insert_remove_benchmark -n 1 -b 100000 g.18.8.bin a.18.8.100000.bin
     
     
 [![githalytics.com alpha](https://cruel-carlota.pagodabox.com/a7d82e7aa670122314238336dbbd7c89 "githalytics.com")](http://githalytics.com/robmccoll/stinger)
@@ -248,7 +233,7 @@ Runtime Issues
 STINGER allocates and manages its own memory. When STINGER starts, it allocates one large block of memory (enough to hold its maximum size), and then manages its own memory allocation from that pool.  The server version of STINGER does this in shared memory so that multiple processes can see the graph.  Unfortunately, the error handling for memory allocations is not particularly user-friendly at the moment.  Changing the way that this works is on the issues list (see https://github.com/robmccoll/stinger/issues/8).
 
 - "Bus error" when running the server: The size of STINGER that the server is trying to allocate is too large for your memory.  First try to increase the size of your /dev/shm (See below).  If this does not work reduce the size of your STINGER and recompile.
-- "XXX: eb pool exhausted" or "STINGER has run out of internal storage space" when running the server, standalone executables, or anything else using stinger\_core: you have run out of internal edge storage.  Increase the size of STINGER and recompile.
+- "XXX: eb pool exhausted" or "STINGER has run out of internal storage space" when running the server: you have run out of internal edge storage.  Increase the size of STINGER and recompile.
 
 See the section on STINGER server configuration to adjust the sizing of STINGER
 

@@ -72,39 +72,39 @@ JSON_RPC_bfs_edges::operator()(rapidjson::Value * params, rapidjson::Value & res
     for (it = cur.begin(); it != cur.end(); it++) {
       int64_t v = *it;
 
-      STINGER_FORALL_EDGES_OF_TYPE_OF_VTX_BEGIN (S, etype, v) {
-	int64_t k = STINGER_EDGE_DEST;
-	if (!found[k]) {
-	  frontier.insert(k);
-	  found[k] = 1;
+      STINGER_FORALL_OUT_EDGES_OF_TYPE_OF_VTX_BEGIN (S, etype, v) {
+        int64_t k = STINGER_EDGE_DEST;
+        if (!found[k]) {
+          frontier.insert(k);
+          found[k] = 1;
 
-	  /* the JSON */
-	  src.SetInt64(v);
-	  dst.SetInt64(k);
-	  val.SetArray();
-	  val.PushBack(src, allocator);
-	  val.PushBack(dst, allocator);
-	  a.PushBack(val, allocator);
-	  if (strings) {
-	    char * physID;
-	    uint64_t len;
-	    if(-1 == stinger_mapping_physid_direct(S, v, &physID, &len)) {
-	      src_str.SetString("", 0, allocator);
-	    } else {
-	      src_str.SetString(physID, len, allocator);
-	    }
-	    if(-1 == stinger_mapping_physid_direct(S, k, &physID, &len)) {
-	      dst_str.SetString("", 0, allocator);
-	    } else {
-	      dst_str.SetString(physID, len, allocator);
-	    }
-	    val.SetArray();
-	    val.PushBack(src_str, allocator);
-	    val.PushBack(dst_str, allocator);
-	    a_str.PushBack(val, allocator);
-	  }
-	}
-      } STINGER_FORALL_EDGES_OF_TYPE_OF_VTX_END();
+          /* the JSON */
+          src.SetInt64(v);
+          dst.SetInt64(k);
+          val.SetArray();
+          val.PushBack(src, allocator);
+          val.PushBack(dst, allocator);
+          a.PushBack(val, allocator);
+          if (strings) {
+            char * physID;
+            uint64_t len;
+            if(-1 == stinger_mapping_physid_direct(S, v, &physID, &len)) {
+              src_str.SetString("", 0, allocator);
+            } else {
+              src_str.SetString(physID, len, allocator);
+            }
+            if(-1 == stinger_mapping_physid_direct(S, k, &physID, &len)) {
+              dst_str.SetString("", 0, allocator);
+            } else {
+              dst_str.SetString(physID, len, allocator);
+            }
+            val.SetArray();
+            val.PushBack(src_str, allocator);
+            val.PushBack(dst_str, allocator);
+            a_str.PushBack(val, allocator);
+          }
+        }
+      } STINGER_FORALL_OUT_EDGES_OF_TYPE_OF_VTX_END();
 
     }
 

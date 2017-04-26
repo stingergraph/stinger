@@ -6,15 +6,13 @@ extern "C" {
 }
 #include "stinger_net/proto/stinger-batch.pb.h"
 #include "stinger_net/send_rcv.h"
+#include <algorithm>
 
 using namespace gt::stinger;
 
 /* function prototypes */
 void *
-start_tcp_batch_server (void * args);
-
-void *
-start_udp_graph_name_server (void * args);
+start_batch_server (void * args);
 
 int
 process_batch (stinger_t * S, StingerBatch & batch);

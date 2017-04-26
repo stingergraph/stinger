@@ -4,24 +4,6 @@
 #include "stinger_core/stinger.h"
 #include "defs.h"
 
-#if defined(__MTA__)
-#if !defined(MTA)
-#define MTA(x) _Pragma(x)
-#endif
-#if !defined(NDEBUG)
-#define MTA_NODEP MTA("mta assert parallel")
-#else
-#define MTA_NODEP MTA("mta assert nodep")
-#define nonMTA_break
-#endif
-#else
-#if !defined(MTA)
-#define MTA(x)
-#endif
-#define MTA_NODEP
-#define nonMTA_break break
-#endif
-
 #if defined(__GNUC__)
 #define FN_MAY_BE_UNUSED __attribute__((unused))
 #else
@@ -39,14 +21,12 @@ int32_fetch_add (int32_t * p, int32_t incr) FN_MAY_BE_UNUSED;
 #define intvtx_fetch_add int64_fetch_add
 #endif
 
-MTA("mta inline")
-MTA("mta expect parallel")
+
+
 int64_t
 int64_fetch_add (int64_t * p, int64_t incr)
 {
-#if defined(__MTA__)
-  return int_fetch_add (p, incr);
-#elif defined(_OPENMP)
+#if defined(_OPENMP)
 #if defined(__GNUC__)
   return __sync_fetch_and_add (p, incr);
 #elif defined(__INTEL_COMPILER)
@@ -61,15 +41,12 @@ int64_fetch_add (int64_t * p, int64_t incr)
 #endif
 }
 
-MTA("mta inline")
-MTA("mta expect parallel")
+
+
 int32_t
 int32_fetch_add (int32_t * p, int32_t incr)
 {
-#if defined(__MTA__)
-  /* Will warn about being too small... */
-  return int_fetch_add (p, incr);
-#elif defined(_OPENMP)
+#if defined(_OPENMP)
 #if defined(__GNUC__)
   return __sync_fetch_and_add (p, incr);
 #elif defined(__INTEL_COMPILER)
@@ -92,24 +69,12 @@ static inline int
 bool_int64_compare_and_swap (int64_t * p, int64_t oldval, int64_t newval)
   FN_MAY_BE_UNUSED;
 
-MTA("mta inline")
-MTA("mta expect parallel")
+
+
 int64_t
 int64_compare_and_swap (int64_t * p, int64_t oldval, int64_t newval)
 {
-#if defined(__MTA__)
-  int64_t t = *p;
-  if (t == oldval) {
-    int64_t t;
-    t = readfe (p);
-    if (t == oldval) {
-      writeef (p, newval);
-    } else {
-      writeef (p, oldval);
-    }
-  }
-  return t;
-#elif defined(_OPENMP)&&(defined(__GNUC__)||defined(__INTEL_COMPILER))
+#if defined(_OPENMP)&&(defined(__GNUC__)||defined(__INTEL_COMPILER))
   return __sync_val_compare_and_swap (p, oldval, newval);
 #elif defined(_OPENMP)
 #error "Atomics not defined..."
@@ -120,24 +85,12 @@ int64_compare_and_swap (int64_t * p, int64_t oldval, int64_t newval)
 #endif
 }
 
-MTA("mta inline")
-MTA("mta expect parallel")
+
+
 int
 bool_int64_compare_and_swap (int64_t * p, int64_t oldval, int64_t newval)
 {
-#if defined(__MTA__)
-  int64_t t = *p;
-  if (t == oldval) {
-    int64_t t;
-    t = readfe (p);
-    if (t == oldval) {
-      writeef (p, newval);
-    } else {
-      writeef (p, oldval);
-    }
-  }
-  return t == oldval;
-#elif defined(_OPENMP)&&(defined(__GNUC__)||defined(__INTEL_COMPILER))
+#if defined(_OPENMP)&&(defined(__GNUC__)||defined(__INTEL_COMPILER))
   return __sync_bool_compare_and_swap (p, oldval, newval);
 #elif defined(_OPENMP)
 #error "Atomics not defined..."
@@ -148,7 +101,6 @@ bool_int64_compare_and_swap (int64_t * p, int64_t oldval, int64_t newval)
 #endif
 }
 
-#if !defined(__MTA__)
 static inline void purge (void *)
   FN_MAY_BE_UNUSED;
 void
@@ -191,11 +143,6 @@ dwriteef (double *p, double v)
 {
   return (*p = v);
 }
-#else
-#define dreadfe(x) readfe(x)
-#define dwriteef(x,y) writeef(x,y)
-#endif
-
 
 static inline int64_t take_i64 (int64_t*) FN_MAY_BE_UNUSED;
 static inline void release_i64 (int64_t*, int64_t) FN_MAY_BE_UNUSED;
@@ -278,21 +225,7 @@ release_i64 (int64_t *p, int64_t val)
   return;
 }
 #endif
-#elif defined(__MTA__)
-MTA("mta inline")
-MTA("mta expect parallel")
-int64_t
-take_i64 (int64_t *p)
-{
-  return readfe (p);
-}
-MTA("mta inline")
-MTA("mta expect parallel")
-void
-release_i64 (int64_t *p, int64_t val)
-{
-  writeef (p, val);
-}
+
 #else
 int64_t
 take_i64 (int64_t *p)

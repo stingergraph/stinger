@@ -9,7 +9,6 @@
 
 #include "stinger_core/stinger.h"
 #include "stinger_core/xmalloc.h"
-#include "stinger_utils/stinger_sockets.h"
 #include "stinger_utils/timer.h"
 
 #include "human_edge_generator.h"
@@ -23,28 +22,24 @@ main(int argc, char *argv[])
 {
   /* global options */
   int port = 10102;
-  struct hostent * server = NULL;
+  char * hostname = NULL;
 
   int opt = 0;
   while(-1 != (opt = getopt(argc, argv, "p:a:"))) {
     switch(opt) {
       case 'p': {
-	port = atoi(optarg);
+        port = atoi(optarg);
       } break;
 
       case 'a': {
-	server = gethostbyname(optarg);
-	if(NULL == server) {
-	  LOG_E_A ("ERROR: server %s could not be resolved.", optarg);
-	  exit(-1);
-	}
+        hostname = optarg;
       } break;
 
       case '?':
       case 'h': {
-	printf("Usage:    %s [-p port] [-a server_addr]\n", argv[0]);
-	printf("Defaults:\n\tport: %d\n\tserver: localhost\n", port);
-	exit(0);
+        printf("Usage:    %s [-p port] [-a server_addr]\n", argv[0]);
+        printf("Defaults:\n\tport: %d\n\tserver: localhost\n", port);
+        exit(0);
       } break;
     }
   }
@@ -52,16 +47,12 @@ main(int argc, char *argv[])
   LOG_D_A ("Running with: port: %d", port);
 
   /* connect to localhost if server is unspecified */
-  if(NULL == server) {
-    server = gethostbyname("localhost");
-    if(NULL == server) {
-      LOG_E_A ("ERROR: server %s could not be resolved.", "localhost");
-      exit (-1);
-    }
+  if(NULL == hostname) {
+    hostname = "localhost";
   }
 
   /* start the connection */
-  int sock_handle = connect_to_batch_server (server, port);
+  int sock_handle = connect_to_server (hostname, port);
   if (sock_handle == -1) exit(-1);
 
   /* actually generate and send the batches */
@@ -71,7 +62,7 @@ main(int argc, char *argv[])
   while (1)
   {
     StingerBatch batch;
-    batch.set_make_undirected(true);
+    batch.set_make_undirected(false);
     batch.set_type(STRINGS_ONLY);
     batch.set_keep_alive(true);
 
