@@ -323,7 +323,7 @@ pagerank_dpr (const int64_t nv, struct stinger * S,
     int niter;
 
     /* On each iteration, new_dpr_deg enters with dpr_deg's pattern and b's values. */
-    for (niter = 0; niter < maxiter && rho >= (termthresh*dpr_deg)/nv; ++niter) {
+    for (niter = 0; niter < maxiter; ++niter) {
 
       OMP(omp master) { new_rho = 0.0; last_frontier = 0.0; } /* uses barriers in spmspv */
 
@@ -331,7 +331,7 @@ pagerank_dpr (const int64_t nv, struct stinger * S,
                                        1.0,
                                        &new_dpr_deg, new_dpr_idx, new_dpr_val,
                                        mark, dzero_workspace, &total_vol);
-      OMP(omp for OMP_SIMD reduction(NORM_REDUCE : new_rho) reduction(+: last_frontier))
+      OMP(omp for OMP_SIMD reduction(NORM_REDUCE : new_rho))
         for (int64_t k = 0; k < new_dpr_deg; ++k) {
           /* XXX: Again, assuming pattern is being super-setted and kept in order. */
           assert(k >= dpr_deg || new_dpr_idx[k] == dpr_idx[k]);
@@ -350,6 +350,10 @@ pagerank_dpr (const int64_t nv, struct stinger * S,
 #else
           new_rho += (k < dpr_deg? fabs (new_dpr_val[k] - dpr_val[k]) : fabs (new_dpr_val[k]));
 #endif
+        }
+      if (new_rho < (termthresh * dpr_deg)/nv) break;
+      OMP(omp for OMP_SIMD reduction(+: last_frontier))
+        for (int64_t k = 0; k < new_dpr_deg; ++k) {
           /* XXX: not needed if swapping buffers... */
           assert(k >= dpr_deg || new_dpr_idx[k] == dpr_idx[k]);
           if (k >= dpr_deg) { dpr_idx[k] = new_dpr_idx[k]; last_frontier += cb*new_dpr_idx[k]; }
@@ -360,7 +364,7 @@ pagerank_dpr (const int64_t nv, struct stinger * S,
       OMP(omp single) {
         dpr_deg = new_dpr_deg;
         rho = new_rho;
-        /* fprintf (stderr, "RHO %g  dpr_deg %ld\n", rho, (long)dpr_deg); */
+       /* fprintf (stderr, "RHO %g  dpr_deg %ld\n", rho, (long)dpr_deg); */
       }
     }
     OMP(omp master) niter_out = niter;
@@ -388,10 +392,22 @@ pagerank_dpr (const int64_t nv, struct stinger * S,
   *dpr_deg_in = dpr_deg;
   *total_vol_out = total_vol;
 
+  /*
   update_residual (nv, S, alpha, *b_deg, b_idx, b_val, cb,
                    dpr_deg, dpr_idx, dpr_val,
                    residual, mark, iworkspace, dworkspace, dzero_workspace, total_vol_out);
+  */
 
+  OMP(omp for OMP_SIMD)
+    for (int64_t k = 0; k < new_dpr_deg; ++k) {
+      const double tmp = (k < dpr_deg? new_dpr_val[k] - dpr_val[k] : new_dpr_val[k]);
+      residual[new_dpr_idx[k]] = tmp;
+    }
+  for (int64_t k = dpr_deg; k < new_dpr_deg; ++k) {
+    /* Clear unused locations */
+    mark[new_dpr_idx[k]] = -1;
+  }
+  
   return niter_out;
 }
 
@@ -458,7 +474,7 @@ pagerank_dpr_held (const int64_t nv, struct stinger * S,
     int niter;
 
     /* On each iteration, new_dpr_deg enters with dpr_deg's pattern and b's values. */
-    for (niter = 0; niter < maxiter && rho >= (termthresh * dpr_deg)/nv; ++niter) {
+    for (niter = 0; niter < maxiter; ++niter) {
 
       OMP(omp master) new_rho = 0.0; /* uses barriers in spmspv */
       /* const double holdthresh = holdthreshmult * dpr_deg * DBL_EPSILON / ndpr; */
@@ -496,6 +512,10 @@ pagerank_dpr_held (const int64_t nv, struct stinger * S,
 #else
           new_rho += (k < dpr_deg? fabs (new_dpr_val[k] - dpr_val[k]) : fabs (new_dpr_val[k]));
 #endif
+        }
+      if (new_rho < (termthresh * dpr_deg)/nv) break;
+      OMP(omp for OMP_SIMD)
+        for (int64_t k = 0; k < new_dpr_deg; ++k) {
           /* XXX: not needed if swapping buffers... */
           assert(k >= dpr_deg || new_dpr_idx[k] == dpr_idx[k]);
           if (k >= dpr_deg) dpr_idx[k] = new_dpr_idx[k];
@@ -518,9 +538,18 @@ pagerank_dpr_held (const int64_t nv, struct stinger * S,
   *dpr_deg_in = dpr_deg;
   *total_vol_out = total_vol;
 
-  update_residual (nv, S, alpha, *b_deg, b_idx, b_val, cb,
-                   dpr_deg, dpr_idx, dpr_val,
-                   residual, mark, iworkspace, dworkspace, dzero_workspace, total_vol_out);
+  OMP(omp for OMP_SIMD)
+    for (int64_t k = 0; k < new_dpr_deg; ++k) {
+      const double tmp = (k < dpr_deg? new_dpr_val[k] - dpr_val[k] : new_dpr_val[k]);
+      residual[new_dpr_idx[k]] = tmp;
+    }
+  for (int64_t k = dpr_deg; k < new_dpr_deg; ++k) {
+    /* Clear unused locations */
+    mark[new_dpr_idx[k]] = -1;
+  }
+  /* update_residual (nv, S, alpha, *b_deg, b_idx, b_val, cb, */
+  /*                  dpr_deg, dpr_idx, dpr_val, */
+  /*                  residual, mark, iworkspace, dworkspace, dzero_workspace, total_vol_out); */
 
   return niter_out;
 }
