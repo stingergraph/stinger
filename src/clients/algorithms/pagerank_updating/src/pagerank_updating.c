@@ -56,10 +56,11 @@ static void dpr_held_update (const int64_t nv, struct stinger * S, struct spvect
                              struct spvect * dpr, double * restrict residual, double * restrict pr_val, const double alpha,
                              const int maxiter, int64_t * restrict mark, int64_t * restrict iworkspace,
                              double * workspace, double * dzero_workspace, int * niter, int64_t * pr_vol);
-static void pr_update (const int64_t nv, const int64_t NE, struct stinger * S, double * restrict pr_val, double * restrict v, const double alpha, const int maxiter, double * workspace, int * niter, int64_t * pr_vol);
-static void rpr_update (const int64_t nv, const int64_t NE, struct stinger * S, double * restrict pr_val, double * restrict v, const double alpha, const int maxiter, double * workspace, int * niter, int64_t * pr_vol);
+static void pr_update (const int64_t nv, const int64_t NE, struct stinger * S, double * restrict pr_val, double * restrict v, double * residual, const double alpha, const int maxiter, int * niter, int64_t * pr_vol, double * workspace);
+static void rpr_update (const int64_t nv, const int64_t NE, struct stinger * S, double * restrict pr_val, double * restrict v, double * residual, const double alpha, const int maxiter, int * niter, int64_t * pr_vol, double * workspace);
 
 static double calc_residual (const int64_t nv, const int64_t NE, struct stinger * S, const double * restrict pr_val, const double * restrict v, const double alpha, double *resid);
+double calc_berr (const int64_t nv, double * restrict resid);
 
 #define BASELINE 0
 #define RESTART 1
@@ -277,7 +278,7 @@ main(int argc, char *argv[])
     const int64_t NE = stinger_total_edges (alg->stinger);
     if (NE) {
       tic ();
-      niter[pr_val_init] = pagerank (nv, alg->stinger, pr_val[pr_val_init], v, alpha, maxiter, workspace);
+      niter[pr_val_init] = pagerank (nv, alg->stinger, pr_val[pr_val_init], v, residual[pr_val_init], alpha, maxiter, workspace);
       pr_time[pr_val_init] = toc ();
 #if !defined(NDEBUG)
       for (int64_t k = 0; k < nv; ++k)
@@ -288,7 +289,7 @@ main(int argc, char *argv[])
       for (int64_t k = 0; k < nv; ++k)
         assert (!isnan(pr_val[pr_val_init][k]));
 #endif
-      double ini_berr = calc_residual (nv, NE, alg->stinger, pr_val[pr_val_init], v, alpha, residual[pr_val_init]);
+      double ini_berr = calc_berr (nv, residual[pr_val_init]);
       fprintf (stderr, "INITIAL BERR %20e\n", ini_berr);
       /* Copy the starting vector */
       for (int k = 0; k < NPR_ALG; ++k)
@@ -366,10 +367,10 @@ main(int argc, char *argv[])
         /* Restart using the previous vector, cumulative... */
         /* In most cases, should sufficiently flush the cache between DPR and DPR_HELD. */
         tic ();
-        rpr_update (nv, NE, S, pr_val[RESTART], v, alpha, maxiter, workspace, &niter[RESTART], &pr_vol[RESTART]);
+        rpr_update (nv, NE, S, pr_val[RESTART], v, residual[RESTART], alpha, maxiter, &niter[RESTART], &pr_vol[RESTART], workspace);
         pr_time[RESTART] = toc ();
         pr_nupd[RESTART] = nv;
-        pr_nberr[RESTART] = calc_residual (nv, NE, S, pr_val[RESTART], v, alpha, residual[RESTART]);
+        pr_nberr[RESTART] = calc_berr (nv, residual[RESTART]);
         pr_resdiff[DPR_HELD] = 0.0;
       }
 
@@ -405,10 +406,10 @@ main(int argc, char *argv[])
       if (run_alg[BASELINE]) {
         /* Compute PageRank from scratch */
         tic ();
-        pr_update (nv, NE, S, pr_val[BASELINE], v, alpha, maxiter, workspace, &niter[BASELINE], &pr_vol[BASELINE]);
+        pr_update (nv, NE, S, pr_val[BASELINE], v, residual[BASELINE], alpha, maxiter, &niter[BASELINE], &pr_vol[BASELINE], workspace);
         pr_time[BASELINE] = toc ();
         pr_nupd[BASELINE] = nv;
-        pr_nberr[BASELINE] = calc_residual (nv, NE, S, pr_val[BASELINE], v, alpha, residual[BASELINE]);
+        pr_nberr[BASELINE] = calc_berr (nv, residual[BASELINE]);
         pr_resdiff[BASELINE] = -1.0;
       }
 
@@ -717,17 +718,17 @@ dpr_held_update (const int64_t nv, struct stinger * S, struct spvect * x, struct
 }
 
 void
-pr_update (const int64_t nv, const int64_t NE, struct stinger * S, double * restrict pr_val, double * restrict v, const double alpha, const int maxiter, double * workspace, int * niter, int64_t * pr_vol)
+pr_update (const int64_t nv, const int64_t NE, struct stinger * S, double * restrict pr_val, double * restrict v, double * residual, const double alpha, const int maxiter, int * niter, int64_t * pr_vol, double * workspace)
 {
-  *niter = pagerank (nv, S, pr_val, v, alpha, maxiter, workspace);
+  *niter = pagerank (nv, S, pr_val, v, residual, alpha, maxiter, workspace);
   //normalize_pr (nv, pr_val);
   *pr_vol = *niter * NE;
 }
 
 void
-rpr_update (const int64_t nv, const int64_t NE, struct stinger * S, double * restrict pr_val, double * restrict v, const double alpha, const int maxiter, double * workspace, int * niter, int64_t * pr_vol)
+rpr_update (const int64_t nv, const int64_t NE, struct stinger * S, double * restrict pr_val, double * restrict v, double * residual, const double alpha, const int maxiter, int * niter, int64_t * pr_vol, double * workspace)
 {
-  *niter = pagerank_restart (nv, S, pr_val, v, alpha, maxiter, workspace);
+  *niter = pagerank_restart (nv, S, pr_val, v, residual, alpha, maxiter, workspace);
   //normalize_pr (nv, pr_val);
   *pr_vol = *niter * NE;
 }
@@ -772,5 +773,31 @@ calc_residual (const int64_t nv, const int64_t NE, struct stinger * S, const dou
 
   //fprintf (stderr, "XXXPRXXX ugh %e %e %ld\n", norm1_r/nv, norminf_r, (long)nv);
 
-  return norminf_r / 2.0;
+  return norm1_r / 2.0;
+}
+
+double
+calc_berr (const int64_t nv, double * restrict resid)
+{
+  /*
+    P x = (I - alpha A^T inv(D)) x = (1.0-alpha)/norm1(v) * v = b
+    r = (1.0-alpha)/norm1(v) * v - x + alpha A^T inv(D) x
+
+    norm(P, 1) = 1+alpha, norm(x, 1) = 1, norm(b, 1) = 1-alpha
+    norm(r) / (norm(P)*norm(x)+norm(b)) = norm(r)/2
+  */
+
+  double norm1_r = 0.0;
+  double norminf_r = 0.0;
+
+  OMP(omp parallel for OMP_SIMD reduction(+: norm1_r) reduction(max: norminf_r))
+    for (int64_t k = 0; k < nv; ++k) {
+      const double tmp = fabs (resid[k]);
+      norm1_r += tmp;
+      if (tmp > norminf_r) norminf_r = tmp;
+    }
+
+  //fprintf (stderr, "XXXPRXXX ugh %e %e %ld\n", norm1_r/nv, norminf_r, (long)nv);
+
+  return norm1_r / 2.0;
 }

@@ -108,12 +108,12 @@ vcopy_scale (const double alpha, const int64_t nv, const double * restrict v, do
 static int
 pagerank_core (const int64_t nv,
                struct stinger * S, double * x_in, const double * restrict kv,
-               const double alpha, const int maxiter,
-               double * workspace)
+               double * residual_in,
+               const double alpha, const int maxiter)
 {
   const double termthresh = termthresh_pr (nv, S);
 
-  double * restrict xnew = workspace;
+  double * restrict xnew = residual_in;
   double * restrict x = x_in;
   double norm1_x;
   int niter;
@@ -126,7 +126,7 @@ pagerank_core (const int64_t nv,
       for (int kk = 0; kk < nv; ++kk)
         norm1_x += fabs(x[kk]);
 
-    for (int k = 0; rho >= termthresh && k < maxiter; ++k) {
+    for (int k = 0; k < maxiter; ++k) {
       OMP(omp master) niter = k+1;
       OMP(omp for OMP_SIMD nowait)
         for (int64_t kk = 0; kk < nv; ++kk)
@@ -135,7 +135,7 @@ pagerank_core (const int64_t nv,
         norm1_xnew_diff = 0.0;
       /* implied barrier */
 
-      stinger_unit_dspmTv_degscaled (nv, alpha, S, x, 1.0, xnew);
+      stinger_unit_dspmTv_degscaled (nv, -alpha, S, x, 1.0, xnew);
 
 #if defined(USE_INFNORM)
       OMP(omp for OMP_SIMD reduction(NORM_REDUCE : norm1_xnew_diff))
@@ -153,7 +153,8 @@ pagerank_core (const int64_t nv,
       OMP(omp master) rho = safediv (norm1_xnew_diff, norm1_x);
 #endif
 
-      /* Always use xnew as the new x, even if converged. */
+      if (rho < termthresh) break;
+
       OMP(omp single) {
         double * t;
         t = xnew;
@@ -172,10 +173,20 @@ pagerank_core (const int64_t nv,
         x[kk] /= norm1_x;
 */
 
-    if (x != x_in) { /* Copy back. */
+    if (x != x_in) { /* Copy back and compute residual. */
+      /* x == residual_in, xnew == x_in */
+      OMP(omp for OMP_SIMD)
+        for (int64_t k = 0; k < nv; ++k) {
+          double t;
+          t = x_in[k];
+          x_in[k] = x[k];
+          x[k] = t - x[k];
+        }
+    } else { /* Just compute the residual. */
+      /* x == x_in, xnew == residual_in */
       OMP(omp for OMP_SIMD)
         for (int64_t k = 0; k < nv; ++k)
-          x_in[k] = x[k];
+          xnew[k] -= x[k];
     }
   }
 
@@ -185,30 +196,32 @@ pagerank_core (const int64_t nv,
 int
 pagerank (const int64_t nv,
           struct stinger * S, double * x_in, const double * restrict v,
+          double * residual_in,
           const double alpha, const int maxiter,
           double * workspace)
 {
   /* const int64_t nv = stinger_max_active_vertex (S) + 1; */
-  double * kv = &workspace[nv];
+  double * kv = workspace;
   vcopy_scale ((1.0 - alpha) / norm1 (nv, v), nv, v, kv);
   //vcopy_scale (1.0 / norm1 (nv, v), nv, v, kv);
   vcopy (nv, kv, x_in);
-  return pagerank_core (nv, S, x_in, kv, alpha, maxiter, workspace);
+  return pagerank_core (nv, S, x_in, kv, residual_in, alpha, maxiter);
 }
 
 int
 pagerank_restart (const int64_t nv,
                   struct stinger * S, double * x_in, const double * restrict v,
+                  double * residual_in,
                   const double alpha, const int maxiter,
                   double * workspace)
 {
   /* const int64_t nv = stinger_max_active_vertex (S) + 1; */
-  double * kv = &workspace[nv];
+  double * kv = workspace;
   int out;
   /* XXX: alpha*nu for dangling nodes */
   vcopy_scale ((1.0 - alpha) / norm1 (nv, v), nv, v, kv);
   //vcopy_scale (1.0 / norm1 (nv, v), nv, v, kv);
-  out = pagerank_core (nv, S, x_in, kv, alpha, maxiter, workspace);
+  out = pagerank_core (nv, S, x_in, kv, residual_in, alpha, maxiter);
   return out;
 }
 
@@ -511,3 +524,4 @@ pagerank_dpr_held (const int64_t nv, struct stinger * S,
 
   return niter_out;
 }
+

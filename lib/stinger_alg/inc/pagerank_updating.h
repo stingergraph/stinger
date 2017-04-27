@@ -2,10 +2,12 @@
 #define PAGERANK_UPDATING_HEADER_
 
 int pagerank (const int64_t nv, struct stinger * S, double * x_in, const double * restrict v,
+              double * residual_in,
               const double alpha, const int maxiter,
               double * workspace);
 
 int pagerank_restart (const int64_t nv, struct stinger * S, double * x_in, const double * restrict v,
+                      double * residual_in,
                       const double alpha, const int maxiter,
                       double * workspace);
 
