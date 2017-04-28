@@ -642,6 +642,6 @@ pers_pagerank (const int64_t nv, struct stinger * S,
   *res_deg_in = res_deg;
   *total_vol_out = total_vol;
 
-  return niter;
+  return niter+1;
 }
 
