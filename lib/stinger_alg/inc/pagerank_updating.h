@@ -38,4 +38,13 @@ int pagerank_dpr_held (const int64_t nv, struct stinger * S,
                        int64_t * total_vol_out, 
                        const double holdscale);
 
+int pers_pagerank (const int64_t nv, struct stinger * S,
+                   int64_t * x_deg_in, int64_t * x_idx_in, double * x_val_in,
+                   const double alpha, const int maxiter,
+                   const int64_t v_deg, const int64_t * v_idx_in, const double * v_val_in,
+                   int64_t * res_deg_in, int64_t * res_idx_in, double * res_val_in,
+                   int64_t * mark,
+                   double * dzero_workspace,
+                   int64_t * total_vol_out);
+
 #endif /* PAGERANK_UPDATING_HEADER_ */
