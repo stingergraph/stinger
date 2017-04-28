@@ -645,3 +645,94 @@ pers_pagerank (const int64_t nv, struct stinger * S,
   return niter+1;
 }
 
+int
+limited_pers_pagerank (const int64_t nv, struct stinger * S,
+                       int64_t * x_deg_in, int64_t * x_idx_in, double * x_val_in,
+                       const double alpha, const int maxiter, const int64_t nv_limit,
+                       const int64_t v_deg, const int64_t * v_idx_in, const double * v_val_in,
+                       int64_t * res_deg_in, int64_t * res_idx_in, double * res_val_in,
+                       int64_t * mark,
+                       double * dzero_workspace,
+                       int64_t * total_vol_out)
+{
+  int64_t total_vol = 0;
+  int64_t niter = 0;
+  int64_t x_deg, res_deg;
+
+  int64_t * restrict x_idx = x_idx_in;
+  int64_t * restrict res_idx = res_idx_in;
+  const int64_t * restrict v_idx = v_idx_in;
+  double * restrict x_val = x_val_in;
+  double * restrict res_val = res_val_in;
+  const double * restrict v_val = v_val_in;
+
+  const double termthresh = termthresh_pr (nv, S); // /(1+alpha)
+
+  double scalefact = 0.0;
+  double rho;
+
+  OMP(parallel) {
+    OMP(for OMP_SIMD reduction(+:scalefact))
+      for (int64_t k = 0; k < v_deg; ++k)
+        scalefact += fabs(v_val[k]);
+    OMP(single)
+      scalefact = (1.0 - alpha) / scalefact;
+
+    OMP(for OMP_SIMD)
+      for (int64_t k = 0; k < v_deg; ++k) {
+        int64_t i = res_idx[k] = x_idx[k] = v_idx[k];
+        res_val[k] = x_val[k] = scalefact * v_val[k];
+        mark[i] = k;
+      }
+    OMP(single)
+      res_deg = x_deg = v_deg;
+
+    for (int64_t iter = 0; iter < maxiter; ++iter) {
+      OMP(single)
+        rho = 0.0;
+
+      stinger_unit_dspmTspv_degscaled (nv, alpha, S, x_deg, x_idx, x_val,
+                                       1.0,
+                                       &res_deg, res_idx, res_val,
+                                       mark, dzero_workspace, &total_vol);
+
+      OMP(for OMP_SIMD reduction(+: rho))
+        for (int64_t k = 0; k < res_deg; ++k) {
+          rho += (k < res_deg? fabs (res_val[k] - x_val[k]) : fabs (res_val[k]));
+        }
+
+      if (rho < termthresh || res_deg > nv_limit) break;
+      
+      OMP(for OMP_SIMD)
+        for (int64_t i = 0; i < res_deg; ++i) {
+          if (i < x_deg) {
+            assert (res_idx[i] == x_idx[i]);
+          } else
+            x_idx[i] = res_idx[i];
+          x_val[i] = res_val[i];
+          res_val[i] = (i < v_deg? v_val[i] : 0.0);
+        }
+      OMP(single) {
+        x_deg = res_deg;
+        niter = iter;
+      }
+    }
+    
+    OMP(for OMP_SIMD)
+      for (int64_t k = 0; k < x_deg; ++k)
+        res_val[k] -= x_val[k];
+
+    OMP(for OMP_SIMD)
+      for (int64_t k = x_deg; k < res_deg; ++k) {
+        /* Clear unused locations */
+        mark[res_idx[k]] = -1;
+      }
+  }
+
+  *x_deg_in = x_deg;
+  *res_deg_in = res_deg;
+  *total_vol_out = total_vol;
+
+  return niter+1;
+}
+
