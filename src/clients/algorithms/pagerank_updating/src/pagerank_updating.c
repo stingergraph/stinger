@@ -43,11 +43,6 @@ static void dpr_pre (const int64_t nv, struct stinger * S, struct spvect * restr
                      struct spvect x, const double * restrict pr_val,
                      int64_t * restrict mark, double * restrict dzero_workspace,
                      int64_t * restrict pr_vol);
-static void dpr_held_pre (const int64_t nv, struct stinger * S, struct spvect * restrict b,
-                          struct spvect * restrict x_held,
-                          struct spvect x, const double * restrict pr_val,
-                          int64_t * restrict mark, double * restrict dzero_workspace,
-                          int64_t * restrict pr_vol);
 static void dpr_update (const int64_t nv, struct stinger * S, struct spvect * x, struct spvect * b,
                         struct spvect * dpr, double * restrict residual, double * restrict pr_val, const double alpha,
                         const int maxiter, int64_t * restrict mark, int64_t * restrict iworkspace,
@@ -327,11 +322,19 @@ main(int argc, char *argv[])
       gather_pre (alg, &x, mark);
       gather_time = toc ();
 
-      OMP(omp parallel for)
-        for (int64_t k = 0; k < nv; ++k) {
-          x_all.idx[k] = k;
-        }
+      OMP(parallel) {
+        OMP(for OMP_SIMD)
+          for (int64_t k = 0; k < x.nv; ++k) {
+            x_held.idx[k] = x.idx[k];
+            x_held.val[k] = x.val[k];
+          }
+        OMP(for OMP_SIMD)
+          for (int64_t k = 0; k < nv; ++k)
+            x_all.idx[k] = k;
+      }
+      x_held.nv = x.nv;
       x_all.nv = nv;
+
 
       if (run_alg[DPR]) {
         tic ();
@@ -342,7 +345,7 @@ main(int argc, char *argv[])
       /* Compute x, b0 for dpr_held */
       if (run_alg[DPR_HELD]) {
         tic ();
-        dpr_held_pre (nv, alg->stinger, &b_held, &x_held, x, pr_val[DPR_HELD], mark, dzero_workspace, &pr_vol[DPR_HELD]);
+        dpr_pre (nv, alg->stinger, &b_held, x_held, pr_val[DPR_HELD], mark, dzero_workspace, &pr_vol[DPR_HELD]);
         pr_pre_time[DPR_HELD] = toc ();
       }
 
@@ -628,25 +631,7 @@ gather_pre (const stinger_registered_alg * alg, struct spvect * x, int64_t * res
 void
 dpr_pre (const int64_t nv, struct stinger * S, struct spvect * restrict b, struct spvect x, const double * restrict pr_val, int64_t * restrict mark, double * restrict dzero_workspace, int64_t * restrict pr_vol)
 {
-  int64_t b_nv = 0;
-  /* Compute b0 in b */
-  OMP(omp parallel) {
-    OMP(omp for OMP_SIMD)
-      for (int64_t k = 0; k < x.nv; ++k) {
-        assert(!isnan(pr_val[x.idx[k]]));
-        x.val[k] = pr_val[x.idx[k]];
-      }
-    stinger_unit_dspmTspv_degscaled (nv,
-                                     1.0, S,
-                                     x.nv, x.idx, x.val,
-                                     0.0,
-                                     &b_nv, b->idx, b->val,
-                                     mark, dzero_workspace,
-                                     pr_vol);
-    OMP(for OMP_SIMD)
-      for (int64_t k = 0; k < b_nv; ++k) mark[b->idx[k]] = -1;
-  }
-  b->nv = b_nv;
+  pagerank_dpr_pre (nv, S, &b->nv, b->idx, b->val, x.nv, x.idx, x.val, pr_val, mark, dzero_workspace, pr_vol);
 }
 
 void

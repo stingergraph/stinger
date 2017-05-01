@@ -11,6 +11,12 @@ int pagerank_restart (const int64_t nv, struct stinger * S, double * x_in, const
                       const double alpha, const int maxiter,
                       double * workspace);
 
+void pagerank_dpr_pre (const int64_t nv, struct stinger * S,
+                       int64_t * b_deg, int64_t * b_idx, double * b_val,
+                       const int64_t x_deg, int64_t * x_idx, double * x_val,
+                       const double * pr_val, int64_t * mark, double * dzero_workspace,
+                       int64_t * pr_vol);
+
 int pagerank_dpr (const int64_t nv, struct stinger * S,
                   int64_t * x_deg, int64_t * x_idx, double * x_val,
                   const double alpha, const int maxiter,
@@ -35,7 +41,7 @@ int pagerank_dpr_held (const int64_t nv, struct stinger * S,
                        int64_t * iworkspace,
                        double * dworkspace,
                        double * dzero_workspace,
-                       int64_t * total_vol_out, 
+                       int64_t * total_vol_out,
                        const double holdscale);
 
 int pers_pagerank (const int64_t nv, struct stinger * S,

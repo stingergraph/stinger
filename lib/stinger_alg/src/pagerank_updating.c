@@ -225,6 +225,29 @@ pagerank_restart (const int64_t nv,
   return out;
 }
 
+void
+pagerank_dpr_pre (const int64_t nv, struct stinger * S, int64_t * b_deg, int64_t * b_idx, double * b_val, const int64_t x_deg, int64_t * x_idx, double * x_val, const double * pr_val, int64_t * mark, double * dzero_workspace, int64_t * pr_vol)
+{
+  int64_t b_nv = 0;
+  /* Compute b0 in b */
+  OMP(parallel) {
+    OMP(for OMP_SIMD)
+      for (int64_t k = 0; k < x_deg; ++k) {
+        assert(!isnan(pr_val[x_idx[k]]));
+        x_val[k] = pr_val[x_idx[k]];
+      }
+    stinger_unit_dspmTspv_degscaled (nv,
+                                     1.0, S,
+                                     x_deg, x_idx, x_val,
+                                     0.0,
+                                     b_deg, b_idx, b_val,
+                                     mark, dzero_workspace,
+                                     pr_vol);
+    OMP(for OMP_SIMD)
+      for (int64_t k = 0; k < *b_deg; ++k) mark[b_idx[k]] = -1;
+  }
+}
+
 static void
 update_residual (const int64_t nv, struct stinger * S,
                  const double alpha,
