@@ -254,19 +254,19 @@ main(int argc, char *argv[])
   dpr_held = alloc_spvect (nv);
   dpr_all = alloc_spvect (nv);
 
-  OMP(omp parallel) {
+  OMP(parallel) {
     for (int k = 0; k < NPR_ALG; ++k)
       if (run_alg[k]) {
-        OMP(omp for OMP_SIMD nowait)
+        OMP(for OMP_SIMD nowait)
           for (int64_t i = 0; i < nv; ++i) {
             pr_val[k][i] = 0.0;
             pr_val_delta[k][i] = 0.0;
           }
       }
-    OMP(omp for OMP_SIMD nowait)
+    OMP(for OMP_SIMD nowait)
       for (int64_t i = 0; i < nv; ++i)
         mark[i] = -1;
-    OMP(omp for OMP_SIMD nowait)
+    OMP(for OMP_SIMD nowait)
       for (int64_t i = 0; i < nv; ++i)
         v[i] = 1.0;
   }
@@ -294,7 +294,7 @@ main(int argc, char *argv[])
       /* Copy the starting vector */
       for (int k = 0; k < NPR_ALG; ++k)
         if (run_alg[k] && k != pr_val_init) {
-          OMP(omp parallel for OMP_SIMD)
+          OMP(parallel for OMP_SIMD)
             for (int64_t i = 0; i < nv; ++i) {
               pr_val[k][i] = pr_val[pr_val_init][i];
               residual[k][i] = residual[pr_val_init][i];
@@ -313,7 +313,7 @@ main(int argc, char *argv[])
     /* Batch pre-processing, only needed for DPR and DPR_HELD but computed for all */
     if(stinger_alg_begin_pre(alg)) {
       clear_vlist (&x.nv, x.idx, mark);
-      OMP(omp parallel for OMP_SIMD)
+      OMP(parallel for OMP_SIMD)
         for (int64_t k = 0; k < nv; ++k) mark[k] = -1;
       /* Gather vertices that are affected by the batch. */
       /* (Really should be done in the framework, but ends up being handy here...) */
@@ -386,7 +386,7 @@ main(int argc, char *argv[])
         pr_nberr[DPR_HELD] = 0.0;
         const double * restrict R = residual[DPR_HELD];
         double nberr = 0.0, resdiff = 0.0;
-        OMP(omp parallel for OMP_SIMD reduction(+: nberr, resdiff))
+        OMP(parallel for OMP_SIMD reduction(+: nberr, resdiff))
           for (int64_t k = 0; k < nv; ++k) {
             nberr += fabs(R[k]);
             resdiff += fabs(R[k] - residual[RESTART][k]);
@@ -395,7 +395,7 @@ main(int argc, char *argv[])
         pr_resdiff[DPR_HELD] = resdiff;
 #endif
 
-        OMP(omp parallel for OMP_SIMD)
+        OMP(parallel for OMP_SIMD)
           for (int64_t k = 0; k < dpr_held.nv; ++k) {
             assert (mark[dpr_held.idx[k]] != -1);
             mark[dpr_held.idx[k]] = -1;
@@ -425,7 +425,7 @@ main(int argc, char *argv[])
         pr_nberr[DPR] = 0.0;
         const double * restrict R = residual[DPR];
         double nberr = 0.0, resdiff = 0.0;
-        OMP(omp parallel for OMP_SIMD reduction(+: nberr, resdiff))
+        OMP(parallel for OMP_SIMD reduction(+: nberr, resdiff))
           for (int64_t k = 0; k < nv; ++k) {
             nberr += fabs(R[k]);
             resdiff += fabs(R[k] - residual[RESTART][k]);
@@ -433,7 +433,7 @@ main(int argc, char *argv[])
         pr_nberr[DPR] = nberr / 2.0;
 #endif
 
-        OMP(omp parallel for OMP_SIMD)
+        OMP(parallel for OMP_SIMD)
           for (int64_t k = 0; k < dpr.nv; ++k) {
             assert (mark[dpr.idx[k]] != -1);
             mark[dpr.idx[k]] = -1;
@@ -453,7 +453,7 @@ main(int argc, char *argv[])
         pr_nberr[DPR_ALL] = 0.0;
         const double * restrict R = residual[DPR_ALL];
         double nberr = 0.0, resdiff = 0.0;
-        OMP(omp parallel for OMP_SIMD reduction(+: nberr, resdiff))
+        OMP(parallel for OMP_SIMD reduction(+: nberr, resdiff))
           for (int64_t k = 0; k < nv; ++k) {
             nberr += fabs(R[k]);
             resdiff += fabs(R[k] - residual[RESTART][k]);
@@ -461,7 +461,7 @@ main(int argc, char *argv[])
         pr_nberr[DPR_ALL] = nberr / 2.0;
 #endif
 
-        OMP(omp parallel for OMP_SIMD)
+        OMP(parallel for OMP_SIMD)
           for (int64_t k = 0; k < dpr_all.nv; ++k) {
             assert (mark[dpr_all.idx[k]] != -1);
             mark[dpr_all.idx[k]] = -1;
@@ -482,7 +482,7 @@ main(int argc, char *argv[])
         const int64_t loc = find_max_pr (nv, pr_val[alg]);
         if (alg == ERRBASE) loc_baseline = loc;
         if (run_alg[ERRBASE])
-          OMP(omp parallel for OMP_SIMD reduction(+: err) reduction(max: mxerr, mxval))
+          OMP(parallel for OMP_SIMD reduction(+: err) reduction(max: mxerr, mxval))
             for (int64_t i = 0; i < nv; ++i) {
               const double pri = fabs (pr_val[alg][i]);
               const double ei = fabs (pr_val[alg][i] - pr_val[ERRBASE][i]);
@@ -542,7 +542,7 @@ clear_vlist (int64_t * restrict nvlist,
 {
   const int64_t nvl = *nvlist;
 
-  OMP(omp parallel for)
+  OMP(parallel for)
     for (int64_t k = 0; k < nvl; ++k)
       mark[vlist[k]] = -1;
 
@@ -563,11 +563,11 @@ void
 normalize_pr (const int64_t nv, double * restrict pr_val)
 {
   double n1 = 0.0;
-  OMP(omp parallel) {
-    OMP(omp for OMP_SIMD reduction(+: n1))
+  OMP(parallel) {
+    OMP(for OMP_SIMD reduction(+: n1))
       for (int64_t k = 0; k < nv; ++k)
         n1 += fabs (pr_val[k]);
-    OMP(omp for OMP_SIMD)
+    OMP(for OMP_SIMD)
       for (int64_t k = 0; k < nv; ++k)
         pr_val[k] /= n1;
   }
@@ -578,10 +578,10 @@ find_max_pr (const int64_t nv, const double * restrict pr_val)
 {
   double max_val = -1.0;
   int64_t loc = -1;
-  OMP(omp parallel) {
+  OMP(parallel) {
     double t_max_val = -1.0;
     int64_t t_loc = -1;
-    OMP(omp for)
+    OMP(for)
       for (int64_t k = 0; k < nv; ++k) {
         const double v = pr_val[k];
         if (v > t_max_val) {
@@ -589,7 +589,7 @@ find_max_pr (const int64_t nv, const double * restrict pr_val)
           t_loc = k;
         }
       }
-    OMP(omp critical) {
+    OMP(critical) {
       if (t_max_val > max_val) {
         max_val = t_max_val;
         loc = t_loc;
@@ -608,18 +608,18 @@ gather_pre (const stinger_registered_alg * alg, struct spvect * x, int64_t * res
   const stinger_edge_update * restrict rem = alg->deletions;
 
   /* Only gather the *source*... */
-  OMP(omp parallel) {
-    OMP(omp for nowait)
+  OMP(parallel) {
+    OMP(for nowait)
       for (int64_t k = 0; k < nins; ++k) {
         append_to_vlist (&x->nv, x->idx, mark, ins[k].source);
         /* append_to_vlist (&x->nv, x->idx, mark, ins[k].destination); */
       }
-    OMP(omp for)
+    OMP(for)
       for (int64_t k = 0; k < nrem; ++k) {
         append_to_vlist (&x->nv, x->idx, mark, rem[k].source);
         /* append_to_vlist (&x->nv, x->idx, mark, rem[k].destination); */
       }
-    OMP(omp for OMP_SIMD)
+    OMP(for OMP_SIMD)
       for (int64_t k = 0; k < x->nv; ++k)
         mark[x->idx[k]] = -1;
   }
@@ -643,7 +643,7 @@ dpr_pre (const int64_t nv, struct stinger * S, struct spvect * restrict b, struc
                                      &b_nv, b->idx, b->val,
                                      mark, dzero_workspace,
                                      pr_vol);
-    OMP(omp for OMP_SIMD)
+    OMP(for OMP_SIMD)
       for (int64_t k = 0; k < b_nv; ++k) mark[b->idx[k]] = -1;
   }
   b->nv = b_nv;
@@ -655,8 +655,8 @@ dpr_held_pre (const int64_t nv, struct stinger * S, struct spvect * restrict b, 
   int64_t b_nv = 0;
   int64_t x_held_nv = x.nv;
   /* Compute b0 in b */
-  OMP(omp parallel) {
-    OMP(omp for OMP_SIMD)
+  OMP(parallel) {
+    OMP(for OMP_SIMD)
       for (int64_t k = 0; k < x.nv; ++k) {
         assert(!isnan(pr_val[x.idx[k]]));
         x_held->idx[k] = x.idx[k];
@@ -669,7 +669,7 @@ dpr_held_pre (const int64_t nv, struct stinger * S, struct spvect * restrict b, 
                                      &b_nv, b->idx, b->val,
                                      mark, dzero_workspace,
                                      pr_vol);
-    OMP(omp for OMP_SIMD)
+    OMP(for OMP_SIMD)
       for (int64_t k = 0; k < b_nv; ++k) mark[b->idx[k]] = -1;
   }
   b->nv = b_nv;
@@ -689,7 +689,7 @@ dpr_update (const int64_t nv, struct stinger * S, struct spvect * x, struct spve
                          mark, iworkspace, workspace, dzero_workspace,
                          pr_vol);
   const int64_t dpr_nv = dpr->nv;
-  OMP(omp parallel for OMP_SIMD reduction(+: total))
+  OMP(parallel for OMP_SIMD reduction(+: total))
     for (int64_t k = 0; k < dpr_nv; ++k) {
       pr_val[dpr->idx[k]] += dpr->val[k];
       total += dpr->val[k];
@@ -711,7 +711,7 @@ dpr_held_update (const int64_t nv, struct stinger * S, struct spvect * x, struct
                               mark, iworkspace, workspace, dzero_workspace,
                               pr_vol, holdscale);
   const int64_t dpr_nv = dpr->nv;
-  OMP(omp parallel for OMP_SIMD)
+  OMP(parallel for OMP_SIMD)
     for (int64_t k = 0; k < dpr_nv; ++k)
       pr_val[dpr->idx[k]] += dpr->val[k];
   normalize_pr (nv, pr_val);
@@ -748,8 +748,8 @@ calc_residual (const int64_t nv, const int64_t NE, struct stinger * S, const dou
   double sum_vdangling = 0.0;
   double norminf_r = 0.0;
 
-  OMP(omp parallel) {
-    OMP(omp for OMP_SIMD reduction(+: norm1_v) reduction(+: sum_vdangling))
+  OMP(parallel) {
+    OMP(for OMP_SIMD reduction(+: norm1_v) reduction(+: sum_vdangling))
       for (int64_t k = 0; k < nv; ++k) {
         norm1_v += fabs (v[k]);
         if (0 == stinger_outdegree_get (S, k))
@@ -757,14 +757,14 @@ calc_residual (const int64_t nv, const int64_t NE, struct stinger * S, const dou
       }
     //const double scalefact = (1.0 - alpha - alpha * sum_vdangling) / norm1_v;
     const double scalefact = 1.0 / norm1_v;
-    OMP(omp for OMP_SIMD)
+    OMP(for OMP_SIMD)
       for (int64_t k = 0; k < nv; ++k)
         resid[k] = scalefact * v[k] - pr_val[k];
   }
 
   stinger_unit_dspmTv_degscaled (nv, alpha, S, pr_val, 1.0, resid);
 
-  OMP(omp parallel for OMP_SIMD reduction(+: norm1_r) reduction(max: norminf_r))
+  OMP(parallel for OMP_SIMD reduction(+: norm1_r) reduction(max: norminf_r))
     for (int64_t k = 0; k < nv; ++k) {
       const double tmp = fabs (resid[k]);
       norm1_r += tmp;
@@ -790,7 +790,7 @@ calc_berr (const int64_t nv, double * restrict resid)
   double norm1_r = 0.0;
   double norminf_r = 0.0;
 
-  OMP(omp parallel for OMP_SIMD reduction(+: norm1_r) reduction(max: norminf_r))
+  OMP(parallel for OMP_SIMD reduction(+: norm1_r) reduction(max: norminf_r))
     for (int64_t k = 0; k < nv; ++k) {
       const double tmp = fabs (resid[k]);
       norm1_r += tmp;
