@@ -105,6 +105,14 @@ vcopy_scale (const double alpha, const int64_t nv, const double * restrict v, do
       vout[k] = alpha * v[k];
 }
 
+static inline void
+vscale (const double alpha, const int64_t nv, double * restrict v)
+{
+  OMP(parallel for OMP_SIMD)
+    for (int64_t k = 0; k < nv; ++k)
+      v[k] *= alpha;
+}
+
 static int
 pagerank_core (const int64_t nv,
                struct stinger * S, double * x_in, const double * restrict kv,
@@ -202,10 +210,13 @@ pagerank (const int64_t nv,
 {
   /* const int64_t nv = stinger_max_active_vertex (S) + 1; */
   double * kv = workspace;
-  vcopy_scale ((1.0 - alpha) / norm1 (nv, v), nv, v, kv);
-  //vcopy_scale (1.0 / norm1 (nv, v), nv, v, kv);
+  int out;
+  //vcopy_scale ((1.0 - alpha) / norm1 (nv, v), nv, v, kv);
+  vcopy_scale (1.0 / norm1 (nv, v), nv, v, kv);
   vcopy (nv, kv, x_in);
-  return pagerank_core (nv, S, x_in, kv, residual_in, alpha, maxiter);
+  out = pagerank_core (nv, S, x_in, kv, residual_in, alpha, maxiter);
+  vscale (1.0 / norm1 (nv, x_in), nv, x_in);
+  return out;
 }
 
 int
@@ -219,9 +230,10 @@ pagerank_restart (const int64_t nv,
   double * kv = workspace;
   int out;
   /* XXX: alpha*nu for dangling nodes */
-  vcopy_scale ((1.0 - alpha) / norm1 (nv, v), nv, v, kv);
-  //vcopy_scale (1.0 / norm1 (nv, v), nv, v, kv);
+  //vcopy_scale ((1.0 - alpha) / norm1 (nv, v), nv, v, kv);
+  vcopy_scale (1.0 / norm1 (nv, v), nv, v, kv);
   out = pagerank_core (nv, S, x_in, kv, residual_in, alpha, maxiter);
+  vscale (1.0 / norm1 (nv, x_in), nv, x_in);
   return out;
 }
 
