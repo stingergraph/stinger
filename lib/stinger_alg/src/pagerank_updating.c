@@ -642,7 +642,7 @@ pers_pagerank (const int64_t nv, struct stinger * S,
 
       OMP(for OMP_SIMD reduction(+: rho))
         for (int64_t k = 0; k < res_deg; ++k) {
-          rho += (k < res_deg? fabs (res_val[k] - x_val[k]) : fabs (res_val[k]));
+          rho += (k < x_deg? fabs (res_val[k] - x_val[k]) : fabs (res_val[k]));
         }
 
       if (rho < termthresh) break;
@@ -733,7 +733,7 @@ limited_pers_pagerank (const int64_t nv, struct stinger * S,
 
       OMP(for OMP_SIMD reduction(+: rho))
         for (int64_t k = 0; k < res_deg; ++k) {
-          rho += (k < res_deg? fabs (res_val[k] - x_val[k]) : fabs (res_val[k]));
+          rho += (k < x_deg? fabs (res_val[k] - x_val[k]) : fabs (res_val[k]));
         }
 
       if (rho < termthresh || res_deg > nv_limit) break;
