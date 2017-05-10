@@ -161,7 +161,7 @@ pagerank_core (const int64_t nv,
       OMP(master) rho = safediv (norm1_xnew_diff, norm1_x);
 #endif
 
-      if (rho < termthresh) break;
+      if (rho < termthresh || k == maxiter-1) break;
 
       OMP(single) {
         double * t;
@@ -386,7 +386,7 @@ pagerank_dpr (const int64_t nv, struct stinger * S,
           new_rho += (k < dpr_deg? fabs (new_dpr_val[k] - dpr_val[k]) : fabs (new_dpr_val[k]));
 #endif
         }
-      if (new_rho < (termthresh * dpr_deg)/nv) break;
+      if (new_rho < (termthresh * dpr_deg)/nv || niter == maxiter-1) break;
       OMP(for OMP_SIMD reduction(+: last_frontier))
         for (int64_t k = 0; k < new_dpr_deg; ++k) {
           /* XXX: not needed if swapping buffers... */
@@ -548,7 +548,7 @@ pagerank_dpr_held (const int64_t nv, struct stinger * S,
           new_rho += (k < dpr_deg? fabs (new_dpr_val[k] - dpr_val[k]) : fabs (new_dpr_val[k]));
 #endif
         }
-      if (new_rho < (termthresh * dpr_deg)/nv) break;
+      if (new_rho < (termthresh * dpr_deg)/nv || niter == maxiter-1) break;
       OMP(for OMP_SIMD)
         for (int64_t k = 0; k < new_dpr_deg; ++k) {
           /* XXX: not needed if swapping buffers... */
@@ -645,7 +645,7 @@ pers_pagerank (const int64_t nv, struct stinger * S,
           rho += (k < x_deg? fabs (res_val[k] - x_val[k]) : fabs (res_val[k]));
         }
 
-      if (rho < termthresh) break;
+      if (rho < termthresh || niter == maxiter-1) break;
       
       OMP(for OMP_SIMD)
         for (int64_t i = 0; i < res_deg; ++i) {
@@ -736,7 +736,7 @@ limited_pers_pagerank (const int64_t nv, struct stinger * S,
           rho += (k < x_deg? fabs (res_val[k] - x_val[k]) : fabs (res_val[k]));
         }
 
-      if (rho < termthresh || res_deg > nv_limit) break;
+      if (rho < termthresh || res_deg > nv_limit || niter == maxiter-1) break;
       
       OMP(for OMP_SIMD)
         for (int64_t i = 0; i < res_deg; ++i) {
