@@ -18,7 +18,7 @@
 /* Define __atomic in terms of __sync */
 #define __atomic_compare_exchange(p,pv,newpv,unused1,unused2,unused3) __sync_bool_compare_and_swap((p), *(pv), *(newpv))
 #define __atomic_compare_exchange_n(p,pv,newv,unused1,unused2,unused3) __sync_bool_compare_and_swap((p), *(pv), (newv))
-#define __atomic_load(p, pv, unused1) (pv) = *(p)
+#define __atomic_load(p, pv, unused1) *(pv) = *(p)
 #define __atomic_store(p, pv, unused1) *(p) = *(pv)
 #define __atomic_fetch_add(p, pv, unused1) __sync_fetch_and_add((p), (pv))
 #endif
