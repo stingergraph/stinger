@@ -1,16 +1,43 @@
+dist: trusty
 sudo: false
 language: cpp
-compiler:
-  - gcc
-  - clang
-before_install:
-  - wget --no-check-certificate http://www.cmake.org/files/v3.3/cmake-3.3.0-rc3-Linux-x86_64.sh
-  - mkdir -p $HOME/cmake
-  - sh cmake-3.3.0-rc3-Linux-x86_64.sh --skip-license --prefix=$HOME/cmake
 before_script:
   - mkdir build
   - cd build
-  - $HOME/cmake/bin/cmake ..
+  - cmake ..
 script: 
   - make
-  - make check
+  - OMP_NUM_THREADS=2 STINGER_MAX_MEMSIZE=64M CTEST_OUTPUT_ON_FAILURE=1 make test
+addons:
+  apt:
+    sources:
+      # Provides newer compilers
+      - ubuntu-toolchain-r-test
+      # Provides newer cmake
+      - george-edison55-precise-backports
+      # Provides OpenMP support for clang, currently broken
+      # - debian-sid
+    packages:
+      - gcc-5
+      - g++-5
+      - cmake
+      - cmake-data
+      - clang-3.8
+      - libprotobuf-dev
+      - protobuf-compiler
+      # Provides OpenMP support for clang, currently broken
+      # - libomp-dev
+
+# The 'compiler' key overwrites CC and CXX even if they are set in 'env'
+# This step runs after both of them
+before_install:
+    - eval "${MATRIX_EVAL}"
+
+matrix:
+  include:
+    - os: linux
+      compiler: clang
+      env: MATRIX_EVAL="CC=clang-3.8 && CXX=clang++-3.8"
+    - os: linux
+      compiler: gcc
+      env: MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
