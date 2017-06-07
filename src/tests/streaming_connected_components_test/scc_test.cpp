@@ -1,3 +1,4 @@
+#include <stinger_net/stinger_alg.h>
 #include "scc_test.h"
 
 #define restrict
@@ -82,37 +83,33 @@ TEST_F(SCCTest, UndirectedGraph) {
 
 
 TEST_F(SCCTest, UndirectedGraphDumbbell) {
-  stinger_insert_edge_pair(S, 0, 0, 1, 1, 1);
-  stinger_insert_edge_pair(S, 0, 0, 2, 1, 1);
-  stinger_insert_edge_pair(S, 0, 0, 3, 1, 1);
-  stinger_insert_edge_pair(S, 0, 1, 2, 1, 1);
-  stinger_insert_edge_pair(S, 0, 1, 3, 1, 1);
-  stinger_insert_edge_pair(S, 0, 2, 3, 1, 1);
-
-  stinger_insert_edge_pair(S, 0, 3, 4, 1, 1);
-
-  stinger_insert_edge_pair(S, 0, 4, 5, 1, 1);
-  stinger_insert_edge_pair(S, 0, 4, 6, 1, 1);
-  stinger_insert_edge_pair(S, 0, 4, 7, 1, 1);
-  stinger_insert_edge_pair(S, 0, 5, 6, 1, 1);
-  stinger_insert_edge_pair(S, 0, 5, 7, 1, 1);
-
   int64_t nv = stinger_max_nv(S);
   stinger_scc_internal scc_internal;
   stinger_scc_initialize_internals(S,nv,&scc_internal,4);
   stinger_connected_components_stats stats;
   stinger_scc_reset_stats(&stats);
 
-  stinger_edge_update insertion,deletion;
-  insertion.source       = 6;
-  insertion.destination  = 7;
-  deletion.source        = 3;
-  deletion.destination   = 4;
+  // Insert (1,2)
+  stinger_edge_update insertion = {0};
+  insertion.source = 1; insertion.destination = 2;
+  stinger_insert_edge_pair(S, 0, insertion.source, insertion.destination, 1, 1);
+  stinger_scc_insertion(S, nv, scc_internal, &stats, &insertion, 1);
 
-  stinger_insert_edge_pair(S, 0, insertion.source, insertion.destination, 1, 2);
+  // Insert (2,3)
+  insertion.source = 2; insertion.destination = 3;
+  stinger_insert_edge_pair(S, 0, insertion.source, insertion.destination, 1, 1);
+  stinger_scc_insertion(S, nv, scc_internal, &stats, &insertion, 1);
+
+  // Insert (3,4)
+  insertion.source = 3; insertion.destination = 4;
+  stinger_insert_edge_pair(S, 0, insertion.source, insertion.destination, 1, 1);
+  stinger_scc_insertion(S, nv, scc_internal, &stats, &insertion, 1);
+
+  // Now we have a simple chain, 1-2-3-4
+  // We delete (2,3) breaking the chain into two components 1-2 3-4
+  stinger_edge_update deletion = {0};
+  deletion.source = 2; deletion.destination = 3;
   stinger_remove_edge_pair(S, 0, deletion.source, deletion.destination);
-
-  stinger_scc_insertion(S,nv,scc_internal,&stats,&insertion,1);
   stinger_scc_deletion(S,nv,scc_internal,&stats,&deletion,1);
 
   const int64_t* actual_components = stinger_scc_get_components(scc_internal);
