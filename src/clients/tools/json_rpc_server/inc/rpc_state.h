@@ -54,6 +54,7 @@ namespace gt {
 
       virtual int64_t operator()(rapidjson::Value * params, rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
 	LOG_W("This is a generic JSON_RPCFunction object and should not be called");
+        return -1;
       }
 
       bool contains_params(rpc_params_t * p, rapidjson::Value * params);
@@ -69,24 +70,29 @@ namespace gt {
 	JSON_RPCServerState * server_state;
 
       public:
-	JSON_RPCSession(int64_t sess_id, JSON_RPCServerState * state) : session_id(sess_id), the_lock(0), server_state(state) { }
+	JSON_RPCSession(int64_t sess_id, JSON_RPCServerState * state) : the_lock(0), session_id(sess_id), server_state(state) { }
+	virtual ~JSON_RPCSession() { }
 	void lock();
 	void unlock();
 	virtual rpc_params_t * get_params() {
 	  LOG_W("This is a generic JSON_RPCSession object and should not be called");
+	  return NULL;
 	};
 	virtual int64_t update(const StingerBatch & batch) {
 	  LOG_W("This is a generic JSON_RPCSession object and should not be called");
+          return -1;
 	}
 	virtual int64_t onRegister(
 				rapidjson::Value & result,
 				rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
 	  LOG_W("This is a generic JSON_RPCSession object and should not be called");
+          return -1;
 	}
 	virtual int64_t onRequest(
 				rapidjson::Value & result,
 				rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator) {
 	  LOG_W("This is a generic JSON_RPCSession object and should not be called");
+          return -1;
 	}
 	virtual JSON_RPCSession * gimme(int64_t sess_id, JSON_RPCServerState * state) {
 	  LOG_W("This is a generic JSON_RPCSession object and should not be called");

@@ -56,7 +56,7 @@ send_message(int socket, T & message) {
 
   delete [] buffer;
 
-  if (sent_bytes != message_length + sizeof(message_length)) {
+  if ((unsigned) sent_bytes != message_length + sizeof(message_length)) {
     return false;
   }
 

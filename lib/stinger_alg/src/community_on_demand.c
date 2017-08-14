@@ -6,7 +6,7 @@
  *  On-demand community detection
  *
  */
-int64_t community_on_demand(const stinger_t * S, int64_t ** vertices, int64_t ** partitions) {
+int64_t community_on_demand(stinger_t * S, int64_t ** vertices, int64_t ** partitions) {
   if (*vertices != NULL || *partitions != NULL) {
     LOG_E("Community on demand output arrays should not be allocated before call.  Possible memory leak.");
   }

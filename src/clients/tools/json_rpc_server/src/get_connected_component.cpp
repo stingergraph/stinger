@@ -44,7 +44,7 @@ JSON_RPC_get_connected_component::operator()(rapidjson::Value * params, rapidjso
  
   /* read-only data arrays */
   int64_t * component_map = (int64_t *)alg_state->data;
-  int64_t * component_size  = component_map + S->max_nv;
+  /*int64_t * component_size  = component_map + S->max_nv;*/
 
   rapidjson::Value src, src_str;
   rapidjson::Value component_id, component_id_str;

@@ -21,7 +21,7 @@ readfe(volatile uint64_t * v) {
     while(val == MARKER) {
       val = *v;
     }
-    if(val == stinger_int64_cas(v, val, MARKER))
+    if(val == stinger_int64_cas((volatile int64_t *) v, val, MARKER))
       break;
   }
   return val;
@@ -36,14 +36,14 @@ writeef(volatile uint64_t * v, uint64_t new_val) {
     while(val != MARKER) {
       val = *v;
     }
-    if(MARKER == stinger_int64_cas(v, MARKER, new_val))
+    if(MARKER == stinger_int64_cas((volatile int64_t *) v, MARKER, new_val))
       break;
   }
   return val;
 }
 
 uint64_t
-readff(volatile uint64_t * v) {
+readff(volatile const uint64_t * v) {
   stinger_memory_barrier();
   uint64_t val = *v;
   while(val == MARKER) {
@@ -61,7 +61,7 @@ writeff(volatile uint64_t * v, uint64_t new_val) {
     while(val == MARKER) {
       val = *v;
     }
-    if(val == stinger_int64_cas(v, val, new_val))
+    if(val == stinger_int64_cas((volatile int64_t *) v, val, new_val))
       break;
   }
   return val;

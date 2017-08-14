@@ -15,6 +15,7 @@
 
 extern "C" {
 #include "stinger_core/stinger.h"
+#include "stinger_core/formatting.h"
 #include "stinger_core/stinger_shared.h"
 #include "stinger_core/xmalloc.h"
 #include "stinger_utils/stinger_utils.h"
@@ -170,22 +171,22 @@ int main(int argc, char *argv[])
     const char * memory_size_cfg;
 
     if (cfg.lookupValue("num_vertices", nv_cfg)) {
-      LOG_D_A("num_vertices: %ld",nv_cfg);
+      LOG_D_A("num_vertices: %lld",nv_cfg);
       stinger_config->nv = nv_cfg;
     }
     if (cfg.lookupValue("edges_per_type", edge_factor_cfg)) {
-      LOG_D_A("edges_per_type: %ld",edge_factor_cfg);
+      LOG_D_A("edges_per_type: %lld",edge_factor_cfg);
       stinger_config->nebs = ceil((double)edge_factor_cfg / STINGER_EDGEBLOCKSIZE);
       if (stinger_config->nebs < stinger_config->nv) {
         stinger_config->nebs = stinger_config->nv;
       }
     }
     if (cfg.lookupValue("num_edge_types", netypes_cfg)) {
-      LOG_D_A("num_edge_types: %ld",netypes_cfg);
+      LOG_D_A("num_edge_types: %d",netypes_cfg);
       stinger_config->netypes = netypes_cfg;
     }
     if (cfg.lookupValue("num_vertex_types", nvtypes_cfg)) {
-      LOG_D_A("num_vertex_types: %ld",nvtypes_cfg);
+      LOG_D_A("num_vertex_types: %d",nvtypes_cfg);
       stinger_config->nvtypes = nvtypes_cfg;
     }
     if (cfg.exists("edge_type_names")) {
@@ -193,7 +194,7 @@ int main(int argc, char *argv[])
       stinger_config->no_map_none_etype = true;
     }
     if (cfg.lookupValue("map_none_etype", map_none_etype_cfg)) {
-      LOG_D_A("map_none_etype: %ld",map_none_etype_cfg);
+      LOG_D_A("map_none_etype: %d",map_none_etype_cfg);
       stinger_config->no_map_none_etype = !map_none_etype_cfg;
     }
     if (cfg.exists("vertex_type_names")) {
@@ -201,7 +202,7 @@ int main(int argc, char *argv[])
       stinger_config->no_map_none_vtype = true;
     }
     if (cfg.lookupValue("map_none_vtype", map_none_vtype_cfg)) {
-      LOG_D_A("map_none_vtype: %ld",map_none_vtype_cfg);
+      LOG_D_A("map_none_vtype: %d",map_none_vtype_cfg);
       stinger_config->no_map_none_vtype = !map_none_vtype_cfg;
     }
     if (cfg.lookupValue("max_memsize", memory_size_cfg)) {  
@@ -231,7 +232,7 @@ int main(int argc, char *argv[])
         stinger_config->memory_size = mx;
     }
     if (cfg.lookupValue("no_resize", no_resize_cfg)) {
-      LOG_D_A("no_resize: %ld",no_resize_cfg);
+      LOG_D_A("no_resize: %d",no_resize_cfg);
       stinger_config->no_resize = no_resize_cfg;
     }
   }
@@ -330,14 +331,14 @@ int main(int argc, char *argv[])
     int64_t etype_names_len = etype_names.getLength();
     int64_t remaining_types = (stinger_config->no_map_none_etype) ? stinger_config->netypes : stinger_config->netypes - 1;
     if (stinger_config->netypes && etype_names_len > remaining_types) {
-      LOG_E_A("Too many edge types specified. %ld specified %ld remaining.", etype_names_len, remaining_types);
+      LOG_E_A("Too many edge types specified. %" PRId64 " specified %" PRId64 " remaining.", etype_names_len, remaining_types);
       etype_names_len = remaining_types;
     }
     int64_t tmp = 0;
     for (int i = 0; i < etype_names_len; i++) {
       const char * type_name = etype_names[i];
       stinger_etype_names_create_type(S, type_name, &tmp);
-      LOG_D_A("Mapped %s to %ld",type_name,tmp);
+      LOG_D_A("Mapped %s to %" PRId64,type_name,tmp);
     }
   }
   if (cfg.exists("vertex_type_names")) {
@@ -345,14 +346,14 @@ int main(int argc, char *argv[])
     int64_t vtype_names_len = vtype_names.getLength();
     int64_t remaining_types = (stinger_config->no_map_none_vtype) ? stinger_config->nvtypes : stinger_config->nvtypes - 1;
     if (stinger_config->nvtypes && vtype_names_len > remaining_types) {
-      LOG_E_A("Too many vertex types specified. %ld specified %ld remaining.", vtype_names_len, remaining_types);
+      LOG_E_A("Too many vertex types specified. %" PRId64 " specified %" PRId64 " remaining.", vtype_names_len, remaining_types);
       vtype_names_len = remaining_types;
     }
     int64_t tmp = 0;
     for (int i = 0; i < vtype_names_len; i++) {
       const char * type_name = vtype_names[i];
       stinger_vtype_names_create_type(S, type_name, &tmp);
-      LOG_D_A("Mapped %s to %ld",type_name,tmp);
+      LOG_D_A("Mapped %s to %" PRId64,type_name,tmp);
     }
   }
   xfree(stinger_config);
@@ -360,8 +361,8 @@ int main(int argc, char *argv[])
 
   LOG_V("Graph created. Running stats...");
   tic();
-  LOG_V_A("Vertices: %ld", stinger_num_active_vertices(S));
-  LOG_V_A("Edges: %ld", stinger_total_edges(S));
+  LOG_V_A("Vertices: %" PRId64, stinger_num_active_vertices(S));
+  LOG_V_A("Edges: %" PRId64, stinger_total_edges(S));
 
   /* consistency check */
   LOG_V_A("Consistency %ld", (long) stinger_consistency_check(S, S->max_nv));
@@ -433,7 +434,7 @@ cleanup (void)
     /* snapshot to disk */
     if (save_to_disk) {
       int64_t rtn = stinger_save_to_file(S, stinger_max_active_vertex(S) + 1, input_file);
-      LOG_D_A("save_to_file return code: %ld",rtn);
+      LOG_D_A("save_to_file return code: %" PRId64,rtn);
     }
 
     /* clean up */

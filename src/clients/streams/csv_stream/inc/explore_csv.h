@@ -5,6 +5,7 @@
 
 #define LOG_AT_W
 #include "stinger_core/stinger_error.h"
+#include "stinger_core/formatting.h"
 
 using namespace gt::stinger;
 
@@ -45,11 +46,11 @@ struct EdgeCollection;
 struct ExploreCSVGeneric {
   ExploreCSVGeneric * child;
   ExploreCSVGeneric() : child(NULL) {}
-  ~ExploreCSVGeneric() { if (child) delete child; }
+  virtual ~ExploreCSVGeneric() { if (child) delete child; }
 
-  virtual bool operator()(EdgeCollection & edges, char ** fields, int64_t * lengths, int64_t count, char * field) { LOG_E("Error, this is a generic object"); }
+  virtual bool operator()(EdgeCollection & edges, char ** fields, int64_t * lengths, int64_t count, char * field) { LOG_E("Error, this is a generic object"); return false; }
   virtual void print() { LOG_E("Error, this is a generic object"); }
-  virtual ExploreCSVGeneric * copy(path_type_t path) { LOG_E("Error, this is a generic object"); }
+  virtual ExploreCSVGeneric * copy(path_type_t path) { LOG_E("Error, this is a generic object"); return NULL; }
 };
 
 struct EdgeCollection {
@@ -305,7 +306,7 @@ struct EdgeCollection {
     /* TODO figure out what to do about missing fields */
     for(int64_t i = 0; i < start.size(); i++) {
       if(!(*start[i])(*this, fields, lengths, count, NULL)) {
-	LOG_E_A("Index %ld skipped", i);
+	LOG_E_A("Index %" PRId64 " skipped", i);
 	return 0;
       }
     }
@@ -906,7 +907,7 @@ struct ExploreCSVRow : public ExploreCSVGeneric {
     if(index < count) {
       return (*child)(edges, fields, lengths, count, fields[index]);
     } else {
-      LOG_W_A("skipping - Column index (%ld) is greater than number of columns (%ld)", index, count);
+      LOG_W_A("skipping - Column index (%" PRId64 ") is greater than number of columns (%" PRId64 ")", index, count);
       return false;
     }
   }
@@ -915,7 +916,7 @@ struct ExploreCSVRow : public ExploreCSVGeneric {
     if(index == -1)
       printf("@.");
     else
-      printf("@.%ld.", index);
+      printf("@.%" PRId64 ".", index);
     if(child)
       child->print();
     else

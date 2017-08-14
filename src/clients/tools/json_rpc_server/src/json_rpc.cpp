@@ -95,13 +95,13 @@ json_rpc_process_request (rapidjson::Document& document, rapidjson::Document& re
 
   /* Is the id field a number or a string */
   /* Get the id field */
-  int64_t id_int;
-  const char * id_str;
+  /*int64_t id_int;*/
+  /*const char * id_str;*/
   if (document["id"].IsInt64()) {
-    id_int = document["id"].GetInt64();
+    /*id_int = document["id"].GetInt64();*/
   }
   else if (document["id"].IsString()) {
-    id_str = (const char *) document["id"].GetString();
+    /*id_str = (const char *) document["id"].GetString();*/
   }
   else {
     response.AddMember("jsonrpc", "2.0", allocator);

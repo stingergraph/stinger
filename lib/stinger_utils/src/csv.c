@@ -31,7 +31,7 @@ readCSVLineDynamic(char delim, FILE * file, char ** buf, uint64_t * bufSize, cha
   locLengths[0] = 0;
   locFields[0] = locBuf;
 
-  int in_quote = 0;
+  /*int in_quote = 0;*/
   char cur = '\0';
   uint64_t length = 0;
   uint64_t start  = 0;
@@ -207,7 +207,7 @@ void
 printLine(char ** fields, uint64_t * lengths, uint64_t count) {
   uint64_t i = 0;
   for(; i < count; i++) {
-    printf("field[%ld] (%ld) = %s\n", i, lengths[i], fields[i]);
+    printf("field[%" PRIu64 "] (%" PRIu64 ") = %s\n", i, lengths[i], fields[i]);
   }
 }
 
@@ -220,9 +220,9 @@ csvIfIDExistsint8(FILE * fp, char delim, struct stinger * S, uint64_t nv, int8_t
 	stinger_mapping_physid_direct(S, v, &name, &len);
       char * type = stinger_vtype_names_lookup_name(S, stinger_vtype_get(S, v));
 	if(len && name) {
-	fprintf(fp, "%ld%c%.*s%c%s%c%ld%c%ld\n", v, delim, (int)len, name, delim, type ? type : "", delim, stinger_vtype(S,v), delim, (long)values[v]);
+	fprintf(fp, "%" PRIu64 "%c%.*s%c%s%c%" PRId64 "%c%ld\n", v, delim, (int)len, name, delim, type ? type : "", delim, stinger_vtype(S,v), delim, (long)values[v]);
 	} else {
-	fprintf(fp, "%ld%c%.*s%c%s%c%ld%c%ld\n", v, delim, 0, "", delim, type ? type : "", delim, stinger_vtype(S,v), delim, (long)values[v]);
+	fprintf(fp, "%" PRIu64 "%c%.*s%c%s%c%" PRId64 "%c%ld\n", v, delim, 0, "", delim, type ? type : "", delim, stinger_vtype(S,v), delim, (long)values[v]);
       }
     }
   }
@@ -237,9 +237,9 @@ csvIfIDExistsint64(FILE * fp, char delim, struct stinger * S, uint64_t nv, int64
 	stinger_mapping_physid_direct(S, v, &name, &len);
       char * type = stinger_vtype_names_lookup_name(S, stinger_vtype_get(S, v));
 	if(len && name) {
-	fprintf(fp, "%ld%c%.*s%c%s%c%ld%c%ld\n", v, delim, (int)len, name, delim, type ? type : "", delim, stinger_vtype(S,v), delim, values[v]);
+	fprintf(fp, "%" PRIu64 "%c%.*s%c%s%c%" PRId64 "%c%" PRId64 "\n", v, delim, (int)len, name, delim, type ? type : "", delim, stinger_vtype(S,v), delim, values[v]);
 	} else {
-	fprintf(fp, "%ld%c%.*s%c%s%c%ld%c%ld\n", v, delim, 0, "", delim, type ? type : "", delim, stinger_vtype(S,v), delim, values[v]);
+	fprintf(fp, "%" PRIu64 "%c%.*s%c%s%c%" PRId64 "%c%" PRId64 "\n", v, delim, 0, "", delim, type ? type : "", delim, stinger_vtype(S,v), delim, values[v]);
       }
     }
   }
@@ -254,9 +254,9 @@ csvIfIDExistsfloat(FILE * fp, char delim, struct stinger * S, uint64_t nv, float
 	stinger_mapping_physid_direct(S, v, &name, &len);
       char * type = stinger_vtype_names_lookup_name(S, stinger_vtype_get(S, v));
 	if(len && name) {
-	fprintf(fp, "%ld%c%.*s%c%s%c%ld%c%f\n", v, delim, (int)len, name, delim, type ? type : "", delim, stinger_vtype(S,v), delim, values[v]);
+	fprintf(fp, "%" PRIu64 "%c%.*s%c%s%c%" PRId64 "%c%f\n", v, delim, (int)len, name, delim, type ? type : "", delim, stinger_vtype(S,v), delim, values[v]);
 	} else {
-	fprintf(fp, "%ld%c%.*s%c%s%c%ld%c%f\n", v, delim, 0, "", delim, type ? type : "", delim, stinger_vtype(S,v), delim, values[v]);
+	fprintf(fp, "%" PRIu64 "%c%.*s%c%s%c%" PRId64 "%c%f\n", v, delim, 0, "", delim, type ? type : "", delim, stinger_vtype(S,v), delim, values[v]);
       }
     }
   }
@@ -271,9 +271,9 @@ csvIfIDExistsdouble(FILE * fp, char delim, struct stinger * S, uint64_t nv, doub
       char * type = stinger_vtype_names_lookup_name(S, stinger_vtype_get(S, v));
 	stinger_mapping_physid_direct(S, v, &name, &len);
 	if(len && name) {
-	fprintf(fp, "%ld%c%.*s%c%s%c%ld%c%lf\n", v, delim, (int)len, name, delim, type ? type : "", delim, stinger_vtype(S,v), delim, values[v]);
+	fprintf(fp, "%" PRIu64 "%c%.*s%c%s%c%" PRId64 "%c%lf\n", v, delim, (int)len, name, delim, type ? type : "", delim, stinger_vtype(S,v), delim, values[v]);
 	} else {
-	fprintf(fp, "%ld%c%.*s%c%s%c%ld%c%lf\n", v, delim, 0, "", delim, type ? type : "", delim, stinger_vtype(S,v), delim, values[v]);
+	fprintf(fp, "%" PRIu64 "%c%.*s%c%s%c%" PRId64 "%c%lf\n", v, delim, 0, "", delim, type ? type : "", delim, stinger_vtype(S,v), delim, values[v]);
       }
     }
   }

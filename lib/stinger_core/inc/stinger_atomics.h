@@ -18,7 +18,7 @@ static inline size_t stinger_size_fetch_add (size_t *, size_t);
 static inline void stinger_int64_swap (int64_t *, int64_t *);
 static inline void stinger_uint64_swap (uint64_t *, uint64_t *);
 
-static inline int64_t stinger_int64_cas (int64_t *, int64_t, int64_t);
+static inline int64_t stinger_int64_cas (volatile int64_t *, int64_t, int64_t);
 /* XXX: This declaration may break aliasing, depending on how you
    interpret "void".  A pointer to nothing cannot alias anything...
    however, the absolutely correct unsigned char* is a pain to use,
@@ -86,7 +86,7 @@ stinger_ptr_cas (void **x, void *origx, void *newx)
 }
 
 int64_t
-stinger_int64_cas (int64_t * x, int64_t origx, int64_t newx)
+stinger_int64_cas (volatile int64_t * x, int64_t origx, int64_t newx)
 {
   return __sync_val_compare_and_swap (x, origx, newx);
 }
@@ -155,7 +155,7 @@ stinger_ptr_cas (void **x, void *origx, void *newx)
 }
 
 int64_t
-stinger_int64_cas (int64_t * x, int64_t origx, int64_t newx)
+stinger_int64_cas (volatile int64_t * x, int64_t origx, int64_t newx)
 {
   int64_t t = *x;
   __compare_and_swaplp (x, &origx, newx);
@@ -220,7 +220,7 @@ stinger_uint64_swap (uint64_t * a, uint64_t * b)
 }
 
 int64_t
-stinger_int64_cas (int64_t * p, int64_t v, int64_t newv)
+stinger_int64_cas (volatile int64_t * p, int64_t v, int64_t newv)
 {
   int64_t oldv = *p;
   if (v == oldv)

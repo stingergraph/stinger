@@ -23,7 +23,7 @@ using namespace gt::stinger;
 #define E_A(X,...) fprintf(stderr, "%s %s %d:\n\t" #X "\n", __FILE__, __func__, __LINE__, __VA_ARGS__);
 #define E(X) E_A(X,NULL)
 #define V_A(X,...) fprintf(stdout, "%s %s %d:\n\t" #X "\n", __FILE__, __func__, __LINE__, __VA_ARGS__);
-#define V(X) V_A(X,NULL)
+#define V(X) fprintf(stdout, "%s %s %d:\n\t" #X "\n", __FILE__, __func__, __LINE__);
 
 
 int
@@ -35,7 +35,7 @@ main(int argc, char *argv[])
   int num_batches = -1;
   int nv = 1024;
   int is_int = 0;
-  char * hostname = NULL;
+  char const * hostname = NULL;
 
   int opt = 0;
   while(-1 != (opt = getopt(argc, argv, "p:a:x:y:n:i"))) {

@@ -7,6 +7,7 @@
 #include <stdbool.h>
 
 #include "stinger_core/stinger.h"
+#include "stinger_core/formatting.h"
 #include "stinger_core/stinger_atomics.h"
 #include "stinger_core/xmalloc.h"
 #include "stinger_core/stinger_error.h"
@@ -50,7 +51,7 @@ main(int argc, char *argv[])
                                 "An authority value is computed as the sum of the scaled hub values, and conversely a \n"
                                 "hub value is the sum of the scaled authority values of the pages it points to.\n"
                                 "\n"
-                                "  -k <num>  Set the maximum number of iterations (%ld by default)\n"
+                                "  -k <num>  Set the maximum number of iterations (%" PRId64 " by default)\n"
                                 "  -n <str>  Set the algorithm name (%s by default)\n"
                                 "\n", num_iter,  alg_name
                 );
@@ -65,7 +66,7 @@ main(int argc, char *argv[])
     stinger_registered_alg * alg =
     stinger_register_alg(
             .name=alg_name,
-    .data_per_vertex=sizeof(double) + sizeof(double),
+    .data_per_vertex=sizeof(double_t) + sizeof(double_t),
     .data_description="ll hubs_scores authority_scores",
     .host="localhost",
     );
@@ -75,8 +76,8 @@ main(int argc, char *argv[])
         return -1;
     }
 
-    double * hubs_scores = (double *)alg->alg_data;
-    double * authority_scores = (int64_t *)(hubs_scores + alg->stinger->max_nv);
+    double_t * hubs_scores = (double_t *)alg->alg_data;
+    double_t * authority_scores = (double_t *)(hubs_scores + alg->stinger->max_nv);
 
     /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
     * Initial static computation

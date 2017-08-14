@@ -2,6 +2,7 @@
 
 extern "C" {
   #include "stinger_core/stinger_error.h"
+  #include "stinger_core/formatting.h"
   #include "stinger_core/x86_full_empty.h"
 }
 
@@ -22,10 +23,16 @@ struct delete_functor
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
  * PRIVATE METHODS
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
-StingerServerState::StingerServerState() : port_streams(10102), port_algs(10103),
-				    convert_num_to_string(1), batch_count(0),
-				    alg_lock(1), stream_lock(1), batch_lock(1), dep_lock(1), mon_lock(1),
-				    write_alg_data(false), write_names(false), history_cap(0), out_dir("./"),
+StingerServerState::StingerServerState() : alg_lock(1), write_alg_data(false),
+				    history_cap(0),
+				    write_names(false), out_dir("./"),
+				    mon_lock(1),
+				    dep_lock(1),
+				    stream_lock(1), batch_lock(1),
+				    batch_count(0),
+				    port_streams(10102),
+				    port_algs(10103),
+				    convert_num_to_string(1),
 				    stinger_sz(0)
 {
   LOG_D("Initializing server state.");
@@ -543,7 +550,7 @@ StingerServerState::write_data()
   char name_buf[1024];
   if(write_names) {
     /* write current vertex names to file */
-    snprintf(name_buf, 1024, "%s/vertex_names.%ld.vtx", out_dir.c_str(), batch_count);
+    snprintf(name_buf, 1024, "%s/vertex_names.%" PRId64 ".vtx", out_dir.c_str(), batch_count);
 
     FILE * fp = fopen(name_buf, "w");
     stinger_names_save(stinger_physmap_get(stinger), fp);
@@ -551,7 +558,7 @@ StingerServerState::write_data()
     fclose(fp);
 
     /* remove previous vertex names */
-    snprintf(name_buf, 1024, "%s/vertex_names.%ld.vtx", out_dir.c_str(), batch_count-1);
+    snprintf(name_buf, 1024, "%s/vertex_names.%" PRId64 ".vtx", out_dir.c_str(), batch_count-1);
     if(access(name_buf, F_OK) != -1) {
       unlink(name_buf);
     }
@@ -565,7 +572,7 @@ StingerServerState::write_data()
       if(alg->state >= ALG_STATE_DONE) /* skip invalid, completed, etc. */
 	continue;
 
-      snprintf(name_buf, 1024, "%s/%s.%ld.rslt", out_dir.c_str(), alg->name.c_str(), batch_count);
+      snprintf(name_buf, 1024, "%s/%s.%" PRId64 ".rslt", out_dir.c_str(), alg->name.c_str(), batch_count);
 
       int64_t nv_max = stinger->max_nv;
       int64_t nv = stinger_mapping_nv(stinger);
@@ -621,7 +628,7 @@ StingerServerState::write_data()
 
       /* if there is a cap on history, erase (current - history) if it exists */
       if(history_cap) {
-	snprintf(name_buf, 1024, "%s/%s.%ld.rslt", out_dir.c_str(), alg->name.c_str(), batch_count - history_cap);
+	snprintf(name_buf, 1024, "%s/%s.%" PRId64 ".rslt", out_dir.c_str(), alg->name.c_str(), batch_count - history_cap);
 	if(access(name_buf, F_OK) != -1) {
 	  unlink(name_buf);
 	}

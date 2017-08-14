@@ -3,11 +3,13 @@
 
 #define VTX(v) stinger_vertices_vertex_get(vertices, v)
 
+#define CONST_VTX(v) const_stinger_vertices_vertex_get(vertices, v)
+
 
 inline void
 stinger_vertex_to_xml(const stinger_vertices_t * vertices, vindex_t v, FILE * out, int64_t indent_level)
 {
-  const stinger_vertex_t * vout = VTX(v);
+  const stinger_vertex_t * vout = CONST_VTX(v);
 
   XML_INIT(out, indent_level);
   XML_TAG_START(vertex);

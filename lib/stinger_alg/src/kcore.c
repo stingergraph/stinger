@@ -5,7 +5,7 @@ void
 kcore_find(stinger_t *S, int64_t * labels, int64_t * counts, int64_t nv, int64_t * k_out) {
   int64_t k = 0;
 
-  for(int64_t v; v < nv; v++) {
+  for(int64_t v = 0; v < nv; v++) {
     if(stinger_outdegree_get(S,v)) {
       labels[v] = 1;
     } else {

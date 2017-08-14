@@ -10,7 +10,7 @@
 extern "C" {
 #endif
 
-int64_t adamic_adar(const stinger_t * S, int64_t source, int64_t etype, int64_t ** candidates, double ** scores);
+int64_t adamic_adar(stinger_t * S, int64_t source, int64_t etype, int64_t ** candidates, double ** scores);
 
 #ifdef __cplusplus
 }

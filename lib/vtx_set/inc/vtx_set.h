@@ -22,10 +22,10 @@ vtx_set_new(int64_t size, char * name);
 vtx_set_t *
 vtx_set_free(vtx_set_t * ht);
 
-vtx_set_t * 
+void
 vtx_set_expand(vtx_set_t ** ht, int64_t new_size);
 
-vtx_set_t *
+void
 vtx_set_insert(vtx_set_t ** ht, int64_t k, int64_t v);
 
 int64_t *

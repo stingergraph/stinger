@@ -55,10 +55,10 @@ void stinger_scc_release_internals(stinger_scc_internal* scc_internal);
 // Should be called before each batch update.
 void stinger_scc_reset_stats(stinger_connected_components_stats* stats);
 
-int stinger_scc_insertion(struct stinger * S, int64_t nv,  stinger_scc_internal scc_internal, 
+void stinger_scc_insertion(struct stinger * S, int64_t nv,  stinger_scc_internal scc_internal, 
 	stinger_connected_components_stats* stats, stinger_edge_update* batch,int64_t batch_size);
 
-int stinger_scc_deletion(struct stinger * S, int64_t nv,  stinger_scc_internal scc_internal, 
+void stinger_scc_deletion(struct stinger * S, int64_t nv,  stinger_scc_internal scc_internal, 
 	stinger_connected_components_stats* stats, stinger_edge_update* batch,int64_t batch_size);
 
 

@@ -26,7 +26,7 @@ main(int argc, char *argv[])
     return -1;
   }
 
-  int64_t * components = (double *)alg->alg_data;
+  int64_t * components = (int64_t *)alg->alg_data;
 
   /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
    * Initial static computation

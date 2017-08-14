@@ -169,11 +169,12 @@ kv_tracker_free(kv_element_t ** track) {
   IFNULL(track, return KV_RECEIVED_NULL);
   IFNULL(*track, return KV_RECEIVED_NULL);
 
-  kv_return_t rtn = kv_tracker_free_internal(*track);
+  SAFETY(kv_return_t rtn =) kv_tracker_free_internal(*track);
   SAFETY(if(KV_SUCCESS != rtn) return rtn; );
 
   free(*track);
   SAFETY((*track) = NULL;);
+  return KV_SUCCESS;
 }
 
 kv_return_t 
@@ -192,7 +193,7 @@ kv_tracker_free_internal(kv_element_t * track) {
 }
 
 kv_return_t 
-kv_tracker_hash(kv_element_t * track, int64_t * hash) {
+kv_tracker_hash(kv_element_t * track, uint64_t * hash) {
   return kv_vector_hash(track->data.tracker.elements, hash);
 }
 
@@ -280,7 +281,7 @@ kv_return_t
 kv_element_free(kv_element_t * element) {
   IFNULL((element), return KV_RECEIVED_NULL);
 
-  kv_return_t rtn = KV_SUCCESS;
+  SAFETY(kv_return_t rtn = KV_SUCCESS;)
   switch((element)->type) {
     case KV_NONE:
     case KV_I64:
@@ -295,19 +296,19 @@ kv_element_free(kv_element_t * element) {
     } break;
 
     case KV_KV: {
-      rtn = kv_store_free_internal(element);
+      SAFETY(rtn =) kv_store_free_internal(element);
     } break;
 
     case KV_LIST: {
-      rtn = kv_list_free_internal(element);
+      SAFETY(rtn =) kv_list_free_internal(element);
     } break;
 
     case KV_VECTOR: {
-      rtn = kv_vector_free_internal(element);
+      SAFETY(rtn =) kv_vector_free_internal(element);
     } break;
 
     case KV_TRACKER: {
-      rtn = kv_tracker_free_internal(element);
+      SAFETY(rtn =) kv_tracker_free_internal(element);
     } break;
   }
   element->type = KV_NONE;
@@ -370,8 +371,6 @@ kv_return_t
 kv_element_hash(kv_element_t * a, uint64_t * hash) {
   IFNULL(*a, return KV_RECEIVED_NULL);
 
-  uint64_t out = 0;
-
   switch(a->type) {
     case KV_NONE: 
     case KV_DBL:
@@ -386,22 +385,22 @@ kv_element_hash(kv_element_t * a, uint64_t * hash) {
     } break;
 
     case KV_KV: {
-      kv_return_t rtn = kv_store_hash(a, hash);
+      SAFETY(kv_return_t rtn =) kv_store_hash(a, hash);
       SAFETY(if(KV_SUCCESS != rtn) return rtn);
     } break;
 
     case KV_LIST: {
-      kv_return_t rtn = kv_list_hash(a, hash);
+      SAFETY(kv_return_t rtn =) kv_list_hash(a, hash);
       SAFETY(if(KV_SUCCESS != rtn) return rtn);
     } break;
 
     case KV_VECTOR: {
-      kv_return_t rtn = kv_vector_hash(a, hash);
+      SAFETY(kv_return_t rtn =) kv_vector_hash(a, hash);
       SAFETY(if(KV_SUCCESS != rtn) return rtn);
     } break;
 
     case KV_TRACKER: {
-      kv_return_t rtn = kv_tracker_hash(a, hash);
+      SAFETY(kv_return_t rtn =) kv_tracker_hash(a, hash);
       SAFETY(if(KV_SUCCESS != rtn) return rtn);
     } break;
 
@@ -446,10 +445,12 @@ kv_element_print(kv_element_t * a, int64_t indent) {
       kv_list_print(a, indent);
     } break;
 
+    case KV_TRACKER:
     case KV_VECTOR: {
   /* TODO */
     } break;
   }
+  return KV_SUCCESS;
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
@@ -497,7 +498,7 @@ kv_list_free(kv_element_t ** list) {
   IFNULL(list, return KV_RECEIVED_NULL);
   IFNULL(*list, return KV_RECEIVED_NULL);
 
-  kv_return_t rtn = kv_list_free_internal(*list);
+  SAFETY(kv_return_t rtn =) kv_list_free_internal(*list);
   SAFETY(if(KV_SUCCESS != rtn) return rtn;);
 
   free(*list);
@@ -548,7 +549,7 @@ kv_list_hash(kv_element_t * list, uint64_t * hash) {
 
   kv_list_element_t * cur = list->data.list.head;
   while(cur) {
-    kv_return_t rtn = kv_element_hash(cur->data, hash);
+    SAFETY(kv_return_t rtn =) kv_element_hash(cur->data, hash);
     SAFETY(if(KV_SUCCESS != rtn) return rtn;);
     cur = cur->next;
   }
@@ -852,7 +853,7 @@ kv_vector_hash(kv_element_t * vec, uint64_t * hash) {
   IFNULL(vec, return KV_RECEIVED_NULL);
 
   for(uint64_t i = 0; i < vec->data.vec.length; i++) {
-    kv_return_t rtn = kv_element_hash(vec->data.vec.arr[i], hash);
+    SAFETY(kv_return_t rtn =) kv_element_hash(vec->data.vec.arr[i], hash);
     SAFETY(if(KV_SUCCESS != rtn) return rtn;);
   }
   
@@ -880,7 +881,6 @@ kv_vector_set(kv_element_t * vec, int64_t index, kv_element_t * val) {
 
   SAFETY(if(index >= vec->data.vec.length) return KV_OUT_OF_BOUNDS;);
 
-  kv_return_t rtn;
   if(index + 1 >= vec->data.vec.length) {
     kv_vector_resize(vec, index+1);
   }
@@ -973,7 +973,7 @@ kv_store_free_internal(kv_element_t * kv) {
 kv_return_t
 kv_store_free(kv_element_t ** kv) {
   IFNULL(kv, return KV_RECEIVED_NULL);
-  kv_return_t rtn = kv_store_free_internal(*kv);
+  SAFETY(kv_return_t rtn =) kv_store_free_internal(*kv);
   SAFETY(if(KV_SUCCESS != rtn) return rtn; );
   free(*kv);
   SAFETY(*kv = NULL; );
@@ -1026,9 +1026,9 @@ kv_store_hash(kv_element_t * kv, uint64_t * hash) {
 
   for(uint64_t i = 0; i < kv->data.kv.size; i++) {
     if(kv->data.kv.keys[i] != KV_DELETED_PTR && kv->data.kv.keys[i] != KV_NONE_PTR) {
-      kv_return_t rtn = kv_element_hash(kv->data.kv.keys[i], hash);
+      SAFETY(kv_return_t rtn =) kv_element_hash(kv->data.kv.keys[i], hash);
       SAFETY(if(KV_SUCCESS != rtn) return rtn;);
-      rtn = kv_element_hash(kv->data.kv.vals[i], hash);
+      SAFETY(rtn =) kv_element_hash(kv->data.kv.vals[i], hash);
       SAFETY(if(KV_SUCCESS != rtn) return rtn;);
     }
   }
@@ -1042,8 +1042,8 @@ kv_store_get(kv_element_t * kv, kv_element_t * key, kv_element_t ** val) {
   IFNULL(key, return KV_RECEIVED_NULL);
   IFNULL(val, return KV_RECEIVED_NULL);
 
-  int64_t index = 0;
-  kv_return_t rtn = kv_element_hash(key, &index); 
+  uint64_t index = 0;
+  SAFETY(kv_return_t rtn =) kv_element_hash(key, &index); 
   SAFETY(if(KV_SUCCESS != rtn) return rtn;);
 
   index = index & kv->data.kv.mask;
@@ -1069,12 +1069,12 @@ kv_store_set(kv_element_t * kv, kv_element_t * key, kv_element_t * val) {
   IFNULL(val, return KV_RECEIVED_NULL);
 
   if((kv->data.kv.elements + kv->data.kv.removed) > (KV_STORE_THRESHOLD * kv->data.kv.size)) {
-    kv_return_t rtn = kv_store_expand(kv);
+    SAFETY(kv_return_t rtn =) kv_store_expand(kv);
     SAFETY(if(KV_SUCCESS != rtn) return rtn);
   }
 
-  int64_t index = 0;
-  kv_return_t rtn = kv_element_hash(key, &index); 
+  uint64_t index = 0;
+  SAFETY(kv_return_t rtn =) kv_element_hash(key, &index); 
   SAFETY(if(KV_SUCCESS != rtn) return rtn;);
 
   index = index & kv->data.kv.mask;
@@ -1111,16 +1111,15 @@ kv_store_remove(kv_element_t * kv, kv_element_t * key) {
   IFNULL(key, return KV_RECEIVED_NULL);
 
   if((kv->data.kv.elements + kv->data.kv.removed) > (KV_STORE_THRESHOLD * kv->data.kv.size)) {
-    kv_return_t rtn = kv_store_expand(kv);
+    SAFETY(kv_return_t rtn =) kv_store_expand(kv);
     SAFETY(if(KV_SUCCESS != rtn) return rtn);
   }
 
-  int64_t index = 0;
-  kv_return_t rtn = kv_element_hash(key, &index); 
+  uint64_t index = 0;
+  SAFETY(kv_return_t rtn =) kv_element_hash(key, &index); 
   SAFETY(if(KV_SUCCESS != rtn) return rtn;);
 
   index = index & kv->data.kv.mask;
-  int64_t deleted_index = -1;
   while(kv->data.kv.keys[index] != KV_NONE_PTR && 
     (kv->data.kv.keys[index] == KV_DELETED_PTR || 
       kv_element_equal(key, kv->data.kv.keys[index]) != KV_EQUAL)) {
@@ -1144,12 +1143,11 @@ kv_store_contains(kv_element_t * kv, kv_element_t * key) {
   IFNULL(kv, return KV_RECEIVED_NULL);
   IFNULL(key, return KV_RECEIVED_NULL);
 
-  int64_t index = 0;
-  kv_return_t rtn = kv_element_hash(key, &index); 
+  uint64_t index = 0;
+  SAFETY(kv_return_t rtn =) kv_element_hash(key, &index); 
   SAFETY(if(KV_SUCCESS != rtn) return rtn;);
 
   index = index & kv->data.kv.mask;
-  int64_t deleted_index = -1;
   while(kv->data.kv.keys[index] != KV_NONE_PTR && 
     (kv->data.kv.keys[index] == KV_DELETED_PTR || 
       kv_element_equal(key, kv->data.kv.keys[index]) != KV_EQUAL)) {
@@ -1185,7 +1183,7 @@ kv_store_expand(kv_element_t * kv) {
     }
   }
 
-  kv_return_t rtn = kv_store_free_internal(kv);
+  SAFETY(kv_return_t rtn =) kv_store_free_internal(kv);
   SAFETY(if(KV_SUCCESS != rtn) return rtn;);
 
   *kv = tmp;
@@ -1646,7 +1644,7 @@ kv_from_ini(FILE * ini, kv_element_t * tracker, kv_element_t ** top_level) {
   string_t * cur_store_val;
   kv_element_t * cur_list;
   kv_element_t * cur_store;
-  int c;
+  int c = -1;
   int line_num = 0;
   int last_was_space = 0;
 
@@ -1700,7 +1698,7 @@ eatwhitespace:
     break;
   }
 
-eatkey:
+/*eatkey:*/
   cur_key = string_new();
   while(1) {
     switch(c) {

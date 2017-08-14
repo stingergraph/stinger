@@ -154,7 +154,6 @@ int64_t
 find_in_sorted (const int64_t tofind,
                 const int64_t N, const int64_t * restrict ary)
 {
-  int64_t out = -1;
   if (N <= 0)
     return -1;
 

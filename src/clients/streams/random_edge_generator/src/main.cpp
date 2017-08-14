@@ -17,6 +17,7 @@
 
 extern "C" {
 #include "stinger_core/stinger.h"
+#include "stinger_core/formatting.h"
 #include "stinger_core/xmalloc.h"
 #include "stinger_utils/csv.h"
 #include "stinger_utils/timer.h"
@@ -31,7 +32,7 @@ using namespace gt::stinger;
 #define E_A(X,...) fprintf(stderr, "%s %s %d:\n\t" #X "\n", __FILE__, __func__, __LINE__, __VA_ARGS__);
 #define E(X) E_A(X,NULL)
 #define V_A(X,...) fprintf(stdout, "%s %s %d:\n\t" #X "\n", __FILE__, __func__, __LINE__, __VA_ARGS__);
-#define V(X) V_A(X,NULL)
+#define V(X) fprintf(stdout, "%s %s %d:\n\t" #X "\n", __FILE__, __func__, __LINE__);
 
 #define DEFAULT_SEED 0x9367
 
@@ -46,7 +47,7 @@ main(int argc, char *argv[])
   int is_int = 0;
   int delay = 2;
   long seed = DEFAULT_SEED;
-  char * hostname = NULL;
+  char const * hostname = NULL;
 
   int opt = 0;
   while(-1 != (opt = getopt(argc, argv, "p:b:a:x:y:n:is:d:"))) {
@@ -88,7 +89,7 @@ main(int argc, char *argv[])
       case '?':
       case 'h': {
 	printf("Usage:    %s [-p port] [-a server_addr] [-n num_vertices] [-x batch_size] [-y num_batches] [-i] [-s seed] [-d delay]\n", argv[0]);
-	printf("Defaults:\n\tport: %d\n\tserver: localhost\n\tnum_vertices: %d\n -i forces the use of integers in place of strings\n", port, nv);
+	printf("Defaults:\n\tport: %d\n\tserver: localhost\n\tnum_vertices: %" PRIu64 "\n -i forces the use of integers in place of strings\n", port, nv);
 	exit(0);
       } break;
     }
@@ -111,13 +112,13 @@ main(int argc, char *argv[])
   if (sock_handle == -1) exit(-1);
 
   /* actually generate and send the batches */
-  char * buf = NULL, ** fields = NULL;
-  uint64_t bufSize = 0, * lengths = NULL, fieldsSize = 0, count = 0;
+  /*char * buf = NULL, ** fields = NULL;
+  uint64_t bufSize = 0, * lengths = NULL, fieldsSize = 0, count = 0;*/
   int64_t line = 0;
   int batch_num = 0;
 
   srand48 (seed);
-  const ldiv_t nv_breakup = ldiv (INT64_MAX, nv);
+  const lldiv_t nv_breakup = lldiv (INT64_MAX, nv);
 
   while(1) {
     StingerBatch batch;

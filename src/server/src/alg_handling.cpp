@@ -1,4 +1,5 @@
 #include "stinger_core/stinger.h"
+#include "stinger_core/formatting.h"
 #include "stinger_core/stinger_shared.h"
 #include "stinger_utils/timer.h"
 #include "stinger_utils/stinger_utils.h"
@@ -97,11 +98,11 @@ handle_alg(struct AcceptedSock * sock, StingerServerState & server_state)
 
       if(data_total) {
         sprintf(map_name, "/%s", alg_to_server.alg_name().c_str());
-        LOG_D_A("Attempting to map %ld at %s", data_total, map_name);
+        LOG_D_A("Attempting to map %" PRId64 " at %s", data_total, map_name);
         data = shmmap(map_name, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, PROT_READ | PROT_WRITE, data_total, MAP_SHARED);
 
         if(!data) {
-          LOG_E_A("Error, mapping storage for algorithm %s failed (%ld bytes per vertex)", 
+          LOG_E_A("Error, mapping storage for algorithm %s failed (%" PRId64 " bytes per vertex)", 
             alg_to_server.alg_name().c_str(), alg_to_server.data_per_vertex());
           server_to_alg.set_result(ALG_FAILURE_GENERIC);
           send_message(sock->handle, server_to_alg);
@@ -124,7 +125,7 @@ handle_alg(struct AcceptedSock * sock, StingerServerState & server_state)
       LOG_D("Resolving dependencies")
 
       int64_t max_level = 0;
-      bool deps_resolved = true;
+      /*bool deps_resolved = true;*/
       for(int64_t i = 0; i < alg_to_server.req_dep_name_size(); i++) {
         const std::string & req_dep_name = alg_to_server.req_dep_name(i);
         if(server_state.has_alg(req_dep_name)) {
@@ -146,7 +147,7 @@ handle_alg(struct AcceptedSock * sock, StingerServerState & server_state)
           server_to_alg.set_action(alg_to_server.action());
           server_to_alg.set_result(ALG_FAILURE_DEPENDENCY);
 
-          deps_resolved = false;
+          /*deps_resolved = false;*/
                 shmunmap(map_name, data, data_total);
                 shmunlink(map_name);
 
@@ -157,7 +158,7 @@ handle_alg(struct AcceptedSock * sock, StingerServerState & server_state)
 
       alg_state->level = max_level;
 
-      LOG_V_A("Adding algorithm %s at level %ld", alg_to_server.alg_name().c_str(), max_level);
+      LOG_V_A("Adding algorithm %s at level %" PRId64, alg_to_server.alg_name().c_str(), max_level);
 
       server_to_alg.set_alg_num(server_state.add_alg(max_level, alg_state));
 
@@ -495,7 +496,7 @@ process_loop_handler(void * data)
     process_batch(server_state.get_stinger(), *batch);
     update_time = timer() - update_time;
     int64_t edge_count = batch->insertions_size() + batch->deletions_size();
-    LOG_I_A("Server processed %ld edges in %20.15e seconds", edge_count, update_time);
+    LOG_I_A("Server processed %" PRId64 " edges in %20.15e seconds", edge_count, update_time);
     LOG_I_A("%f edges per second", ((double) edge_count) / update_time);
 
     /* update performance stats */

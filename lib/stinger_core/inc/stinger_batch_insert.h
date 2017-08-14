@@ -411,7 +411,7 @@ protected:
             // Calculate number of updates for each range
             size_t num_updates = std::distance(begin, end);
             size_t num_ranges = omp_get_num_threads();
-            size_t updates_per_range = std::floor((double)num_updates / num_ranges);
+            int updates_per_range = std::floor((double)num_updates / num_ranges);
 
             std::vector<range> local_ranges; local_ranges.reserve(num_ranges);
             if (updates_per_range < omp_get_num_threads())

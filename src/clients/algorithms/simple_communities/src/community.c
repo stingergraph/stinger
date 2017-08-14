@@ -14,6 +14,7 @@
 
 #include "compat.h"
 #include "stinger_core/xmalloc.h"
+#include "stinger_core/formatting.h"
 #include "sorts.h"
 #include "graph-el.h"
 #include "community.h"
@@ -138,11 +139,11 @@ convert_el_match_to_relabel (const struct el g,
     OMP("omp barrier");
     OMP("omp for schedule(static)")
       for (int64_t k = 0; k < g.ne; ++k) {
-        if (count[k] < 0) fprintf (stderr, "%ld WTF?!?\n", k);
+        if (count[k] < 0) fprintf (stderr, "%" PRId64 " WTF?!?\n", k);
         assert (count[k] >= 0);
         if (!(count[k] == 0 || count[k] == 2)) {
           OMP("omp critical") {
-            fprintf (stderr, "ughugh count[(%ld, %ld)]==%ld\n",
+            fprintf (stderr, "ughugh count[(%ld, %ld)]==%" PRId64 "\n",
                      (long)I(g, k), (long)J(g, k), count[k]);
             for (intvtx_t ki = 0; ki < NV; ++ki) {
               if (m[ki] == k)
@@ -369,7 +370,7 @@ rough_bucket_sort_el (const intvtx_t nv, const int64_t ne,
   OMP("omp for schedule(static)")
     for (intvtx_t k = 0; k < nv; ++k) {
       if (off[k] > off[k+1]) {
-        fprintf (stderr, "ugh %ld  [%ld, %ld)\n", (long)k, off[k], off[k+1]);
+        fprintf (stderr, "ugh %ld  [%" PRId64 ", %" PRId64 ")\n", (long)k, off[k], off[k+1]);
       }
       assert (off[k] <= off[k+1]);
     }
@@ -441,7 +442,7 @@ contract_el (int64_t NE, intvtx_t * restrict el /* 3 x oldNE */,
     OMP("omp barrier");
     w_out = all_calc_weight_base_flat (old_nv, NE, el, d);
     if (global_gwgt >= 0 && w_in != global_gwgt) {
-      fprintf (stderr, "%d/%d: %ld != %ld   %ld\n", omp_get_thread_num ()+1, omp_get_num_threads (),
+      fprintf (stderr, "%d/%d: %" PRId64 " != %" PRId64 "   %" PRId64 "\n", omp_get_thread_num ()+1, omp_get_num_threads (),
                w_in, global_gwgt, w_out);
     }
     OMP("omp master") assert (global_gwgt < 0 || w_in == global_gwgt);
@@ -529,7 +530,7 @@ contract_el (int64_t NE, intvtx_t * restrict el /* 3 x oldNE */,
       }
     OMP("omp master") {
       if (w_in != w_out) {
-        fprintf (stderr, "%d: w_in %ld w_out %ld\n",
+        fprintf (stderr, "%d: w_in %" PRId64 " w_out %" PRId64 "\n",
 #if defined(_OPENMP)
                  omp_get_thread_num (),
 #else
@@ -540,7 +541,7 @@ contract_el (int64_t NE, intvtx_t * restrict el /* 3 x oldNE */,
       assert (w_in == w_out);
 
       if (cutw_in != cutw_out) {
-        fprintf (stderr, "%d: cutw_in %ld cutw_out %ld\n",
+        fprintf (stderr, "%d: cutw_in %" PRId64 " cutw_out %" PRId64 "\n",
 #if defined(_OPENMP)
                  omp_get_thread_num (),
 #else
@@ -643,7 +644,7 @@ contract_el (int64_t NE, intvtx_t * restrict el /* 3 x oldNE */,
         for (int64_t k2 = count[new_i]; k2 < rowend[new_i]; ++k2)
           row_w_out += tmpcopy[1+2*k2];
         if (row_w_in != row_w_out)
-          fprintf (stderr, "row %ld mismatch %ld => %ld   %ld\n", (long)new_i,
+          fprintf (stderr, "row %ld mismatch %" PRId64 " => %" PRId64 "   %" PRId64 "\n", (long)new_i,
                    row_w_in, row_w_out, diagsum);
 #endif
       }
@@ -663,7 +664,7 @@ contract_el (int64_t NE, intvtx_t * restrict el /* 3 x oldNE */,
       }
     OMP("omp master")
       if (w_in != w_out) {
-        fprintf (stderr, "w_in %ld w_out %ld\n", w_in, w_out);
+        fprintf (stderr, "w_in %" PRId64 " w_out %" PRId64 "\n", w_in, w_out);
       }
     assert (w_in == w_out);
 #endif
@@ -688,7 +689,7 @@ contract_el (int64_t NE, intvtx_t * restrict el /* 3 x oldNE */,
       }
     OMP("omp master") {
       if (w_in != w_out) {
-        fprintf (stderr, "w_in %ld w_out %ld\n", w_in, w_out);
+        fprintf (stderr, "w_in %" PRId64 " w_out %" PRId64 "\n", w_in, w_out);
       }
     }
     assert (w_in == w_out);
@@ -700,7 +701,7 @@ contract_el (int64_t NE, intvtx_t * restrict el /* 3 x oldNE */,
     OMP("omp master") {
       cutw_out = 0;
       if (w_in != w_out) {
-        fprintf (stderr, "w_in %ld w_out %ld\n", w_in, w_out);
+        fprintf (stderr, "w_in %" PRId64 " w_out %" PRId64 "\n", w_in, w_out);
       }
     }
     OMP("omp barrier");
@@ -921,9 +922,9 @@ sliced_non_maximal_pass (const struct el g,
           if (m[i] != m[J(g, m[i])] || m[i] != m[I(g, m[i])]) {
             const intvtx_t j = J(g, m[i]);
             const intvtx_t actual_i = I(g, m[i]);
-            fprintf (stderr, "from %ld, attempted %ld = (%ld, %ld)[%g]\n",
+            fprintf (stderr, "from %ld, attempted %" PRId64 " = (%ld, %ld)[%g]\n",
                      (long)i, m[i], (long)actual_i, (long)j, s[m[i]]);
-            fprintf (stderr, "    m[%ld] = %ld (%ld, %ld)[%g], m[%ld] = %ld (%ld, %ld)[%g]\n",
+            fprintf (stderr, "    m[%ld] = %" PRId64 " (%ld, %ld)[%g], m[%ld] = %" PRId64 " (%ld, %ld)[%g]\n",
                      (long)actual_i, m[actual_i], (long)I(g, m[actual_i]), (long)J(g, m[actual_i]), s[m[actual_i]],
                      (long)j, m[j], (long)I(g, m[j]), (long)J(g, m[j]), s[j]);
           }
@@ -1032,7 +1033,7 @@ maximal_match_iter (const struct el g,
         const intvtx_t j = J(g, km);
         assert (i == actual_i || i == j);
         if (m[actual_i] != km) {
-          fprintf (stderr, "m[i]=m[%ld]=%ld m[actual_i]=m[%ld]=%ld m[j]=m[%ld]=%ld\n",
+          fprintf (stderr, "m[i]=m[%ld]=%" PRId64 " m[actual_i]=m[%ld]=%" PRId64 " m[j]=m[%ld]=%" PRId64 "\n",
                    (long)i, m[i], (long)actual_i, m[actual_i], (long)j, m[j]);
         }
         assert (m[actual_i] == km);
@@ -1434,7 +1435,7 @@ score_drop_size (double * restrict escore,
                  const int64_t maxsz,
                  const struct el g)
 {
-  const int64_t nv = g.nv;
+  /*const int64_t nv = g.nv;*/
   const int64_t ne = g.ne;
   CDECL(g);
 
@@ -1598,8 +1599,8 @@ community (int64_t * c, struct el * restrict g /* destructive */,
   double score_time = 0.0, match_time = 0.0, aftermatch_time = 0.0,
     contract_time = 0.0, other_time = 0.0;
 
-  const char *dump_fmt = NULL;
-  char dump_name[257];
+  /*const char *dump_fmt = NULL;*/
+  /*char dump_name[257];*/
 
   struct community_hist h;
 
@@ -1609,7 +1610,7 @@ community (int64_t * c, struct el * restrict g /* destructive */,
 
   /* fprintf (stderr, "ne_in %d\n", (int)ne_in); */
 
-  dump_fmt = getenv ("DUMP_FMT");
+  /*dump_fmt = getenv ("DUMP_FMT");*/
 
   assert (wslen > 3*nv_orig + ne_orig);
   m = ws;
@@ -1726,7 +1727,7 @@ community (int64_t * c, struct el * restrict g /* destructive */,
         if (tmax_score > max_score) max_score = tmax_score;
     }
     if (verbose) {
-      fprintf (stderr, "done : %ld, max score %g\n", nsteps, max_score);
+      fprintf (stderr, "done : %" PRId64 ", max score %g\n", nsteps, max_score);
     }
 
     if (decrease_factor > 0 && max_score < prev_max_score / decrease_factor) {
@@ -1977,8 +1978,8 @@ update_community (int64_t * restrict cmap_global, const int64_t nv_global,
   double score_time = 0.0, match_time = 0.0, aftermatch_time = 0.0,
     contract_time = 0.0, other_time = 0.0;
 
-  const char *dump_fmt = NULL;
-  char dump_name[257];
+  /*const char *dump_fmt = NULL;*/
+  /*char dump_name[257];*/
 
   struct community_hist h;
 
@@ -1988,7 +1989,7 @@ update_community (int64_t * restrict cmap_global, const int64_t nv_global,
 
   /* fprintf (stderr, "ne_in %d\n", (int)ne_in); */
 
-  dump_fmt = getenv ("DUMP_FMT");
+  /*dump_fmt = getenv ("DUMP_FMT");*/
 
   assert (wslen > 4*nv_orig + ne_orig);
   c = ws;
@@ -2094,7 +2095,7 @@ update_community (int64_t * restrict cmap_global, const int64_t nv_global,
         if (tmax_score > max_score) max_score = tmax_score;
     }
     if (verbose) {
-      fprintf (stderr, "done : %ld, max score %g\n", nsteps, max_score);
+      fprintf (stderr, "done : %" PRId64 ", max score %g\n", nsteps, max_score);
     }
 
     if (decrease_factor > 0 && max_score < prev_max_score / decrease_factor) {
@@ -2266,7 +2267,7 @@ update_community (int64_t * restrict cmap_global, const int64_t nv_global,
 
     assert (g->nv == new_nv);
 #if !defined(NDEBUG)
-    int64_t totsz = 0;
+    /*int64_t totsz = 0;*/
 #endif
     OMP("omp parallel") {
       OMP("omp for")
@@ -2504,7 +2505,7 @@ contract_self_el (int64_t NE, intvtx_t * restrict el /* 3 x oldNE */,
       }
     OMP("omp master") {
       if (w_in != w_out) {
-        fprintf (stderr, "%d: w_in %ld w_out %ld\n",
+        fprintf (stderr, "%d: w_in %" PRId64 " w_out %" PRId64 "\n",
 #if defined(_OPENMP)
                  omp_get_thread_num (),
 #else
@@ -2608,7 +2609,7 @@ contract_self_el (int64_t NE, intvtx_t * restrict el /* 3 x oldNE */,
         for (int64_t k2 = count[new_i]; k2 < rowend[new_i]; ++k2)
           row_w_out += tmpcopy[1+2*k2];
         if (row_w_in != row_w_out)
-          fprintf (stderr, "row %ld mismatch %ld => %ld   %ld\n", (long)new_i,
+          fprintf (stderr, "row %ld mismatch %" PRId64 " => %" PRId64 "   %" PRId64 "\n", (long)new_i,
                    row_w_in, row_w_out, diagsum);
 #endif
       }
@@ -2628,7 +2629,7 @@ contract_self_el (int64_t NE, intvtx_t * restrict el /* 3 x oldNE */,
       }
     OMP("omp master")
       if (w_in != w_out) {
-        fprintf (stderr, "w_in %ld w_out %ld\n", w_in, w_out);
+        fprintf (stderr, "w_in %" PRId64 " w_out %" PRId64 "\n", w_in, w_out);
       }
     assert (w_in == w_out);
 #endif
@@ -2653,7 +2654,7 @@ contract_self_el (int64_t NE, intvtx_t * restrict el /* 3 x oldNE */,
       }
     OMP("omp master") {
       if (w_in != w_out) {
-        fprintf (stderr, "w_in %ld w_out %ld\n", w_in, w_out);
+        fprintf (stderr, "w_in %" PRId64 " w_out %" PRId64 "\n", w_in, w_out);
       }
     }
     assert (w_in == w_out);
@@ -2664,7 +2665,7 @@ contract_self_el (int64_t NE, intvtx_t * restrict el /* 3 x oldNE */,
                                   rowstart, rowend);
     OMP("omp master") {
       if (w_in != w_out) {
-        fprintf (stderr, "w_in %ld w_out %ld\n", w_in, w_out);
+        fprintf (stderr, "w_in %" PRId64 " w_out %" PRId64 "\n", w_in, w_out);
       }
     }
     OMP("omp barrier");

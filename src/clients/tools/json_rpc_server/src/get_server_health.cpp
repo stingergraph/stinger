@@ -18,7 +18,7 @@ using namespace gt::stinger;
 
 static int get_loadavg (rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
 static int get_time (rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
-static int get_rpc_methods (rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
+static void get_rpc_methods (rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
 static int get_uptime (rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator);
 
 
@@ -260,7 +260,7 @@ get_time (rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::C
   return 0;
 }
 
-static int
+static void
 get_rpc_methods (rapidjson::Value & result, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator)
 {
   std::map<std::string, JSON_RPCFunction *>::iterator it;

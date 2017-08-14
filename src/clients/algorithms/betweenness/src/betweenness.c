@@ -3,6 +3,7 @@
 #include <stdbool.h>
 
 #include "stinger_core/stinger.h"
+#include "stinger_core/formatting.h"
 #include "stinger_core/stinger_atomics.h"
 #include "stinger_core/xmalloc.h"
 #include "stinger_core/stinger_error.h"
@@ -60,7 +61,7 @@ main(int argc, char *argv[])
                     "aggregated and potentially weighted with the result from\n"
                     "the last pass\n"
                     "\n"
-                    "  -s <num>  Set the number of samples (%ld by default)\n"
+                    "  -s <num>  Set the number of samples (%" PRId64 " by default)\n"
                     "  -w <num>  Set the weighintg (0.0 - 1.0) (%lf by default)\n"
                     "  -x        Disable weighting\n"
                     "  -n <str>  Set the algorithm name (%s by default)\n"

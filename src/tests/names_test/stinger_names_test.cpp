@@ -18,7 +18,7 @@ protected:
 TEST_F(StingerNamesTest, create_names) {
   int64_t out = 0;
   
-  char * test_names [] = {
+  char const * test_names [] = {
       "Alpha",
       "Beta",
       "Gamma",
@@ -41,7 +41,7 @@ TEST_F(StingerNamesTest, create_names) {
 TEST_F(StingerNamesTest, overflow_create_names) {
   int64_t out = 0;
   
-  char * test_names [] = {
+  char const * test_names [] = {
       "Alpha",
       "Beta",
       "Gamma",
@@ -131,7 +131,7 @@ TEST_F(StingerNamesTest, lookup_failure) {
 TEST_F(StingerNamesTest, resize) {
   int64_t out = 0;
   
-  char * test_names [] = {
+  char const * test_names [] = {
       "Alpha",
       "Beta",
       "Gamma",

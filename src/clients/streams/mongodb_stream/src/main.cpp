@@ -29,7 +29,7 @@ main(int argc, char *argv[])
   int mongo_port = 13001;
   int batch_size = 100000;
   int num_batches = -1;
-  char * stinger_hostname = NULL;
+  char const * stinger_hostname = NULL;
   char mongo_server[256];
   mongo_server[0] = '\0';
 
@@ -93,6 +93,7 @@ main(int argc, char *argv[])
       case MONGO_CONN_NO_SOCKET:  printf( "no socket\n" ); return 1;
       case MONGO_CONN_FAIL:       printf( "connection failed\n" ); return 1;
       case MONGO_CONN_NOT_MASTER: printf( "not master\n" ); return 1;
+      default:                    printf( "unhandled error\n" ); return 1;
     }
   }
   /* End Mongo */
@@ -109,8 +110,8 @@ main(int argc, char *argv[])
 
 #endif
   /* actually generate and send the batches */
-  char * buf = NULL, ** fields = NULL;
-  uint64_t bufSize = 0, * lengths = NULL, fieldsSize = 0, count = 0;
+  /*char * buf = NULL, ** fields = NULL;
+  uint64_t bufSize = 0, * lengths = NULL, fieldsSize = 0, count = 0;*/
   int64_t line = 0;
   int batch_num = 0;
   int skip_num = 0;
@@ -147,7 +148,7 @@ main(int argc, char *argv[])
 
     int64_t print_header = 1;
     while (mongo_cursor_next(&cursor) == MONGO_OK) {
-      const char * source_vtx;
+      const char * source_vtx = NULL;
       skip_num++;   // this helps us recover if we get a partial batch from Mongo
 
       /* "postedTime" tells us when this occured (as a string) */

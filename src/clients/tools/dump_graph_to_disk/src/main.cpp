@@ -5,6 +5,7 @@
 #include <unistd.h>
 
 #include "stinger_core/stinger.h"
+#include "stinger_core/formatting.h"
 #include "stinger_core/xmalloc.h"
 #include "stinger_net/mon_handling.h"
 #include "stinger_net/stinger_mon.h"
@@ -80,7 +81,7 @@ int main (int argc, char *argv[])
 
   for (int64_t i = 0; i < nv; i++) {
     STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(S, i) {
-      fprintf(fp, "%ld %ld %ld %ld %ld %ld\n",  STINGER_EDGE_SOURCE, 
+      fprintf(fp, "%" PRId64 " %" PRId64 " %" PRId64 " %" PRId64 " %" PRId64 " %" PRId64 "\n",  STINGER_EDGE_SOURCE, 
 					    STINGER_EDGE_DEST,
 					    STINGER_EDGE_TYPE,
 					    STINGER_EDGE_WEIGHT,
@@ -95,8 +96,8 @@ int main (int argc, char *argv[])
 
   double time = toc();
   LOG_I_A ("elapsed: %20.15e sec", time);
-  LOG_I_A ("nv: %ld", nv);
-  LOG_I_A ("ne: %ld", ne);
+  LOG_I_A ("nv: %" PRId64, nv);
+  LOG_I_A ("ne: %" PRId64, ne);
   LOG_I_A ("rate: %20.15e edges/sec", (double) ne / time);
 
 

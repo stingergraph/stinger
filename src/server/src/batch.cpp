@@ -7,6 +7,7 @@
 
 extern "C" {
 #include "stinger_core/stinger.h"
+#include "stinger_core/formatting.h"
 #include "stinger_core/stinger_error.h"
 #include "stinger_core/stinger_atomics.h"
 #include "stinger_core/xmalloc.h"
@@ -131,7 +132,7 @@ template <int64_t type>
 void process_insertions(stinger_t * S, StingerBatch & batch)
 {
     OMP("omp parallel for")
-    for (size_t i = 0; i < batch.insertions_size(); i++)
+    for (int i = 0; i < batch.insertions_size(); i++)
     {
         EdgeInsertion & in = *batch.mutable_insertions(i);
         int64_t u = -1, v = -1;
@@ -153,7 +154,7 @@ void process_insertions(stinger_t * S, StingerBatch & batch)
     }
 
     OMP("omp parallel for")
-    for (size_t i = 0; i < batch.insertions_size(); i++)
+    for (int i = 0; i < batch.insertions_size(); i++)
     {
         EdgeInsertion & in = *batch.mutable_insertions(i);
         if (in.result() == -1)
@@ -161,13 +162,13 @@ void process_insertions(stinger_t * S, StingerBatch & batch)
             switch (type)
             {
                 case NUMBERS_ONLY:
-                    LOG_E_A("Error inserting edge <%ld, %ld>", in.source(), in.destination());
+                    LOG_E_A("Error inserting edge <%" PRId64 ", %" PRId64 ">", in.source(), in.destination());
                     break;
                 case STRINGS_ONLY:
                     LOG_E_A("Error inserting edge <%s, %s>", in.source_str().c_str(), in.destination_str().c_str());
                     break;
                 case MIXED:
-                    LOG_E_A("Error inserting edge <%ld - %s, %ld - %s>",
+                    LOG_E_A("Error inserting edge <%" PRId64 " - %s, %" PRId64 " - %s>",
                         in.source(), in.source_str().c_str(), in.destination(), in.destination_str().c_str());
                     break;
                 default:
@@ -198,7 +199,7 @@ template <int64_t type>
 void process_deletions(stinger_t * S, StingerBatch & batch){
 
     OMP("omp parallel for")
-    for(size_t d = 0; d < batch.deletions_size(); d++)
+    for(int d = 0; d < batch.deletions_size(); d++)
     {
         EdgeDeletion & del = *batch.mutable_deletions(d);
         // Look up src/dst ID from string, if necessary
@@ -264,13 +265,13 @@ void process_deletions(stinger_t * S, StingerBatch & batch){
                 switch (type)
                 {
                     case NUMBERS_ONLY:
-                        LOG_E_A("Error removing edge <%ld, %ld>", del.source(), del.destination());
+                        LOG_E_A("Error removing edge <%" PRId64 ", %" PRId64 ">", del.source(), del.destination());
                         break;
                     case STRINGS_ONLY:
                         LOG_E_A("Error removing edge <%s, %s>", del.source_str().c_str(), del.destination_str().c_str());
                         break;
                     case MIXED:
-                        LOG_E_A("Error removing edge <%ld - %s, %ld - %s>",
+                        LOG_E_A("Error removing edge <%" PRId64 " - %s, %" PRId64 " - %s>",
                                 u, del.source_str().c_str(), v, del.destination_str().c_str());
                         break;
                     default:
@@ -300,7 +301,7 @@ void process_deletions(stinger_t * S, StingerBatch & batch){
 template <int64_t type>
 void process_vertex_updates(stinger_t * S, StingerBatch & batch){
     OMP("omp for")
-    for(size_t d = 0; d < batch.vertex_updates_size(); d++) {
+    for(int d = 0; d < batch.vertex_updates_size(); d++) {
         VertexUpdate & vup = *batch.mutable_vertex_updates(d);
         handle_vertex_names_types<type>(vup, S);
     }

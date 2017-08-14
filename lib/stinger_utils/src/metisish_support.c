@@ -12,6 +12,7 @@
 #include <sys/mman.h>
 
 #include "stinger_core/stinger.h"
+#include "stinger_core/formatting.h"
 #include "stinger_core/stinger_atomics.h"
 #include "stinger_core/xmalloc.h"
 #include "stinger_core/x86_full_empty.h"
@@ -90,7 +91,7 @@ load_metisish_graph (struct stinger * S, char * filename)
 {
   FILE * fp = fopen (filename, "r");
   char rowbuf[16385];
-  int64_t nv = 0, ne_ent = 0, ne = 0, fmt = 0, ncon = 0;
+  int64_t nv = 0, ne_ent = 0, fmt = 0, ncon = 0;
   int has_weight = 0;
 
   if (!fp)

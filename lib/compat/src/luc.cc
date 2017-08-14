@@ -10,9 +10,9 @@
 
 extern "C" {
 void luc_io_init (void);
-void luc_snapin (const char*, void*, size_t);
-void luc_snapout (const char*, void*, size_t);
-void luc_stat (const char*, size_t*);
+void luc_snapin (const char*, void*, off_t);
+void luc_snapout (const char*, void*, off_t);
+void luc_stat (const char*, off_t*);
 }
 
 using namespace std;
@@ -24,7 +24,7 @@ luc_io_init (void)
 
 
 static void
-read_in (const char *fname, void* buf, size_t sz)
+read_in (const char *fname, void* buf, off_t sz)
 {
   char * tmpbuf = (char *) buf;
   int fd;
@@ -34,7 +34,7 @@ read_in (const char *fname, void* buf, size_t sz)
       fname, strerror (errno));
     abort ();
   }
-  size_t bytes_read = 0;
+  off_t bytes_read = 0;
   while (bytes_read < sz) {
     int last = read(fd, tmpbuf, sz);
     bytes_read += last;
@@ -52,14 +52,14 @@ read_in (const char *fname, void* buf, size_t sz)
 
 
 void
-luc_snapin (const char *fname, void* buf, size_t sz)
+luc_snapin (const char *fname, void* buf, off_t sz)
 {
   read_in (fname, buf, sz);
 }
 
 
 static void
-write_out (const char *fname, void* buf, size_t sz)
+write_out (const char *fname, void* buf, off_t sz)
 {
   int fd;
   fd = open (fname, O_WRONLY|O_CREAT|O_TRUNC, 0666);
@@ -78,14 +78,14 @@ write_out (const char *fname, void* buf, size_t sz)
 
 
 void
-luc_snapout (const char *fname, void* buf, size_t sz)
+luc_snapout (const char *fname, void* buf, off_t sz)
 {
   write_out (fname, buf, sz);
 }
 
 
 static void
-stat_fname (const char *fname, size_t *sz)
+stat_fname (const char *fname, off_t *sz)
 {
   struct stat st;
 
@@ -99,7 +99,7 @@ stat_fname (const char *fname, size_t *sz)
 
 
 void
-luc_stat (const char *fname, size_t *sz)
+luc_stat (const char *fname, off_t *sz)
 {
     stat_fname (fname, sz);
 }

@@ -45,7 +45,7 @@ JSON_RPC_community_subgraph::update(const StingerBatch & batch)
 
   /* TODO: this does not take "undirected batch" into account */
 
-  for(size_t d = 0; d < batch.deletions_size(); d++) {
+  for(int d = 0; d < batch.deletions_size(); d++) {
     const EdgeDeletion & del = batch.deletions(d);
 
     int64_t src = del.source();
@@ -61,7 +61,7 @@ JSON_RPC_community_subgraph::update(const StingerBatch & batch)
 
   /* edge insertions whose endpoints are within the same community get sent
      to the client on the next request */
-  for (size_t i = 0; i < batch.insertions_size(); i++) {
+  for (int i = 0; i < batch.insertions_size(); i++) {
     const EdgeInsertion & in = batch.insertions(i);
     
     int64_t src = in.source();
@@ -235,7 +235,7 @@ JSON_RPC_community_subgraph::onRegister(
   }
 
   /* Get the community label of the source vertex */
-  int64_t community_id = _data->get_int64(_source);
+  (void) _data->get_int64(_source);
 
   /* Add all vertices with the same label to the vertices[] set */
   for (int64_t i = 0; i < _data->length(); i++) {
@@ -308,7 +308,7 @@ description_string_to_pointer (gt::stinger::JSON_RPCServerState * server_state,
   strcpy(tmp, description_string);
 
   /* the description string is space-delimited */
-  char * ptr = strtok (tmp, " ");
+  (void) strtok (tmp, " ");
 
   /* skip the formatting */
   char * pch = strtok (NULL, " ");
@@ -380,7 +380,7 @@ JSON_RPC_vertex_event_notifier::update(const StingerBatch & batch)
 
   /* TODO: this does not take "undirected batch" into account */
 
-  for(size_t d = 0; d < batch.deletions_size(); d++) {
+  for(int d = 0; d < batch.deletions_size(); d++) {
     const EdgeDeletion & del = batch.deletions(d);
 
     int64_t src = del.source();
@@ -394,7 +394,7 @@ JSON_RPC_vertex_event_notifier::update(const StingerBatch & batch)
     }
   }
 
-  for(size_t d = 0; d < batch.insertions_size(); d++) {
+  for(int d = 0; d < batch.insertions_size(); d++) {
     const EdgeInsertion & in = batch.insertions(d);
 
     int64_t src = in.source();
@@ -684,7 +684,7 @@ JSON_RPC_get_latlon::onRequest(
 	      rapidjson::Value & result,
 	      rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator)
 {
-  stinger_t * S = server_state->get_stinger();
+  (void) server_state->get_stinger();
   rapidjson::Value coord, lat, lon, pair;
   std::set<std::pair<double, double> >::iterator it;
 
@@ -810,7 +810,7 @@ JSON_RPC_get_latlon_gnip::onRequest(
 	      rapidjson::Value & result,
 	      rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator)
 {
-  stinger_t * S = server_state->get_stinger();
+  (void) server_state->get_stinger();
   rapidjson::Value coord, lat, lon, sentiment, categories, pair;
   std::set<semantic_coordinates>::iterator it;
 
@@ -943,7 +943,7 @@ JSON_RPC_get_latlon_twitter::onRequest(
 	      rapidjson::Value & result,
 	      rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> & allocator)
 {
-  stinger_t * S = server_state->get_stinger();
+  (void) server_state->get_stinger();
   rapidjson::Value coord, ref, lat, lon, sentiment, categories, pair;
   std::set<semantic_coordinates>::iterator it;
 

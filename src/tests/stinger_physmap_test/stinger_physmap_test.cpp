@@ -1,6 +1,7 @@
 #include "stinger_physmap_test.h"
 extern "C" {
   #include "stinger_core/xmalloc.h"
+  #include "stinger_core/formatting.h"
   #include "stinger_core/stinger_traversal.h"
   #include "stinger_core/stinger_atomics.h"
 }
@@ -38,7 +39,7 @@ TEST_F(StingerPhysmapTest, create) {
   char * name = (char*)xcalloc(100,sizeof(char));
 
   for (i=0; i < (1<<13); i++) {
-    snprintf(name, 100, "Vertex_%ld", i);
+    snprintf(name, 100, "Vertex_%" PRId64, i);
     ret = stinger_mapping_create(S, name, strlen(name), &vtx_out);
     EXPECT_EQ(ret,1);
     EXPECT_EQ(vtx_out,i);    
@@ -67,7 +68,7 @@ TEST_F(StingerPhysmapTest, lookup) {
   char * name = (char*)xcalloc(100,sizeof(char));
 
   for (i=0; i < (1<<13); i++) {
-    snprintf(name, 100, "Vertex_%ld", i);
+    snprintf(name, 100, "Vertex_%" PRId64, i);
     stinger_mapping_create(S, name, strlen(name), &vtx_out);
   }
 
@@ -89,7 +90,7 @@ TEST_F(StingerPhysmapTest, physid_lookup) {
   char * name = (char*)xcalloc(100,sizeof(char));
 
   for (i=0; i < (1<<13); i++) {
-    snprintf(name, 100, "Vertex_%ld", i);
+    snprintf(name, 100, "Vertex_%" PRId64, i);
     stinger_mapping_create(S, name, strlen(name), &vtx_out);
   }
 
@@ -128,7 +129,7 @@ TEST_F(StingerPhysmapTest, physid_lookup) {
   lookupName = NULL;
 
   len = 0;
-  ret = stinger_mapping_physid_get(S, 1<<13 + 1, &lookupName, &len);
+  ret = stinger_mapping_physid_get(S, 1<<(13 + 1), &lookupName, &len);
   EXPECT_EQ(ret,-1);
   EXPECT_EQ(lookupName,(void*)NULL);
 }

@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 #include "stinger_core/stinger.h"
+#include "stinger_core/formatting.h"
 #include "stinger_core/stinger_atomics.h"
 #include "stinger_core/xmalloc.h"
 #include "stinger_core/stinger_error.h"
@@ -45,7 +46,7 @@ main(int argc, char *argv[])
                                 "\n"
                                 "This approach returns the first level of Louvain's Community detection\n"
                                 "\n"
-                                "  -i <num>  Set the max number of iterations (%ld by default)\n"
+                                "  -i <num>  Set the max number of iterations (%" PRId64 " by default)\n"
                                 "  -n <str>  Set the algorithm name (%s by default)\n"
                                 "\n", max_iter,alg_name
                 );

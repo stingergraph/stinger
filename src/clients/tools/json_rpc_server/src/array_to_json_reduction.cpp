@@ -25,7 +25,7 @@ array_to_json_reduction    (stinger_t * S,
 
   /* the description string is space-delimited */
   char * placeholder;
-  char * ptr = strtok_r (tmp, " ", &placeholder);
+  (void) strtok_r (tmp, " ", &placeholder);
 
   /* skip the formatting */
   char * pch = strtok_r (NULL, " ", &placeholder);

@@ -6,6 +6,7 @@
 
 #include "stinger_core/stinger_atomics.h"
 #include "stinger_core/stinger.h"
+#include "stinger_core/xmalloc.h"
 
 #include "compat.h"
 
@@ -29,7 +30,7 @@ static inline void setup_y (const int64_t nv, const double beta, double * y)
 #define ALPHAXI_VAL(alpha, xi) (alpha == 0.0? 0.0 : (alpha == 1.0? xi : (alpha == -1.0? -xi : (alpha * xi))))
 #define DEGSCALE(axi, degi) (degi == 0? 0.0 : axi / degi);
 
-void stinger_dspmTv (const int64_t nv, const double alpha, const struct stinger *S, const double * x, const double beta, double * y)
+void stinger_dspmTv (const int64_t nv, const double alpha, struct stinger *S, const double * x, const double beta, double * y)
 {
   setup_y (nv, beta, y);
 
@@ -43,7 +44,7 @@ void stinger_dspmTv (const int64_t nv, const double alpha, const struct stinger 
   }
 }
 
-void stinger_unit_dspmTv (const int64_t nv, const double alpha, const struct stinger *S, const double * x, const double beta, double * y)
+void stinger_unit_dspmTv (const int64_t nv, const double alpha, struct stinger *S, const double * x, const double beta, double * y)
 {
   setup_y (nv, beta, y);
 
@@ -56,7 +57,7 @@ void stinger_unit_dspmTv (const int64_t nv, const double alpha, const struct sti
   }
 }
 
-void stinger_dspmTv_degscaled (const int64_t nv, const double alpha, const struct stinger *S, const double * x, const double beta, double * y)
+void stinger_dspmTv_degscaled (const int64_t nv, const double alpha, struct stinger *S, const double * x, const double beta, double * y)
 {
   setup_y (nv, beta, y);
 
@@ -72,7 +73,7 @@ void stinger_dspmTv_degscaled (const int64_t nv, const double alpha, const struc
   }
 }
 
-void stinger_unit_dspmTv_degscaled (const int64_t nv, const double alpha, const struct stinger *S, const double * x, const double beta, double * y)
+void stinger_unit_dspmTv_degscaled (const int64_t nv, const double alpha, struct stinger *S, const double * x, const double beta, double * y)
 {
   setup_y (nv, beta, y);
 
@@ -87,7 +88,7 @@ void stinger_unit_dspmTv_degscaled (const int64_t nv, const double alpha, const 
   }
 }
 
-static void setup_workspace (const int64_t nv, int64_t ** loc_ws, double ** val_ws)
+static void setup_workspace (const int64_t nv, int64_t * restrict * loc_ws, double * restrict * val_ws)
 {
   if (!*loc_ws) {
     *loc_ws = xmalloc (nv * sizeof (**loc_ws));
@@ -120,14 +121,14 @@ static void setup_sparse_y (const double beta,
   } else if (1.0 != beta) {
     for (int64_t k = 0; k < y_deg; ++k) {
       const int64_t i = y_idx[k];
-      const double yi = y_val[k];
+      /*const double yi = y_val[k];*/
       loc_ws[i] = k;
       y_val[k] = beta * y_val[k];
     }
   }
 }
 
-void stinger_dspmTspv (const int64_t nv, const double alpha, const struct stinger *S, const int64_t x_deg, const int64_t * x_idx, const double * x_val, const double beta, int64_t * y_deg_ptr, int64_t * y_idx, double * y_val, int64_t * loc_ws_in, double * val_ws_in /*UNUSED*/)
+void stinger_dspmTspv (const int64_t nv, const double alpha, struct stinger *S, const int64_t x_deg, const int64_t * x_idx, const double * x_val, const double beta, int64_t * y_deg_ptr, int64_t * y_idx, double * y_val, int64_t * loc_ws_in, double * val_ws_in /*UNUSED*/)
 {
   int64_t y_deg = * y_deg_ptr;
   int64_t * restrict loc_ws = loc_ws_in;
@@ -158,7 +159,7 @@ void stinger_dspmTspv (const int64_t nv, const double alpha, const struct stinge
   *y_deg_ptr = y_deg;
 }
 
-void stinger_unit_dspmTspv (const int64_t nv, const double alpha, const struct stinger *S, const int64_t x_deg, const int64_t * x_idx, const double * x_val, const double beta, int64_t * y_deg_ptr, int64_t * y_idx, double * y_val, int64_t * loc_ws_in, double * val_ws_in /*UNUSED*/)
+void stinger_unit_dspmTspv (const int64_t nv, const double alpha, struct stinger *S, const int64_t x_deg, const int64_t * x_idx, const double * x_val, const double beta, int64_t * y_deg_ptr, int64_t * y_idx, double * y_val, int64_t * loc_ws_in, double * val_ws_in /*UNUSED*/)
 {
   int64_t y_deg = * y_deg_ptr;
   int64_t * restrict loc_ws = loc_ws_in;
@@ -188,7 +189,7 @@ void stinger_unit_dspmTspv (const int64_t nv, const double alpha, const struct s
   *y_deg_ptr = y_deg;
 }
 
-void stinger_dspmTspv_degscaled (const int64_t nv, const double alpha, const struct stinger *S, const int64_t x_deg, const int64_t * x_idx, const double * x_val, const double beta, int64_t * y_deg_ptr, int64_t * y_idx, double * y_val, int64_t * loc_ws_in, double * val_ws_in /*UNUSED*/)
+void stinger_dspmTspv_degscaled (const int64_t nv, const double alpha, struct stinger *S, const int64_t x_deg, const int64_t * x_idx, const double * x_val, const double beta, int64_t * y_deg_ptr, int64_t * y_idx, double * y_val, int64_t * loc_ws_in, double * val_ws_in /*UNUSED*/)
 {
   int64_t y_deg = * y_deg_ptr;
   int64_t * restrict loc_ws = loc_ws_in;
@@ -221,7 +222,7 @@ void stinger_dspmTspv_degscaled (const int64_t nv, const double alpha, const str
   *y_deg_ptr = y_deg;
 }
 
-void stinger_unit_dspmTspv_degscaled (const int64_t nv, const double alpha, const struct stinger *S, const int64_t x_deg, const int64_t * x_idx, const double * x_val, const double beta, int64_t * y_deg_ptr, int64_t * y_idx, double * y_val, int64_t * loc_ws_in, double * val_ws_in /*UNUSED*/)
+void stinger_unit_dspmTspv_degscaled (const int64_t nv, const double alpha, struct stinger *S, const int64_t x_deg, const int64_t * x_idx, const double * x_val, const double beta, int64_t * y_deg_ptr, int64_t * y_idx, double * y_val, int64_t * loc_ws_in, double * val_ws_in /*UNUSED*/)
 {
   int64_t y_deg = * y_deg_ptr;
   int64_t * restrict loc_ws = loc_ws_in;

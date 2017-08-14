@@ -31,7 +31,7 @@ namespace gt {
     * Data should be handled through the server state.
     */
     struct StingerAlgState {
-      StingerAlgState() : state(ALG_STATE_READY_INIT), data_loc(""), level(0) { }
+      StingerAlgState() : data_loc(""), level(0), state(ALG_STATE_READY_INIT) { }
 
       std::string name;
       std::string data_loc;

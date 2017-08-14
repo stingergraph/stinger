@@ -28,11 +28,11 @@ histogram_label_counts(struct stinger * S, uint64_t * labels, int64_t count, cha
   free(sizes);
 
   char filename[1024];
-  sprintf(filename, "%s/%s.%ld.csv", path, name, iteration);
+  sprintf(filename, "%s/%s.%" PRId64 ".csv", path, name, iteration);
   FILE * fp = fopen(filename, "w");
   for(uint64_t v = 1; v < count+1; v++) {
     if(histogram[v]) {
-      fprintf(fp, "%ld, %ld\n", v, histogram[v]);
+      fprintf(fp, "%" PRIu64 ", %" PRIu64 "\n", v, histogram[v]);
     }
   }
   fclose(fp);
@@ -60,11 +60,11 @@ histogram_int64(struct stinger * S, int64_t * scores, int64_t count, char * path
     }
 
     char filename[1024];
-    sprintf(filename, "%s/%s.%ld.csv", path, name, iteration);
+    sprintf(filename, "%s/%s.%" PRId64 ".csv", path, name, iteration);
     FILE * fp = fopen(filename, "w");
     for(uint64_t v = 0; v < max+2; v++) {
       if(histogram[v]) {
-	fprintf(fp, "%ld, %ld\n", v, histogram[v]);
+	fprintf(fp, "%" PRIu64 ", %" PRIu64 "\n", v, histogram[v]);
       }
     }
     fclose(fp);
@@ -95,11 +95,11 @@ histogram_float(struct stinger * S, float * scores, int64_t count, char * path, 
     }
 
     char filename[1024];
-    sprintf(filename, "%s/%s.%ld.csv", path, name, iteration);
+    sprintf(filename, "%s/%s.%" PRId64 ".csv", path, name, iteration);
     FILE * fp = fopen(filename, "w");
     for(uint64_t v = 0; v < max+2; v++) {
       if(histogram[v]) {
-	fprintf(fp, "%ld, %ld\n", v, histogram[v]);
+	fprintf(fp, "%" PRIu64 ", %" PRIu64 "\n", v, histogram[v]);
       }
     }
     fclose(fp);
@@ -130,11 +130,11 @@ histogram_double(struct stinger * S, double * scores, int64_t count, char * path
     }
 
     char filename[1024];
-    sprintf(filename, "%s/%s.%ld.csv", path, name, iteration);
+    sprintf(filename, "%s/%s.%" PRId64 ".csv", path, name, iteration);
     FILE * fp = fopen(filename, "w");
     for(uint64_t v = 0; v < max+2; v++) {
       if(histogram[v]) {
-	fprintf(fp, "%ld, %ld\n", v, histogram[v]);
+	fprintf(fp, "%" PRIu64 ", %" PRIu64 "\n", v, histogram[v]);
       }
     }
     fclose(fp);

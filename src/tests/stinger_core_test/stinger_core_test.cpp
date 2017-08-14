@@ -1,6 +1,7 @@
 #include "stinger_core_test.h"
 extern "C" {
   #include "stinger_core/xmalloc.h"
+  #include "stinger_core/formatting.h"
   #include "stinger_core/stinger_traversal.h"
   #include "stinger_core/stinger_atomics.h"
 }
@@ -356,7 +357,7 @@ TEST_F(StingerCoreTest, stinger_edge_insertion) {
   }
 
   STINGER_FORALL_EDGES_OF_ALL_TYPES_BEGIN(S) {
-    int64_t expected_timestamp = std::min(STINGER_EDGE_SOURCE,STINGER_EDGE_DEST) + 1;
+    (void) (std::min(STINGER_EDGE_SOURCE,STINGER_EDGE_DEST) + 1);
     total_edges--;
   } STINGER_FORALL_EDGES_OF_ALL_TYPES_END();
   EXPECT_EQ(total_edges,0);
@@ -469,9 +470,9 @@ TEST_F(StingerCoreTest, stinger_delete_edges) {
   OMP("omp parallel for")
   for (int i=0; i < 100; i++) {
     int64_t timestamp = i+1;
-    int64_t ret;
+    /*int64_t ret;*/
     for (int j=i+1; j < 100; j++) {
-      ret = stinger_insert_edge_pair(S, 0, i, j, 1, timestamp);
+      (void) stinger_insert_edge_pair(S, 0, i, j, 1, timestamp);
     }
   }
 
@@ -479,9 +480,9 @@ TEST_F(StingerCoreTest, stinger_delete_edges) {
   OMP("omp parallel for")
   for (int i=0; i < 100; i++) {
     int64_t timestamp = i+1;
-    int64_t ret;
+    /*int64_t ret;*/
     for (int j=i+1; j < 100; j++) {
-      ret = stinger_insert_edge(S, 1, i, j, 1, timestamp);
+      (void) stinger_insert_edge(S, 1, i, j, 1, timestamp);
     }
   }
 
@@ -533,14 +534,14 @@ TEST_F(StingerCoreTest, stinger_delete_edges) {
 }
 
 TEST_F(StingerCoreTest, racing_deletions) {
-  int64_t ret;
+  /*int64_t ret;*/
   // Insert undirected edges
   OMP("omp parallel for")
   for (int i=0; i < 100; i++) {
     int64_t timestamp = i+1;
-    int64_t ret;
+    /*int64_t ret;*/
     for (int j=i+1; j < 100; j++) {
-      ret = stinger_insert_edge_pair(S, 0, i, j, 1, timestamp);
+      (void) stinger_insert_edge_pair(S, 0, i, j, 1, timestamp);
     }
   }
 
@@ -549,10 +550,10 @@ TEST_F(StingerCoreTest, racing_deletions) {
       OMP("omp parallel") {
         OMP ("omp sections") {
           OMP("omp section") {
-            ret = stinger_remove_edge(S, 0, i, j);
+            (void) stinger_remove_edge(S, 0, i, j);
           }
           OMP("omp section") {
-            ret = stinger_remove_edge(S, 0, j, i);
+            (void) stinger_remove_edge(S, 0, j, i);
           }
         }
       }
@@ -568,24 +569,24 @@ TEST_F(StingerCoreTest, stinger_remove_vertex) {
   // Insert undirected edges
   for (int i=0; i < 100; i++) {
     int64_t timestamp = i+1;
-    int64_t ret;
+    /*int64_t ret;*/
     for (int j=i+1; j < 100; j++) {
-      ret = stinger_insert_edge_pair(S, 0, i, j, 1, timestamp);
+      (void) stinger_insert_edge_pair(S, 0, i, j, 1, timestamp);
     }
   }
 
   // Insert some directed out edges from vertex 1
   for (int i=101; i < 500; i+=4) {
     int64_t timestamp = 2;
-    int64_t ret;    
-    ret = stinger_insert_edge(S, 0, 1, i, 1, timestamp);
+    /*int64_t ret;    */
+    (void) stinger_insert_edge(S, 0, 1, i, 1, timestamp);
   }
 
   // Insert some directed in edges to vertex 2
   for (int i=102; i < 500; i+=4) {
     int64_t timestamp = 2;
-    int64_t ret;    
-    ret = stinger_insert_edge(S, 0, i, 2, 1, timestamp);
+    /*int64_t ret;    */
+    (void) stinger_insert_edge(S, 0, i, 2, 1, timestamp);
   }
 
   // PART 1: remove a vertex with all undirected edges
@@ -608,7 +609,7 @@ TEST_F(StingerCoreTest, stinger_remove_vertex) {
   bool in_edge_list = false;
 
   STINGER_FORALL_EDGES_OF_VTX_BEGIN(S,3) {
-    fprintf(stderr,"%ld %ld %ld\n",STINGER_EDGE_SOURCE,STINGER_EDGE_DEST,STINGER_EDGE_DIRECTION);
+    fprintf(stderr,"%" PRId64 " %" PRId64 " %" PRId64 "\n",STINGER_EDGE_SOURCE,STINGER_EDGE_DEST,STINGER_EDGE_DIRECTION);
     has_edge_list = true;
   } STINGER_FORALL_EDGES_OF_VTX_END();
   EXPECT_FALSE(has_edge_list) << "Vertex should have no incident edges";

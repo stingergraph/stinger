@@ -10,6 +10,7 @@
 #include <sys/mman.h>
 
 #include "stinger_core/stinger.h"
+#include "stinger_core/formatting.h"
 #include "stinger_core/stinger_atomics.h"
 #include "stinger_core/xmalloc.h"
 #include "stinger_core/x86_full_empty.h"
@@ -127,7 +128,7 @@ load_dimacs_graph (struct stinger * S, const char * filename)
   ptr = remove_comments(ptr, 'p');
 
   /* the first real line must be a header that states the number of vertices and edges */
-  sscanf(ptr, "%s %*s %ld %ld\n", buffer, &NV, &NE);
+  sscanf(ptr, "%s %*s %" PRId64 " %" PRId64 "\n", buffer, &NV, &NE);
   //printf("NV: %ld, NE: %ld\n", NV, NE);
   ptr = strchr(ptr, '\n');
 
@@ -176,7 +177,7 @@ load_dimacs_graph (struct stinger * S, const char * filename)
    * is 0-indexed or 1-indexed because the DIMACS "specification"
    * is unspecified. */
 #define CHECK_EXTREME(a,OP,X) \
-  do { if (a OP X) { int64_t X2 = readfe (&X); if (a OP X2) X2 = a; writeef (&X, X2); } } while (0)
+  do { if (a OP X) { int64_t X2 = readfe ((uint64_t *) &X); if (a OP X2) X2 = a; writeef ((uint64_t *) &X, X2); } } while (0)
 
   int64_t minv = 2*NV, maxv = 0;
   

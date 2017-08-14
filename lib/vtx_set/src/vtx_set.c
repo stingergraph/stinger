@@ -37,7 +37,7 @@ mfree(void * p, int64_t size) {
   munmap(p, size);
 }
 
-void *
+void
 mreplace(char * old_name, void * old_p, int64_t old_size, char * new_name) {
   char old_filename[1024] = VTX_SET_MMAP_PATH;
   strcat(old_filename, old_name);
@@ -92,7 +92,7 @@ vtx_set_free(vtx_set_t * ht) {
   return NULL;
 }
 
-vtx_set_t * 
+void
 vtx_set_expand(vtx_set_t ** ht, int64_t new_size) {
   int64_t pow = (*ht)->size;
 
@@ -125,7 +125,7 @@ vtx_set_expand(vtx_set_t ** ht, int64_t new_size) {
   *ht = tmp;
 }
 
-vtx_set_t *
+void
 vtx_set_insert(vtx_set_t ** ht, int64_t k, int64_t v) {
   if(((double)((*ht)->elements + (*ht)->removed)) > (0.7f) * ((double)(*ht)->size)) {
     vtx_set_expand(ht, (*ht)->size * 2);

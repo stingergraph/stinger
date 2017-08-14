@@ -18,7 +18,7 @@ main(int argc, char *argv[])
   char type_str[1024];
 
   int type_specified = 0;
-  int directed = 0;
+  /*int directed = 0;*/
 
   double epsilon = EPSILON_DEFAULT;
   double dampingfactor = DAMPINGFACTOR_DEFAULT;
@@ -33,7 +33,7 @@ main(int argc, char *argv[])
         type_specified = 1;
       } break;
       case 'd': {
-        directed = 1;
+        /*directed = 1;*/
       } break;
       case 'e': {
         epsilon = atof(optarg);
@@ -53,10 +53,10 @@ main(int argc, char *argv[])
                         "==================================\n"
                         "\n"
                         "  -t <str>  Specify an edge type to run page rank over\n"
-                        "  -d        Use a PageRank that is safe on directed graphs\n"
+                        "  -d        Use a PageRank that is safe on directed graphs (no effect)\n"
                         "  -e        Set PageRank Epsilon (default: %0.1e)\n"
                         "  -f        Set PageRank Damping Factor (default: %lf)\n"
-                        "  -i        Set PageRank Max Iterations (default: %ld)\n"
+                        "  -i        Set PageRank Max Iterations (default: %d)\n"
                         "\n",EPSILON_DEFAULT,DAMPINGFACTOR_DEFAULT,MAXITER_DEFAULT);
         return(opt);
       }

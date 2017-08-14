@@ -49,7 +49,7 @@ TEST_F(PagerankPrincetonTest, DirectedPagerank) {
 
   double tol = 0.001;
 
-  for (int64_t v=0; v < stinger_max_active_vertex(S) + 1; v++) {
+  for (uint64_t v=0; v < stinger_max_active_vertex(S) + 1; v++) {
     EXPECT_NEAR(expected_pr[v],pr[v],tol);
   }
 
@@ -88,7 +88,7 @@ TEST_F(PagerankPrincetonTest, PagerankSubset) {
 
   double tol = 0.001;
 
-  for (int64_t v=0; v < stinger_max_active_vertex(S) + 1; v++) {
+  for (uint64_t v=0; v < stinger_max_active_vertex(S) + 1; v++) {
     if (v < 4) {
       EXPECT_NEAR(expected_pr[v],pr[v],tol);
     } else {
@@ -113,7 +113,7 @@ TEST_F(PagerankPrincetonTest, PagerankDirectedType) {
   tmp_pr = (double *)xcalloc(nv, sizeof(double));
   pr = (double *)xcalloc(nv, sizeof(double));
 
-  for(uint64_t v = 0; v < nv; v++) {
+  for(int64_t v = 0; v < nv; v++) {
     pr[v] = 1 / ((double)nv);
   }
 
@@ -131,7 +131,7 @@ TEST_F(PagerankPrincetonTest, PagerankDirectedType) {
 
   double leftover = 1.0;
 
-  for (int64_t v=0; v < stinger_max_active_vertex(S) + 1; v++) {
+  for (uint64_t v=0; v < stinger_max_active_vertex(S) + 1; v++) {
     if (v < 4) {
       EXPECT_NEAR(expected_pr[v],pr[v]*ratio,tol);
       leftover -= pr[v];

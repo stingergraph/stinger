@@ -79,7 +79,7 @@ struct stinger *edge_list_to_stinger (int64_t nv, int64_t ne,
 		      int64_t * timeRecent, int64_t * timeFirst, 
 		      int64_t timestamp);
 
-void stinger_sort_edge_list (const struct stinger *S, const int64_t srcvtx, const int64_t type);
+void stinger_sort_edge_list (struct stinger *S, const int64_t srcvtx, const int64_t type);
 
 void bucket_sort_pairs (int64_t *array, size_t num);
 

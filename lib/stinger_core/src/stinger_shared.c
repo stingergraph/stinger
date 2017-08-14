@@ -150,7 +150,7 @@ stinger_shared_new_full (char ** out, struct stinger_config_t * config)
   if (*out == NULL)
   {
     *out = xmalloc(sizeof(char) * MAX_NAME_LEN);
-    sprintf(*out, "/%lx", (uint64_t)rand());
+    sprintf(*out, "/%" PRIu64, (uint64_t)rand());
   }                              
 
   int64_t nv      = config->nv      ? config->nv      : STINGER_DEFAULT_VERTICES;
@@ -175,7 +175,7 @@ stinger_shared_new_full (char ** out, struct stinger_config_t * config)
         exit(-1);
       }
       if(!resized) {
-        LOG_W_A("Resizing stinger to fit into memory (detected as %ld)", memory_size);
+        LOG_W_A("Resizing stinger to fit into memory (detected as %zu)", memory_size);
       }
       resized = 1;
 
@@ -281,6 +281,7 @@ stinger_shared_free (struct stinger *S, const char * name, size_t sz)
 
   int status = shmunmap(name, S, sz);
   status = shmunlink(name);
+  (void) status;
 
   return NULL;
 }

@@ -15,8 +15,8 @@
 int
 main(int argc, char *argv[]) {
 
-    char name[1024];
-    char type_str[1024];
+    /*char name[1024];
+    char type_str[1024];*/
 
     stinger_registered_alg * alg =
     stinger_register_alg(
@@ -50,7 +50,7 @@ main(int argc, char *argv[]) {
                                 "partitions using a linear greedy heuristic and limits the partition sizes based on the \n"
                                 "capacity constraint\n"
                                 "\n"
-                                "  -p        Set number of partitions (default: %ld)\n"
+                                "  -p        Set number of partitions (default: %d)\n"
                                 "  -c        Set partition capacity (default: %0.1e)\n"
                                 "\n",num_partitons,partition_capacity);
                 return(opt);

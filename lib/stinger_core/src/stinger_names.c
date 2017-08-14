@@ -27,11 +27,14 @@
     char * names = (char *)((X)->storage); \
     int64_t * to_name = (int64_t *)((X)->storage + (X)->to_name_start); \
     int64_t * from_name= (int64_t *)((X)->storage + (X)->from_name_start); \
-    int64_t * to_int = (int64_t *)((X)->storage + (X)->to_int_start);
+    int64_t * to_int = (int64_t *)((X)->storage + (X)->to_int_start); \
+    (void) to_name; \
+    (void) from_name; \
+    (void) to_int;
 
 
 static uint64_t
-xor_hash(uint8_t * byte_string, int64_t length) {
+xor_hash(const char * byte_string, int64_t length) {
   if(length < 0) length = 0;
 
   uint64_t out = 0;
@@ -232,7 +235,7 @@ stinger_names_create_type(stinger_names_t * sn, const char * name, int64_t * out
  * @return The type on success or -1 if the type does not exist.
  */
 int64_t
-stinger_names_lookup_type(stinger_names_t * sn, const char * name) {
+stinger_names_lookup_type(const stinger_names_t * sn, const char * name) {
   MAP_SN(sn)
       int64_t length = strlen(name); length = length > NAME_STR_MAX ? NAME_STR_MAX : length;
   int64_t index = xor_hash(name, length) % (sn->max_types * 2);
@@ -260,7 +263,7 @@ stinger_names_lookup_type(stinger_names_t * sn, const char * name) {
  * @return Returns string if the mapping exists or NULL.
  */
 char *
-stinger_names_lookup_name(stinger_names_t * sn, int64_t type) {
+stinger_names_lookup_name(const stinger_names_t * sn, int64_t type) {
   MAP_SN(sn)
       if(type < sn->max_types) {
         return names + to_name[type];
@@ -270,7 +273,7 @@ stinger_names_lookup_name(stinger_names_t * sn, int64_t type) {
 }
 
 int64_t
-stinger_names_count(stinger_names_t * sn) {
+stinger_names_count(const stinger_names_t * sn) {
   return sn->next_type;
 }
 
@@ -279,12 +282,12 @@ stinger_names_print(stinger_names_t * sn) {
   MAP_SN(sn)
 
       for(int64_t i = 0; i < sn->max_types*2; i++) {
-        printf("FROM_NAME %ld %s TO_INT %ld TO_NAME %ld\n", from_name[i], from_name[i] ? names + from_name[i] : "", to_int[i], to_int[i] ? to_name[to_int[i]] : 0);
+        printf("FROM_NAME %" PRId64 " %s TO_INT %" PRId64 " TO_NAME %" PRId64 "\n", from_name[i], from_name[i] ? names + from_name[i] : "", to_int[i], to_int[i] ? to_name[to_int[i]] : 0);
       }
 }
 
 int64_t
-stinger_names_remove_type(stinger_names_t * sn, int64_t type) {
+stinger_names_remove_type(const stinger_names_t * sn, int64_t type) {
   LOG_E("Deleting of stinger names is unsupported in base mode");
   return -1;
 }
@@ -309,7 +312,7 @@ stinger_names_remove_name(stinger_names_t * sn, const char * name) {
  * @param fp The file to write into.
  */
 void
-stinger_names_save(stinger_names_t * sn, FILE * fp) {
+stinger_names_save(const stinger_names_t * sn, FILE * fp) {
   MAP_SN(sn)
 
       int64_t max_len = NAME_STR_MAX;
