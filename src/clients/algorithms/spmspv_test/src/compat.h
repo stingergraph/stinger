@@ -14,8 +14,6 @@ int64_fetch_add (int64_t * p, int64_t incr) FN_MAY_BE_UNUSED;
 static inline int32_t
 int32_fetch_add (int32_t * p, int32_t incr) FN_MAY_BE_UNUSED;
 
-
-
 int64_t
 int64_fetch_add (int64_t * p, int64_t incr)
 {
@@ -33,8 +31,6 @@ int64_fetch_add (int64_t * p, int64_t incr)
   return out;
 #endif
 }
-
-
 
 int32_t
 int32_fetch_add (int32_t * p, int32_t incr)
@@ -62,8 +58,6 @@ static inline int
 bool_int64_compare_and_swap (int64_t * p, int64_t oldval, int64_t newval)
   FN_MAY_BE_UNUSED;
 
-
-
 int64_t
 int64_compare_and_swap (int64_t * p, int64_t oldval, int64_t newval)
 {
@@ -77,8 +71,6 @@ int64_compare_and_swap (int64_t * p, int64_t oldval, int64_t newval)
   return t;
 #endif
 }
-
-
 
 int
 bool_int64_compare_and_swap (int64_t * p, int64_t oldval, int64_t newval)

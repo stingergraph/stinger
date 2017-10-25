@@ -25,6 +25,7 @@ set(headers
 	inc/x86_full_empty.h
 	inc/xmalloc.h
 	inc/stinger_batch_insert.h
+	inc/alternative_omp_macros.h
 )
 
 set(config
