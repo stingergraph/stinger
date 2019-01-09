@@ -82,7 +82,9 @@ class StingerRegisteredAlg(Structure):
 
 class StingerStream():
   def __init__(self, host, port, strings=True, undirected=False):
-    self.sock_handle = libstinger_net['stream_connect'](c_char_p(host), c_int(port))
+    self.connect(host, port)
+    self.host = host
+    self.port = port
     self.insertions_size = 5000
     self.insertions = (StingerEdgeUpdate * self.insertions_size)()
     self.insertions_refs = []
@@ -97,6 +99,13 @@ class StingerStream():
     self.vertex_updates_count = 0
     self.only_strings = strings
     self.undirected = undirected
+
+  def connect(self, host, port):
+    self.sock_handle = libstinger_net['stream_connect'](c_char_p(host), c_int(port))
+    return self.sock_handle != -1
+
+  def is_connected(self):
+    return libstinger_net['stream_is_connected'](c_int(self.sock_handle))
 
   def add_insert(self, vfrom, vto, etype=0, weight=0, ts=0, insert_strings=None):
     self.only_strings = insert_strings if insert_strings is not None else self.only_strings
@@ -176,17 +185,29 @@ class StingerStream():
     self.vertex_updates_count += 1
 
   def send_batch(self):
-    libstinger_net['stream_send_batch'](self.sock_handle, c_int(self.only_strings), 
-	     self.insertions, self.insertions_count, 
-       self.deletions, self.deletions_count, 
+    success = libstinger_net['stream_send_batch'](self.sock_handle, c_int(self.only_strings),
+	     self.insertions, self.insertions_count,
+       self.deletions, self.deletions_count,
        self.vertex_updates, self.vertex_updates_count,
        self.undirected)
-    self.insertions_count = 0
-    self.deletions_count = 0
-    self.vertex_updates_count = 0
-    self.insertions_refs = []
-    self.deletions_refs = []
-    self.vertex_updates_refs = []
+    if success:
+        self.insertions_count = 0
+        self.deletions_count = 0
+        self.vertex_updates_count = 0
+        self.insertions_refs = []
+        self.deletions_refs = []
+        self.vertex_updates_refs = []
+    else:
+        print('Lost connection to STINGER core server, attempting to reconnect...')
+        if self.connect(self.host, self.port):
+            print('Reattempting batch send...')
+            self.send_batch()
+            print('Batch sent successfully')
+        else:
+            raise RuntimeError()
+
+
+
 
 
 class StingerAlg():

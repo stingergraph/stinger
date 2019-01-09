@@ -199,7 +199,14 @@ main (int argc, char ** argv)
     while(1) { sleep(10); }
   } else {
     printf("Press Ctrl-C to shut down the server...\n");
-    while(1) { sleep(10); }
+    while(1) {
+      sleep(10);
+      stinger_t * S = server_state.get_stinger();
+      if (!S) {
+        LOG_E ("STINGER pointer is invalid");
+        return 1;
+      }
+    }
   }
 
   return 0;
