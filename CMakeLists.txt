@@ -189,6 +189,7 @@ add_test(StingerHitsTest ${CMAKE_BINARY_DIR}/bin/stinger_hits_test)
 add_test(StingerDiameterTest ${CMAKE_BINARY_DIR}/bin/stinger_diameter_test)
 add_test(StingerIndependentSetsTest ${CMAKE_BINARY_DIR}/bin/stinger_independent_sets_test)
 add_test(StingerShortestPathsTest ${CMAKE_BINARY_DIR}/bin/stinger_shortest_paths)
+add_test(StingerStreamingConnectedComponentsTest ${CMAKE_BINARY_DIR}/bin/stinger_streaming_connected_components_test)
 
 find_program(BASH bash REQUIRED)
 add_test(
@@ -212,4 +213,5 @@ add_custom_target(check
     stinger_diameter_test
     stinger_independent_sets_test
     stinger_shortest_paths
+    stinger_streaming_connected_components_test
 )
