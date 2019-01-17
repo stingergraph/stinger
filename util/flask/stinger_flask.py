@@ -9,6 +9,7 @@ import subprocess
 import sys
 import threading
 import time
+import threading
 import traceback
 from flask import Flask, request, jsonify, Response, make_response
 from flask.ext.cors import CORS
@@ -87,6 +88,7 @@ class Insert(Resource):
             send_immediate = False if 'immediate' not in data else data['immediate']
             only_strings = True if 'strings' not in data else data['strings']
 
+            print("State of connection: " + str(s.sock_handle))
             if isinstance(data["edges"], list):
                 edges = data["edges"]
                 print "Received batch of size", len(edges), 'at', strftime("%Y%m%d%H%M%S", gmtime()),""
@@ -406,7 +408,10 @@ def stingerctl(command):
 def stingerRPC(payload):
     try:
         urlstr = 'http://{0}:{1}/jsonrpc'.format(config['STINGER_HOST'],config['STINGER_RPC_PORT'])
-        r = requests.post(urlstr, data=json.dumps(payload))
+        try:
+            r = requests.post(urlstr, data=json.dumps(payload))
+        except Exception as e:
+            raise RuntimeError("RPC failed.")
     except:
         print(traceback.format_exc())
         return Response(response=json.dumps({"error": "JSON-RPC down"}),status=503,mimetype="application/json")
@@ -468,14 +473,7 @@ def setupSTINGERConnection():
             print str(e)
             print 'STINGER timer setup unsuccessful'
 
-
-setupSTINGERConnection()
-
-#
-# main
-#
-if __name__ == '__main__':
-    signal.signal(signal.SIGINT, signal_handler)
+def thread_webapp():
     parser = argparse.ArgumentParser(description="STINGER Flask Relay Server")
     parser.add_argument('--undirected', action="store_true")
     parser.add_argument('--flask_host', default=config['FLASK_HOST'])
@@ -488,3 +486,25 @@ if __name__ == '__main__':
     config['UNDIRECTED'] = args.undirected
     setupSTINGERConnection()
     application.run(debug=False,host=args.flask_host,port=args.flask_port)
+
+#
+# main
+#
+if __name__ == '__main__':
+    signal.signal(signal.SIGINT, signal_handler)
+    t_webApp = threading.Thread(name='Web App', target=thread_webapp)
+    t_webApp.setDaemon(True)
+    t_webApp.start()
+
+    try:
+        while True:
+            time.sleep(30)
+            print "Watchdog: Checking Stinger connection."
+            if s.is_connected() is False:
+                print 'Stinger connection was lost. Restarting.'
+                exit(1)
+            else:
+                print "Watchdog: Stinger connection is good."
+    except KeyboardInterrupt:
+        print "Shutting Down"
+        exit(0)
