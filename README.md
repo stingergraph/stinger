@@ -88,7 +88,7 @@ To run an example using the server and five terminals:
     term5:build$ ./bin/stinger_rmat_edge_generator -n 100000 -x 10000
 
 This will start a stream of R-MAT edges over 100,000 vertices in batches of 10,000 edges.  A connected component labeling
-and PageRank scoring will be maintained.  The JSON-RPC server will host an endpoint at http://localhost:8088/json-rpc
+and PageRank scoring will be maintained.  The JSON-RPC server will host an endpoint at http://localhost:8088/jsonrpc
 The total memory usage of the dynamic graph is limited to 1 GiB.
 
 Server Configuration
