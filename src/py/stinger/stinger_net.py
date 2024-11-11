@@ -1,6 +1,8 @@
 from ctypes import *
 import os
 from stinger_core import Stinger
+from tkinter.simpledialog import askstring
+from functools import reduce
 
 if(os.getenv('STINGER_LIB_PATH')):
   libstinger_net = cdll.LoadLibrary(os.getenv('STINGER_LIB_PATH') + '/libstinger_net.so')
@@ -20,7 +22,7 @@ class StingerAlgParams(Structure):
 
   def set_dependencies(self, deps):
     self.dependencies = (len(deps) * c_char_p)()
-    for i in xrange(len(deps)):
+    for i in range(len(deps)):
       self.dependencies[i] = c_char_p(deps[i])
 
 class StingerEdgeUpdate(Structure):
@@ -77,7 +79,7 @@ class StingerRegisteredAlg(Structure):
   def get_alg_data(self, name, desc):
     return StingerDataArray(self.alg_data, desc, name, Stinger(s=self.stinger))
 
-  def stinger():
+  def stinger(self):
     return Stinger(s=self.stinger)
 
 class StingerStream():
@@ -117,7 +119,7 @@ class StingerStream():
       self.insertions[self.insertions_count].source = c_int64(vfrom)
       self.insertions[self.insertions_count].destination= c_int64(vto)
 
-    if isinstance(etype, basestring):
+    if isinstance(etype, askstring):
       self.insertions[self.insertions_count].etype_str = c_char_p(etype)
     else:
       self.insertions[self.insertions_count].etype = c_int64(etype)
@@ -144,7 +146,7 @@ class StingerStream():
       self.deletions[self.deletions_count].source = c_int64(vfrom)
       self.deletions[self.deletions_count].destination= c_int64(vto)
 
-    if isinstance(etype, basestring):
+    if isinstance(etype, askstring):
       self.deletions[self.deletions_count].etype_str = c_char_p(etype)
     else:
       self.deletions[self.deletions_count].etype = c_int64(etype)
@@ -165,7 +167,7 @@ class StingerStream():
       self.vertex_updates[self.vertex_updates_count].vertex = c_int64(vtx)
       self.vertex_updates[self.vertex_updates_count].vertex_str = 0
 
-    if isinstance(vtype, basestring):
+    if isinstance(vtype, askstring):
       self.vertex_updates[self.vertex_updates_count].type_str = c_char_p(vtype)
     else:
       self.vertex_updates[self.vertex_updates_count].type = c_int64(vtype)
@@ -225,7 +227,7 @@ class StingerDataArray():
     if not isinstance(data_ptr, int):
       data_ptr = data_ptr.value
 
-    print data_desc
+    print(data_desc)
     field_index = data_desc[1:].index(field_name)
 
     self.field_name = field_name
@@ -255,12 +257,12 @@ class StingerDataArray():
       self.data = cast(self.data, POINTER(c_int8))
 
   def __getitem__(self, i):
-    if isinstance(i, basestring):
+    if isinstance(i, askstring):
       i = self.s.get_mapping(i)
     return self.data[i] if i >= 0 else 0
 
   def __setitem__(self, i, k):
-    if isinstance(i, basestring):
+    if isinstance(i, askstring):
       i = self.s.get_mapping(i)
     if i >= 0:
       self.data[i] = k
@@ -324,7 +326,7 @@ class StingerMon():
     return libstinger_net['stinger_mon_num_algs'](self.mon)
 
   def get_alg_state(self, name_or_int):
-    if isinstance(name_or_int, basestring):
+    if isinstance(name_or_int, askstring):
       get_alg = libstinger_net['stinger_mon_get_alg_state_by_name']
       get_alg.restype = c_void_p
       return StingerAlgState(c_void_p(get_alg(self.mon, c_char_p(name_or_int))), self.stinger())
