@@ -1,5 +1,6 @@
 from ctypes import *
 import os
+from tkinter.simpledialog import askstring
 
 if(os.getenv('STINGER_LIB_PATH')):
   libstinger_core = cdll.LoadLibrary(os.getenv('STINGER_LIB_PATH') + '/libstinger_core.so')
@@ -89,106 +90,106 @@ class Stinger:
     return libstinger_core['stinger_etype_names_count'](self.s)
 
   def insert_edge(self, vfrom, vto, etype=0, weight=1, ts=1):
-    if isinstance(vfrom, basestring):
+    if isinstance(vfrom, askstring):
       vfrom = self.create_mapping(vfrom)
-    if isinstance(vto, basestring):
+    if isinstance(vto, askstring):
       vto = self.create_mapping(vto)
-    if isinstance(etype, basestring):
+    if isinstance(etype, askstring):
       etype = self.create_etype(etype)
     libstinger_core['stinger_insert_edge'](self.s, c_int64(etype), c_int64(vfrom), 
 	c_int64(vto), c_int64(weight), c_int64(ts))
 
   def insert_edge_pair(self, vfrom, vto, etype=0, weight=1, ts=1):
-    if isinstance(vfrom, basestring):
+    if isinstance(vfrom, askstring):
       vfrom = self.create_mapping(vfrom)
-    if isinstance(vto, basestring):
+    if isinstance(vto, askstring):
       vto = self.create_mapping(vto)
-    if isinstance(etype, basestring):
+    if isinstance(etype, askstring):
       etype = self.create_etype(etype)
     libstinger_core['stinger_insert_edge_pair'](self.s, c_int64(etype), c_int64(vfrom), 
 	c_int64(vto), c_int64(weight), c_int64(ts))
 
   def increment_edge(self, vfrom, vto, etype=0, weight=1, ts=1):
-    if isinstance(vfrom, basestring):
+    if isinstance(vfrom, askstring):
       vfrom = self.create_mapping(vfrom)
-    if isinstance(vto, basestring):
+    if isinstance(vto, askstring):
       vto = self.create_mapping(vto)
-    if isinstance(etype, basestring):
+    if isinstance(etype, askstring):
       etype = self.create_etype(etype)
     libstinger_core['stinger_incr_edge'](self.s, c_int64(etype), c_int64(vfrom), 
 	c_int64(vto), c_int64(weight), c_int64(ts))
 
   def increment_edge_pair(self, vfrom, vto, etype=0, weight=1, ts=1):
-    if isinstance(vfrom, basestring):
+    if isinstance(vfrom, askstring):
       vfrom = self.create_mapping(vfrom)
-    if isinstance(vto, basestring):
+    if isinstance(vto, askstring):
       vto = self.create_mapping(vto)
-    if isinstance(etype, basestring):
+    if isinstance(etype, askstring):
       etype = self.create_etype(etype)
     libstinger_core['stinger_incr_edge_pair'](self.s, c_int64(etype), c_int64(vfrom), 
 	c_int64(vto), c_int64(weight), c_int64(ts))
 
   def remove_edge(self, vfrom, vto, etype=0):
-    if isinstance(vfrom, basestring):
+    if isinstance(vfrom, askstring):
       vfrom = self.get_mapping(vfrom)
-    if isinstance(vto, basestring):
+    if isinstance(vto, askstring):
       vto = self.get_mapping(vto)
-    if isinstance(etype, basestring):
+    if isinstance(etype, askstring):
       etype = self.create_etype(etype)
     if (vfrom > 0) and (vto > 0):
       libstinger_core['stinger_remove_edge'](self.s, c_int64(etype), c_int64(vfrom), 
 	  c_int64(vto))
 
   def remove_edge_pair(self, vfrom, vto, etype=0):
-    if isinstance(vfrom, basestring):
+    if isinstance(vfrom, askstring):
       vfrom = self.get_mapping(vfrom)
-    if isinstance(vto, basestring):
+    if isinstance(vto, askstring):
       vto = self.get_mapping(vto)
-    if isinstance(etype, basestring):
+    if isinstance(etype, askstring):
       etype = self.create_etype(etype)
     if (vfrom > 0) and (vto > 0):
       libstinger_core['stinger_remove_edge_pair'](self.s, c_int64(etype), c_int64(vfrom), 
 	  c_int64(vto))
 
   def indegree(self, vtx):
-    if isinstance(vtx, basestring):
+    if isinstance(vtx, askstring):
       vtx = self.get_mapping(vtx)
     return libstinger_core['stinger_indegree_get'](self.s, c_int64(vtx))
 
   def outdegree(self, vtx):
-    if isinstance(vtx, basestring):
+    if isinstance(vtx, askstring):
       vtx = self.get_mapping(vtx)
     return libstinger_core['stinger_outdegree_get'](self.s, c_int64(vtx))
 
   def get_type(self, vtx):
-    if isinstance(vtx, basestring):
+    if isinstance(vtx, askstring):
       vtx = self.get_mapping(vtx)
     return libstinger_core['stinger_vtype_get'](self.s, c_int64(vtx))
 
   def set_vtype(self, vtx, vtype):
-    if isinstance(vtx, basestring):
+    if isinstance(vtx, askstring):
       vtx = self.get_mapping(vtx)
-    if isinstance(vtype, basestring):
+    if isinstance(vtype, askstring):
       vtype = self.create_vtype(vtype)
     return libstinger_core['stinger_vtype_set'](self.s, c_int64(vtx), c_int64(vtype))
 
   def get_vweight(self, vtx):
-    if isinstance(vtx, basestring):
+    if isinstance(vtx, askstring):
       vtx = self.get_mapping(vtx)
     return libstinger_core['stinger_vweight_get'](self.s, c_int64(vtx))
 
   def set_vweight(self, vtx, vweight):
-    if isinstance(vtx, basestring):
+    if isinstance(vtx, askstring):
       vtx = self.get_mapping(vtx)
     return libstinger_core['stinger_vweight_set'](self.s, c_int64(vtx), c_int64(vweight))
 
   def increment_vweight(self, vtx, vweight):
-    if isinstance(vtx, basestring):
+    if isinstance(vtx, askstring):
       vtx = self.get_mapping(vtx)
     return libstinger_core['stinger_vweight_increment'](self.s, c_int64(vtx), c_int64(vweight))
 
   def edges_of(self, vtx):
-    if isinstance(vtx, basestring):
+    if isinstance(vtx, askstring):
       vtx_name = vtx
       vtx = self.get_mapping(vtx)
 
